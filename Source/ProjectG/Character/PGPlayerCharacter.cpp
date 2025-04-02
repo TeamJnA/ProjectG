@@ -3,6 +3,7 @@
 
 #include "Character/PGPlayerCharacter.h"
 
+//Essential Character Components
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -11,6 +12,12 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+
+//Gameplay Ability System Components
+#include "AbilitySystem/PGAbilitySystemComponent.h"
+#include "AbilitySystem/PGAttributeSet.h"
+#include "Player/PGPlayerState.h"
+
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -81,6 +88,34 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		//UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
+}
+
+void APGPlayerCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	InitAbilitySystemComponent();
+	GiveDefaultAbilities();
+	InitDefaultAttributes();
+}
+
+//This function is called on the client When the server updates PlayerState.
+void APGPlayerCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	InitAbilitySystemComponent();
+	InitDefaultAttributes();
+}
+
+void APGPlayerCharacter::InitAbilitySystemComponent()
+{
+	APGPlayerState* PGPlayerState = GetPlayerState<APGPlayerState>();
+	check(PGPlayerState);
+	AbilitySystemComponent = CastChecked<UPGAbilitySystemComponent>(
+		PGPlayerState->GetAbilitySystemComponent());
+	AbilitySystemComponent->InitAbilityActorInfo(PGPlayerState, this);
+	AttributeSet = PGPlayerState->GetAttributeSet();
 }
 
 void APGPlayerCharacter::Move(const FInputActionValue& Value)

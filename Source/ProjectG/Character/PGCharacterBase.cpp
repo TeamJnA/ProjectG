@@ -2,6 +2,7 @@
 
 
 #include "Character/PGCharacterBase.h"
+#include "AbilitySystem/PGAbilitySystemComponent.h"
 
 // Sets default values
 APGCharacterBase::APGCharacterBase()
@@ -11,10 +12,39 @@ APGCharacterBase::APGCharacterBase()
 
 }
 
-// Called when the game starts or when spawned
-void APGCharacterBase::BeginPlay()
+UAbilitySystemComponent* APGCharacterBase::GetAbilitySystemComponent() const
 {
-	Super::BeginPlay();
-	
+	return AbilitySystemComponent;
 }
 
+UPGAttributeSet* APGCharacterBase::GetAttributeSet() const
+{
+	return nullptr;
+}
+
+void APGCharacterBase::GiveDefaultAbilities()
+{
+	check(AbilitySystemComponent);
+	if (!HasAuthority()) return;
+
+	for (TSubclassOf<UGameplayAbility> AbilityClass : DefaultAbilities)
+	{
+		const FGameplayAbilitySpec AbilitySpec(AbilityClass, 1);
+		AbilitySystemComponent->GiveAbility(AbilitySpec);
+	}
+}
+
+void APGCharacterBase::InitDefaultAttributes() const
+{
+	if (!AbilitySystemComponent || !DefaultAttributeEffect) { return; }
+
+	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	const FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1.f, EffectContext);
+
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
+}

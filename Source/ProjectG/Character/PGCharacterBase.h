@@ -4,10 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "AbilitySystemInterface.h"
 #include "PGCharacterBase.generated.h"
 
+//Forward declarations
+class UPGAbilitySystemComponent;
+class UGameplayAbility;
+class UPGAttributeSet;
+class UGameplayEffect;
+
 UCLASS()
-class PROJECTG_API APGCharacterBase : public ACharacter
+class PROJECTG_API APGCharacterBase : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -15,9 +22,24 @@ public:
 	// Sets default values for this character's properties
 	APGCharacterBase();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	virtual UPGAttributeSet* GetAttributeSet() const;
+
+protected:
+	void GiveDefaultAbilities();
+	void InitDefaultAttributes() const;
+
+	UPROPERTY()
+	TObjectPtr<UPGAbilitySystemComponent> AbilitySystemComponent;
+
+	UPROPERTY()
+	TObjectPtr<UPGAttributeSet> AttributeSet;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
 public:	
 };
