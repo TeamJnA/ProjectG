@@ -83,6 +83,11 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APGPlayerCharacter::Look);
+
+		//Sprinting
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartSprinting);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopSprinting);
+
 	}
 	else
 	{
@@ -97,6 +102,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	InitAbilitySystemComponent();
 	GiveDefaultAbilities();
 	InitDefaultAttributes();
+	GiveAndActivatePassiveEffects();
 }
 
 //This function is called on the client When the server updates PlayerState.
@@ -108,6 +114,11 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	InitDefaultAttributes();
 }
 
+void APGPlayerCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
+}
+
 void APGPlayerCharacter::InitAbilitySystemComponent()
 {
 	APGPlayerState* PGPlayerState = GetPlayerState<APGPlayerState>();
@@ -116,6 +127,13 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		PGPlayerState->GetAbilitySystemComponent());
 	AbilitySystemComponent->InitAbilityActorInfo(PGPlayerState, this);
 	AttributeSet = PGPlayerState->GetAttributeSet();
+
+	//Bind attribute change delegate
+	FOnGameplayAttributeValueChange& OnMovementSpeedChangedDelegate = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		AttributeSet->GetMovementSpeedAttribute()
+	);
+	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
+
 }
 
 void APGPlayerCharacter::Move(const FInputActionValue& Value)
@@ -151,5 +169,21 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void APGPlayerCharacter::StartSprinting(const FInputActionValue& Value)
+{
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->TryActivateAbilitiesByTag(SprintTag, true);
+	}
+}
+
+void APGPlayerCharacter::StopSprinting(const FInputActionValue& Value)
+{
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->CancelAbilities(&SprintTag);
 	}
 }

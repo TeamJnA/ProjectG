@@ -29,6 +29,7 @@ public:
 protected:
 	void GiveDefaultAbilities();
 	void InitDefaultAttributes() const;
+	void GiveAndActivatePassiveEffects();
 
 	UPROPERTY()
 	TObjectPtr<UPGAbilitySystemComponent> AbilitySystemComponent;
@@ -41,5 +42,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability")
 	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	TArray<TSubclassOf<UGameplayEffect>> PassiveEffects;
 public:	
 };

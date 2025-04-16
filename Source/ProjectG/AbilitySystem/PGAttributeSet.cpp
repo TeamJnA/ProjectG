@@ -38,6 +38,12 @@ void UPGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	
 	if (Data.EvaluatedData.Attribute == GetStaminaAttribute())
 	{
+		/*
+		if (GetStamina() <= 1.0f)
+		{
+			GetOwningAbilitySystemComponent()->GetAvatarActor();
+			GetOwningAbilitySystemComponent()->CancelAbilities();
+		}*/
 		SetStamina(FMath::Clamp(GetStamina(), 0.f, GetMaxStamina()));
 	}
 }

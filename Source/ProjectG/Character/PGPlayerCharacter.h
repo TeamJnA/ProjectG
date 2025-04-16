@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Character/PGCharacterBase.h"
+#include "GameplayTagContainer.h"
 #include "PGPlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -11,6 +12,8 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
+
+struct FOnAttributeChangeData;
 
 /**
  * 
@@ -47,6 +50,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SprintAction;
+
 protected:
 
 	/** Called for movement input */
@@ -55,6 +61,9 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	/** Called for sprint input */
+	void StartSprinting(const FInputActionValue& Value);
+	void StopSprinting(const FInputActionValue& Value);
 
 protected:
 
@@ -75,6 +84,16 @@ public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
+	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+
 private:
 	void InitAbilitySystemComponent();
+
+protected:
+	//Movement speed changed delegate
+	FDelegateHandle MovementSpeedChangedDelegateHandle;
+
+	//Gameplay ability tag
+	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
+	FGameplayTagContainer SprintTag;
 };
