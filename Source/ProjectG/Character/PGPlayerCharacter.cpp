@@ -3,6 +3,7 @@
 
 #include "Character/PGPlayerCharacter.h"
 
+//Essential Character Components
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -11,6 +12,12 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+
+//Gameplay Ability System Components
+#include "AbilitySystem/PGAbilitySystemComponent.h"
+#include "AbilitySystem/PGAttributeSet.h"
+#include "Player/PGPlayerState.h"
+
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -76,11 +83,57 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APGPlayerCharacter::Look);
+
+		//Sprinting
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartSprinting);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopSprinting);
+
 	}
 	else
 	{
 		//UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
+}
+
+void APGPlayerCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	InitAbilitySystemComponent();
+	GiveDefaultAbilities();
+	InitDefaultAttributes();
+	GiveAndActivatePassiveEffects();
+}
+
+//This function is called on the client When the server updates PlayerState.
+void APGPlayerCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	InitAbilitySystemComponent();
+	InitDefaultAttributes();
+}
+
+void APGPlayerCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
+}
+
+void APGPlayerCharacter::InitAbilitySystemComponent()
+{
+	APGPlayerState* PGPlayerState = GetPlayerState<APGPlayerState>();
+	check(PGPlayerState);
+	AbilitySystemComponent = CastChecked<UPGAbilitySystemComponent>(
+		PGPlayerState->GetAbilitySystemComponent());
+	AbilitySystemComponent->InitAbilityActorInfo(PGPlayerState, this);
+	AttributeSet = PGPlayerState->GetAttributeSet();
+
+	//Bind attribute change delegate
+	FOnGameplayAttributeValueChange& OnMovementSpeedChangedDelegate = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		AttributeSet->GetMovementSpeedAttribute()
+	);
+	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
+
 }
 
 void APGPlayerCharacter::Move(const FInputActionValue& Value)
@@ -116,5 +169,21 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void APGPlayerCharacter::StartSprinting(const FInputActionValue& Value)
+{
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->TryActivateAbilitiesByTag(SprintTag, true);
+	}
+}
+
+void APGPlayerCharacter::StopSprinting(const FInputActionValue& Value)
+{
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->CancelAbilities(&SprintTag);
 	}
 }
