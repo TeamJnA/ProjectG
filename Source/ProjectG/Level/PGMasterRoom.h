@@ -6,6 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "PGMasterRoom.generated.h"
 
+class UArrowComponent;
+class UBoxComponent;
+
 UCLASS()
 class PROJECTG_API APGMasterRoom : public AActor
 {
@@ -16,32 +19,30 @@ public:
 	APGMasterRoom();
 
 protected:
-	// Called when the game starts or when spawned
-	// virtual void BeginPlay() override;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
-	class USceneComponent* Root;
+	TObjectPtr<USceneComponent> Root;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
-	class USceneComponent* GeometryFolder;
+	TObjectPtr<USceneComponent> GeometryFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomDirection")
-	class UArrowComponent* RoomDir;
+	TObjectPtr<UArrowComponent> RoomDir;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
-	class USceneComponent* OverlapBoxFolder;
+	TObjectPtr<USceneComponent> OverlapBoxFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "OverlapBox")
-	class UBoxComponent* OverlapBox;
+	TObjectPtr<UBoxComponent> OverlapBox;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
-	class USceneComponent* ExitsFolder;
+	TObjectPtr<USceneComponent> ExitsFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
-	class USceneComponent* FloorSpawnPoints;
+	TObjectPtr<USceneComponent> FloorSpawnPointsFolder;
 
 public:
 	virtual USceneComponent* GetExitsFolder();
 	virtual USceneComponent* GetOverlapBoxFolder();
+	virtual USceneComponent* GetFloorSpawnPointsFolder();
 
 };

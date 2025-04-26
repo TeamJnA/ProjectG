@@ -17,8 +17,8 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
-	class USceneComponent* Root;
+	TObjectPtr<USceneComponent> Root;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WallMesh")
-	class UStaticMeshComponent* Mesh0;
+	TObjectPtr<UStaticMeshComponent> Mesh0;
 };

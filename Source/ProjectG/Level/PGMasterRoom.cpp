@@ -31,8 +31,8 @@ APGMasterRoom::APGMasterRoom()
 	ExitsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ExitsFolder"));
 	ExitsFolder->SetupAttachment(RootComponent);
 
-	FloorSpawnPoints = CreateDefaultSubobject<USceneComponent>(TEXT("FloorSpawnPonts"));
-	FloorSpawnPoints->SetupAttachment(RootComponent);
+	FloorSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("FloorSpawnPointsFolder"));
+	FloorSpawnPointsFolder->SetupAttachment(RootComponent);
 
 	Root->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	Root->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
@@ -58,4 +58,9 @@ USceneComponent* APGMasterRoom::GetExitsFolder()
 USceneComponent* APGMasterRoom::GetOverlapBoxFolder()
 {
 	return OverlapBoxFolder;
+}
+
+USceneComponent* APGMasterRoom::GetFloorSpawnPointsFolder()
+{
+	return FloorSpawnPointsFolder;
 }
