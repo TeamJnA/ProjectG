@@ -76,4 +76,6 @@ DerivedDataCache/*
 # Settings for ProjectG
 Content/MetaHumans/
 Content/Imports/
+Content/StarterBundle/
+Content/ProjectG/LevelAssets/
 .vsconfig
