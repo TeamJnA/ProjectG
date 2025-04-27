@@ -9,9 +9,7 @@
 
 APGStairRoom1::APGStairRoom1()
 {
-	// static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Script/Engine.StaticMesh'/Game/ProjectG/LevelAssets/StairRoom1.StairRoom1'"));
-	// static ConstructorHelpers::FObjectFinder<UMaterial> MaterialRef(TEXT("/Script/Engine.Material'/Game/BasicAssets/M_Basic_Floor.M_Basic_Floor'"));
-	static ConstructorHelpers::FClassFinder<AActor> MeshRef1(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_StairRoomSample.LI_StairRoomSample_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_StairRoomSample.LI_StairRoomSample_C'"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitsFolder);
@@ -38,7 +36,7 @@ APGStairRoom1::APGStairRoom1()
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
-	Mesh->SetChildActorClass(MeshRef1.Class);
+	Mesh->SetChildActorClass(MeshRef.Class);
 	Mesh->SetRelativeLocation(FVector(1069.6f, -214.6f, -691.0f));
 
 }

@@ -12,7 +12,6 @@ APGDoor2::APGDoor2()
 	PrimaryActorTick.bCanEverTick = false;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Script/Engine.StaticMesh'/Game/StarterBundle/ModularSci_Int/Meshes/SM_Wall_D.SM_Wall_D'"));
-	// static ConstructorHelpers::FObjectFinder<UMaterial> MaterialRef(TEXT("/Script/Engine.Material'/Game/BasicAssets/M_Frame.M_Frame'"));
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -27,12 +26,6 @@ APGDoor2::APGDoor2()
 	{
 		Mesh0->SetStaticMesh(MeshRef.Object);
 	}
-	/*
-	if (MaterialRef.Object)
-	{
-		Mesh0->SetMaterial(0, MaterialRef.Object);
-	}
-	*/
 	Mesh0->SetRelativeLocation(FVector(-180.0f, 0.0f, 5.0f));
 	Mesh0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	Mesh0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));

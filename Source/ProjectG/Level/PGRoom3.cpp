@@ -9,8 +9,6 @@
 
 APGRoom3::APGRoom3()
 {
-	// static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Script/Engine.StaticMesh'/Game/ProjectG/LevelAssets/Lab1.Lab1'"));
-	// static ConstructorHelpers::FObjectFinder<UMaterial> MaterialRef(TEXT("/Script/Engine.Material'/Game/BasicAssets/M_Basic_Floor.M_Basic_Floor'"));
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_LabSample.LI_LabSample_C'"));
 
 	RoomDir->SetRelativeLocation(FVector(900.0f, 0.0f, 130.0f));
