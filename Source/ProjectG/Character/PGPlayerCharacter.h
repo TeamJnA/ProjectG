@@ -15,6 +15,8 @@ struct FInputActionValue;
 
 struct FOnAttributeChangeData;
 
+class UPGInventoryComponent;
+
 /**
  * 
  */
@@ -28,31 +30,39 @@ public:
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
+	TObjectPtr<USpringArmComponent> CameraBoom;
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FollowCamera;
+	TObjectPtr<UCameraComponent> FollowCamera;
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputMappingContext* DefaultMappingContext;
+	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* JumpAction;
+	TObjectPtr<UInputAction> JumpAction;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* MoveAction;
+	TObjectPtr<UInputAction> MoveAction;
 
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* LookAction;
+	TObjectPtr<UInputAction> LookAction;
+
+	//ItemSlot Actions. Make delegate to call BindAction function with parameter
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<UInputAction>> ChangeItemSlotAction;
+
+	//GameplayAbility Input Actions
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SprintAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* SprintAction;
-
+	TObjectPtr<UInputAction> InteractAction;
+	
 protected:
 
 	/** Called for movement input */
@@ -61,9 +71,12 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-	/** Called for sprint input */
-	void StartSprinting(const FInputActionValue& Value);
-	void StopSprinting(const FInputActionValue& Value);
+	/** Called for Input ability Actions. Sprint, interaction*/
+	void StartInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
+	void StopInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
+
+	/** Called for Changing inventory currecnt slot by number */
+	void ChangingItemSlot(const FInputActionValue& Value, int32 NumofSlot);
 
 protected:
 
@@ -77,23 +90,55 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
+	virtual void Tick(float DeltaTime) override;
 ///
-///		Gameplay Ability System
+///*********	Gameplay Ability System ******************
 /// 	
 public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
-	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
-
 private:
 	void InitAbilitySystemComponent();
 
 protected:
+
+	//Gameplay ability tags
+	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
+	FGameplayTagContainer SprintTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
+	FGameplayTagContainer InteractTag;
+
+	//
+	// --------------Movement parts------------------
+	// 
+protected:
 	//Movement speed changed delegate
 	FDelegateHandle MovementSpeedChangedDelegateHandle;
 
-	//Gameplay ability tag
-	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
-	FGameplayTagContainer SprintTag;
+public:
+	//Bind with MovementSpeedChangedDelegateHandle. 
+	//If attribute speed is changed, change character speed
+	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+	
+	//
+	// --------------Interaction parts------------------
+	// 
+protected:
+	void LinetraceCheckInteractableActor();
+
+	//The interactive actor currently watching
+	TObjectPtr<AActor> InteractableActor;
+
+	//Get item or do Interact with InteractableActor by ability
+	UFUNCTION()
+	void DoInteractWithActor();
+
+///
+///		UI and Components
+/// 
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UPGInventoryComponent> InventoryComponent;
 };

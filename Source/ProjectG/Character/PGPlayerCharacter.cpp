@@ -3,6 +3,8 @@
 
 #include "Character/PGPlayerCharacter.h"
 
+#include "Game/PGGameInstance.h"
+
 //Essential Character Components
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -18,6 +20,8 @@
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Player/PGPlayerState.h"
 
+//UI and Components
+#include "Component/PGInventoryComponent.h"
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -53,6 +57,9 @@ APGPlayerCharacter::APGPlayerCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	// Create InventoryComponent and Set changing Itemslot Input Action
+	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 void APGPlayerCharacter::NotifyControllerChanged()
@@ -85,14 +92,32 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APGPlayerCharacter::Look);
 
 		//Sprinting
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartSprinting);
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopSprinting);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartInputActionByTag, SprintTag);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopInputActionByTag, SprintTag);
+		
+		//Interacting
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartInputActionByTag, InteractTag);
 
+		//ChangeItemSlot
+		UPGGameInstance* PGGameInstance = Cast<UPGGameInstance>(GetGameInstance());
+		for (int i = 0; i < PGGameInstance->GetMaxInventorySize(); ++i)
+		{
+			if(ChangeItemSlotAction[i])
+				EnhancedInputComponent->BindAction(ChangeItemSlotAction[i], ETriggerEvent::Started, this, &APGPlayerCharacter::ChangingItemSlot, i);
+		}
 	}
 	else
 	{
 		//UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
+}
+
+void APGPlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	//Chasing interactablie actor on watching
+	LinetraceCheckInteractableActor();
 }
 
 void APGPlayerCharacter::PossessedBy(AController* NewController)
@@ -136,6 +161,63 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 
 }
 
+//Find Interactable actor and ~
+void APGPlayerCharacter::LinetraceCheckInteractableActor()
+{
+	FHitResult HitResult;
+	FVector LinetraceStart = FollowCamera->GetComponentLocation();
+	FVector LinetraceEnd = LinetraceStart + FollowCamera->GetForwardVector() * 1000;
+
+	//Ignore player character
+	FCollisionQueryParams TraceParams;
+	TraceParams.AddIgnoredActor(this);
+
+	//Draw Linetrace debug line and check if hit
+	DrawDebugLine(GetWorld(), LinetraceStart, LinetraceEnd, FColor::Red, false, 3.0f);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, LinetraceStart, LinetraceEnd, ECC_Visibility, TraceParams);
+	if (bHit && HitResult.GetActor())
+	{
+		if (HitResult.GetActor() != InteractableActor){
+			UE_LOG(LogTemp, Log, TEXT("Detect interactable actor"));
+		}
+		InteractableActor = HitResult.GetActor();
+
+		//Highlit target actor
+	}
+	else
+	{
+		if (InteractableActor)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Interactable actor no longer detected"));
+		}
+		//If there is no actor to interact with, set InteractableActor to null.
+		InteractableActor = nullptr;
+
+		//Unhilight target actor~
+	}
+}
+
+void APGPlayerCharacter::DoInteractWithActor()
+{
+	//Check interactableActor is valid. It can be destroyed by other player.
+	if (IsValid(InteractableActor))
+	{
+		//Check actor has IGameplayTagAssetInterface and if the actor is interactable or item
+		IGameplayTagAssetInterface* GameplayTagAssetInterface = Cast<IGameplayTagAssetInterface>(InteractableActor);
+		if (GameplayTagAssetInterface)
+		{
+			FGameplayTagContainer InteractableActorTag;
+			GameplayTagAssetInterface->GetOwnedGameplayTags(InteractableActorTag);
+
+			if (InteractableActorTag.HasTag(FGameplayTag::RequestGameplayTag(FName("Item"))))
+			{
+				UE_LOG(LogTemp, Log, TEXT("You interact with item."));
+			}
+		}
+
+	}
+}
+
 void APGPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -172,18 +254,28 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void APGPlayerCharacter::StartSprinting(const FInputActionValue& Value)
+//Activate Input Action Ability by Tag
+void APGPlayerCharacter::StartInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->TryActivateAbilitiesByTag(SprintTag, true);
+		AbilitySystemComponent->TryActivateAbilitiesByTag(InputActionAbilityTag, true);
 	}
 }
 
-void APGPlayerCharacter::StopSprinting(const FInputActionValue& Value)
+//Cancel Input Action Ability by Tag
+void APGPlayerCharacter::StopInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
+	//if InputActionAbilityTag == Interaction Tag , Return. Interaction only do one time by Activate.
+	//It will be added soon 근데 생각해보니 InputAction에 바인딩할 때 Stop을 안넣으면 되는거 아님?
+	//나중에 코딩할 때 참고
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->CancelAbilities(&SprintTag);
+		AbilitySystemComponent->CancelAbilities(&InputActionAbilityTag);
 	}
+}
+
+void APGPlayerCharacter::ChangingItemSlot(const FInputActionValue& Value, int32 NumofSlot)
+{
+	InventoryComponent->ChangeCurrectItemIndex(NumofSlot);
 }
