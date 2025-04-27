@@ -18,27 +18,6 @@ public:
 	APGRoom3();
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
-	class UArrowComponent* ExitDir0;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh1;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh2;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh3;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh4;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh5;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh6;
+	TObjectPtr<UChildActorComponent> Mesh;
 };

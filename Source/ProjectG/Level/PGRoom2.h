@@ -6,6 +6,8 @@
 #include "PGMasterRoom.h"
 #include "PGRoom2.generated.h"
 
+class UArrowComponent;
+
 /**
  * 
  */
@@ -19,26 +21,12 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
-	class UArrowComponent* ExitDir0;
+	TObjectPtr<UArrowComponent> ExitDir0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
+	TObjectPtr<UArrowComponent> ExitDir1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh0;
+	TObjectPtr<UChildActorComponent> Mesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh1;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh2;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh3;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh4;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh5;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	class UStaticMeshComponent* Mesh6;
 };
