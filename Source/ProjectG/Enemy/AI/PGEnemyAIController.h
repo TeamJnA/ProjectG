@@ -24,6 +24,7 @@ protected:
 
 private:
 	class UAISenseConfig_Sight* SightConfig;
+	class UAISenseConfig_Hearing* HearingConfig;
 
 	void SetupPerceptionSystem();
 

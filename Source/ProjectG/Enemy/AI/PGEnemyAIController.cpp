@@ -6,6 +6,7 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "Perception/AISenseConfig_Hearing.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 
@@ -31,11 +32,12 @@ void APGEnemyAIController::OnPossess(APawn* InPawn)
 
 void APGEnemyAIController::SetupPerceptionSystem()
 {
+	SetPerceptionComponent(*CreateDefaultSubobject<UAIPerceptionComponent>(
+		TEXT("Perception Component")));
+
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight Config"));
 	if (SightConfig)
 	{
-		SetPerceptionComponent(*CreateDefaultSubobject<UAIPerceptionComponent>(
-			TEXT("Perception Component")));
 		SightConfig->SightRadius = 500.f;
 		SightConfig->LoseSightRadius = SightConfig->SightRadius + 25.f;
 		SightConfig->PeripheralVisionAngleDegrees = 90.f;
@@ -49,10 +51,24 @@ void APGEnemyAIController::SetupPerceptionSystem()
 		//기본 센스를 시야로 설정.
 		GetPerceptionComponent()->SetDominantSense(*SightConfig->GetSenseImplementation());
 		//타겟을 감지하거나 놓쳤을때 adddynamic (delegate)
-		GetPerceptionComponent()->OnTargetPerceptionUpdated.AddDynamic(this,&APGEnemyAIController::OnTargetDetected);
 		GetPerceptionComponent()->ConfigureSense(*SightConfig);
 
 	}
+
+	HearingConfig = CreateDefaultSubobject < UAISenseConfig_Hearing>(TEXT("Hearing Config"));
+	if (HearingConfig)
+	{
+		HearingConfig->HearingRange = 3000.f;
+		HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+		HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+		HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+		GetPerceptionComponent()->ConfigureSense(*HearingConfig);
+
+
+	}
+
+	GetPerceptionComponent()->OnTargetPerceptionUpdated.AddDynamic(this, &APGEnemyAIController::OnTargetDetected);
+
 }
 
 void APGEnemyAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
