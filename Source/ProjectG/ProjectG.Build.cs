@@ -9,7 +9,8 @@ public class ProjectG : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
-															"GameplayAbilities", "GameplayTags", "GameplayTasks"});
+															"GameplayAbilities", "GameplayTags", "GameplayTasks",
+															"AIModule", "GameplayTasks", "NavigationSystem"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
