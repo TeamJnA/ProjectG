@@ -2,6 +2,7 @@
 
 
 #include "Item/PGItemActor.h"
+#include "Abilities/GameplayAbility.h"
 
 // Sets default values
 APGItemActor::APGItemActor()
@@ -18,7 +19,18 @@ APGItemActor::APGItemActor()
 	}
 }
 
-void APGItemActor::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
+TSubclassOf<UGameplayAbility> APGItemActor::GetAbilityToInteract() const
 {
-	TagContainer.AddTag(ItemData->ItemTag);
+	return InteractAbility;
+}
+
+UPGItemData* APGItemActor::GetItemData()
+{
+	if (bOwned)
+	{
+		return nullptr;
+	}
+	bOwned = true;
+
+	return ItemData;
 }

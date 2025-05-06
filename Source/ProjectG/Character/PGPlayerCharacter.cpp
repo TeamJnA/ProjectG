@@ -96,11 +96,12 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopInputActionByTag, SprintTag);
 		
 		//Interacting
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartInputActionByTag, InteractTag);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, InteractTag);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, InteractTag);
 
 		//ChangeItemSlot
 		UPGGameInstance* PGGameInstance = Cast<UPGGameInstance>(GetGameInstance());
-		for (int i = 0; i < PGGameInstance->GetMaxInventorySize(); ++i)
+		for (int32 i = 0; i < PGGameInstance->GetMaxInventorySize(); ++i)
 		{
 			if(ChangeItemSlotAction[i])
 				EnhancedInputComponent->BindAction(ChangeItemSlotAction[i], ETriggerEvent::Started, this, &APGPlayerCharacter::ChangingItemSlot, i);
@@ -110,14 +111,6 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		//UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
-}
-
-void APGPlayerCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	//Chasing interactablie actor on watching
-	LinetraceCheckInteractableActor();
 }
 
 void APGPlayerCharacter::PossessedBy(AController* NewController)
@@ -134,7 +127,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 void APGPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-
+	
 	InitAbilitySystemComponent();
 	InitDefaultAttributes();
 }
@@ -152,7 +145,7 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		PGPlayerState->GetAbilitySystemComponent());
 	AbilitySystemComponent->InitAbilityActorInfo(PGPlayerState, this);
 	AttributeSet = PGPlayerState->GetAttributeSet();
-
+	
 	//Bind attribute change delegate
 	FOnGameplayAttributeValueChange& OnMovementSpeedChangedDelegate = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
 		AttributeSet->GetMovementSpeedAttribute()
@@ -161,61 +154,27 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 
 }
 
-//Find Interactable actor and ~
-void APGPlayerCharacter::LinetraceCheckInteractableActor()
+void APGPlayerCharacter::AddTagToCharacter_Implementation(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
-	FHitResult HitResult;
-	FVector LinetraceStart = FollowCamera->GetComponentLocation();
-	FVector LinetraceEnd = LinetraceStart + FollowCamera->GetForwardVector() * 1000;
-
-	//Ignore player character
-	FCollisionQueryParams TraceParams;
-	TraceParams.AddIgnoredActor(this);
-
-	//Draw Linetrace debug line and check if hit
-	DrawDebugLine(GetWorld(), LinetraceStart, LinetraceEnd, FColor::Red, false, 3.0f);
-	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, LinetraceStart, LinetraceEnd, ECC_Visibility, TraceParams);
-	if (bHit && HitResult.GetActor())
+	if (AbilitySystemComponent)
 	{
-		if (HitResult.GetActor() != InteractableActor){
-			UE_LOG(LogTemp, Log, TEXT("Detect interactable actor"));
-		}
-		InteractableActor = HitResult.GetActor();
-
-		//Highlit target actor
-	}
-	else
-	{
-		if (InteractableActor)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Interactable actor no longer detected"));
-		}
-		//If there is no actor to interact with, set InteractableActor to null.
-		InteractableActor = nullptr;
-
-		//Unhilight target actor~
+		AbilitySystemComponent->AddReplicatedLooseGameplayTags(InputActionAbilityTag);
+		AbilitySystemComponent->AddLooseGameplayTags(InputActionAbilityTag);
 	}
 }
 
-void APGPlayerCharacter::DoInteractWithActor()
+void APGPlayerCharacter::RemoveTagFromCharacter_Implementation(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
-	//Check interactableActor is valid. It can be destroyed by other player.
-	if (IsValid(InteractableActor))
+	if (AbilitySystemComponent)
 	{
-		//Check actor has IGameplayTagAssetInterface and if the actor is interactable or item
-		IGameplayTagAssetInterface* GameplayTagAssetInterface = Cast<IGameplayTagAssetInterface>(InteractableActor);
-		if (GameplayTagAssetInterface)
-		{
-			FGameplayTagContainer InteractableActorTag;
-			GameplayTagAssetInterface->GetOwnedGameplayTags(InteractableActorTag);
-
-			if (InteractableActorTag.HasTag(FGameplayTag::RequestGameplayTag(FName("Item"))))
-			{
-				UE_LOG(LogTemp, Log, TEXT("You interact with item."));
-			}
-		}
-
+		AbilitySystemComponent->RemoveReplicatedLooseGameplayTags(InputActionAbilityTag);
+		AbilitySystemComponent->RemoveLooseGameplayTags(InputActionAbilityTag);
 	}
+}
+
+void APGPlayerCharacter::CacheInteractionTarget(AActor* CacheInteractTarget)
+{
+	InteractionTargetActor = CacheInteractTarget;
 }
 
 void APGPlayerCharacter::Move(const FInputActionValue& Value)
@@ -267,8 +226,6 @@ void APGPlayerCharacter::StartInputActionByTag(const FInputActionValue& Value, F
 void APGPlayerCharacter::StopInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
 	//if InputActionAbilityTag == Interaction Tag , Return. Interaction only do one time by Activate.
-	//It will be added soon 근데 생각해보니 InputAction에 바인딩할 때 Stop을 안넣으면 되는거 아님?
-	//나중에 코딩할 때 참고
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->CancelAbilities(&InputActionAbilityTag);

@@ -6,12 +6,13 @@
 #include "GameFramework/Actor.h"
 
 #include "Item/PGItemData.h"
-#include "GameplayTagAssetInterface.h"
+#include "Interface/InteractableActorInterface.h"
+#include "Interface/ItemInteractInterface.h"
 
 #include "PGItemActor.generated.h"
 
 UCLASS()
-class PROJECTG_API APGItemActor : public AActor, public IGameplayTagAssetInterface
+class PROJECTG_API APGItemActor : public AActor, public IInteractableActorInterface, public IItemInteractInterface
 {
 	GENERATED_BODY()
 	
@@ -20,9 +21,13 @@ public:
 	APGItemActor();
 
 	//IGameplayTagAssetInterface~
-	//Send the Itemtag of itemdata by AddTag
-	void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
-	//~IGameplayTagAssetInterface
+	//Return Interact Ability of actor.
+	TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
+	//~IGameplayTagAssetInterface end
+
+	//IItemInteractInterface~
+	virtual UPGItemData* GetItemData() override;
+	//~IItemInteractInterface end
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
@@ -31,4 +36,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGItemData> ItemData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayAbility> InteractAbility;
+
+	bool bOwned = false;
 };
