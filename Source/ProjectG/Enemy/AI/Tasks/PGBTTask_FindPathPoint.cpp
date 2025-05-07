@@ -3,7 +3,7 @@
 
 #include "Enemy/AI/Tasks/PGBTTask_FindPathPoint.h"
 #include "ProjectG/Enemy/Base/PGEnemyCharacterBase.h"
-#include "Enemy/AI/Controllers/PGEnemyAIController.h"
+#include "Enemy/AI/Controllers/PGEnemyAIControllerBase.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UPGBTTask_FindPathPoint::UPGBTTask_FindPathPoint(FObjectInitializer const& ObjectInitializer) :
@@ -14,7 +14,7 @@ UPGBTTask_FindPathPoint::UPGBTTask_FindPathPoint(FObjectInitializer const& Objec
 
 EBTNodeResult::Type UPGBTTask_FindPathPoint::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	if (auto* const cont = Cast<APGEnemyAIController>(OwnerComp.GetOwner()))
+	if (auto* const cont = Cast<APGEnemyAIControllerBase>(OwnerComp.GetOwner()))
 	{
 		if (auto* const bc = OwnerComp.GetBlackboardComponent())
 		{

@@ -5,7 +5,7 @@
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "NavigationSystem.h"
-#include "Enemy/AI/Controllers/PGEnemyAIController.h"
+#include "Enemy/AI/Controllers/PGEnemyAIControllerBase.h"
 
 
 UPGBTTask_FindRandomLocation::UPGBTTask_FindRandomLocation(FObjectInitializer const& ObjectInitializer) :
@@ -17,7 +17,7 @@ UPGBTTask_FindRandomLocation::UPGBTTask_FindRandomLocation(FObjectInitializer co
 EBTNodeResult::Type UPGBTTask_FindRandomLocation::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	//ai 컨트롤러 가져오기
-	if (APGEnemyAIController* const cont = Cast<APGEnemyAIController>(OwnerComp.GetAIOwner()))
+	if (APGEnemyAIControllerBase* const cont = Cast<APGEnemyAIControllerBase>(OwnerComp.GetAIOwner()))
 	{
 		//해당 ai 컨트롤러의 pawn 가져오기
 		if (auto* const enemy = cont->GetPawn())

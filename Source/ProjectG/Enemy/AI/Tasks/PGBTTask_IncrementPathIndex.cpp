@@ -4,7 +4,7 @@
 #include "Enemy/AI/Tasks/PGBTTask_IncrementPathIndex.h"
 
 #include "ProjectG/Enemy/Base/PGEnemyCharacterBase.h"
-#include "Enemy/AI/Controllers/PGEnemyAIController.h"
+#include "Enemy/AI/Controllers/PGEnemyAIControllerBase.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UPGBTTask_IncrementPathIndex::UPGBTTask_IncrementPathIndex(FObjectInitializer const& ObjectInitializer) :
@@ -15,7 +15,7 @@ UPGBTTask_IncrementPathIndex::UPGBTTask_IncrementPathIndex(FObjectInitializer co
 
 EBTNodeResult::Type UPGBTTask_IncrementPathIndex::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	if (APGEnemyAIController* const cont = Cast<APGEnemyAIController>(OwnerComp.GetAIOwner()))
+	if (APGEnemyAIControllerBase* const cont = Cast<APGEnemyAIControllerBase>(OwnerComp.GetAIOwner()))
 	{
 		//해당 ai 컨트롤러의 pawn 가져오기
 		if (auto* const enemy = Cast<APGEnemyCharacterBase>(cont->GetPawn()))

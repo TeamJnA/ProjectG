@@ -27,12 +27,11 @@ class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase
 public:
 
 	UBehaviorTree* GetBehaviorTree() const;
-	
 	APGPatrolPath* GetPatrolPath() const;
 	
 	
 	
-private:
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(AllowPrivateAccess="true"))
 	UBehaviorTree* Tree;
 

@@ -2,7 +2,7 @@
 
 
 #include "PGBTTask_ChasePlayer.h"
-#include "Enemy/AI/Controllers/PGEnemyAIController.h"
+#include "Enemy/AI/Controllers/PGEnemyAIControllerBase.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 
@@ -13,7 +13,7 @@ UPGBTTask_ChasePlayer::UPGBTTask_ChasePlayer(FObjectInitializer const& ObjectIni
 
 EBTNodeResult::Type UPGBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	if (APGEnemyAIController* const cont = Cast<APGEnemyAIController>(OwnerComp.GetAIOwner()))
+	if (APGEnemyAIControllerBase* const cont = Cast<APGEnemyAIControllerBase>(OwnerComp.GetAIOwner()))
 	{
 		auto const PlayerLocation = OwnerComp.GetBlackboardComponent()->GetValueAsVector(GetSelectedBlackboardKey());
 
