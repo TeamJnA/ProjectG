@@ -1,10 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Enemy/AI/PGBTService_ChangeSpeed.h"
+#include "Enemy/AI/Services/PGBTService_ChangeSpeed.h"
 
 #include "AIController.h"
-#include "Character/PGEnemyCharacter.h"
+#include "ProjectG/Enemy/Base/PGEnemyCharacterBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 UPGBTService_ChangeSpeed::UPGBTService_ChangeSpeed()
@@ -18,7 +18,7 @@ void UPGBTService_ChangeSpeed::OnBecomeRelevant(UBehaviorTreeComponent& OwnerCom
 	Super::OnBecomeRelevant(OwnerComp, NodeMemory);
 	if (auto const Cont = OwnerComp.GetAIOwner())
 	{
-		if (auto* const enemy = Cast<APGEnemyCharacter>(Cont->GetPawn()))
+		if (auto* const enemy = Cast<APGEnemyCharacterBase>(Cont->GetPawn()))
 		{
 			enemy->GetCharacterMovement()->MaxWalkSpeed = Speed;
 		}

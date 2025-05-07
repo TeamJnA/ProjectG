@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Enemy/AI/PGPatrolPath.h"
+#include "Enemy/AI/ETC/PGPatrolPath.h"
 #include "Character/PGCharacterBase.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "GameplayTagContainer.h"
-#include "PGEnemyCharacter.generated.h"
+#include "PGEnemyCharacterBase.generated.h"
 
 
 
@@ -18,7 +18,7 @@
  * 
  */
 UCLASS()
-class PROJECTG_API APGEnemyCharacter : public APGCharacterBase
+class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase
 {
 	GENERATED_BODY()
 	

@@ -1,9 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Enemy/AI/PGBTTask_FindPathPoint.h"
-#include "ProjectG/Character/PGEnemyCharacter.h"
-#include "PGEnemyAIController.h"
+#include "Enemy/AI/Tasks/PGBTTask_FindPathPoint.h"
+#include "ProjectG/Enemy/Base/PGEnemyCharacterBase.h"
+#include "Enemy/AI/Controllers/PGEnemyAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UPGBTTask_FindPathPoint::UPGBTTask_FindPathPoint(FObjectInitializer const& ObjectInitializer) :
@@ -21,7 +21,7 @@ EBTNodeResult::Type UPGBTTask_FindPathPoint::ExecuteTask(UBehaviorTreeComponent&
 			//순찰할 인덱스를 블랙보드 key에서 가져오기.
 			auto const Index = bc->GetValueAsInt(GetSelectedBlackboardKey());
 
-			if (auto* enemy = Cast<APGEnemyCharacter>(cont->GetPawn()))
+			if (auto* enemy = Cast<APGEnemyCharacterBase>(cont->GetPawn()))
 			{
 				//index번째 위치 (local) 가져오기.
 				auto const Point = enemy->GetPatrolPath()->GetPatrolPoint(Index);

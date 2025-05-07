@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Enemy/AI/PGEnemyAIController.h"
-#include "Character/PGEnemyCharacter.h"
+#include "Enemy/AI/Controllers/PGEnemyAIController.h"
+#include "ProjectG/Enemy/Base/PGEnemyCharacterBase.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -18,7 +18,7 @@ APGEnemyAIController::APGEnemyAIController(FObjectInitializer const& ObjectIniti
 void APGEnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	if (APGEnemyCharacter* const enemy = Cast<APGEnemyCharacter>(InPawn))
+	if (APGEnemyCharacterBase* const enemy = Cast<APGEnemyCharacterBase>(InPawn))
 	{
 		if (UBehaviorTree* const tree = enemy->GetBehaviorTree())
 		{

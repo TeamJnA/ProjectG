@@ -1,10 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Enemy/AI/PGBTTask_IncrementPathIndex.h"
+#include "Enemy/AI/Tasks/PGBTTask_IncrementPathIndex.h"
 
-#include "Character/PGEnemyCharacter.h"
-#include "PGEnemyAIController.h"
+#include "ProjectG/Enemy/Base/PGEnemyCharacterBase.h"
+#include "Enemy/AI/Controllers/PGEnemyAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UPGBTTask_IncrementPathIndex::UPGBTTask_IncrementPathIndex(FObjectInitializer const& ObjectInitializer) :
@@ -18,7 +18,7 @@ EBTNodeResult::Type UPGBTTask_IncrementPathIndex::ExecuteTask(UBehaviorTreeCompo
 	if (APGEnemyAIController* const cont = Cast<APGEnemyAIController>(OwnerComp.GetAIOwner()))
 	{
 		//해당 ai 컨트롤러의 pawn 가져오기
-		if (auto* const enemy = Cast<APGEnemyCharacter>(cont->GetPawn()))
+		if (auto* const enemy = Cast<APGEnemyCharacterBase>(cont->GetPawn()))
 		{
 			if (auto* const BC = OwnerComp.GetBlackboardComponent())
 			{

@@ -5,7 +5,7 @@
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "NavigationSystem.h"
-#include "PGEnemyAIController.h"
+#include "Enemy/AI/Controllers/PGEnemyAIController.h"
 
 
 UPGBTTask_FindRandomLocation::UPGBTTask_FindRandomLocation(FObjectInitializer const& ObjectInitializer) :
