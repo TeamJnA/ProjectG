@@ -13,8 +13,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWaitTagWithTargetDelegate, class AA
  * 
  */
 
-//Changed behavior in UAbilityTask_WaitGameplayTagAdd: now broadcasts only when the tag becomes active, not if it's already active.
-//Receives an actor pointer to pass through a fixed actor reference
+// Changed behavior in UAbilityTask_WaitGameplayTagAdd: now broadcasts only when the tag becomes active, not if it's already active.
+// Receives an actor pointer to pass through a fixed actor reference
 UCLASS()
 class PROJECTG_API UAT_PGWaitGameplayTagAdded : public UAbilityTask_WaitGameplayTag
 {

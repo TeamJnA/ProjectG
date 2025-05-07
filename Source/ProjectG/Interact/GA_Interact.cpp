@@ -17,19 +17,22 @@ void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActivationInfo ActivationInfo, 
 	const FGameplayEventData* TriggerEventData)
 {
+	// This ability only run on server.
 	if (!HasAuthority(&CurrentActivationInfo))
 	{
 		return;
 	}
-	UCameraComponent* ActorCamera = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo())->GetFollowCamera();
 
-	UAT_WaitForInteractionTarget* WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, ActorCamera, true);
+	// Starts the ability task to trace forward from the given start location to detect objects in front.
+	UCameraComponent* LinetraceStartPosition = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo())->GetFollowCamera();
+
+	UAT_WaitForInteractionTarget* WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, true);
 	WaitForInteractionTarget->InteractionTarget.AddDynamic(this, &UGA_Interact::WaitInteractionInput);
 	WaitForInteractionTarget->ReadyForActivation();
 
 }
 
-//Activate ability automatically
+// This ability activate automatically when granted. This is passive activate ability.
 void UGA_Interact::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
 {
 	Super::OnAvatarSet(ActorInfo, Spec);
@@ -39,6 +42,8 @@ void UGA_Interact::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const
 
 void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 {
+	// If there is no object in front, reset the stored target variable.
+	// And end the ability task that was waiting for interaction input.
 	if (!TargetActor)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Target is Null"));
@@ -51,7 +56,7 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 		return;
 	}
 
-	//Copy variable to local to avoid value changing during async task
+	// Cache the target in a local variable to prevent changes during the asynchronous Ability Task.
 	TWeakObjectPtr<AActor> TargetActorCopy;
 	TargetActorCopy = TargetActor; 
 
@@ -63,7 +68,7 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 		WaitForInteractTag = nullptr;
 	}
 
-	//Get interact tag and Wait for interact tag to activate. 
+	// Starts an Ability Task that waits for the Interact tag and triggers the interaction once the tag is received.
 	APGPlayerCharacter* OwnerCharacter = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo());
 	if (!OwnerCharacter){
 		UE_LOG(LogTemp, Error, TEXT("Failed to cast AvatarActor to APGPlayerCharacter"));
@@ -89,8 +94,7 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 
 void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 {
-
-	UE_LOG(LogTemp, Log, TEXT("Get Interaction input and interact with target."));
+	UE_LOG(LogTemp, Log, TEXT("Entered InteractWithTarget with TargetActor."));
 
 	if (!TargetActor)
 	{
@@ -100,9 +104,11 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 		return;
 	}
 
-	//Get ability and give ability to character
+	// Get ability and give ability to character
 	IInteractableActorInterface* InteractInterface = Cast<IInteractableActorInterface>(TargetActor);
-	if (!InteractInterface) //TargetActor has changed to null while wait for interact tag input
+
+	// Check the interface to ensure the target hasn't changed while waiting for the input tag.
+	if (!InteractInterface)
 	{
 		WaitForInteractTag->EndTask();
 		WaitForInteractTag = nullptr;
@@ -117,7 +123,7 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 		return;
 	}
 
-	//// In case the ability is granted multiple times, remove the existing instance and add a new one.
+	// To prevent the ability is granted multiple times, remove the existing instance and add a new one.
 	if (ASC->FindAbilitySpecFromClass(AbilityToInteract))
 	{
 		FGameplayAbilitySpec* ClearSpec = ASC->FindAbilitySpecFromClass(AbilityToInteract);
@@ -128,7 +134,7 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 	const FGameplayAbilitySpec AbilitySpec(AbilityToInteract, 1);
 	FGameplayAbilitySpecHandle InteractAbilityHandle = ASC->GiveAbility(AbilitySpec);
 
-	//Make GameplayEvent and activate ability with event
+	// Make GameplayEvent and activate ability with event data.
 	AActor* Instigator = GetAvatarActorFromActorInfo();
 	FGameplayTag InteractEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Ability.Interact"));
 
@@ -139,8 +145,8 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 
 	FGameplayAbilityActorInfo ActorInfo = GetActorInfo();
 
-	//EventData is const, so the Target cannot be modified directly.
-	//Instead, We can caching target actor in the character. 
+	// EventData is const, so the Payload.Target cannot be modified directly.
+	// Instead, We can caching target actor in the character. 
 	APGPlayerCharacter* OwnerCharacter = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo());
 	if (!OwnerCharacter) {
 		UE_LOG(LogTemp, Error, TEXT("Failed to cast AvatarActor to APGPlayerCharacter"));
@@ -160,7 +166,7 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 	if (!bSuccess)
 	{
 		ASC->ClearAbility(InteractAbilityHandle);
-		UE_LOG(LogTemp, Log, TEXT("Fail to trigger ability"));
+		UE_LOG(LogTemp, Warning, TEXT("Fail to trigger ability"));
 	}
 
 	WaitForInteractTag->EndTask();

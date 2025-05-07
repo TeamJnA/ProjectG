@@ -36,7 +36,8 @@ void UPGInventoryComponent::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("NotSetINSTNADTK"));
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find PGGameInstance in InventoryComponent."));
+		Items.SetNum(5);
 	}
 	for (int32 i = 0; i < MaxInventorySize; i++)
 		Items[i] = nullptr;

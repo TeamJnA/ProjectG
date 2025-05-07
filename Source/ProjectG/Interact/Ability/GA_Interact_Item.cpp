@@ -29,19 +29,20 @@ void UGA_Interact_Item::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActivationInfo ActivationInfo, 
     const FGameplayEventData* TriggerEventData)
 {
-    UE_LOG(LogTemp, Log, TEXT("Activate interact %s ability to %s"), *TriggerEventData->Target.GetFName().ToString(), *GetOwningActorFromActorInfo()->GetName());
-
-    FGameplayAbilitySpecHandle HandleToRemove = GetCurrentAbilitySpecHandle();
     UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
     PG_CHECK_VALID_INTERACT(ASC);
 
+    // Get the inventory component from AvatarActor
     AActor* AvatarActor = GetAvatarActorFromActorInfo();
     PG_CHECK_VALID_INTERACT(AvatarActor);
+
+    if (IsValid(TriggerEventData->Target))
+        UE_LOG(LogTemp, Log, TEXT("Activate interact %s ability to %s"), *TriggerEventData->Target.GetFName().ToString(), *GetOwningActorFromActorInfo()->GetName());
 
     UPGInventoryComponent* PGInventory = AvatarActor->FindComponentByClass<UPGInventoryComponent>();
     PG_CHECK_VALID_INTERACT(PGInventory);
 
-    //If player inventory is full, return.
+    // If player inventory is full, return.
     if (PGInventory->IsInventoryFull())
     {
         EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
@@ -51,14 +52,15 @@ void UGA_Interact_Item::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(AvatarActor);
     PG_CHECK_VALID_INTERACT(PGCharacter);
 
-    //Check if the target actor in the character matches the one in the event data
+    // Check if the target actor in the character matches the one in the event data
     AActor* TargetActor = PGCharacter->GetInteractionTargetActor();
     if(TargetActor != TriggerEventData->Target.Get()){
         EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+        UE_LOG(LogTemp, Log, TEXT("TargetActor does not match the payload target"));
         return;
     }
     
-    //Get item data from the item actor. If successful, destroy the item.
+    // Get item data from the item actor. If successful, destroy the item.
     IItemInteractInterface* ItemInteractInterface = Cast<IItemInteractInterface>(TargetActor);
     PG_CHECK_VALID_INTERACT(ItemInteractInterface);
 
@@ -69,9 +71,8 @@ void UGA_Interact_Item::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
     TargetActor->Destroy();
 
+    // Add item to inventory
     PGInventory->AddItemToInventory(ItemData);
-    //Tag를 활용해서 Interact_item 중에는 interact를 멈췄다가 interact_item 끝난 후 interact를 다시 실행 가능하게 해야 함
-
 
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

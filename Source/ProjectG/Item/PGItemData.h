@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
+#include "Abilities/GameplayAbility.h"
 #include "PGItemData.generated.h"
 
 /**
@@ -28,4 +29,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UStaticMesh> ItemMesh;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UGameplayAbility> ItemAbility;
 };

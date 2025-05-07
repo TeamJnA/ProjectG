@@ -33,9 +33,9 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 		return;
 	}
 
-	//Do Linetrace and find interactable actor
+	// Do Linetrace and find interactable actor
 
-	//Add avatar actor not to trace
+	// Add avatar actor not to trace
 	AActor* AvatarActor = Ability->GetCurrentActorInfo()->AvatarActor.Get();
 	if (!AvatarActor)
 	{
@@ -56,26 +56,26 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 		DrawDebugLine(GetWorld(), TraceStartLocation, TraceEndLocation, FColor::Green, false, 0.5f);
 	}
 
-	//Broadcast trace result to interact ability.
+	// Broadcast trace result to interact ability.
 	if(bHit && HitResult.GetActor())
 	{
-		//Check actor Interface which makes actor interactable.
+		// Check if the actor implements IInteractableActorInterface that allows interaction.
 		IInteractableActorInterface* InteractInterface = Cast<IInteractableActorInterface>(HitResult.GetActor());
 
-		//If there's new interactable target
+		// If there's new interactable target, Broadcast the target.
 		if (InteractInterface && (!PreviousTargetActor.IsValid() || PreviousTargetActor != HitResult.GetActor()) )
 		{
 			PreviousTargetActor = HitResult.GetActor();
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());
 		}
-		//If the new actor doesn't have InteractInterface
+		// If the new actor doesn't have InteractInterface, broadcast NullPtr.
 		else if (!InteractInterface && PreviousTargetActor.IsValid())
 		{
 			PreviousTargetActor.Reset();
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());
 		}
 	}
-	//If there's no HitResult but task has previous actor
+	// If there's no HitResult but task has previous actor, broadcast NullPtr.
 	else
 	{
 		if (PreviousTargetActor.IsValid())
