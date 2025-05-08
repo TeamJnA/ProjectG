@@ -9,7 +9,7 @@
 
 APGRoom3::APGRoom3()
 {
-	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_LabSample.LI_LabSample'"));
+	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_Lab.LI_Lab_C'"));
 
 	SpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint0"));
 	SpawnPoint0->SetupAttachment(FloorSpawnPointsFolder);

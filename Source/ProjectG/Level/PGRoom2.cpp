@@ -9,7 +9,7 @@
 
 APGRoom2::APGRoom2()
 {
-	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_Room2Sample.LI_Room2Sample'"));
+	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_Room2.LI_Room2_C'"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitsFolder);
@@ -57,6 +57,6 @@ APGRoom2::APGRoom2()
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
 	Mesh->SetChildActorClass(MeshRef.Class);
-	Mesh->SetRelativeLocation(FVector(2580.0f, -175.5f, -125.0f));
+	Mesh->SetRelativeLocation(FVector(2580.0f, -175.6f, -125.0f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 }
