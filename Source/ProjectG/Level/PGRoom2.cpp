@@ -9,7 +9,7 @@
 
 APGRoom2::APGRoom2()
 {
-	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_Room2Sample.LI_Room2Sample_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_Room2Sample.LI_Room2Sample'"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitsFolder);
@@ -27,6 +27,27 @@ APGRoom2::APGRoom2()
 	ExitDir1->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir1->SetArrowLength(80.0f);
 	ExitDir1->bHiddenInGame = false;
+
+	SpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint0"));
+	SpawnPoint0->SetupAttachment(FloorSpawnPointsFolder);
+	SpawnPoint0->SetRelativeLocation(FVector(1825.0f, 610.0f, 91.0f));
+	SpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	SpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	SpawnPoint0->bHiddenInGame = false;
+
+	SpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint1"));
+	SpawnPoint1->SetupAttachment(FloorSpawnPointsFolder);
+	SpawnPoint1->SetRelativeLocation(FVector(1945.0f, 610.0f, 91.0f));
+	SpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	SpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	SpawnPoint1->bHiddenInGame = false;
+
+	SpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint2"));
+	SpawnPoint2->SetupAttachment(FloorSpawnPointsFolder);
+	SpawnPoint2->SetRelativeLocation(FVector(2065.0f, 610.0f, 91.0f));
+	SpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	SpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	SpawnPoint2->bHiddenInGame = false;
 
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
 

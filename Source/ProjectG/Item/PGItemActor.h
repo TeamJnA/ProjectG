@@ -20,15 +20,21 @@ public:
 	APGItemActor();
 
 	//IGameplayTagAssetInterface~
+	//~IGameplayTagAssetInterface
+	void InitWithData(UPGItemData* InData);
 	//Send the Itemtag of itemdata by AddTag
 	void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
-	//~IGameplayTagAssetInterface
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
 
-protected:
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_ItemData)
 	TObjectPtr<UPGItemData> ItemData;
+
+	UFUNCTION()
+	void OnRep_ItemData();
+
 };

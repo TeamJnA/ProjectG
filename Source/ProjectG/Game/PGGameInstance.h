@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Item/PGItemData.h"
 #include "PGGameInstance.generated.h"
 
 /**
@@ -18,7 +19,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
 
+	UPGItemData* GetItemDataByKey(FName Key);
+
 protected:
+	virtual void Init() override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 	int32 MaxInventorySize = 5;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemData", meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TSoftObjectPtr<UPGItemData>> ItemDataMap;
 };

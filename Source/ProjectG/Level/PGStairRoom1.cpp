@@ -9,7 +9,7 @@
 
 APGStairRoom1::APGStairRoom1()
 {
-	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_StairRoomSample.LI_StairRoomSample_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/BP/LI_StairRoomSample.LI_StairRoomSample'"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitsFolder);

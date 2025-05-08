@@ -71,9 +71,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BaseRoomsList", meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<class APGMasterRoom>> BaseRoomsList;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RoomsList", meta = (AllowPrivateAccess = "true"))
-	TArray<TSubclassOf<class AActor>> ItemsList;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SeedValue", meta = (AllowPrivateAccess = "true"))
 	int SeedValue = -1;
 

@@ -29,6 +29,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
 	TObjectPtr<UArrowComponent> ExitDir2;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SpawnPoint")
+	TObjectPtr<UArrowComponent> SpawnPoint0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SpawnPoint")
+	TObjectPtr<UArrowComponent> SpawnPoint1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SpawnPoint")
+	TObjectPtr<UArrowComponent> SpawnPoint2;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SpawnPoint")
+	TObjectPtr<UArrowComponent> SpawnPoint3;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
 };
