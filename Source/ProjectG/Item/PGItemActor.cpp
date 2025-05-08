@@ -3,6 +3,7 @@
 
 #include "Item/PGItemActor.h"
 #include "Net/UnrealNetwork.h"
+#include "Abilities/GameplayAbility.h"
 
 // Sets default values
 APGItemActor::APGItemActor()
@@ -15,16 +16,11 @@ APGItemActor::APGItemActor()
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	StaticMesh->SetupAttachment(RootComponent);
-
-	//if (ItemData->ItemMesh)
-	{
-	//	StaticMesh->SetStaticMesh(ItemData->ItemMesh);
-	}
 }
 
-void APGItemActor::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
+TSubclassOf<UGameplayAbility> APGItemActor::GetAbilityToInteract() const
 {
-	TagContainer.AddTag(ItemData->ItemTag);
+	return InteractAbility;
 }
 
 void APGItemActor::InitWithData(UPGItemData* InData)
@@ -50,4 +46,15 @@ void APGItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APGItemActor, ItemData);
+}
+
+UPGItemData* APGItemActor::GetItemData()
+{
+	if (bOwned)
+	{
+		return nullptr;
+	}
+	bOwned = true;
+
+	return ItemData;
 }

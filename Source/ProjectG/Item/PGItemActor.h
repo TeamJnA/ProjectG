@@ -6,12 +6,13 @@
 #include "GameFramework/Actor.h"
 
 #include "Item/PGItemData.h"
-#include "GameplayTagAssetInterface.h"
+#include "Interface/InteractableActorInterface.h"
+#include "Interface/ItemInteractInterface.h"
 
 #include "PGItemActor.generated.h"
 
 UCLASS()
-class PROJECTG_API APGItemActor : public AActor, public IGameplayTagAssetInterface
+class PROJECTG_API APGItemActor : public AActor, public IInteractableActorInterface, public IItemInteractInterface
 {
 	GENERATED_BODY()
 	
@@ -19,11 +20,14 @@ public:
 	// Sets default values for this actor's properties
 	APGItemActor();
 
-	//IGameplayTagAssetInterface~
-	//~IGameplayTagAssetInterface
 	void InitWithData(UPGItemData* InData);
-	//Send the Itemtag of itemdata by AddTag
-	void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
+
+	//Return Interact Ability of actor.
+	TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
+
+	//IItemInteractInterface~
+	virtual UPGItemData* GetItemData() override;
+	//~IItemInteractInterface end
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -37,4 +41,8 @@ protected:
 	UFUNCTION()
 	void OnRep_ItemData();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayAbility> InteractAbility;
+
+	bool bOwned = false;
 };

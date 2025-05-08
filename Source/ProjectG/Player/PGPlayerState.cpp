@@ -7,7 +7,7 @@
 
 APGPlayerState::APGPlayerState()
 {
-	NetUpdateFrequency = 100.0f;
+	SetNetUpdateFrequency(100.0f);
 
 	AbilitySystemComponent = CreateDefaultSubobject<UPGAbilitySystemComponent>("AbilitySystemComponent");
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);

@@ -90,13 +90,14 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
-	virtual void Tick(float DeltaTime) override;
 ///
 ///*********	Gameplay Ability System ******************
 /// 	
 public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+
+	FORCEINLINE FGameplayTagContainer GetInteractTag() const { return InteractTag; }
 
 private:
 	void InitAbilitySystemComponent();
@@ -110,9 +111,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
 	FGameplayTagContainer InteractTag;
 
-	//
-	// --------------Movement parts------------------
-	// 
+	UFUNCTION(Server, Reliable)
+	void AddTagToCharacter(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
+
+	UFUNCTION(Server, Reliable)
+	void RemoveTagFromCharacter(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
+
+// --------------Movement parts------------------
 protected:
 	//Movement speed changed delegate
 	FDelegateHandle MovementSpeedChangedDelegateHandle;
@@ -122,18 +127,17 @@ public:
 	//If attribute speed is changed, change character speed
 	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
 	
-	//
-	// --------------Interaction parts------------------
-	// 
-protected:
-	void LinetraceCheckInteractableActor();
 
-	//The interactive actor currently watching
-	TObjectPtr<AActor> InteractableActor;
+// --------------Interaction parts------------------
+	FORCEINLINE TObjectPtr<AActor> GetInteractionTargetActor() {return InteractionTargetActor;}
 
-	//Get item or do Interact with InteractableActor by ability
+	//Cache item to interact
 	UFUNCTION()
-	void DoInteractWithActor();
+	void CacheInteractionTarget(AActor* CacheInteractTarget);
+
+protected:
+	//The interactive actor currently watching
+	TObjectPtr<AActor> InteractionTargetActor;
 
 ///
 ///		UI and Components

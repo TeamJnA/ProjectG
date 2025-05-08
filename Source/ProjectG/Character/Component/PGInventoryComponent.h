@@ -22,7 +22,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "Item")
 	TArray<TObjectPtr<UPGItemData>> Items;
 
 	UFUNCTION(BlueprintCallable)
@@ -31,6 +31,17 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
 	int32 CurrentItemIndex = 0;
 
+	UFUNCTION()
+	void AddItemToInventory(UPGItemData* ItemData);
+
+	bool IsInventoryFull();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 private:
 	int32 MaxInventorySize;
+
+	int32 InventoryItemCount;
+
+	bool bInventoryFull;
 };
