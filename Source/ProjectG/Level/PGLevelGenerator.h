@@ -29,10 +29,7 @@ protected:
 	void SpawnDoors();
 	void SpawnItems();
 
-	UFUNCTION()
 	void StartDungeonTimer();
-
-	UFUNCTION()
 	void CheckForDungeonComplete();
 
 	// Called when the game starts or when spawned
@@ -92,7 +89,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LevelSeed", meta = (AllowPrivateAccess = "true"))
 	FRandomStream Seed;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimerHandle", meta = (AllowPrivateAccess = "true"))
+	FTimerHandle DelayTimerHandler;
 	FTimerHandle TimerHandler;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GenerationStartTime", meta = (AllowPrivateAccess = "true"))

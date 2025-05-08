@@ -22,6 +22,7 @@
 #include "PGDoor1.h"
 #include "PGDoor2.h"
 #include "PGDoor3.h"
+#include "PGGlobalLightManager.h"
 
 // Sets default values
 APGLevelGenerator::APGLevelGenerator()
@@ -64,7 +65,7 @@ APGLevelGenerator::APGLevelGenerator()
 	bIsGenerationDone = false;
 
 	// reload level if (elpased time > max generation time)
-	MaxGenerateTime = 5.0f;
+	MaxGenerateTime = 8.0f;
 }
 
 // set level seed
@@ -127,7 +128,16 @@ void APGLevelGenerator::SpawnNextRoom()
 
 		// Check if the created room does not overlap with another room
 		// Check if the created room exceeds the room amount
-		CheckOverlap();
+		// CheckOverlap();
+
+		// Delay 0.5 sec
+		GetWorld()->GetTimerManager().SetTimer(
+			DelayTimerHandler,
+			this,
+			&APGLevelGenerator::CheckOverlap,
+			0.5f,
+			false
+		);
 	}
 }
 
@@ -208,14 +218,24 @@ void APGLevelGenerator::CheckOverlap()
 				SpawnNextRoom();
 			}
 		}
-		// stop generation => spawn walls, doors, items and stop timer
+		// stop generation => spawn walls, doors, items and clear timer, spawn global light manager(PGGlobalLightManager)
 		else
 		{
 			GetWorld()->GetTimerManager().ClearTimer(TimerHandler);
+			GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandler);
+			UE_LOG(LogTemp, Warning, TEXT("Done"));
+
 			CloseHoles();
 			SpawnDoors();
 			SpawnItems();
 			bIsGenerationDone = true;
+
+			FTransform spawnTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector(1.0f, 1.0f, 1.0f));
+			FActorSpawnParameters spawnParams;
+			spawnParams.Owner = this;
+			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			GetWorld()->SpawnActor<APGGlobalLightManager>(APGGlobalLightManager::StaticClass(), spawnTransform, spawnParams);
 		}
 	}
 }
@@ -362,11 +382,12 @@ void APGLevelGenerator::SpawnItems()
 	}
 }
 
-// Start level generate timer
-// WIP
+// Start check level generating time
+// if elapsedTime >= MaxGeneratTime => open new level and restart level generating
 void APGLevelGenerator::StartDungeonTimer()
 {
 	// CheckForDungeonComplete();
+	UE_LOG(LogTemp, Warning, TEXT("Timer On"));
 
 	GetWorld()->GetTimerManager().SetTimer(
 		TimerHandler,
@@ -381,12 +402,12 @@ void APGLevelGenerator::StartDungeonTimer()
 
 void APGLevelGenerator::CheckForDungeonComplete()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Timer On"));
 	float elapsedTime = GetWorld()->GetTimeSeconds() - GenerationStartTime;
 
 	if (elapsedTime >= MaxGenerateTime)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Time Over"));
+		UE_LOG(LogTemp, Warning, TEXT("Reboot Level"));
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandler);
 		UGameplayStatics::OpenLevel(this, FName("LV_PGMainLevel"));
 	}

@@ -63,7 +63,7 @@ void APGGlobalLightManager::UpdateLightIntensity()
 			float NewIntensity = FMath::Lerp(InitialIntensities[i], 0.05f, Alpha);
 			ManagedLights[i]->SetIntensity(NewIntensity);
 			
-			UE_LOG(LogTemp, Log, TEXT("LightManager : working"), ManagedLights.Num());
+			// UE_LOG(LogTemp, Log, TEXT("LightManager : working"), ManagedLights.Num());
 		}
 	}
 
