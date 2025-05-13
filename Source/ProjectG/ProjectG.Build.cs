@@ -10,7 +10,7 @@ public class ProjectG : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
 															"GameplayAbilities", "GameplayTags", "GameplayTasks",
-															"AIModule", "GameplayTasks", "NavigationSystem"});
+															"AIModule", "NavigationSystem"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
