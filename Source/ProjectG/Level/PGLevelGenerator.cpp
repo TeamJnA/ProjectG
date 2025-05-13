@@ -23,12 +23,15 @@
 #include "PGDoor2.h"
 #include "PGDoor3.h"
 #include "PGGlobalLightManager.h"
+#include "Game/PGGameState.h"
 
 // Sets default values
 APGLevelGenerator::APGLevelGenerator()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -230,12 +233,14 @@ void APGLevelGenerator::CheckOverlap()
 			SpawnItems();
 			bIsGenerationDone = true;
 
-			FTransform spawnTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector(1.0f, 1.0f, 1.0f));
-			FActorSpawnParameters spawnParams;
-			spawnParams.Owner = this;
-			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			GetWorld()->SpawnActor<APGGlobalLightManager>(APGGlobalLightManager::StaticClass(), spawnTransform, spawnParams);
+			if (GetWorld())
+			{
+				if (APGGameState* gs = GetWorld()->GetGameState<APGGameState>())
+				{	
+					UE_LOG(LogTemp, Warning, TEXT("LevelGenerator: Notify map generation complete to GameState"));
+					gs->NotifyMapGenerationComplete();
+				}
+			}
 		}
 	}
 }
@@ -407,9 +412,14 @@ void APGLevelGenerator::CheckForDungeonComplete()
 	if (elapsedTime >= MaxGenerateTime)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Time Over"));
-		UE_LOG(LogTemp, Warning, TEXT("Reboot Level"));
+
+		GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandler);
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandler);
-		UGameplayStatics::OpenLevel(this, FName("LV_PGMainLevel"));
+		UE_LOG(LogTemp, Warning, TEXT("Stop Map Generating"));
+
+		UE_LOG(LogTemp, Warning, TEXT("Reboot Level"));
+		// UGameplayStatics::OpenLevel(this, FName("LV_PGMainLevel"));
+		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen");
 	}
 	else
 	{

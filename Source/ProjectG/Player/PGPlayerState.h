@@ -10,9 +10,6 @@
 class UPGAbilitySystemComponent;
 class UPGAttributeSet;
 
-/**
- * 
- */
 UCLASS()
 class PROJECTG_API APGPlayerState : public APlayerState, public IAbilitySystemInterface
 {

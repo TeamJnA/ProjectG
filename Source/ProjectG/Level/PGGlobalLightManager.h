@@ -23,7 +23,7 @@ protected:
 	TArray<float> InitialIntensities;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
-	float MaxTime = 300.0f;
+	float MaxTime = 30.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
 	float UpdateInterval = 0.2f;
@@ -34,4 +34,7 @@ protected:
 
 	void UpdateLightIntensity();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_UpdateLightIntensity(float Alpha);
+	void Multicast_UpdateLightIntensity_Implementation(float Alpha);
 };
