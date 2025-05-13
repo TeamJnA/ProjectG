@@ -26,7 +26,6 @@ void APGGameState::NotifySpawnComplete()
 	Multicast_SpawnComplete();
 }
 
-//WIP
 void APGGameState::NotifyClientReady(APGPlayerController* PC)
 {
 	if (ReadyPlayers.Contains(PC)) return;
@@ -37,13 +36,6 @@ void APGGameState::NotifyClientReady(APGPlayerController* PC)
 
 	if (ReadyPlayers.Num() == PlayerArray.Num())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("All players ready — triggering SpawnComplete"));
-		for (FConstPlayerControllerIterator it = GetWorld()->GetPlayerControllerIterator(); it; ++it)
-		{
-			if (APGPlayerController* readyPC = Cast<APGPlayerController>(*it))
-			{
-				readyPC->Server_RequestSpawnComplete();
-			}
-		}
+		NotifySpawnComplete();
 	}
 }

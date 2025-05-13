@@ -24,16 +24,9 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_ReportClientReady();
+
 protected:	
 	virtual void BeginPlay() override;
-
-	/*
-	UFUNCTION()
-	void HandleMapGenerationComplete();
-	
-
-	void CheckLevelSync();
-	*/
 
 private:
 	FTimerHandle TravelCheckHandle;

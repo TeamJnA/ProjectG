@@ -100,32 +100,21 @@ void APGGameMode::SpawnAllPlayers()
 		SpawnOffset += 50;
 
 
-		if (APGPlayerController* PGpc = Cast<APGPlayerController>(pc))
+		if (APGPlayerController* castedPc = Cast<APGPlayerController>(pc))
 		{
-			if (PGpc->IsLocalPlayerController() && HasAuthority())
+			if (castedPc->IsLocalPlayerController() && HasAuthority())
 			{
 				if (APGGameState* gs = GetGameState<APGGameState>())
 				{
-					gs->NotifyClientReady(PGpc);
+					gs->NotifyClientReady(castedPc);
 				}
 			}
 			else
 			{
-				PGpc->Client_CheckLevelSync();
+				castedPc->Client_CheckLevelSync();
 			}
 		}
 	}
-
-	// WIP
-	/*
-	for (FConstPlayerControllerIterator it = GetWorld()->GetPlayerControllerIterator(); it; ++it)
-	{
-		if (APGPlayerController* pc = Cast<APGPlayerController>(*it))
-		{
-			pc->Client_CheckLevelSync();
-		}
-	}
-	*/
 }
 
 void APGGameMode::SpawnGlobalLightManager()

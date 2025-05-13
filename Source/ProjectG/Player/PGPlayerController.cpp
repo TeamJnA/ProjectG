@@ -10,36 +10,7 @@ void APGPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 	UE_LOG(LogTemp, Warning, TEXT("PlayerController %s BeginPlay"), *GetName());
-
-	// only client
-	// if (HasAuthority()) return;
-		
-	/*
-	if (GetWorld())
-	{
-		APGGameState* gs = GetWorld()->GetGameState<APGGameState>();
-		if (gs)
-		{
-			gs->OnMapGenerationComplete.AddDynamic(this, &APGPlayerController::HandleMapGenerationComplete);
-		}
-	}
-	*/
 }
-
-/*
-void APGPlayerController::HandleMapGenerationComplete()
-{
-	UE_LOG(LogTemp, Warning, TEXT("PlayerController: Map generation complete received on client | HasAuthority %d"), HasAuthority());
-
-	GetWorld()->GetTimerManager().SetTimer(
-		TravelCheckHandle,
-		this,
-		&APGPlayerController::CheckLevelSync,
-		1.0f,
-		false
-	);
-}
-*/
 
 void APGPlayerController::Server_RequestSpawnComplete_Implementation()
 {
@@ -57,6 +28,8 @@ void APGPlayerController::Server_RequestSpawnComplete_Implementation()
 // WIP
 void APGPlayerController::Client_CheckLevelSync_Implementation()
 {
+	UE_LOG(LogTemp, Warning, TEXT("PlayerController_Client: CheckLevelSync | HasAuthority %d"), HasAuthority());
+
 	FString currentMap = GetWorld()->GetMapName();
 	FString TargetMap = "LV_PGMainLevel";
 
@@ -80,24 +53,3 @@ void APGPlayerController::Server_ReportClientReady_Implementation()
 		gs->NotifyClientReady(this);
 	}
 }
-
-/*
-void APGPlayerController::CheckLevelSync()
-{
-	FString currentMap = GetWorld()->GetMapName();
-	FString TargetMap = "LV_PGMainLevel";
-
-	if (!currentMap.Contains(TargetMap))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Client map mismatch. Force ClientTravel to sync."));
-		ClientTravel("/Game/ProjectG/Levels/LV_PGMainLevel.LV_PGMainLevel", ETravelType::TRAVEL_Absolute);
-		// Need implementation after ClientTravel 
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Client map match"));
-		UE_LOG(LogTemp, Warning, TEXT("PlayerController_Client: Send server request SpawnComplete | HasAuthority %d"), HasAuthority());
-		Server_RequestSpawnComplete();
-	}
-}
-*/

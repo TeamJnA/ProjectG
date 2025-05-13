@@ -18,7 +18,6 @@ public:
 	void NotifyMapGenerationComplete();
 	void NotifySpawnComplete();
 
-	// WIP
 	UFUNCTION()
 	void NotifyClientReady(APGPlayerController* PC);
 
