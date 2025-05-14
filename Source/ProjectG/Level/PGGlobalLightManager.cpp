@@ -32,6 +32,7 @@ void APGGlobalLightManager::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("LightManager on Client"));
 	}
 
+	// setup light manager
 	// Get all light on level
 	ULevel* level = GetWorld()->GetCurrentLevel();
 	if(!level || !level->bIsVisible) return;
@@ -55,22 +56,25 @@ void APGGlobalLightManager::BeginPlay()
 	
 	UE_LOG(LogTemp, Log, TEXT("LightManager: %d lights found. | HasAuthority = %d"), ManagedLights.Num(), HasAuthority());
 
+	// timer only on server
 	if (HasAuthority())
 	{
-		GetWorld()->GetTimerManager().SetTimer(
-			LightFadeTimer,
-			this,
-			&APGGlobalLightManager::UpdateLightIntensity,
-			UpdateInterval,
-			true
-		);
+		StartBlinkCycle();
+
+		//GetWorld()->GetTimerManager().SetTimer(
+		//	LightFadeTimerHandle,
+		//	this,
+		//	&APGGlobalLightManager::UpdateLightIntensity,
+		//	LightFadeUpdateInterval,
+		//	true
+		//);		
 	}
 }
 
 // Update alpha on server
 void APGGlobalLightManager::UpdateLightIntensity()
 {
-	ElapsedTime += UpdateInterval;
+	ElapsedTime += LightFadeUpdateInterval;
 	float Alpha = FMath::Clamp(ElapsedTime / MaxTime, 0.0f, 1.0f);
 
 	// Update light
@@ -78,8 +82,53 @@ void APGGlobalLightManager::UpdateLightIntensity()
 
 	if (Alpha >= 1.0f)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(LightFadeTimer);
+		GetWorld()->GetTimerManager().ClearTimer(LightFadeTimerHandle);
 		UE_LOG(LogTemp, Log, TEXT("LightManger : Light Fade Complete"));
+	}
+}
+
+void APGGlobalLightManager::StartBlinkCycle()
+{
+	BlinkCount = 0;
+
+	GetWorld()->GetTimerManager().SetTimer(
+		BlinkTimerHandle,
+		this,
+		&APGGlobalLightManager::Blink,
+		BlinkInterval,
+		true
+	);
+}
+
+void APGGlobalLightManager::Blink()
+{
+	// light on/off
+	Multicast_ToggleLight();
+	BlinkCount++;
+
+	// blinkcount on/off => MaxBlinksPerCycle * 2
+	if (BlinkCount >= MaxBlinksPerCycle * 2)
+	{
+		GetWorldTimerManager().ClearTimer(BlinkTimerHandle);
+
+		GetWorldTimerManager().SetTimer(
+			BlinkCycleTimerHandle,
+			this,
+			&APGGlobalLightManager::StartBlinkCycle,
+			BlinkCycleInterval,
+			false
+		);
+	}
+}
+
+void APGGlobalLightManager::Multicast_ToggleLight_Implementation()
+{
+	for (int32 i = 0; i < ManagedLights.Num(); ++i)
+	{
+		if (ManagedLights[i])
+		{
+			ManagedLights[i]->ToggleVisibility();
+		}
 	}
 }
 

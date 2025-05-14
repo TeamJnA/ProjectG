@@ -23,18 +23,33 @@ protected:
 	TArray<float> InitialIntensities;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
-	float MaxTime = 30.0f;
+	float MaxTime = 300.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
-	float UpdateInterval = 0.2f;
+	float LightFadeUpdateInterval = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
+	float BlinkInterval = 0.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
+	float BlinkCycleInterval = 10.0f;
 
 	float ElapsedTime = 0.0f;
 
-	FTimerHandle LightFadeTimer;
+	FTimerHandle LightFadeTimerHandle;
+	FTimerHandle BlinkTimerHandle;
+	FTimerHandle BlinkCycleTimerHandle;
 
 	void UpdateLightIntensity();
+	void StartBlinkCycle();
+	void Blink();
+
+	int32 BlinkCount;
+	int32 MaxBlinksPerCycle = 2;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ToggleLight();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_UpdateLightIntensity(float Alpha);
-	void Multicast_UpdateLightIntensity_Implementation(float Alpha);
 };
