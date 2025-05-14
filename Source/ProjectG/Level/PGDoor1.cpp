@@ -12,6 +12,7 @@ APGDoor1::APGDoor1()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	SetReplicateMovement(true);
+	bAlwaysRelevant = true;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Script/Engine.StaticMesh'/Game/StarterBundle/ModularSci_Int/Meshes/SM_Door_L.SM_Door_L'"));
 

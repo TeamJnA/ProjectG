@@ -37,37 +37,42 @@ void APGGlobalLightManager::BeginPlay()
 	ULevel* level = GetWorld()->GetCurrentLevel();
 	if(!level || !level->bIsVisible) return;
 
-	for (AActor* Actor : level->Actors)
+	for (AActor* actor : level->Actors)
 	{
-		if (!Actor) continue;
+		if (!actor) continue;
 
-		TArray<ULightComponent*> LightComps;
-		Actor->GetComponents<ULightComponent>(LightComps);
+		TArray<ULightComponent*> lightComps;
+		actor->GetComponents<ULightComponent>(lightComps);
 
-		for (ULightComponent* Light : LightComps)
+		for (ULightComponent* light : lightComps)
 		{
-			if (Light && Light->IsVisible())
+			if (light && light->IsVisible())
 			{
-				ManagedLights.Add(Light);
-				InitialIntensities.Add(Light->Intensity);
+				ManagedLights.Add(light);
+				InitialIntensities.Add(light->Intensity);
 			}
 		}
+
 	}
-	
+	InitializeEmissiveMIDs();
+
 	UE_LOG(LogTemp, Log, TEXT("LightManager: %d lights found. | HasAuthority = %d"), ManagedLights.Num(), HasAuthority());
+
 
 	// timer only on server
 	if (HasAuthority())
-	{
+	{		
 		StartBlinkCycle();
 
-		//GetWorld()->GetTimerManager().SetTimer(
-		//	LightFadeTimerHandle,
-		//	this,
-		//	&APGGlobalLightManager::UpdateLightIntensity,
-		//	LightFadeUpdateInterval,
-		//	true
-		//);		
+		/*
+		GetWorld()->GetTimerManager().SetTimer(
+			LightFadeTimerHandle,
+			this,
+			&APGGlobalLightManager::UpdateLightIntensity,
+			LightFadeUpdateInterval,
+			true
+		);
+		*/
 	}
 }
 
@@ -121,13 +126,101 @@ void APGGlobalLightManager::Blink()
 	}
 }
 
+void APGGlobalLightManager::InitializeEmissiveMIDs()
+{
+	EmissiveMIDs.Empty();
+	EmissiveParamNames.Empty();
+	EmissiveInitialValues.Empty();
+
+	ULevel* level = GetWorld()->GetCurrentLevel();
+	if (!level || !level->bIsVisible) return;
+
+	for (AActor* actor : level->Actors)
+	{
+		if (!actor) continue;
+
+		TArray<UMeshComponent*> meshComponents;
+		actor->GetComponents<UMeshComponent>(meshComponents);
+
+		TArray<UMaterialInstanceDynamic*> MIDs;
+		TArray<FName> paramNames;
+		TArray<float> initialValues;
+
+		for (UMeshComponent* meshComp : meshComponents)
+		{
+			int32 materialCount = meshComp->GetNumMaterials();
+
+			for (int32 i = 0; i < materialCount; ++i)
+			{
+				UMaterialInterface* material = meshComp->GetMaterial(i);
+				if (!material) continue;
+
+				UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(material, this);
+				if (!MID) continue;
+
+				meshComp->SetMaterial(i, MID);
+
+				TArray<FMaterialParameterInfo> paramInfos;
+				TArray<FGuid> paramIds;
+				MID->GetAllScalarParameterInfo(paramInfos, paramIds);
+
+				for (const FMaterialParameterInfo& info : paramInfos)
+				{
+					const FString paramName = info.Name.ToString().ToLower();
+
+					if (paramName == "light intensity" || paramName == "intensity" || paramName == "brightness")
+					{
+						float defaultValue = 1.0f;
+
+						MID->GetScalarParameterValue(info.Name, defaultValue);
+
+						MIDs.Add(MID);
+						paramNames.Add(info.Name);
+						initialValues.Add(defaultValue);
+						break;
+					}
+				}
+			}
+		}
+
+		if (MIDs.Num() > 0)
+		{
+			EmissiveMIDs.Add(MIDs);
+			EmissiveParamNames.Add(paramNames);
+			EmissiveInitialValues.Add(initialValues);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("LightManager: %d emissive mesh found. | HasAuthority = %d"), EmissiveMIDs.Num(), HasAuthority());
+
+}
+
 void APGGlobalLightManager::Multicast_ToggleLight_Implementation()
 {
+
 	for (int32 i = 0; i < ManagedLights.Num(); ++i)
 	{
 		if (ManagedLights[i])
 		{
 			ManagedLights[i]->ToggleVisibility();
+		}
+	}
+
+	bEmissiveOn = !bEmissiveOn;
+
+	for (int32 i = 0; i < EmissiveMIDs.Num(); ++i)
+	{
+		const TArray<UMaterialInstanceDynamic*>& MIDs = EmissiveMIDs[i];
+		const TArray<FName>& paramNames = EmissiveParamNames[i];
+		const TArray<float>& initialValues = EmissiveInitialValues[i];
+
+		for (int32 j = 0; j < MIDs.Num(); ++j)
+		{
+			if (MIDs[j] && paramNames.IsValidIndex(j) && initialValues.IsValidIndex(j))
+			{
+				float newValue = bEmissiveOn ? initialValues[j] : 0.0f;
+				MIDs[j]->SetScalarParameterValue(paramNames[j], newValue);
+			}
 		}
 	}
 }
@@ -141,7 +234,23 @@ void APGGlobalLightManager::Multicast_UpdateLightIntensity_Implementation(float 
 		if (ManagedLights[i])
 		{
 			float newIntensity = FMath::Lerp(InitialIntensities[i], 0.05f, Alpha);
-			ManagedLights[i]->SetIntensity(newIntensity);
+			ManagedLights[i]->SetIntensity(newIntensity);			
+		}
+	}
+
+	for (int32 i = 0; i < EmissiveMIDs.Num(); ++i)
+	{
+		const TArray<UMaterialInstanceDynamic*>& MIDs = EmissiveMIDs[i];
+		const TArray<FName>& paramNames = EmissiveParamNames[i];
+		const TArray<float>& initialValues = EmissiveInitialValues[i];
+
+		for (int32 j = 0; j < MIDs.Num(); ++j)
+		{
+			if (MIDs[j] && paramNames.IsValidIndex(j) && initialValues.IsValidIndex(j))
+			{
+				float newIntensity = FMath::Lerp(initialValues[j], 0.0f, Alpha);
+				MIDs[j]->SetScalarParameterValue(paramNames[j], newIntensity);
+			}
 		}
 	}
 }

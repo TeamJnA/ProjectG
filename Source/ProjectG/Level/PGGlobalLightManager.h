@@ -21,9 +21,12 @@ protected:
 
 	TArray<ULightComponent*> ManagedLights;
 	TArray<float> InitialIntensities;
+	TArray<TArray<UMaterialInstanceDynamic*>> EmissiveMIDs;
+	TArray<TArray<FName>> EmissiveParamNames;
+	TArray<TArray<float>> EmissiveInitialValues;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
-	float MaxTime = 300.0f;
+	float MaxTime = 30.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
 	float LightFadeUpdateInterval = 0.2f;
@@ -43,9 +46,13 @@ protected:
 	void UpdateLightIntensity();
 	void StartBlinkCycle();
 	void Blink();
+	void InitializeEmissiveMIDs();
 
 	int32 BlinkCount;
 	int32 MaxBlinksPerCycle = 2;
+
+	bool bEmissiveOn = true;
+	float EmissiveOnValue = 5.0f;
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ToggleLight();
