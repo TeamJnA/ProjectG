@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Character/PGCharacterBase.h"
 #include "GameplayTagContainer.h"
+#include "Type/CharacterTypes.h"
 #include "PGPlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -62,6 +63,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> InteractAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> MouseLeftAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> MouseRightAction;
 	
 protected:
 
@@ -99,6 +106,8 @@ public:
 
 	FORCEINLINE FGameplayTagContainer GetInteractTag() const { return InteractTag; }
 
+	void ActivateAbilityByTag(FGameplayTagContainer Tag);
+
 private:
 	void InitAbilitySystemComponent();
 
@@ -110,6 +119,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
 	FGameplayTagContainer InteractTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
+	FGameplayTagContainer MouseLeftTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
+	FGameplayTagContainer MouseRightTag;
 
 	UFUNCTION(Server, Reliable)
 	void AddTagToCharacter(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
@@ -135,13 +150,32 @@ public:
 	UFUNCTION()
 	void CacheInteractionTarget(AActor* CacheInteractTarget);
 
+	//Hand Actions
+	TArray<TObjectPtr<UAnimMontage>> HandActionAnimMontages;
+
+	EHandActionMontageType HandActionMontageType;
+
+	TObjectPtr<UAnimMontage> GetHandActionAnimMontages();
+
+	void SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
+
 protected:
 	//The interactive actor currently watching
 	TObjectPtr<AActor> InteractionTargetActor;
 
 ///
-///		UI and Components
+///********* Item system ******************
 /// 
+public:
+	void EquipCurrentInventoryItem();
+
+	void AttachMeshOnHand();
+
+	void DetachMeshOnHand();
+
+///
+///********* UI and Components ******************
+/// 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPGInventoryComponent> InventoryComponent;

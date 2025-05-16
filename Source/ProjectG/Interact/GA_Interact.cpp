@@ -26,7 +26,7 @@ void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	// Starts the ability task to trace forward from the given start location to detect objects in front.
 	UCameraComponent* LinetraceStartPosition = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo())->GetFollowCamera();
 
-	UAT_WaitForInteractionTarget* WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, true);
+	WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, true);
 	WaitForInteractionTarget->InteractionTarget.AddDynamic(this, &UGA_Interact::WaitInteractionInput);
 	WaitForInteractionTarget->ReadyForActivation();
 
@@ -46,7 +46,7 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 	// And end the ability task that was waiting for interaction input.
 	if (!TargetActor)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Target is Null"));
+		UE_LOG(LogTemp, Log, TEXT("Linetrace interact target is changed to null or invalid object."));
 		AbilityToInteract = nullptr;
 		if (WaitForInteractTag)
 		{
@@ -165,8 +165,23 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 	
 	if (!bSuccess)
 	{
+		// If Failed to interact with target, Restart from the initial task WaitForInteractionTarget.
+		// Because the target actor is changed when linetrace find new object.
+		// But on failure, the previous object remains and is do not pass the object pointer.
+
 		ASC->ClearAbility(InteractAbilityHandle);
 		UE_LOG(LogTemp, Warning, TEXT("Fail to trigger ability"));
+
+		if (WaitForInteractionTarget)
+		{
+			WaitForInteractionTarget->EndTask();
+			WaitForInteractionTarget = nullptr;
+		}
+		UCameraComponent* LinetraceStartPosition = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo())->GetFollowCamera();
+
+		WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, true);
+		WaitForInteractionTarget->InteractionTarget.AddDynamic(this, &UGA_Interact::WaitInteractionInput);
+		WaitForInteractionTarget->ReadyForActivation();
 	}
 
 	WaitForInteractTag->EndTask();

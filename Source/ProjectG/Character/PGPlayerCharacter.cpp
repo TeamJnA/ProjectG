@@ -60,6 +60,23 @@ APGPlayerCharacter::APGPlayerCharacter()
 
 	// Create InventoryComponent and Set changing Itemslot Input Action
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
+
+	// Set hand actions anim montages
+	// EHandActionMontageType
+	// 0 : Pick		1 : Change
+	HandActionMontageType = EHandActionMontageType::Pick;;
+
+	// 0 : Pick Anim Montage
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> PickMontageRef(TEXT("/Game/ProjectG/Character/Animation/Interact/AM_Pick_Item.AM_Pick_Item"));
+	if (PickMontageRef.Object){
+		HandActionAnimMontages.Add(PickMontageRef.Object);
+	}
+
+	// 1 : Change Anim Montage
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ChangeMontageRef(TEXT("/Game/ProjectG/Character/Animation/Interact/AM_Pick_Item.AM_Pick_Item"));
+	if (ChangeMontageRef.Object){
+		HandActionAnimMontages.Add(ChangeMontageRef.Object);
+	}
 }
 
 void APGPlayerCharacter::NotifyControllerChanged()
@@ -99,9 +116,20 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, InteractTag);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, InteractTag);
 
+		//Mouse Clicks
+		EnhancedInputComponent->BindAction(MouseLeftAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, MouseLeftTag);
+		EnhancedInputComponent->BindAction(MouseLeftAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, MouseLeftTag);
+		
+		EnhancedInputComponent->BindAction(MouseRightAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, MouseRightTag);
+		EnhancedInputComponent->BindAction(MouseRightAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, MouseRightTag);
+
 		//ChangeItemSlot
 		UPGGameInstance* PGGameInstance = Cast<UPGGameInstance>(GetGameInstance());
-		for (int32 i = 0; i < PGGameInstance->GetMaxInventorySize(); ++i)
+
+		int32 _MaxInventorySize;
+		_MaxInventorySize = PGGameInstance ? PGGameInstance->GetMaxInventorySize() : 5;
+
+		for (int32 i = 0; i < _MaxInventorySize ; ++i)
 		{
 			if(ChangeItemSlotAction[i])
 				EnhancedInputComponent->BindAction(ChangeItemSlotAction[i], ETriggerEvent::Started, this, &APGPlayerCharacter::ChangingItemSlot, i);
@@ -151,13 +179,13 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		AttributeSet->GetMovementSpeedAttribute()
 	);
 	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
-
 }
 
 void APGPlayerCharacter::AddTagToCharacter_Implementation(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
-	if (AbilitySystemComponent)
+	if (AbilitySystemComponent && InputActionAbilityTag.IsValid())
 	{
+		UE_LOG(LogTemp, Log, TEXT("Add tag to character : %s"), *InputActionAbilityTag.ToString());
 		AbilitySystemComponent->AddReplicatedLooseGameplayTags(InputActionAbilityTag);
 		AbilitySystemComponent->AddLooseGameplayTags(InputActionAbilityTag);
 	}
@@ -165,16 +193,79 @@ void APGPlayerCharacter::AddTagToCharacter_Implementation(const FInputActionValu
 
 void APGPlayerCharacter::RemoveTagFromCharacter_Implementation(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
-	if (AbilitySystemComponent)
+	if (AbilitySystemComponent && InputActionAbilityTag.IsValid())
 	{
+		UE_LOG(LogTemp, Log, TEXT("Remove tag from character : %s"), *InputActionAbilityTag.ToString());
 		AbilitySystemComponent->RemoveReplicatedLooseGameplayTags(InputActionAbilityTag);
 		AbilitySystemComponent->RemoveLooseGameplayTags(InputActionAbilityTag);
+	}
+}
+
+void APGPlayerCharacter::ActivateAbilityByTag(FGameplayTagContainer Tag)
+{
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->TryActivateAbilitiesByTag(Tag, true);
 	}
 }
 
 void APGPlayerCharacter::CacheInteractionTarget(AActor* CacheInteractTarget)
 {
 	InteractionTargetActor = CacheInteractTarget;
+}
+
+TObjectPtr<UAnimMontage> APGPlayerCharacter::GetHandActionAnimMontages()
+{
+	int32 Index = static_cast<int32>(HandActionMontageType);
+
+	if (HandActionAnimMontages.IsValidIndex(Index))
+	{
+		return HandActionAnimMontages[Index];
+	}
+	UE_LOG(LogTemp, Warning, TEXT("There's no anim montage in HandActionAnimMontages."));
+	return nullptr;
+}
+
+void APGPlayerCharacter::SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType)
+{
+	// EHandActionMontageType 
+	// 0 : Pick		1 : Change
+	HandActionMontageType = _HandActionMontageType;
+}
+
+void APGPlayerCharacter::EquipCurrentInventoryItem()
+{
+	InventoryComponent->ActivateCurrentItemAbility();
+	AttachMeshOnHand();
+}
+
+void APGPlayerCharacter::AttachMeshOnHand()
+{
+	UE_LOG(LogTemp, Log, TEXT("Attach Item On Hand"));
+	/*
+	void AMyCharacter::AttachItemMeshToHand(UItemData* ItemData)
+	{
+		if (!ItemData || !ItemData->ItemMesh)
+			return;
+        
+		HeldItemMeshComponent->SetStaticMesh(ItemData->ItemMesh);
+		HeldItemMeshComponent->AttachToComponent(GetMesh(), 
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale, 
+			TEXT("HandSocket"));
+		HeldItemMeshComponent->SetVisibility(true);
+	}
+
+	void AMyCharacter::DetachItemMesh()
+	{
+		HeldItemMeshComponent->SetVisibility(false);
+		HeldItemMeshComponent->SetStaticMesh(nullptr);
+	}
+	*/
+}
+
+void APGPlayerCharacter::DetachMeshOnHand()
+{
+	UE_LOG(LogTemp, Log, TEXT("Detach Item On Hand"));
 }
 
 void APGPlayerCharacter::Move(const FInputActionValue& Value)
@@ -216,16 +307,16 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 //Activate Input Action Ability by Tag
 void APGPlayerCharacter::StartInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
-	if (AbilitySystemComponent)
+	ActivateAbilityByTag(InputActionAbilityTag);
+	/*if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->TryActivateAbilitiesByTag(InputActionAbilityTag, true);
-	}
+	}*/
 }
 
 //Cancel Input Action Ability by Tag
 void APGPlayerCharacter::StopInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
 {
-	//if InputActionAbilityTag == Interaction Tag , Return. Interaction only do one time by Activate.
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->CancelAbilities(&InputActionAbilityTag);
@@ -234,5 +325,5 @@ void APGPlayerCharacter::StopInputActionByTag(const FInputActionValue& Value, FG
 
 void APGPlayerCharacter::ChangingItemSlot(const FInputActionValue& Value, int32 NumofSlot)
 {
-	InventoryComponent->ChangeCurrectItemIndex(NumofSlot);
+	InventoryComponent->ChangeCurrentInventoryIndex(NumofSlot);
 }

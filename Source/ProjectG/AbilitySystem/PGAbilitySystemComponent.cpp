@@ -5,5 +5,5 @@
 UPGAbilitySystemComponent::UPGAbilitySystemComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	SetIsReplicated(true);
+	SetIsReplicatedByDefault(true);
 }

@@ -11,6 +11,7 @@
  */
 
 class UAT_PGWaitGameplayTagAdded;
+class UAT_WaitForInteractionTarget;
 
 UCLASS()
 class PROJECTG_API UGA_Interact : public UGameplayAbility
@@ -35,4 +36,6 @@ protected:
 	TSubclassOf<UGameplayAbility> AbilityToInteract;
 
 	TObjectPtr<UAT_PGWaitGameplayTagAdded> WaitForInteractTag;
+
+	TObjectPtr<UAT_WaitForInteractionTarget> WaitForInteractionTarget;
 };

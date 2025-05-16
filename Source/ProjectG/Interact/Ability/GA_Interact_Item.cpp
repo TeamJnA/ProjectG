@@ -14,6 +14,9 @@ UGA_Interact_Item::UGA_Interact_Item()
     //Add Event trigger
     FGameplayTag TriggerTag = FGameplayTag::RequestGameplayTag(FName("Event.Ability.Interact"));
 
+    //Block ability when using hands.
+    ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked")));
+
     FAbilityTriggerData TriggerData;
     TriggerData.TriggerTag = TriggerTag;
     TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
