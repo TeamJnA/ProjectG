@@ -4,6 +4,7 @@
 #include "Player/PGPlayerState.h"
 #include "AbilitySystem/PGAbilitySystemComponent.h"
 #include "AbilitySystem/PGAttributeSet.h"
+#include "Net/UnrealNetwork.h"
 
 APGPlayerState::APGPlayerState()
 {
@@ -23,4 +24,20 @@ UAbilitySystemComponent* APGPlayerState::GetAbilitySystemComponent() const
 UPGAttributeSet* APGPlayerState::GetAttributeSet() const
 {
 	return AttributeSet;
+}
+
+void APGPlayerState::ServerSetReady_Implementation(bool bReady)
+{
+	bIsReady = bReady;
+	OnRep_IsReady();
+}
+
+void APGPlayerState::OnRep_IsReady()
+{
+}
+
+void APGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(APGPlayerState, bIsReady);
 }

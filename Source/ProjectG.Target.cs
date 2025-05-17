@@ -11,5 +11,6 @@ public class ProjectGTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V5;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_5;
 		ExtraModuleNames.Add("ProjectG");
-	}
+        GlobalDefinitions.Add("ONLINE_SUBSYSTEM_STEAM=1");
+    }
 }

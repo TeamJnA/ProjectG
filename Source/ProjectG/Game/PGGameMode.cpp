@@ -26,6 +26,8 @@ APGGameMode::APGGameMode()
 	PlayerControllerClass = APGPlayerController::StaticClass();
 
 	DefaultPawnClass = nullptr;
+
+	bUseSeamlessTravel = true;
 }
 
 void APGGameMode::BeginPlay()
@@ -57,6 +59,31 @@ void APGGameMode::PostLogin(APlayerController* NewPlayer)
 	{
 		HandleMapGenerationComplete();
 		HandleSpawnComplete();
+	}
+}
+
+void APGGameMode::HandleSeamlessTravelPlayer(AController*& OldController)
+{
+	if (!OldController) return;
+
+	APlayerState* SavedPlayerState = OldController->PlayerState;
+
+	if (OldController->GetPawn())
+	{
+		OldController->GetPawn()->Destroy();
+	}
+
+	OldController->Destroy();
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	APGPlayerController* NewPC = GetWorld()->SpawnActor<APGPlayerController>(PlayerControllerClass, Params);
+
+	if (NewPC)
+	{
+		NewPC->PlayerState = SavedPlayerState;
+		OldController = NewPC; 
 	}
 }
 

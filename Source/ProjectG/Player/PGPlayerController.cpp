@@ -9,6 +9,11 @@ void APGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	FInputModeGameOnly inputMode;
+	SetInputMode(inputMode);
+
+	bShowMouseCursor = false;
+
 	UE_LOG(LogTemp, Warning, TEXT("PlayerController %s BeginPlay"), *GetName());
 }
 

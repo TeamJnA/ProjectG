@@ -22,7 +22,18 @@ public:
 
 	virtual UPGAttributeSet* GetAttributeSet() const;
 
+	UPROPERTY(ReplicatedUsing = OnRep_IsReady, BlueprintReadOnly)
+	bool bIsReady = false;
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetReady(bool bReady);
+
 protected:
+	UFUNCTION()	
+	void OnRep_IsReady();
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	UPROPERTY()
 	TObjectPtr<UPGAbilitySystemComponent> AbilitySystemComponent;
 
