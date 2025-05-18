@@ -16,6 +16,12 @@ void APGGameState::Multicast_SpawnComplete_Implementation()
 	OnSpawnComplete.Broadcast();
 }
 
+void APGGameState::Multicast_ClientTravel_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("GameState: Multicast_ClientTravel | HasAuthority = %d"), HasAuthority());
+	OnClientTravel.Broadcast();
+}
+
 void APGGameState::NotifyMapGenerationComplete()
 {
 	Multicast_MapGenerationComplete();
@@ -24,6 +30,11 @@ void APGGameState::NotifyMapGenerationComplete()
 void APGGameState::NotifySpawnComplete()
 {
 	Multicast_SpawnComplete();
+}
+
+void APGGameState::NotifyClientTravel()
+{
+	Multicast_ClientTravel();
 }
 
 void APGGameState::NotifyClientReady(APGPlayerController* PC)

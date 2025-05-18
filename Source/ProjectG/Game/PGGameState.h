@@ -8,6 +8,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSpawnComplete);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClientTravel);
 
 UCLASS()
 class PROJECTG_API APGGameState : public AGameState
@@ -17,6 +18,7 @@ class PROJECTG_API APGGameState : public AGameState
 public:
 	void NotifyMapGenerationComplete();
 	void NotifySpawnComplete();
+	void NotifyClientTravel();
 
 	UFUNCTION()
 	void NotifyClientReady(APGPlayerController* PC);
@@ -27,12 +29,18 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnSpawnComplete OnSpawnComplete;
 
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnClientTravel OnClientTravel;
+
 protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_MapGenerationComplete();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SpawnComplete();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ClientTravel();
 
 private:
 	TSet<APlayerController*> ReadyPlayers;

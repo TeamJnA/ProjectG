@@ -6,6 +6,8 @@
 #include "GameFramework/GameMode.h"
 #include "PGGameMode.generated.h"
 
+class APGPlayerController;
+
 /**
  * 
  */
@@ -28,7 +30,12 @@ protected:
 	UFUNCTION()
 	void HandleSpawnComplete();
 
+	UFUNCTION()
+	void HandleClientTravel();
+
 	void SpawnAllPlayers();
+	void CheckPlayerReady(TWeakObjectPtr<APGPlayerController> WeakPC);
+
 	void SpawnGlobalLightManager();
 
 	UPROPERTY(EditDefaultsOnly)

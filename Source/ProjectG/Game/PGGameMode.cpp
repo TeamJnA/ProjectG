@@ -40,11 +40,12 @@ void APGGameMode::BeginPlay()
 
 	if (GetWorld())
 	{
-		APGGameState* gs = GetWorld()->GetGameState<APGGameState>();
-		if (gs)
+		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+		if (GS)
 		{
-			gs->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
-			gs->OnSpawnComplete.AddDynamic(this, &APGGameMode::HandleSpawnComplete);
+			GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
+			GS->OnSpawnComplete.AddDynamic(this, &APGGameMode::HandleSpawnComplete);
+			GS->OnClientTravel.AddDynamic(this, &APGGameMode::HandleClientTravel);
 		}
 	}
 }
@@ -53,13 +54,6 @@ void APGGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewP
 {
 	ConnectedPlayerCount++;
 	UE_LOG(LogTemp, Warning, TEXT("GameMode: HandleStartingNewPlayer. ConnectedPlayerCount = %d"), ConnectedPlayerCount);
-
-	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	if (bDelegateFailed && ConnectedPlayerCount >= GS->PlayerArray.Num())
-	{
-		HandleMapGenerationComplete();
-		HandleSpawnComplete();
-	}
 }
 
 void APGGameMode::HandleMapGenerationComplete()
@@ -95,16 +89,30 @@ void APGGameMode::HandleSpawnComplete()
 	}
 }
 
+void APGGameMode::HandleClientTravel()
+{
+	UE_LOG(LogTemp, Log, TEXT("GameMode: Recieved OnClientTravel"));
+
+	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
+}
+
 void APGGameMode::SpawnAllPlayers()
 {
+	bool bAllReady = true;
+
 	for (FConstPlayerControllerIterator it = GetWorld()->GetPlayerControllerIterator(); it; ++it)
 	{
-		bool bAllReady = true;
-
-		APlayerController* pc = it->Get();
-		if (!pc || pc->GetPawn()) continue;
-		if (!pc->PlayerState)
+		APlayerController* PC = it->Get();
+		if (!PC)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("GameMode: SpawnAllPlayers: PlayerController is nullptr."));
+			bAllReady = false;
+			continue;
+		}
+		if (PC->GetPawn()) continue;
+		if (!PC->PlayerState)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GameMode: SpawnAllPlayers: PlayerState is nullptr."));
 			bAllReady = false;
 			continue;
 		}
@@ -113,57 +121,59 @@ void APGGameMode::SpawnAllPlayers()
 		FRotator spawnRot = FRotator::ZeroRotator;
 
 		// APGPlayerCharacter* newPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, spawnLoc, spawnRot);
-		APGPlayerCharacter* newPawn = GetWorld()->SpawnActorDeferred<APGPlayerCharacter>(PlayerPawnClass, FTransform(spawnRot, spawnLoc), pc);
+		APGPlayerCharacter* newPawn = GetWorld()->SpawnActorDeferred<APGPlayerCharacter>(PlayerPawnClass, FTransform(spawnRot, spawnLoc), PC);
 
 		if (newPawn)
 		{
 			newPawn->FinishSpawning(FTransform(spawnRot, spawnLoc));
-			pc->Possess(newPawn);
+			PC->Possess(newPawn);
 		}
 
+		// need update!!
 		SpawnOffset += 50;
 
-
-		if (APGPlayerController* castedPc = Cast<APGPlayerController>(pc))
+		if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
 		{
+			TWeakObjectPtr<APGPlayerController> weakPC = PGPC;
 			FTimerHandle syncHandle;
-			GetWorld()->GetTimerManager().SetTimer(syncHandle, FTimerDelegate::CreateLambda([=, this]()
-				{
-					if (castedPc->IsLocalPlayerController() && HasAuthority())
-					{
-						if (APGGameState* gs = GetGameState<APGGameState>())
-						{
-							gs->NotifyClientReady(castedPc);
-						}
-					}
-					else
-					{
-						castedPc->Client_CheckLevelSync();
-					}
-				}), 0.2f, false);
+			GetWorld()->GetTimerManager().SetTimer(syncHandle, FTimerDelegate::CreateLambda([weakPC, this]()
+			{
+				if (!weakPC.IsValid()) return;
+				CheckPlayerReady(weakPC);
+			}), 0.2f, false);
 		}
+	}
+	if (!bAllReady)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Some Players not spawned yet. Retry..."));
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
+	}
+}
 
-		//if (APGPlayerController* castedPc = Cast<APGPlayerController>(pc))
-		//{
+void APGGameMode::CheckPlayerReady(TWeakObjectPtr<APGPlayerController> WeakPC)
+{
+	if (!WeakPC.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameMode: CheckPlayerReady: PlayerController is no longer valid"));
+		return;
+	}
 
-		//	if (castedPc->IsLocalPlayerController() && HasAuthority())
-		//	{
-		//		if (APGGameState* gs = GetGameState<APGGameState>())
-		//		{
-		//			gs->NotifyClientReady(castedPc);
-		//		}
-		//	}
-		//	else
-		//	{
-		//		castedPc->Client_CheckLevelSync();
-		//	}
-		//}
+	APGPlayerController* validPC = WeakPC.Get();
+	
+	if (!validPC) return;
 
-		if (!bAllReady)
+	if (validPC->IsLocalPlayerController())
+	{
+		UE_LOG(LogTemp, Log, TEXT("GameMode: CheckPlayerReady: Notify server is ready to GameState"));
+		if (APGGameState* GS = GetGameState<APGGameState>())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Some PlayerStates not ready yet. Retry"));
-			GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
+			GS->NotifyClientReady(validPC);
 		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("GameMode: CheckPlayerReady: Check client is in right level"));
+		validPC->Client_CheckLevelSync();
 	}
 }
 

@@ -104,6 +104,21 @@ void UPGAdvancedFriendsGameInstance::SetPlayerName(const FString& NewName)
 //	}
 //}
 
+void UPGAdvancedFriendsGameInstance::MarkClientTravelled()
+{
+	bDidClientTravel = true;
+}
+
+void UPGAdvancedFriendsGameInstance::ResetClientTravelFlag()
+{
+	bDidClientTravel = false;
+}
+
+bool UPGAdvancedFriendsGameInstance::HasClientTravelled() const
+{
+	return bDidClientTravel;
+}
+
 int32 UPGAdvancedFriendsGameInstance::GetMaxInventorySize() const
 {
 	return MaxInventorySize;

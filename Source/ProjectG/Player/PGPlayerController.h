@@ -20,10 +20,10 @@ public:
 	void Client_CheckLevelSync();
 
 	UFUNCTION(Server, Reliable)
-	void Server_RequestSpawnComplete();
+	void Server_ReportClientReady();
 
 	UFUNCTION(Server, Reliable)
-	void Server_ReportClientReady();
+	void Server_ReportClientTravel();
 
 protected:	
 	virtual void BeginPlay() override;

@@ -18,6 +18,10 @@ class PROJECTG_API UPGAdvancedFriendsGameInstance : public UAdvancedFriendsGameI
 	GENERATED_BODY()
 
 public:
+	void MarkClientTravelled();
+	void ResetClientTravelFlag();
+	bool HasClientTravelled() const;
+
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
 
@@ -51,6 +55,7 @@ private:
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 	TSharedPtr<const FUniqueNetId> UserID;
+	bool bDidClientTravel = false;
 
 	//void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	//void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
