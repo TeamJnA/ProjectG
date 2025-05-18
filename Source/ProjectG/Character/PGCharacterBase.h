@@ -26,11 +26,12 @@ public:
 
 	virtual UPGAttributeSet* GetAttributeSet() const;
 
-protected:
+public:
 	void GiveDefaultAbilities();
 	void InitDefaultAttributes() const;
 	void GiveAndActivatePassiveEffects();
 
+protected:
 	UPROPERTY()
 	TObjectPtr<UPGAbilitySystemComponent> AbilitySystemComponent;
 

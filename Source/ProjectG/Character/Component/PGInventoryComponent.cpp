@@ -5,6 +5,7 @@
 #include "Item/PGItemData.h"
 #include "Kismet/GameplayStatics.h"
 #include "Game/PGGameInstance.h"
+#include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
@@ -17,8 +18,7 @@ UPGInventoryComponent::UPGInventoryComponent()
 	bInventoryFull = false;
 
 	InventoryItemCount = 0;
-
-	SetIsReplicated(true);
+	SetIsReplicatedByDefault(true);
 }
 
 
@@ -27,16 +27,16 @@ void UPGInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	//Get max Inventory size and set item inventory max size
-	UPGGameInstance* PGGameInstance = Cast<UPGGameInstance>
+	UPGAdvancedFriendsGameInstance* PGAdvancedFriendsGameInstance = Cast<UPGAdvancedFriendsGameInstance>
 		(UGameplayStatics::GetGameInstance(GetWorld()));
 
-	if (PGGameInstance) {
-		MaxInventorySize = PGGameInstance->GetMaxInventorySize();
+	if (PGAdvancedFriendsGameInstance) {
+		MaxInventorySize = PGAdvancedFriendsGameInstance->GetMaxInventorySize();
 		Items.SetNum(MaxInventorySize);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot find PGGameInstance in InventoryComponent."));
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find PGAdvancedFriendsGameInstance in InventoryComponent."));
 		Items.SetNum(5);
 	}
 	for (int32 i = 0; i < MaxInventorySize; i++)

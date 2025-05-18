@@ -3,7 +3,8 @@
 
 #include "Character/PGPlayerCharacter.h"
 
-#include "Game/PGGameInstance.h"
+// #include "Game/PGGameInstance.h"
+#include "Game/PGAdvancedFriendsGameInstance.h"
 
 //Essential Character Components
 #include "Camera/CameraComponent.h"
@@ -100,8 +101,8 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, InteractTag);
 
 		//ChangeItemSlot
-		UPGGameInstance* PGGameInstance = Cast<UPGGameInstance>(GetGameInstance());
-		for (int32 i = 0; i < PGGameInstance->GetMaxInventorySize(); ++i)
+		UPGAdvancedFriendsGameInstance* PGAdvancedFriendsGameInstance = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
+		for (int32 i = 0; i < PGAdvancedFriendsGameInstance->GetMaxInventorySize(); ++i)
 		{
 			if(ChangeItemSlotAction[i])
 				EnhancedInputComponent->BindAction(ChangeItemSlotAction[i], ETriggerEvent::Started, this, &APGPlayerCharacter::ChangingItemSlot, i);
@@ -117,10 +118,10 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	InitAbilitySystemComponent();
-	GiveDefaultAbilities();
-	InitDefaultAttributes();
-	GiveAndActivatePassiveEffects();
+	//InitAbilitySystemComponent();
+	//GiveDefaultAbilities();
+	//InitDefaultAttributes();
+	//GiveAndActivatePassiveEffects();
 }
 
 //This function is called on the client When the server updates PlayerState.
@@ -140,6 +141,18 @@ void APGPlayerCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Da
 void APGPlayerCharacter::InitAbilitySystemComponent()
 {
 	APGPlayerState* PGPlayerState = GetPlayerState<APGPlayerState>();
+	if (!PGPlayerState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("There's no PGPlayerState!!!"));
+		if (HasAuthority())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("In the Server!!!"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("In the Client!!!"));
+		}
+	}
 	check(PGPlayerState);
 	AbilitySystemComponent = CastChecked<UPGAbilitySystemComponent>(
 		PGPlayerState->GetAbilitySystemComponent());

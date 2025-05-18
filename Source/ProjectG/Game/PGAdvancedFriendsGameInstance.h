@@ -21,14 +21,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
 
-	UFUNCTION(BlueprintCallable)
-	void HostSession(FName SessionName = FName("GameSession"), int32 MaxPlayers = 4);
+	//UFUNCTION(BlueprintCallable)
+	//void HostSession(FName SessionName = FName("GameSession"), int32 MaxPlayers = 4);
 
-	UFUNCTION(BlueprintCallable)
-	void JoinSession(int32 SessionIndex);
+	//UFUNCTION(BlueprintCallable)
+	//void JoinSession(int32 SessionIndex);
 
-	UFUNCTION(BlueprintCallable)
-	void FindSessions();
+	//UFUNCTION(BlueprintCallable)
+	//void FindSessions();
 
 	UPGItemData* GetItemDataByKey(FName Key);
 
@@ -52,7 +52,7 @@ private:
 	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 	TSharedPtr<const FUniqueNetId> UserID;
 
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
-	void OnFindSessionsComplete(bool bWasSuccessful);
+	//void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	//void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	//void OnFindSessionsComplete(bool bWasSuccessful);
 };

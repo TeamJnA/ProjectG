@@ -99,7 +99,6 @@ public:
 
 	FORCEINLINE FGameplayTagContainer GetInteractTag() const { return InteractTag; }
 
-private:
 	void InitAbilitySystemComponent();
 
 protected:

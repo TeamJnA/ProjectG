@@ -45,13 +45,13 @@ void UPGLobbyWidget::OnReadyClicked()
 	ReadyText->SetText(FText::FromString(TEXT("Waiting...")));
 }
 
-void UPGLobbyWidget::OnRefreshClicked()
-{
-	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
-	{
-		GI->FindSessions();	
-	}
-}
+//void UPGLobbyWidget::OnRefreshClicked()
+//{
+//	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+//	{
+//		GI->FindSessions();	
+//	}
+//}
 
 void UPGLobbyWidget::NativeConstruct()
 {
@@ -63,8 +63,8 @@ void UPGLobbyWidget::NativeConstruct()
 	{
 		ReadyButton->OnClicked.AddDynamic(this, &UPGLobbyWidget::OnReadyClicked);
 	}
-	if (RefreshButton)
-	{
-		RefreshButton->OnClicked.AddDynamic(this, &UPGLobbyWidget::OnRefreshClicked);
-	}
+	//if (RefreshButton)
+	//{
+	//	RefreshButton->OnClicked.AddDynamic(this, &UPGLobbyWidget::OnRefreshClicked);
+	//}
 }

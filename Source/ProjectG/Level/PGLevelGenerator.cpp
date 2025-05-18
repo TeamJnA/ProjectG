@@ -10,7 +10,7 @@
 #include "Kismet/KismetArrayLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
-#include "Game/PGGameInstance.h"
+#include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Item/PGItemActor.h"
 #include "Item/PGItemData.h"
 #include "PGMasterRoom.h"
@@ -344,7 +344,7 @@ void APGLevelGenerator::SpawnItems()
 			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 			// get game instance for use PGItemData instances
-			UPGGameInstance* gameInstance = Cast<UPGGameInstance>(world->GetGameInstance());
+			UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance());
 			
 			APGItemActor* newItem = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnTransform, spawnParams);
 
@@ -353,28 +353,28 @@ void APGLevelGenerator::SpawnItems()
 			// InitWithData => spawn item actor's class(PGItemActor) then attach actual data(PGItemData) for item
 			if (ItemAmount == 10)
 			{
-				if (UPGItemData* itemData = gameInstance->GetItemDataByKey("AdminDevice"))
+				if (UPGItemData* itemData = GI->GetItemDataByKey("AdminDevice"))
 				{
 					newItem->InitWithData(itemData);
 				}
 			}
 			else if (ItemAmount == 9)
 			{
-				if (UPGItemData* itemData = gameInstance->GetItemDataByKey("EnergyCore"))
+				if (UPGItemData* itemData = GI->GetItemDataByKey("EnergyCore"))
 				{
 					newItem->InitWithData(itemData);
 				}
 			}
 			else if (ItemAmount == 8)
 			{
-				if (UPGItemData* itemData = gameInstance->GetItemDataByKey("RootCalculator"))
+				if (UPGItemData* itemData = GI->GetItemDataByKey("RootCalculator"))
 				{
 					newItem->InitWithData(itemData);
 				}
 			}
 			else
 			{
-				if (UPGItemData* itemData = gameInstance->GetItemDataByKey("Brick"))
+				if (UPGItemData* itemData = GI->GetItemDataByKey("Brick"))
 				{
 					newItem->InitWithData(itemData);
 				}

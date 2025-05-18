@@ -34,7 +34,7 @@ void APGLobbyPlayerController::BeginPlay()
 			LobbyWidgetInstance->SetIsFocusable(true);
 			bShowMouseCursor = true;
 
-			FInputModeUIOnly inputMode;
+			FInputModeGameAndUI inputMode;
 			inputMode.SetWidgetToFocus(LobbyWidgetInstance->TakeWidget());
 			inputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			SetInputMode(inputMode);

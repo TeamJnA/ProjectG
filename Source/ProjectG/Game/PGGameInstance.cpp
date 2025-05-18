@@ -6,7 +6,7 @@
 #include "OnlineSessionSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerState.h"
-#include "UI/PGLobbyWidget.h"
+#include "UI/PGLobbyUI.h"
 #include "Player/PGLobbyPlayerController.h"
 
 void UPGGameInstance::Init()
@@ -109,18 +109,18 @@ void UPGGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 	APGLobbyPlayerController* pc = Cast<APGLobbyPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 	if (!pc) return;
 
-	UPGLobbyWidget* lobbyWidget = pc->GetLobbyWidget();
-	if (!lobbyWidget) return;
+	//UPGLobbyUI* lobbyWidget = pc->GetLobbyWidget();
+	//if (!lobbyWidget) return;
 
-	lobbyWidget->ClearSessionList();
+	//lobbyWidget->ClearSessionList();
 
-	for (int32 i = 0; i < SessionSearch->SearchResults.Num(); ++i)
-	{
-		const FOnlineSessionSearchResult& result = SessionSearch->SearchResults[i];
-		const FString& serverName = result.Session.OwningUserName;
+	//for (int32 i = 0; i < SessionSearch->SearchResults.Num(); ++i)
+	//{
+	//	const FOnlineSessionSearchResult& result = SessionSearch->SearchResults[i];
+	//	const FString& serverName = result.Session.OwningUserName;
 
-		lobbyWidget->AddSessionSlot(serverName, i);
-	}
+	//	lobbyWidget->AddSessionSlot(serverName, i);
+	//}
 	
 	// UE_LOG(LogTemp, Warning, TEXT("No Sessions Found"));
 }

@@ -29,8 +29,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OnReadyClicked();
 
-	UFUNCTION(BlueprintCallable)
-	void OnRefreshClicked();
+	//UFUNCTION(BlueprintCallable)
+	//void OnRefreshClicked();
 
 	UPROPERTY(meta = (BindWidget))
 	UScrollBox* SessionListContainer;

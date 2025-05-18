@@ -53,8 +53,13 @@ void APGPlayerController::Client_CheckLevelSync_Implementation()
 
 void APGPlayerController::Server_ReportClientReady_Implementation()
 {
-	if (APGGameState* gs = GetWorld()->GetGameState<APGGameState>())
+	if (HasAuthority())
 	{
-		gs->NotifyClientReady(this);
+		UE_LOG(LogTemp, Warning, TEXT("PlayerController_Server: Recieved client request SpawnComplete | HasAuthority %d"), HasAuthority());
+
+		if (APGGameState* gs = GetWorld()->GetGameState<APGGameState>())
+		{
+			gs->NotifyClientReady(this);
+		}
 	}
 }

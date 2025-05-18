@@ -20,7 +20,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
-	virtual void HandleSeamlessTravelPlayer(AController*& OldController) override;
+//	virtual void HandleSeamlessTravelPlayer(AController*& C) override;
 
 	UFUNCTION()
 	void HandleMapGenerationComplete();

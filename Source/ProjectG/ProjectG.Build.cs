@@ -13,11 +13,11 @@ public class ProjectG : ModuleRules
                                                             "UMG", "Slate", "SlateCore",
                                                             "OnlineSubsystem", "OnlineSubsystemUtils" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+        PrivateDependencyModuleNames.AddRange(new string[] {  });
 
 		PublicIncludePaths.AddRange(new string[] { "ProjectG" });
 
-        DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
+//        DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
 
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

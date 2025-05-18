@@ -16,16 +16,16 @@ void UPGSessionSlotWidget::Setup(const FString& SessionName, int32 SessionIndex,
 		SessionNameText->SetText(FText::FromString(SessionName));
 	}
 
-	if (JoinButton)
-	{
-		JoinButton->OnClicked.AddDynamic(this, &UPGSessionSlotWidget::OnJoinClicked);
-	}
+	//if (JoinButton)
+	//{
+	//	JoinButton->OnClicked.AddDynamic(this, &UPGSessionSlotWidget::OnJoinClicked);
+	//}
 }
 
-void UPGSessionSlotWidget::OnJoinClicked()
-{
-	if (UPGAdvancedFriendsGameInstance* gi = GetGameInstance<UPGAdvancedFriendsGameInstance>())
-	{
-		gi->JoinSession(Index);
-	}
-}
+//void UPGSessionSlotWidget::OnJoinClicked()
+//{
+//	if (UPGAdvancedFriendsGameInstance* gi = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+//	{
+//		gi->JoinSession(Index);
+//	}
+//}
