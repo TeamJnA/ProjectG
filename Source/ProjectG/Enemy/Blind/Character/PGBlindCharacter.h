@@ -9,6 +9,8 @@
 
 #include "PGBlindCharacter.generated.h"
 
+class UPGBlindAttributeSet;
+
 /**
  * 
  */
@@ -19,10 +21,26 @@ class PROJECTG_API APGBlindCharacter : public APGEnemyCharacterBase, public IPGA
 
 	
 public:
+
+	APGBlindCharacter();
+
 	virtual float GetExplorationRadius() const override;
 	virtual float GetExplorationWaitTime() const override;
-	virtual float GetExplorationMoveSpeed() const override;
+
+
+	float GetNoiseLevelThreshold() const;
+
+	int GetHuntLevel() const;
+	void SetHuntLevel(int Level);
+
+
+
+protected:
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UPGBlindAttributeSet> BlindAttributeSet;
 	
+	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
 	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
@@ -31,19 +49,26 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	float ExplorationWaitTime = 3.f;
 
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
+	int HuntLevel = 0;
+
+
+
+
+
+
+
+	//detect Noise
+
+
+
+private:
+
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float ExplorationMoveSpeed = 200.f;
-
-
-
-
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float InvestigateMoveSpeed = 400.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float ChaseMoveSpeed = 800.f;
-
+	float NoiseLevelThreshold = 1000.f;
 
 
 };

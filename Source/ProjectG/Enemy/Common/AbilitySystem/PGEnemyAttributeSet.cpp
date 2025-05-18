@@ -42,8 +42,7 @@ void UPGEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 
 	if (Data.EvaluatedData.Attribute == GetMovementSpeedAttribute())
 	{
-		SetMovementSpeed(FMath::Clamp(GetMovementSpeed(), 0.f, GetMaxMovementSpeed()));
-
+		
 		AActor* Owner = GetOwningActor();
 		if (APGEnemyCharacterBase* OwnerPawn = Cast<APGEnemyCharacterBase>(Owner))
 		{

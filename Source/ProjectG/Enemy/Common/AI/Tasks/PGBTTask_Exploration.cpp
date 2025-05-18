@@ -19,10 +19,8 @@ UPGBTTask_Exploration::UPGBTTask_Exploration(FObjectInitializer const& ObjectIni
 
 EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	//ai 컨트롤러 가져오기
 	if (APGEnemyAIControllerBase* const cont = Cast<APGEnemyAIControllerBase>(OwnerComp.GetAIOwner()))
 	{
-		//해당 ai 컨트롤러의 pawn 가져오기
 		if (auto* const enemy = Cast<APGEnemyCharacterBase>(cont->GetPawn()))
 		{
 			//interface 확인
@@ -33,11 +31,7 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
 				{
 					float ExplorationRadius = IExploration->GetExplorationRadius();
 					float ExplorationWaitTime = IExploration->GetExplorationWaitTime();
-					float ExplorationMoveSpeed = IExploration->GetExplorationMoveSpeed();
 
-					
-					//이 부분 abilitySystem 으로 옮김.
-					//enemy->SetMovementSpeed(ExplorationMoveSpeed);
 
 
 
@@ -49,7 +43,6 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
 					{
 						FNavLocation Loc;
 
-						//반경내 랜덤한 위치 찾기.
 						if (NavSys->GetRandomPointInNavigableRadius(Origin, ExplorationRadius, Loc))
 						{
 							//찾은 위치 Blackboard 키에 저장하기. (에디터에서 명시)

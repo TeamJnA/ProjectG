@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Enemy/Common/AI/Controllers/PGEnemyAIControllerBase.h"
+#include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "PGBlindAIController.generated.h"
+
 
 /**
  * 
@@ -18,13 +20,37 @@ class PROJECTG_API APGBlindAIController : public APGEnemyAIControllerBase
 public:
 	explicit APGBlindAIController(FObjectInitializer const& ObjectInitializer);
 
+	void SetHearingRange(float NewRange);
+	void SetHearingEnabled(bool Enable);
+
+	void ResetHuntLevel();
+
+
+
 protected:
 	virtual void SetupPerceptionSystem() override;
 
 	UFUNCTION()
 	virtual void OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus) override;
 
+	
+
+	virtual void OnPossess(APawn* InPawn) override;
+
 private:
+
+
+	void CalculateNoise(float Noise, FVector SourceLocation);
+
+
 	class UAISenseConfig_Hearing* HearingConfig;
 	class UAISenseConfig_Touch* TouchConfig;
+
+	UPROPERTY()
+	APGBlindCharacter* OwnerPawn;
+
+
+
+
+
 };

@@ -9,12 +9,48 @@
 #include "Perception/AISenseConfig_Hearing.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AISenseConfig_Touch.h"
+#include "AbilitySystemComponent.h"
+#include "Enemy/Blind/Ability/Investigate/GA_BlindInvestigate.h"
+#include "Enemy/Common/AbilitySystem/GA_Exploration.h"
+#include "Enemy/Blind/Ability/Chase/GA_BlindChase.h"
 
 
 APGBlindAIController::APGBlindAIController(FObjectInitializer const& ObjectInitializer) :
 	APGEnemyAIControllerBase{ ObjectInitializer }
 {
 	SetupPerceptionSystem();
+}
+
+
+void APGBlindAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	OwnerPawn = Cast<APGBlindCharacter>(InPawn);
+}
+
+
+void APGBlindAIController::SetHearingRange(float NewRange)
+{
+	if (HearingConfig)
+	{
+		HearingConfig->HearingRange = NewRange;
+		GetPerceptionComponent()->ConfigureSense(*HearingConfig);
+	}
+}
+
+void APGBlindAIController::SetHearingEnabled(bool Enable)
+{
+	if (HearingConfig)
+	{
+		GetPerceptionComponent()->SetSenseEnabled(UAISense_Hearing::StaticClass(), Enable);
+	}
+}
+
+void APGBlindAIController::ResetHuntLevel()
+{
+	GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
+	OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
+	OwnerPawn->SetHuntLevel(0);
 }
 
 void APGBlindAIController::SetupPerceptionSystem()
@@ -47,30 +83,68 @@ void APGBlindAIController::SetupPerceptionSystem()
 
 void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
-	//감지한 Actor가  플레이어 클래스라면.. 후에 수정... 
-	//if (auto* const ch = Cast<APGPlayerCharacter>(Actor)) {}
-	//또 ai stimuli source 추가도 cpp에서 하면 좋겟지만... 지금 불가...
 
 	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
 	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,                         // Key (-1이면 항상 새 메시지)
-			2.0f,                       // 표시 시간 (초)
-			FColor::Green,             // 글자 색상
-			FString::Printf(TEXT("Strength: %.2f"), Stimulus.Strength) // 출력 문자열
-		);
-		GEngine->AddOnScreenDebugMessage(
-			-1,                         // Key (-1이면 항상 새 메시지)
-			2.0f,                       // 표시 시간 (초)
-			FColor::Green,             // 글자 색상
-			FString::Printf(TEXT("tag: %.s"), *Stimulus.Tag.ToString()) // 출력 문자열
-		);
-
+		CalculateNoise(Stimulus.Strength, Stimulus.StimulusLocation);
 	}
 
+	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
+	{
+		UE_LOG(LogTemp, Log, TEXT(" I FOUND YOU ATTACK!!"));
+	}
+
+	/*
 	if (Actor && Actor->ActorHasTag(FName("TestPlayer")))
 	{
 		//CanSeePlayer 키에 true 또는 false 값을 설정합니다. stimulus.WasSuccessfullySensed()는: 대상 방금 감지되었을 때 : true, 사라지면 false
 		GetBlackboardComponent()->SetValueAsBool("CanSeePlayer", Stimulus.WasSuccessfullySensed());
-	}
+	}*/
 }
+
+
+
+void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
+{
+	
+	
+	float Distance = FVector::DistSquared(OwnerPawn->GetActorLocation(), SourceLocation); //역제곱법칙
+
+	float CurNoise = Noise / (Distance + 0.1f) * 100000.f;
+
+	float DetectedMaxNoiseMagnitude = GetBlackboardComponent()->GetValueAsFloat("DetectedMaxNoiseMagnitude");
+
+	if (DetectedMaxNoiseMagnitude < CurNoise)
+	{
+		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoise);
+		
+		
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
+			FString::Printf(TEXT("cur noise : %.1f"), CurNoise));
+
+		
+		GetBlackboardComponent()->SetValueAsVector("TargetLocation", SourceLocation);
+		if (OwnerPawn->GetNoiseLevelThreshold() < CurNoise)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
+				FString::Printf(TEXT("Strong Clue")));
+			OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindChase::StaticClass(), true);
+		}
+		else if(OwnerPawn->GetNoiseLevelThreshold() >= CurNoise)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
+				FString::Printf(TEXT("Weak Clue")));
+			OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindInvestigate::StaticClass(), true);
+
+			
+		}
+
+		int flipsign = (GetBlackboardComponent()->GetValueAsInt("BehaviorFlipSign")) * (-1)  ;
+		GetBlackboardComponent()->SetValueAsInt("BehaviorFlipSign",flipsign );
+
+		
+	}
+
+}
+
+

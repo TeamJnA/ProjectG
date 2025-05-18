@@ -24,5 +24,4 @@ class PROJECTG_API IPGAIExplorationInterface
 public:
 	virtual float GetExplorationRadius() const = 0;
 	virtual float GetExplorationWaitTime() const = 0;
-	virtual float GetExplorationMoveSpeed() const = 0;
 };

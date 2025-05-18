@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "PGBTTask_ChasePlayer.generated.h"
+#include "PGBTTask_BlindInvestigateEnd.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API UPGBTTask_ChasePlayer : public UBTTask_BlackboardBase
+class PROJECTG_API UPGBTTask_BlindInvestigateEnd : public UBTTask_BlackboardBase
 {
 	GENERATED_BODY()
 	
 public:
-	explicit UPGBTTask_ChasePlayer(FObjectInitializer const& ObjectInitializer);
+	explicit UPGBTTask_BlindInvestigateEnd(FObjectInitializer const& ObjectInitializer);
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	
 };

@@ -2,6 +2,13 @@
 
 
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
+#include "Enemy/Blind/Ability/PGBlindAttributeSet.h"
+
+APGBlindCharacter::APGBlindCharacter()
+{
+    BlindAttributeSet = CreateDefaultSubobject<UPGBlindAttributeSet>("BlindAttributeSet");
+
+}
 
 float APGBlindCharacter::GetExplorationRadius() const
 {
@@ -13,7 +20,21 @@ float APGBlindCharacter::GetExplorationWaitTime() const
     return ExplorationWaitTime;
 }
 
-float APGBlindCharacter::GetExplorationMoveSpeed() const
+
+
+float APGBlindCharacter::GetNoiseLevelThreshold() const
 {
-    return ExplorationMoveSpeed;
+    return NoiseLevelThreshold;
 }
+
+int APGBlindCharacter::GetHuntLevel() const
+{
+    return HuntLevel;
+}
+
+void APGBlindCharacter::SetHuntLevel(int Level)
+{
+    HuntLevel = Level;
+}
+
+

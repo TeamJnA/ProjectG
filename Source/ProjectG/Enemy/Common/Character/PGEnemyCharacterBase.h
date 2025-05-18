@@ -3,17 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-//#include "Enemy/AI/ETC/PGPatrolPath.h"
 #include "Character/PGCharacterBase.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "GameplayTagAssetInterface.h"
+
 #include "PGEnemyCharacterBase.generated.h"
 
 class UPGEnemyAttributeSet;
+class UBoxComponent;
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase
+class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase, public IGameplayTagAssetInterface
 {
 	GENERATED_BODY()
 	
@@ -26,17 +28,12 @@ public:
 	
 	void SetMovementSpeed(float speed);
 
+	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")
+	UBoxComponent* TouchCollider;
 
 
-
-
-	//삭제 예정
-	float GetMovementSpeed() const;
-
-	
-
-
-	//APGPatrolPath* GetPatrolPath() const;
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(AllowPrivateAccess="true"))
 	UBehaviorTree* Tree;
@@ -48,11 +45,16 @@ protected:
 
 
 
-	//삭제 예정
+	UFUNCTION()
+	void OnOverlapBegin(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
 
-	/*
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	APGPatrolPath* PatrolPath;*/
+
 
 };
 
