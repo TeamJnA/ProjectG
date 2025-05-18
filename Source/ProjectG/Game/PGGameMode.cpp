@@ -49,12 +49,10 @@ void APGGameMode::BeginPlay()
 	}
 }
 
-void APGGameMode::PostLogin(APlayerController* NewPlayer)
+void APGGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
-	Super::PostLogin(NewPlayer);
-
 	ConnectedPlayerCount++;
-	UE_LOG(LogTemp, Warning, TEXT("GameMode: PostLogin. ConnectedPlayerCount = %d"), ConnectedPlayerCount);
+	UE_LOG(LogTemp, Warning, TEXT("GameMode: HandleStartingNewPlayer. ConnectedPlayerCount = %d"), ConnectedPlayerCount);
 
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
 	if (bDelegateFailed && ConnectedPlayerCount >= GS->PlayerArray.Num())
@@ -63,40 +61,6 @@ void APGGameMode::PostLogin(APlayerController* NewPlayer)
 		HandleSpawnComplete();
 	}
 }
-
-/*
-void APGGameMode::HandleSeamlessTravelPlayer(AController*& C)
-{
-	if (!OldController) return;
-
-	APlayerState* SavedPlayerState = OldController->PlayerState;
-
-	if (OldController->GetPawn())
-	{
-		OldController->GetPawn()->Destroy();
-	}
-
-	OldController->Destroy();
-
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	APGPlayerController* NewPC = GetWorld()->SpawnActor<APGPlayerController>(PlayerControllerClass, Params);
-
-	if (NewPC)
-	{
-		NewPC->PlayerState = SavedPlayerState;
-		OldController = NewPC; 
-	}
-
-	Super::HandleSeamlessTravelPlayer(C);
-
-	if (APGPlayerController* PC = Cast<APGPlayerController>(C))
-	{
-		UE_LOG(LogTemp, Log, TEXT("SeamlessTravel: PlayerController retained"));
-	}
-}
-*/
 
 void APGGameMode::HandleMapGenerationComplete()
 {
@@ -111,7 +75,9 @@ void APGGameMode::HandleSpawnComplete()
 
 	if (const APGGameState* GS = GetGameState<APGGameState>())
 	{
-		UE_LOG(LogTemp, Log, TEXT("GameMode: GameState is not in"));
+		UE_LOG(LogTemp, Log, TEXT("GameMode: PlayerArray Num: %d"), GS->PlayerArray.Num());
+		UE_LOG(LogTemp, Log, TEXT("GameMode: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
+		UE_LOG(LogTemp, Log, TEXT("GameMode: bManagerSpawned: %d"), bManagerSpawned);
 
 		if (ConnectedPlayerCount >= GS->PlayerArray.Num() && !bManagerSpawned)
 		{
@@ -122,6 +88,10 @@ void APGGameMode::HandleSpawnComplete()
 			UE_LOG(LogTemp, Warning, TEXT("GameMode: Not enough players yet."));
 			bDelegateFailed = true;
 		}		
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("GameMode: GameState is not in"));
 	}
 }
 
