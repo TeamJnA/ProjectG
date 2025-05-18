@@ -111,6 +111,8 @@ void APGGameMode::HandleSpawnComplete()
 
 	if (const APGGameState* GS = GetGameState<APGGameState>())
 	{
+		UE_LOG(LogTemp, Log, TEXT("GameMode: GameState is not in"));
+
 		if (ConnectedPlayerCount >= GS->PlayerArray.Num() && !bManagerSpawned)
 		{
 			SpawnGlobalLightManager();
@@ -147,12 +149,6 @@ void APGGameMode::SpawnAllPlayers()
 		{
 			newPawn->FinishSpawning(FTransform(spawnRot, spawnLoc));
 			pc->Possess(newPawn);
-
-			newPawn->InitAbilitySystemComponent();
-			newPawn->GiveDefaultAbilities();
-			newPawn->InitDefaultAttributes();
-			newPawn->GiveAndActivatePassiveEffects();
-
 		}
 
 		SpawnOffset += 50;

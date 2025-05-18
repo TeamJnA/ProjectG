@@ -118,10 +118,10 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	//InitAbilitySystemComponent();
-	//GiveDefaultAbilities();
-	//InitDefaultAttributes();
-	//GiveAndActivatePassiveEffects();
+	InitAbilitySystemComponent();
+	GiveDefaultAbilities();
+	InitDefaultAttributes();
+	GiveAndActivatePassiveEffects();
 }
 
 //This function is called on the client When the server updates PlayerState.
