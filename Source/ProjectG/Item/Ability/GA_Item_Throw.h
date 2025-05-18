@@ -35,7 +35,17 @@ private:
 	UFUNCTION()
 	void MouseRight();
 
+	TObjectPtr<UAnimMontage> ThrowAnimMontage;
+
 	FGameplayTag MouseRightTag;
 
 	FGameplayTag MouseLeftTag;
+
+	bool bThrowReady;
+
+	UFUNCTION()
+	void OnCompletedFullThrowAnim();
+
+	UFUNCTION()
+	void OnCompletedThrowStartAnim();
 };
