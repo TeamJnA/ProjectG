@@ -15,64 +15,28 @@ void APGPlayerController::BeginPlay()
 
 	bShowMouseCursor = false;
 
-	UE_LOG(LogTemp, Warning, TEXT("PlayerController %s BeginPlay"), *GetNameSafe(this));
-
-	if (HasAuthority()) return;
+	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController: [%s] BeginPlay"), *GetNameSafe(this));
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
 	{
 		if (GI->HasClientTravelled())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("PlayerController %s: Detected previous ClientTravel. ReportClientTravel to Server"), *GetNameSafe(this));
+			UE_LOG(LogTemp, Warning, TEXT("PGPlayerController %s: Detected previous ClientTravel. Reset flag and retry count"), *GetNameSafe(this));
 			GI->ResetClientTravelFlag();
-			Server_ReportClientTravel();
+			GI->ResetTravelRetryCount();
 		}
 	}
+	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController: [%s] Report Client Travel"), *GetNameSafe(this));
+	Server_ReportClientTravelComplete();
 }
 
-void APGPlayerController::Client_CheckLevelSync_Implementation()
-{
-	UE_LOG(LogTemp, Warning, TEXT("PlayerController_Client: CheckLevelSync | HasAuthority %d"), HasAuthority());
-	FString currentMap = GetWorld()->GetMapName();
-	FString targetMap = "LV_PGMainLevel";
-
-	if (currentMap.Contains(targetMap))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Client map match"));
-		UE_LOG(LogTemp, Warning, TEXT("PlayerController: ReportClientReady to server"));
-		Server_ReportClientReady();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Client map mismatch. Force ClientTravel to sync."));
-		if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
-		{
-			GI->MarkClientTravelled();
-			UE_LOG(LogTemp, Warning, TEXT("[%s] bDidClientTravel: %d"), *GetNameSafe(this), GI->HasClientTravelled());
-		}
-		ClientTravel("/Game/ProjectG/Levels/LV_PGMainLevel", ETravelType::TRAVEL_Absolute);
-	}
-}
-
-void APGPlayerController::Server_ReportClientReady_Implementation()
+void APGPlayerController::Server_ReportClientTravelComplete_Implementation()
 {
 	if (HasAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerController_Server: Recieved client request ClientReady | HasAuthority %d"), HasAuthority());
+		UE_LOG(LogTemp, Warning, TEXT("PlayerController_Server: Recieved client request ClientTravelComplete | HasAuthority %d"), HasAuthority());
 		if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 		{
-			GS->NotifyClientReady(this);
-		}
-	}
-}
-
-void APGPlayerController::Server_ReportClientTravel_Implementation()
-{
-	if (HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerController_Server: Recieved client request ClientTravel | HasAuthority %d"), HasAuthority());
-		if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
-		{
-			GS->NotifyClientTravel();
+			GS->NotifyClientTravelComplete(this);
 		}
 	}
 }

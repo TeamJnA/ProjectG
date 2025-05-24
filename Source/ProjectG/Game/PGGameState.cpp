@@ -10,16 +10,10 @@ void APGGameState::Multicast_MapGenerationComplete_Implementation()
 	OnMapGenerationComplete.Broadcast();
 }
 
-void APGGameState::Multicast_SpawnComplete_Implementation()
-{
-	UE_LOG(LogTemp, Warning, TEXT("GameState: Multicast_SpawnComplete | HasAuthority = %d"), HasAuthority());
-	OnSpawnComplete.Broadcast();
-}
-
-void APGGameState::Multicast_ClientTravel_Implementation()
+void APGGameState::Multicast_ClientTravelComplete_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("GameState: Multicast_ClientTravel | HasAuthority = %d"), HasAuthority());
-	OnClientTravel.Broadcast();
+	OnClientTravelComplete.Broadcast();
 }
 
 void APGGameState::NotifyMapGenerationComplete()
@@ -27,26 +21,37 @@ void APGGameState::NotifyMapGenerationComplete()
 	Multicast_MapGenerationComplete();
 }
 
-void APGGameState::NotifySpawnComplete()
+void APGGameState::NotifyClientTravelComplete(APGPlayerController* PC)
 {
-	Multicast_SpawnComplete();
-}
+	if (ClientTravelCompletedPlayersQueue.Contains(PC)) return;
 
-void APGGameState::NotifyClientTravel()
-{
-	Multicast_ClientTravel();
-}
-
-void APGGameState::NotifyClientReady(APGPlayerController* PC)
-{
-	if (ReadyPlayers.Contains(PC)) return;
-
-	ReadyPlayers.Add(PC);
-
-	UE_LOG(LogTemp, Warning, TEXT("Client ready: %s (%d / %d)"), *PC->GetName(), ReadyPlayers.Num(), PlayerArray.Num());
-
-	if (ReadyPlayers.Num() == PlayerArray.Num())
+	if (bGameModeReady)
 	{
-		NotifySpawnComplete();
+		UE_LOG(LogTemp, Warning, TEXT("GameState: Gamemode is ready -> Broadcast to GameMode"), *PC->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("GameState: [%s] is ready | HasAuthority = %d"), *PC->GetName(), HasAuthority());
+		Multicast_ClientTravelComplete();
+		ClientTravelCompletedPlayersQueue.Add(PC);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameState: Gamemode is not ready -> queue PC [%s]"), *PC->GetName());
+		ClientTravelCompletedPlayersQueue.Add(PC);
+	}
+}
+
+void APGGameState::NotifyGameModeReady()
+{
+	// if already notified -> return
+	if (bGameModeReady) return;
+
+	bGameModeReady = true;
+
+	for (APlayerController* PC : ClientTravelCompletedPlayersQueue)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameState: Gamemoed spawned. Broadcast delayed PC [%s] to Gamemode."), *PC->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("GameState: [%s] is ready | HasAuthority = %d"), *PC->GetName(), HasAuthority());
+		Multicast_ClientTravelComplete();
+	}
+
+	// ClientTravelCompletedPlayersQueue.Empty();
 }

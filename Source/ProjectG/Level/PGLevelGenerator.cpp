@@ -419,7 +419,7 @@ void APGLevelGenerator::CheckForDungeonComplete()
 
 		UE_LOG(LogTemp, Warning, TEXT("Reboot Level"));
 		// UGameplayStatics::OpenLevel(this, FName("LV_PGMainLevel"));
-		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen");
+		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 	}
 	else
 	{

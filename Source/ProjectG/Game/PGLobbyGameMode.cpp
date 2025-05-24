@@ -2,6 +2,7 @@
 
 
 #include "Game/PGLobbyGameMode.h"
+#include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerState.h"
 #include "PGGameState.h"
@@ -31,6 +32,18 @@ void APGLobbyGameMode::StartGame()
 	UWorld* world = GetWorld();
 	if (world)
 	{
-		world->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen");
+		if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance()))
+		{
+			GI->SetExpectedPlayerCount(GameState->PlayerArray.Num());
+		}
+		if (GameState && GameState->PlayerArray.Num() > 0)
+		{
+			if (APGLobbyPlayerController* PC = Cast<APGLobbyPlayerController>(GameState->PlayerArray[0]->GetOwner()))
+			{
+				PC->Client_StartTravelCheckTimer();
+			}
+		}
+
+		world->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 	}
 }

@@ -119,6 +119,50 @@ bool UPGAdvancedFriendsGameInstance::HasClientTravelled() const
 	return bDidClientTravel;
 }
 
+void UPGAdvancedFriendsGameInstance::IncrementTravelRetryCount()
+{
+	TravelRetryCount++;
+}
+
+void UPGAdvancedFriendsGameInstance::ResetTravelRetryCount()
+{
+	TravelRetryCount = 0;
+}
+
+bool UPGAdvancedFriendsGameInstance::HasExceededRetryLimit() const
+{
+	return TravelRetryCount >= 2;
+}
+
+void UPGAdvancedFriendsGameInstance::LeaveSessionAndReturnToLobby()
+{
+	IOnlineSubsystem* subsystem = IOnlineSubsystem::Get();
+	if (subsystem)
+	{
+		IOnlineSessionPtr sessions = subsystem->GetSessionInterface();
+		if (sessions.IsValid())
+		{
+			sessions->DestroySession(NAME_GameSession, FOnDestroySessionCompleteDelegate::CreateUObject(this, &UPGAdvancedFriendsGameInstance::OnDestroySessionComplete));
+		}
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Session destroy complete, back to lobby"));
+	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGMainLevel"), true);
+}
+
+int32 UPGAdvancedFriendsGameInstance::GetExpectedPlayerCount()
+{
+	return ExpectedPlayerCount;
+}
+
+void UPGAdvancedFriendsGameInstance::SetExpectedPlayerCount(int32 PlayerCount)
+{
+	ExpectedPlayerCount = PlayerCount;
+}
+
 int32 UPGAdvancedFriendsGameInstance::GetMaxInventorySize() const
 {
 	return MaxInventorySize;

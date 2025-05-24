@@ -11,6 +11,8 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Game/PGGameState.h"
 #include "Level/PGGlobalLightManager.h"
+#include "Level/PGLevelGenerator.h"
+#include "Game/PGAdvancedFriendsGameInstance.h"
 
 APGGameMode::APGGameMode()
 {
@@ -40,20 +42,46 @@ void APGGameMode::BeginPlay()
 
 	if (GetWorld())
 	{
+		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance());
+		if (GI)
+		{
+			ExpectedPlayerCount = GI->GetExpectedPlayerCount();
+		}
+
 		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
 		if (GS)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("GameMode::BeginPlay: Bind delegate function"));
+			// ClientTravelComplete -> Spawn LevelGenerator
+			GS->OnClientTravelComplete.AddDynamic(this, &APGGameMode::HandleClientTravelComplete);
+			// MapGenerationComplete -> Spawn Players
 			GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
-			GS->OnSpawnComplete.AddDynamic(this, &APGGameMode::HandleSpawnComplete);
-			GS->OnClientTravel.AddDynamic(this, &APGGameMode::HandleClientTravel);
+			// SpawnPlayersComplete -> Spawn LightManager
+
+			// Notify Gamemode spawned to GameState
+			GS->NotifyGameModeReady();
 		}
 	}
 }
 
 void APGGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
-	ConnectedPlayerCount++;
-	UE_LOG(LogTemp, Warning, TEXT("GameMode: HandleStartingNewPlayer. ConnectedPlayerCount = %d"), ConnectedPlayerCount);
+	UE_LOG(LogTemp, Warning, TEXT("GameMode: HandleStartingNewPlayer [%s]. ConnectedPlayerCount = %d"), *NewPlayer->GetName(), ConnectedPlayerCount);
+}
+
+void APGGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	// if game did not start (some players not in game level -> ExpectedPlayerCount > ConnectedPlayerCount)
+	if (!bLevelGeneratorSpawned)
+	{
+		ExpectedPlayerCount--;
+		if (ConnectedPlayerCount >= ExpectedPlayerCount)
+		{
+			HandleClientTravelComplete();
+		}
+	}
 }
 
 void APGGameMode::HandleMapGenerationComplete()
@@ -63,37 +91,31 @@ void APGGameMode::HandleMapGenerationComplete()
 	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
 }
 
-void APGGameMode::HandleSpawnComplete()
+void APGGameMode::HandleClientTravelComplete()
 {
-	UE_LOG(LogTemp, Log, TEXT("GameMode: Recieved OnSpawnComplete"));
-
-	if (const APGGameState* GS = GetGameState<APGGameState>())
+	UE_LOG(LogTemp, Log, TEXT("GameMode: Recieved OnClientTravel broadcast"));
+	// if already all players registered
+	if (ConnectedPlayerCount >= ExpectedPlayerCount)
 	{
-		UE_LOG(LogTemp, Log, TEXT("GameMode: PlayerArray Num: %d"), GS->PlayerArray.Num());
-		UE_LOG(LogTemp, Log, TEXT("GameMode: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
-		UE_LOG(LogTemp, Log, TEXT("GameMode: bManagerSpawned: %d"), bManagerSpawned);
+		UE_LOG(LogTemp, Log, TEXT("GameMode: Already all players registered"));
+		return;
+	}
 
-		if (ConnectedPlayerCount >= GS->PlayerArray.Num() && !bManagerSpawned)
-		{
-			SpawnGlobalLightManager();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GameMode: Not enough players yet."));
-			bDelegateFailed = true;
-		}		
+	ConnectedPlayerCount++;
+
+	UE_LOG(LogTemp, Log, TEXT("GameMode: ExpectedPlayerCount: %d"), ExpectedPlayerCount);
+	UE_LOG(LogTemp, Log, TEXT("GameMode: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
+	UE_LOG(LogTemp, Log, TEXT("GameMode: bLevelGeneratorSpawned: %d"), bLevelGeneratorSpawned);
+
+	if (ConnectedPlayerCount >= ExpectedPlayerCount && !bLevelGeneratorSpawned)
+	{
+		SpawnLevelGenerator();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("GameMode: GameState is not in"));
+		UE_LOG(LogTemp, Warning, TEXT("GameMode: Not enough players yet."));
+		// what to do after failure?
 	}
-}
-
-void APGGameMode::HandleClientTravel()
-{
-	UE_LOG(LogTemp, Log, TEXT("GameMode: Recieved OnClientTravel"));
-
-	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
 }
 
 void APGGameMode::SpawnAllPlayers()
@@ -131,49 +153,35 @@ void APGGameMode::SpawnAllPlayers()
 
 		// need update!!
 		SpawnOffset += 50;
-
-		if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
-		{
-			TWeakObjectPtr<APGPlayerController> weakPC = PGPC;
-			FTimerHandle syncHandle;
-			GetWorld()->GetTimerManager().SetTimer(syncHandle, FTimerDelegate::CreateLambda([weakPC, this]()
-			{
-				if (!weakPC.IsValid()) return;
-				CheckPlayerReady(weakPC);
-			}), 0.2f, false);
-		}
 	}
+
 	if (!bAllReady)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Some Players not spawned yet. Retry..."));
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
-	}
-}
 
-void APGGameMode::CheckPlayerReady(TWeakObjectPtr<APGPlayerController> WeakPC)
-{
-	if (!WeakPC.IsValid())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GameMode: CheckPlayerReady: PlayerController is no longer valid"));
-		return;
-	}
-
-	APGPlayerController* validPC = WeakPC.Get();
-	
-	if (!validPC) return;
-
-	if (validPC->IsLocalPlayerController())
-	{
-		UE_LOG(LogTemp, Log, TEXT("GameMode: CheckPlayerReady: Notify server is ready to GameState"));
-		if (APGGameState* GS = GetGameState<APGGameState>())
-		{
-			GS->NotifyClientReady(validPC);
-		}
+		// need retry count limit
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("GameMode: CheckPlayerReady: Check client is in right level"));
-		validPC->Client_CheckLevelSync();
+		UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager."));
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnGlobalLightManager);
+	}
+}
+
+void APGGameMode::SpawnLevelGenerator()
+{
+	if (bLevelGeneratorSpawned) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("GameMode: Spawn LevelGenerator"));
+
+	FTransform spawnTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector(1.0f, 1.0f, 1.0f));	
+	APGLevelGenerator* LG = GetWorld()->SpawnActor<APGLevelGenerator>(APGLevelGenerator::StaticClass(), spawnTransform);
+
+	if (LG)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameMode: LevelGenerator Spawned"));
+		bLevelGeneratorSpawned = true;
 	}
 }
 

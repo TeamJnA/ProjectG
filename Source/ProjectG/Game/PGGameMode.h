@@ -23,26 +23,28 @@ protected:
 	virtual void BeginPlay() override;
 	// virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 
 	UFUNCTION()
 	void HandleMapGenerationComplete();
 
 	UFUNCTION()
-	void HandleSpawnComplete();
-
-	UFUNCTION()
-	void HandleClientTravel();
+	void HandleClientTravelComplete();
 
 	void SpawnAllPlayers();
-	void CheckPlayerReady(TWeakObjectPtr<APGPlayerController> WeakPC);
-
+	void SpawnLevelGenerator();
 	void SpawnGlobalLightManager();
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
 
+	bool bLevelGeneratorSpawned = false;
 	bool bManagerSpawned = false;
 	bool bDelegateFailed = false;
 	int32 ConnectedPlayerCount = 0;
 	float SpawnOffset = 0.0f;
+
+	int32 ExpectedPlayerCount = 0;
+	TSet<FString> PendingLogoutIDs;
+
 };

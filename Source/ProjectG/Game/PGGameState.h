@@ -7,8 +7,9 @@
 #include "PGGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSpawnComplete);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClientTravel);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClientTravelComplete);
+
+class APGPlayerController;
 
 UCLASS()
 class PROJECTG_API APGGameState : public AGameState
@@ -17,31 +18,23 @@ class PROJECTG_API APGGameState : public AGameState
 	
 public:
 	void NotifyMapGenerationComplete();
-	void NotifySpawnComplete();
-	void NotifyClientTravel();
-
-	UFUNCTION()
-	void NotifyClientReady(APGPlayerController* PC);
+	void NotifyClientTravelComplete(APGPlayerController* PC);
+	void NotifyGameModeReady();
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMapGenerationComplete OnMapGenerationComplete;
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnSpawnComplete OnSpawnComplete;
-
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnClientTravel OnClientTravel;
+	FOnClientTravelComplete OnClientTravelComplete;
 
 protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_MapGenerationComplete();
 
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_SpawnComplete();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ClientTravel();
+	void Multicast_ClientTravelComplete();
 
 private:
-	TSet<APlayerController*> ReadyPlayers;
+	TSet<APlayerController*> ClientTravelCompletedPlayersQueue;
+	bool bGameModeReady = false;
 };

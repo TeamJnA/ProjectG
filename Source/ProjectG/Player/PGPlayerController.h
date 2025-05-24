@@ -15,20 +15,9 @@ class PROJECTG_API APGPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	//WIP
-	UFUNCTION(Client, Reliable)
-	void Client_CheckLevelSync();
-
 	UFUNCTION(Server, Reliable)
-	void Server_ReportClientReady();
-
-	UFUNCTION(Server, Reliable)
-	void Server_ReportClientTravel();
+	void Server_ReportClientTravelComplete();
 
 protected:	
 	virtual void BeginPlay() override;
-
-private:
-	FTimerHandle TravelCheckHandle;
-	bool bSpawnCompleteSent = false;
 };

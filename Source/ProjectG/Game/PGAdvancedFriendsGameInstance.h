@@ -22,6 +22,15 @@ public:
 	void ResetClientTravelFlag();
 	bool HasClientTravelled() const;
 
+	void IncrementTravelRetryCount();
+	void ResetTravelRetryCount();
+	bool HasExceededRetryLimit() const;
+	void LeaveSessionAndReturnToLobby();
+	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+
+	int32 GetExpectedPlayerCount();
+	void SetExpectedPlayerCount(int32 PlayerCount);
+
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
 
@@ -56,6 +65,9 @@ private:
 	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 	TSharedPtr<const FUniqueNetId> UserID;
 	bool bDidClientTravel = false;
+	
+	int32 ExpectedPlayerCount = 0;
+	int32 TravelRetryCount = 0;
 
 	//void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	//void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
