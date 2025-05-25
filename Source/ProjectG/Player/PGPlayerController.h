@@ -15,9 +15,10 @@ class PROJECTG_API APGPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(Server, Reliable)
-	void Server_ReportClientTravelComplete();
+	UFUNCTION(Client, Reliable)
+	void Client_InitiateTravelTimer();
 
 protected:	
 	virtual void BeginPlay() override;
+	virtual void PostSeamlessTravel() override;
 };

@@ -28,9 +28,6 @@ protected:
 	UFUNCTION()
 	void HandleMapGenerationComplete();
 
-	UFUNCTION()
-	void HandleClientTravelComplete();
-
 	void SpawnAllPlayers();
 	void SpawnLevelGenerator();
 	void SpawnGlobalLightManager();
@@ -40,11 +37,11 @@ protected:
 
 	bool bLevelGeneratorSpawned = false;
 	bool bManagerSpawned = false;
-	bool bDelegateFailed = false;
+
+	bool bGamemodeReady = false;
 	int32 ConnectedPlayerCount = 0;
 	float SpawnOffset = 0.0f;
 
 	int32 ExpectedPlayerCount = 0;
-	TSet<FString> PendingLogoutIDs;
-
+	TSet<APlayerController*> ClientTravelCompletedPlayersSet;
 };

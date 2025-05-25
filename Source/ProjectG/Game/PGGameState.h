@@ -7,7 +7,6 @@
 #include "PGGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClientTravelComplete);
 
 class APGPlayerController;
 
@@ -18,23 +17,10 @@ class PROJECTG_API APGGameState : public AGameState
 	
 public:
 	void NotifyMapGenerationComplete();
-	void NotifyClientTravelComplete(APGPlayerController* PC);
-	void NotifyGameModeReady();
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMapGenerationComplete OnMapGenerationComplete;
 
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnClientTravelComplete OnClientTravelComplete;
-
 protected:
-	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_MapGenerationComplete();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ClientTravelComplete();
-
-private:
-	TSet<APlayerController*> ClientTravelCompletedPlayersQueue;
-	bool bGameModeReady = false;
 };

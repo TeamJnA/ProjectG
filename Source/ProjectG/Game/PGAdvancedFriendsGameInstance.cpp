@@ -12,6 +12,11 @@ void UPGAdvancedFriendsGameInstance::Init()
 {
 	Super::Init();
 	
+	if (GEngine)
+	{
+		GEngine->OnTravelFailure().AddUObject(this, &UPGAdvancedFriendsGameInstance::HandleTravelFailure);
+	}
+
 	IOnlineSubsystem* subsystem = IOnlineSubsystem::Get();
 	if (subsystem)
 	{
@@ -51,6 +56,156 @@ void UPGAdvancedFriendsGameInstance::SetPlayerName(const FString& NewName)
 	{
 		pc->PlayerState->SetPlayerName(NewName);
 	}
+}
+
+/*
+* on notified travel failure
+* -> retry travel (Max retry count == 2)
+*/
+void UPGAdvancedFriendsGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)
+{
+	if (bTimeoutProcessInProgress) return;
+	bOnTravelFailureDetected = true;
+
+	if (TravelRetryCount <= 2)
+	{
+		if (!GetWorld())
+		{
+			bDidRetryClientTravel = false;
+			bTimeoutProcessInProgress = false;
+			bOnTravelFailureDetected = false;
+			TravelRetryCount = 0;
+			LeaveSessionAndReturnToLobby();
+			return;
+		}
+		GetWorld()->GetTimerManager().ClearTimer(TravelTimerHandle);
+		UE_LOG(LogTemp, Error, TEXT("GameInstance::HandleTravelFailure: Travel Failed: %s"), *ErrorString);
+		RetryClientTravel();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GameInstance::HandleTravelFailure: Travel retry failed. LeaveSession"));
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+		LeaveSessionAndReturnToLobby();
+	}
+}
+
+/*
+* on non-notified travel failure
+* should check manually by timer
+*/
+void UPGAdvancedFriendsGameInstance::InitiateTravelTimer()
+{
+	if (TravelRetryCount <= 2)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameInstance::InitiateTravelTimer: Start check client travel timeout"));
+		if (!GetWorld())
+		{
+			bDidRetryClientTravel = false;
+			bTimeoutProcessInProgress = false;
+			bOnTravelFailureDetected = false;
+			TravelRetryCount = 0;
+			LeaveSessionAndReturnToLobby();
+			return;
+		}
+		GetWorld()->GetTimerManager().SetTimer(TravelTimerHandle, this, &UPGAdvancedFriendsGameInstance::OnTravelTimeout, 10.0f, false);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GameInstance::InitiateTravelTimer: Travel retry failed. LeaveSession"));
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+		LeaveSessionAndReturnToLobby();
+	}
+}
+
+/*
+* call on travel sueccess
+*/
+void UPGAdvancedFriendsGameInstance::NotifyTravelSuccess()
+{
+	UE_LOG(LogTemp, Warning, TEXT("GameInstance::NotifyTravelSuccess: Check client travel success"));
+	if (!GetWorld())
+	{
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+		LeaveSessionAndReturnToLobby();
+		return;
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(TravelTimerHandle);
+	bDidRetryClientTravel = false;
+	bTimeoutProcessInProgress = false;
+	bOnTravelFailureDetected = false;
+	TravelRetryCount = 0;
+}
+
+void UPGAdvancedFriendsGameInstance::OnTravelTimeout()
+{
+	if (bOnTravelFailureDetected) return;
+	bTimeoutProcessInProgress = true;
+
+	UE_LOG(LogTemp, Error, TEXT("GameInstance::OnTravelTimeout: client travel timeout"));
+	UWorld* world = GetWorld();
+	if (!world)
+	{
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+		LeaveSessionAndReturnToLobby();
+		return;
+	}
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(world, 0);
+	if (!PC)
+	{
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+		LeaveSessionAndReturnToLobby();
+		return;
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("GameInstance::OnTravelTimeout: [%s] travel timeout!"), *PC->GetName());
+	RetryClientTravel();
+}
+
+/*
+* retry ClientTravel
+* if retry count >= Max retry count(2) -> leave session
+*/
+void UPGAdvancedFriendsGameInstance::RetryClientTravel()
+{
+	UWorld* world = GetWorld();
+	if (!world)
+	{
+		LeaveSessionAndReturnToLobby();
+		return;
+	}
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(world, 0);
+	if (!PC)
+	{
+		LeaveSessionAndReturnToLobby();
+		return;
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("GameInstnace::RetryClientTravel: Retry travel to main level [%s]"), *PC->GetName());
+	bDidRetryClientTravel = true;
+	TravelRetryCount++;
+	InitiateTravelTimer();
+	bOnTravelFailureDetected = false;
+	bTimeoutProcessInProgress = false;
+	PC->ClientTravel("/Game/ProjectG/Levels/LV_PGMainLevel", ETravelType::TRAVEL_Absolute);
 }
 
 //void UPGAdvancedFriendsGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
@@ -104,34 +259,9 @@ void UPGAdvancedFriendsGameInstance::SetPlayerName(const FString& NewName)
 //	}
 //}
 
-void UPGAdvancedFriendsGameInstance::MarkClientTravelled()
+bool UPGAdvancedFriendsGameInstance::DidRetryClientTravel() const
 {
-	bDidClientTravel = true;
-}
-
-void UPGAdvancedFriendsGameInstance::ResetClientTravelFlag()
-{
-	bDidClientTravel = false;
-}
-
-bool UPGAdvancedFriendsGameInstance::HasClientTravelled() const
-{
-	return bDidClientTravel;
-}
-
-void UPGAdvancedFriendsGameInstance::IncrementTravelRetryCount()
-{
-	TravelRetryCount++;
-}
-
-void UPGAdvancedFriendsGameInstance::ResetTravelRetryCount()
-{
-	TravelRetryCount = 0;
-}
-
-bool UPGAdvancedFriendsGameInstance::HasExceededRetryLimit() const
-{
-	return TravelRetryCount >= 2;
+	return bDidRetryClientTravel;
 }
 
 void UPGAdvancedFriendsGameInstance::LeaveSessionAndReturnToLobby()

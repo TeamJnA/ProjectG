@@ -5,7 +5,6 @@
 #include "Game/PGGameState.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
-
 void APGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -16,27 +15,36 @@ void APGPlayerController::BeginPlay()
 	bShowMouseCursor = false;
 
 	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController: [%s] BeginPlay"), *GetNameSafe(this));
+	// On travel retry success
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
 	{
-		if (GI->HasClientTravelled())
+		if (GI->DidRetryClientTravel())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("PGPlayerController %s: Detected previous ClientTravel. Reset flag and retry count"), *GetNameSafe(this));
-			GI->ResetClientTravelFlag();
-			GI->ResetTravelRetryCount();
+			UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::BeginPlay [%s] success retry client travel"), *GetNameSafe(this));
+			GI->NotifyTravelSuccess();
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController: [%s] Report Client Travel"), *GetNameSafe(this));
-	Server_ReportClientTravelComplete();
 }
 
-void APGPlayerController::Server_ReportClientTravelComplete_Implementation()
+void APGPlayerController::PostSeamlessTravel()
 {
-	if (HasAuthority())
+	Super::PostSeamlessTravel();
+
+	// On travel first try success
+	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::PostSeamlessTravel: [%s] travel success"), *GetNameSafe(this));
+	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerController_Server: Recieved client request ClientTravelComplete | HasAuthority %d"), HasAuthority());
-		if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
-		{
-			GS->NotifyClientTravelComplete(this);
-		}
+		GI->NotifyTravelSuccess();
+	}
+}
+
+void APGPlayerController::Client_InitiateTravelTimer_Implementation()
+{
+	if (HasAuthority()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::Client_InitClientTravelTimer: [%s] client travel timer start"), *GetNameSafe(this));
+	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
+	{
+		GI->InitiateTravelTimer();
 	}
 }

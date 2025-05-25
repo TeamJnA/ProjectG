@@ -40,7 +40,7 @@ void APGLobbyGameMode::StartGame()
 		{
 			if (APGLobbyPlayerController* PC = Cast<APGLobbyPlayerController>(GameState->PlayerArray[0]->GetOwner()))
 			{
-				PC->Client_StartTravelCheckTimer();
+				PC->Client_StartTravelCheckLogic();
 			}
 		}
 

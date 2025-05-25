@@ -18,18 +18,15 @@ class PROJECTG_API UPGAdvancedFriendsGameInstance : public UAdvancedFriendsGameI
 	GENERATED_BODY()
 
 public:
-	void MarkClientTravelled();
-	void ResetClientTravelFlag();
-	bool HasClientTravelled() const;
-
-	void IncrementTravelRetryCount();
-	void ResetTravelRetryCount();
-	bool HasExceededRetryLimit() const;
+	bool DidRetryClientTravel() const;
 	void LeaveSessionAndReturnToLobby();
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
 
 	int32 GetExpectedPlayerCount();
 	void SetExpectedPlayerCount(int32 PlayerCount);
+
+	void InitiateTravelTimer();
+	void NotifyTravelSuccess();
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
@@ -54,6 +51,12 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void SetPlayerName(const FString& NewName);
 
+	// void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
+	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString);
+	void OnTravelTimeout();
+
+	void RetryClientTravel();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 	int32 MaxInventorySize = 5;
 
@@ -64,10 +67,13 @@ private:
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 	TSharedPtr<const FUniqueNetId> UserID;
-	bool bDidClientTravel = false;
 	
 	int32 ExpectedPlayerCount = 0;
 	int32 TravelRetryCount = 0;
+	FTimerHandle TravelTimerHandle;
+	bool bDidRetryClientTravel = false;
+	bool bTimeoutProcessInProgress = false;
+	bool bOnTravelFailureDetected = false;
 
 	//void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	//void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);

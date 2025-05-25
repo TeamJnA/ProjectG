@@ -24,6 +24,7 @@
 #include "PGDoor3.h"
 #include "PGGlobalLightManager.h"
 #include "Game/PGGameState.h"
+#include "Player/PGPlayerController.h"
 
 // Sets default values
 APGLevelGenerator::APGLevelGenerator()
@@ -418,8 +419,19 @@ void APGLevelGenerator::CheckForDungeonComplete()
 		UE_LOG(LogTemp, Warning, TEXT("Stop Map Generating"));
 
 		UE_LOG(LogTemp, Warning, TEXT("Reboot Level"));
-		// UGameplayStatics::OpenLevel(this, FName("LV_PGMainLevel"));
-		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+
+		// need to mark server, client has travelled
+		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		if (!PC) return;
+		APGPlayerController* PGPC = Cast<APGPlayerController>(PC);
+		if (!PGPC) return;
+
+		PGPC->Client_InitiateTravelTimer();
+		
+		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
+		{
+			GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+		}));
 	}
 	else
 	{

@@ -23,18 +23,16 @@ public:
 	UPGLobbyWidget* GetLobbyWidget() const;
 
 	void SetReady();
+
 	UFUNCTION(Client, Reliable)
-	void Client_StartTravelCheckTimer();
+	void Client_StartTravelCheckLogic();
 
 protected:
 	virtual void BeginPlay() override;
-	void TravelCheck();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UPGLobbyWidget> LobbyWidgetClass;
 
 private:
-	UPGLobbyWidget* LobbyWidgetInstance;
-	FTimerHandle TravelCheckTimerHandle;
-	
+	UPGLobbyWidget* LobbyWidgetInstance;	
 };
