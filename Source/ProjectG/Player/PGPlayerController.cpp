@@ -38,11 +38,18 @@ void APGPlayerController::PostSeamlessTravel()
 	}
 }
 
-void APGPlayerController::Client_InitiateTravelTimer_Implementation()
+void APGPlayerController::NotifyStartTravel()
+{
+	if (!HasAuthority()) return;
+	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::NotifyStartTravel: called [%s] | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
+	MC_InitiateTravelTimer();
+}
+
+void APGPlayerController::MC_InitiateTravelTimer_Implementation()
 {
 	if (HasAuthority()) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::Client_InitClientTravelTimer: [%s] client travel timer start"), *GetNameSafe(this));
+	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::MC_InitClientTravelTimer: [%s] client travel timer start | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
 	{
 		GI->InitiateTravelTimer();

@@ -3,6 +3,7 @@
 
 #include "Game/PGLobbyGameMode.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
+#include "Kismet/GameplayStatics.h"
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerState.h"
 #include "PGGameState.h"
@@ -36,14 +37,17 @@ void APGLobbyGameMode::StartGame()
 		{
 			GI->SetExpectedPlayerCount(GameState->PlayerArray.Num());
 		}
-		if (GameState && GameState->PlayerArray.Num() > 0)
+		if (APlayerController* PC = UGameplayStatics::GetPlayerController(world, 0))
 		{
-			if (APGLobbyPlayerController* PC = Cast<APGLobbyPlayerController>(GameState->PlayerArray[0]->GetOwner()))
-			{
-				PC->Client_StartTravelCheckLogic();
-			}
+			APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC);
+			UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel check logic [%s]"), *LobbyPC->GetName());
+			LobbyPC->NotifyStartTravel();
 		}
 
-		world->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+		world->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
+		{
+			UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel"));
+			GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+		}));
 	}
 }

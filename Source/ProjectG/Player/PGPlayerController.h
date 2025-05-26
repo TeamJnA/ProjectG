@@ -15,10 +15,12 @@ class PROJECTG_API APGPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(Client, Reliable)
-	void Client_InitiateTravelTimer();
+	void NotifyStartTravel();
 
 protected:	
 	virtual void BeginPlay() override;
 	virtual void PostSeamlessTravel() override;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MC_InitiateTravelTimer();
 };

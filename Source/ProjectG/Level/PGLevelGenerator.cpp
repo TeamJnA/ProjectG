@@ -426,7 +426,7 @@ void APGLevelGenerator::CheckForDungeonComplete()
 		APGPlayerController* PGPC = Cast<APGPlayerController>(PC);
 		if (!PGPC) return;
 
-		PGPC->Client_InitiateTravelTimer();
+		PGPC->NotifyStartTravel();
 		
 		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
 		{

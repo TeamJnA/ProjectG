@@ -60,11 +60,19 @@ void APGLobbyPlayerController::SetReady()
 	}
 }
 
-// if ClientTravel successed -> LobbyPlayerController destroy -> timer auto clear
-void APGLobbyPlayerController::Client_StartTravelCheckLogic_Implementation()
+void APGLobbyPlayerController::NotifyStartTravel()
 {
-	if (HasAuthority()) return;
+	if (!HasAuthority()) return;
+	UE_LOG(LogTemp, Warning, TEXT("LobbyPlayerController::NotifyStartTravel: called [%s] | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
+	MC_InitiateTravelTimer();
+}
+
+// if ClientTravel successed -> LobbyPlayerController destroy -> timer auto clear
+void APGLobbyPlayerController::MC_InitiateTravelTimer_Implementation()
+{
+	// if (HasAuthority()) return;
 	
+	UE_LOG(LogTemp, Warning, TEXT("LobbyPlayerController::MC_InitiateTravelTimer: called [%s] | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		GI->InitiateTravelTimer();

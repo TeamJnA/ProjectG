@@ -24,11 +24,13 @@ public:
 
 	void SetReady();
 
-	UFUNCTION(Client, Reliable)
-	void Client_StartTravelCheckLogic();
+	void NotifyStartTravel();
 
 protected:
 	virtual void BeginPlay() override;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MC_InitiateTravelTimer();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UPGLobbyWidget> LobbyWidgetClass;
