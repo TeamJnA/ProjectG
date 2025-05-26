@@ -147,6 +147,18 @@ void UPGAdvancedFriendsGameInstance::NotifyTravelSuccess()
 	TravelRetryCount = 0;
 }
 
+void UPGAdvancedFriendsGameInstance::CheckIsTimerActive()
+{
+	if (GetWorld()->GetTimerManager().IsTimerActive(TravelTimerHandle))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::CheckIsTimerActive: Timer is active"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::CheckIsTimerActive: Timer is not active"));
+	}
+}
+
 void UPGAdvancedFriendsGameInstance::OnTravelTimeout()
 {
 	if (bOnTravelFailureDetected) return;

@@ -27,6 +27,7 @@ public:
 
 	void InitiateTravelTimer();
 	void NotifyTravelSuccess();
+	void CheckIsTimerActive();
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;

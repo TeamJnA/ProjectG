@@ -34,6 +34,7 @@ void APGPlayerController::PostSeamlessTravel()
 	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::PostSeamlessTravel: [%s] travel success"), *GetNameSafe(this));
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
 	{
+		GI->CheckIsTimerActive();
 		GI->NotifyTravelSuccess();
 	}
 }
@@ -47,8 +48,6 @@ void APGPlayerController::NotifyStartTravel()
 
 void APGPlayerController::MC_InitiateTravelTimer_Implementation()
 {
-	if (HasAuthority()) return;
-
 	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::MC_InitClientTravelTimer: [%s] client travel timer start | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
 	{

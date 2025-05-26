@@ -70,8 +70,6 @@ void APGLobbyPlayerController::NotifyStartTravel()
 // if ClientTravel successed -> LobbyPlayerController destroy -> timer auto clear
 void APGLobbyPlayerController::MC_InitiateTravelTimer_Implementation()
 {
-	// if (HasAuthority()) return;
-	
 	UE_LOG(LogTemp, Warning, TEXT("LobbyPlayerController::MC_InitiateTravelTimer: called [%s] | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance()))
 	{
