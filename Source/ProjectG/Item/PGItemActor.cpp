@@ -4,6 +4,7 @@
 #include "Item/PGItemActor.h"
 #include "Net/UnrealNetwork.h"
 #include "Abilities/GameplayAbility.h"
+#include "Interact/Ability/GA_Interact_Item.h"
 
 // Sets default values
 APGItemActor::APGItemActor()
@@ -15,7 +16,9 @@ APGItemActor::APGItemActor()
 	SetReplicateMovement(true);
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
-	StaticMesh->SetupAttachment(RootComponent);
+	RootComponent = StaticMesh;
+
+	InteractAbility = UGA_Interact_Item::StaticClass();
 }
 
 TSubclassOf<UGameplayAbility> APGItemActor::GetAbilityToInteract() const

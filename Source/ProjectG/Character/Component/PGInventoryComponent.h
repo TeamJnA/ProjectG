@@ -4,9 +4,26 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "GameplayAbilitySpec.h"
 #include "PGInventoryComponent.generated.h"
 
 class UPGItemData;
+class APGPlayerCharacter;
+class UAbilitySystemComponent;
+
+
+//Store item data and ability spec handle from ability in item data.
+USTRUCT(BlueprintType)
+struct FInventoryItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	TObjectPtr<UPGItemData> ItemData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	FGameplayAbilitySpecHandle ItemAbilitySpecHandle;
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTG_API UPGInventoryComponent : public UActorComponent
@@ -16,23 +33,36 @@ class PROJECTG_API UPGInventoryComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UPGInventoryComponent();
-
+	
 protected:
+	TObjectPtr<APGPlayerCharacter> PlayerCharacter;
+
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:	
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "Item")
-	TArray<TObjectPtr<UPGItemData>> Items;
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	TArray<FInventoryItem> InventoryItems;
 
+	//Changes the current inventory index and updates the active ability.
 	UFUNCTION(BlueprintCallable)
-	void ChangeCurrectItemIndex(int32 NewItemIndex);
+	void ChangeCurrentInventoryIndex(int32 NewItemIndex);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
-	int32 CurrentItemIndex = 0;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Item")
+	int32 CurrentInventoryIndex = 0;
 
+	UFUNCTION(Server, Reliable)
+	void SetCurrentInventoryIndex(int32 NewIndex);
+
+	//When GA_Interact(GA_Interact_Item) get itemData from ItemActor, this function is called to add item to inventory.
 	UFUNCTION()
 	void AddItemToInventory(UPGItemData* ItemData);
+
+	void ActivateCurrentItemAbility();
+
+	void DeactivateCurrentItemAbility();
 
 	bool IsInventoryFull();
 
@@ -41,6 +71,7 @@ public:
 private:
 	int32 MaxInventorySize;
 
+	//item counts in Inventory. If it's full, bInventoryFull become true.
 	int32 InventoryItemCount;
 
 	bool bInventoryFull;
