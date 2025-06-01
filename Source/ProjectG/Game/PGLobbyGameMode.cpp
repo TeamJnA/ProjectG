@@ -37,11 +37,10 @@ void APGLobbyGameMode::StartGame()
 		{
 			GI->SetExpectedPlayerCount(GameState->PlayerArray.Num());
 		}
-		if (APlayerController* PC = UGameplayStatics::GetPlayerController(world, 0))
+		if (APGGameState* GS = Cast<APGGameState>(GameState))
 		{
-			APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC);
-			UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel check logic [%s]"), *LobbyPC->GetName());
-			LobbyPC->NotifyStartTravel();
+			UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel check logic [%s]"), *GS->GetName());
+			GS->NotifyStartTravel();
 		}
 
 		world->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()

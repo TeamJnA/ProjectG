@@ -7,6 +7,7 @@
 #include "PGStairRoom1.generated.h"
 
 class UArrowComponent;
+class UBoxComponent;
 
 /**
  * 
@@ -20,12 +21,9 @@ public:
 	APGStairRoom1();
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
-	TObjectPtr<UArrowComponent> ExitDir0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
-	TObjectPtr<UArrowComponent> ExitDir1;
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "OverlapBox")
+	TObjectPtr<UBoxComponent> OverlapBox1;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
 };

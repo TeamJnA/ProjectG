@@ -9,27 +9,19 @@
 
 APGStairRoom1::APGStairRoom1()
 {
-	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_StairRoom.LI_StairRoom_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_MansionBigRoom.LI_MansionBigRoom_C'"));
 
-	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
-	ExitDir0->SetupAttachment(ExitsFolder);
-	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir0->SetArrowLength(80.1f);
-	ExitDir0->SetRelativeLocation(FVector(1989.0f, -429.0f, -635.0f));
-	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
-	ExitDir0->bHiddenInGame = false;
+	OverlapBox->SetRelativeLocation(FVector(645.0f, 295.0f, 480.0f));
+	OverlapBox->SetRelativeScale3D(FVector(19.8f, 19.8f, 14.75f));
 
-	ExitDir1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection1"));
-	ExitDir1->SetupAttachment(ExitsFolder);
-	ExitDir1->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir1->SetArrowLength(80.1f);
-	ExitDir1->SetRelativeLocation(FVector(1748.0f, 300.9f, -635.0f));
-	ExitDir1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
-	ExitDir1->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
-	ExitDir1->bHiddenInGame = false;
-
-	OverlapBox->SetRelativeLocation(FVector(995.0f, -165.0f, 0.0f));
-	OverlapBox->SetRelativeScale3D(FVector(30.0f, 14.25f, 19.5f));
+	OverlapBox1 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox1"));
+	OverlapBox1->SetupAttachment(OverlapBoxFolder);
+	OverlapBox1->CanCharacterStepUpOn = ECB_No;
+	OverlapBox1->SetCollisionObjectType(ECC_GameTraceChannel1);
+	OverlapBox1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	OverlapBox1->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
+	OverlapBox1->SetRelativeLocation(FVector(1280.0f, -940.0f, 695.0f));
+	OverlapBox1->SetRelativeScale3D(FVector(19.6f, 18.5f, 8.25f));
 
 	RoomDir->SetRelativeLocation(FVector(100.0f, 0.0f, 130.0f));
 	RoomDir->SetRelativeScale3D(FVector(3.0f, 3.0f, 3.0f));
@@ -37,6 +29,6 @@ APGStairRoom1::APGStairRoom1()
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
 	Mesh->SetChildActorClass(MeshRef.Class);
-	Mesh->SetRelativeLocation(FVector(1069.6f, -214.6f, -691.0f));
+	Mesh->SetRelativeLocation(FVector(962.5f, -300.1f, -25.1f));
 
 }

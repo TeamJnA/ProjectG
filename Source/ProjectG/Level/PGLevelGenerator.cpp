@@ -420,14 +420,14 @@ void APGLevelGenerator::CheckForDungeonComplete()
 
 		UE_LOG(LogTemp, Warning, TEXT("Reboot Level"));
 
-		// need to mark server, client has travelled
-		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		if (!PC) return;
-		APGPlayerController* PGPC = Cast<APGPlayerController>(PC);
-		if (!PGPC) return;
+		/*
+		* On level generate failed
+		* Initiate travel timer(GS->NotifyServerTravel) & ServerTravel
+		*/
+		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+		if (!GS) return;
+		GS->NotifyStartTravel();
 
-		PGPC->NotifyStartTravel();
-		
 		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
 		{
 			GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);

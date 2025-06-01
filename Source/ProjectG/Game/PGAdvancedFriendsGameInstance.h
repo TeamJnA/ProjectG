@@ -27,7 +27,7 @@ public:
 
 	void InitiateTravelTimer();
 	void NotifyTravelSuccess();
-	void CheckIsTimerActive();
+	bool CheckIsTimerActive();
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
@@ -56,7 +56,7 @@ protected:
 	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString);
 	void OnTravelTimeout();
 
-	void RetryClientTravel();
+	void NotifyTravelFailed();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 	int32 MaxInventorySize = 5;

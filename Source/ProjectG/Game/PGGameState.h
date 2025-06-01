@@ -17,10 +17,14 @@ class PROJECTG_API APGGameState : public AGameState
 	
 public:
 	void NotifyMapGenerationComplete();
+	void NotifyStartTravel();
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMapGenerationComplete OnMapGenerationComplete;
 
 protected:
 	void Multicast_MapGenerationComplete();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MC_InitiateTravelTimer();
 };

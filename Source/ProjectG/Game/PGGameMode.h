@@ -19,6 +19,8 @@ class PROJECTG_API APGGameMode : public AGameMode
 public:
 	APGGameMode();
 
+	void SetIsTravelFailedExist();
+
 protected:
 	virtual void BeginPlay() override;
 	// virtual void PostLogin(APlayerController* NewPlayer) override;
@@ -27,6 +29,8 @@ protected:
 
 	UFUNCTION()
 	void HandleMapGenerationComplete();
+
+	void PostTravel();
 
 	void SpawnAllPlayers();
 	void SpawnLevelGenerator();
@@ -44,4 +48,6 @@ protected:
 
 	int32 ExpectedPlayerCount = 0;
 	TSet<APlayerController*> ClientTravelCompletedPlayersSet;
+	bool bIsTravelFailedExist = false;
+	FTimerHandle TravelCheckTimer;
 };

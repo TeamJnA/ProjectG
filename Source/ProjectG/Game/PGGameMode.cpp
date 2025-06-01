@@ -37,9 +37,6 @@ void APGGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// only server
-	if (!HasAuthority()) return;
-
 	if (GetWorld())
 	{
 		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance());
@@ -61,16 +58,11 @@ void APGGameMode::BeginPlay()
 			GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
 		}
 	}
-	bGamemodeReady = true;
 
-	if (!bLevelGeneratorSpawned)
-	{
-		if (ExpectedPlayerCount == 1 && ConnectedPlayerCount == 1)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GameMode::BeginPlay: Already all player registered, spawn level generator"));
-			SpawnLevelGenerator();
-		}
-	}
+	/*
+	* Waiting for all players' travel success information
+	*/
+	GetWorld()->GetTimerManager().SetTimer(TravelCheckTimer, this, &APGGameMode::PostTravel, 4.0f, false);
 }
 
 void APGGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
@@ -84,31 +76,6 @@ void APGGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewP
 	ClientTravelCompletedPlayersSet.Add(NewPlayer);
 	ConnectedPlayerCount++;
 	UE_LOG(LogTemp, Warning, TEXT("GameMode::HandleStartingNewPlayer: [%s] coneected. ConnectedPlayer = %d"), *NewPlayer->GetName(), ClientTravelCompletedPlayersSet.Num());
-
-	// if GameMode::BiginPlay not called
-	if (!bGamemodeReady) return;
-
-	UE_LOG(LogTemp, Log, TEXT("GameMode::HandleStartingNewPlayer: ExpectedPlayerCount: %d"), ExpectedPlayerCount);
-	UE_LOG(LogTemp, Log, TEXT("GameMode::HandleStartingNewPlayer: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
-	UE_LOG(LogTemp, Log, TEXT("GameMode::HandleStartingNewPlayer: bLevelGeneratorSpawned: %d"), bLevelGeneratorSpawned);
-
-	if (!bLevelGeneratorSpawned)
-	{
-		if (ConnectedPlayerCount >= ExpectedPlayerCount)
-		{
-			SpawnLevelGenerator();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GameMode::HandleStartingNewPlayer: Not enough players yet."));
-			// what to do after failure?
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GameMode::HandleStartingNewPlayer: Already level generator spawned."));
-	}
-	
 }
 
 void APGGameMode::Logout(AController* Exiting)
@@ -118,17 +85,28 @@ void APGGameMode::Logout(AController* Exiting)
 	// if game did not start (some players not in game level -> ExpectedPlayerCount > ConnectedPlayerCount)
 	if (!bLevelGeneratorSpawned)
 	{
+		GetWorld()->GetTimerManager().ClearTimer(TravelCheckTimer);
+
 		ExpectedPlayerCount--;
+		if (APlayerController* OutPC = Cast<APlayerController>(Exiting))
+		{
+			if (ClientTravelCompletedPlayersSet.Contains(OutPC))
+			{
+				ClientTravelCompletedPlayersSet.Remove(OutPC);
+				ConnectedPlayerCount--;
+			}
+		}
+
 		if (ConnectedPlayerCount >= ExpectedPlayerCount)
 		{
-			UE_LOG(LogTemp, Log, TEXT("GameMode::LogOut: ExpectedPlayerCount: %d"), ExpectedPlayerCount);
-			UE_LOG(LogTemp, Log, TEXT("GameMode::LogOut: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
-			UE_LOG(LogTemp, Log, TEXT("GameMode::LogOut: bLevelGeneratorSpawned: %d"), bLevelGeneratorSpawned);
+			UE_LOG(LogTemp, Log, TEXT("GameMode::Logout: ExpectedPlayerCount: %d"), ExpectedPlayerCount);
+			UE_LOG(LogTemp, Log, TEXT("GameMode::Logout: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
+			UE_LOG(LogTemp, Log, TEXT("GameMode::Logout: bLevelGeneratorSpawned: %d"), bLevelGeneratorSpawned);
 			SpawnLevelGenerator();
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("GameMode::LogOut: Not enough players yet."));
+			UE_LOG(LogTemp, Warning, TEXT("GameMode::Logout: Not enough players yet."));
 			// what to do after failure?
 		}
 	}
@@ -140,6 +118,67 @@ void APGGameMode::HandleMapGenerationComplete()
 
 	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
 }
+
+void APGGameMode::SetIsTravelFailedExist()
+{
+	bIsTravelFailedExist = true;
+}
+
+/*
+* if there is travel failed client
+* retry server travel
+* else
+* spawn check can start game and spawn level generator
+*/
+void APGGameMode::PostTravel()
+{
+	if (bIsTravelFailedExist)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: Travel failed player detected."));
+
+		UWorld* world = GetWorld();
+		if (world)
+		{
+			if (APGGameState* GS = Cast<APGGameState>(GameState))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: Start travel check logic [%s]"), *GS->GetName());
+				GS->NotifyStartTravel();
+			}
+
+			world->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
+			{
+				UE_LOG(LogTemp, Warning, TEXT("PGGM::Server_RequestServerTravel: Start travel"));
+				GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+			}));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: All players travel success."));
+
+		UE_LOG(LogTemp, Log, TEXT("PGGM::PostTravel: ExpectedPlayerCount: %d"), ExpectedPlayerCount);
+		UE_LOG(LogTemp, Log, TEXT("PGGM::PostTravel: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
+		UE_LOG(LogTemp, Log, TEXT("PGGM::PostTravel: bLevelGeneratorSpawned: %d"), bLevelGeneratorSpawned);
+
+		if (!bLevelGeneratorSpawned)
+		{
+			if (ConnectedPlayerCount >= ExpectedPlayerCount)
+			{
+				SpawnLevelGenerator();
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: Not enough players yet."));
+				// what to do after failure?
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: Already level generator spawned."));
+		}
+	}
+}
+
 
 void APGGameMode::SpawnAllPlayers()
 {
