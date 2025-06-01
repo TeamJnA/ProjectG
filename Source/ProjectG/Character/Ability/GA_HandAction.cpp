@@ -20,6 +20,8 @@ UGA_HandAction::UGA_HandAction()
 
 void UGA_HandAction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	UE_LOG(LogTemp, Log, TEXT("Activate Handaction"));
+
 	//Get HandAction Anim montage from PlayerCharacter and play montage
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	PG_CHECK_VALID_HANDACTION(AvatarActor);
@@ -30,6 +32,9 @@ void UGA_HandAction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	UAnimMontage* HandActionAnimMontage = PGPC->GetHandActionAnimMontages();
 	PG_CHECK_VALID_HANDACTION(HandActionAnimMontage);
 
+	//Prevent ability ended twice.
+	bAbilityEnded = false;
+
 	UAbilityTask_PlayMontageAndWait* MontageTask =
 		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this,
@@ -37,12 +42,23 @@ void UGA_HandAction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 			HandActionAnimMontage,
 			1.0f
 		);
-	MontageTask->OnCompleted.AddDynamic(this, &UGA_HandAction::OnCompletedAnimMontage);
+	MontageTask->OnBlendOut.AddDynamic(this, &UGA_HandAction::OnCompletedAnimMontage);
+	MontageTask->OnCancelled.AddDynamic(this, &UGA_HandAction::OnCompletedAnimMontage);
 	MontageTask->ReadyForActivation();
 }
 
 void UGA_HandAction::OnCompletedAnimMontage()
 {
+	//Prevent ability ended twice.
+	if (bAbilityEnded)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Called ability ended twice."));
+		return;
+	}
+	bAbilityEnded = true;
+
+	UE_LOG(LogTemp, Log, TEXT("HandAction Completed"));
+
 	//After finish hand action montage, equip and activate current index item on character.
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	PG_CHECK_VALID_HANDACTION(AvatarActor);
@@ -52,5 +68,5 @@ void UGA_HandAction::OnCompletedAnimMontage()
 
 	PGPC->EquipCurrentInventoryItem();
 
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 }

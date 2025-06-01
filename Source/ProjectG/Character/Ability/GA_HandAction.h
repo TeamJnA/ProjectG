@@ -31,6 +31,7 @@ public:
 		const FGameplayEventData* TriggerEventData) override;
 
 private:
+	bool bAbilityEnded;
 
 	UFUNCTION()
 	void OnCompletedAnimMontage();

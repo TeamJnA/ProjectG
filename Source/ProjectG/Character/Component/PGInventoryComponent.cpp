@@ -67,7 +67,10 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(int32 NewInventoryIndex)
 	}
 
 	if (NewInventoryIndex == CurrentInventoryIndex)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Try to change same item index. Nothing happened."));
 		return;
+	}
 	
 	// Item index cannot be changed during a HandAction.
 	AbilitySystemComponent = PlayerCharacter->GetAbilitySystemComponent();
@@ -92,16 +95,23 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(int32 NewInventoryIndex)
 	PlayerCharacter->SetHandActionAnimMontage(EHandActionMontageType::Change);
 
 	FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
-	FGameplayTagContainer TagContainer;
-	TagContainer.AddTag(HandActionTag);
+	FGameplayTagContainer HandActionTagContainer;
+	HandActionTagContainer.AddTag(HandActionTag);
 
-	PlayerCharacter->ActivateAbilityByTag(TagContainer);
+	PlayerCharacter->ActivateAbilityByTag(HandActionTagContainer);
 
 	// Change current inventory index
-	CurrentInventoryIndex = NewInventoryIndex;
+	SetCurrentInventoryIndex(NewInventoryIndex);
 
-	UE_LOG(LogTemp, Log, TEXT("Now inventory index is %d"), CurrentInventoryIndex);
+	UE_LOG(LogTemp, Log, TEXT("Change inventory index to %d"), NewInventoryIndex);
 	// After HandAction, activate new ability and change mesh on hand at PGPlayerCharacter::EquipCurrentInventoryItem.
+}
+
+//Called server to change index, server do handaction ability and change item index, ability and hand meshes.
+void UPGInventoryComponent::SetCurrentInventoryIndex_Implementation(int32 NewIndex)
+{
+	CurrentInventoryIndex = NewIndex;
+	UE_LOG(LogTemp, Log, TEXT("Now inventory index is %d"), CurrentInventoryIndex);
 }
 
 //Get item into right index of inventory and grant ability.
@@ -112,10 +122,10 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 
 	FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
 
-	FGameplayTagContainer TagContainer;
-	TagContainer.AddTag(HandActionTag);
+	FGameplayTagContainer HandActionTagContainer;
+	HandActionTagContainer.AddTag(HandActionTag);
 
-	PlayerCharacter->ActivateAbilityByTag(TagContainer);
+	PlayerCharacter->ActivateAbilityByTag(HandActionTagContainer);
 
 	//If invectory is full, return.
 	if (bInventoryFull)
@@ -161,7 +171,18 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 void UPGInventoryComponent::ActivateCurrentItemAbility()
 {
 	if (InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Do not Activete current item. There's no item on current item index."));
 		return;
+	}
+
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("ActivateCurrentItemAbility only run on server."));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Activate current item's ability by spec handle : %s"), *InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle.ToString());
 
 	AbilitySystemComponent = PlayerCharacter->GetAbilitySystemComponent();
 	if (!AbilitySystemComponent)
@@ -196,4 +217,5 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UPGInventoryComponent, InventoryItems);
+	DOREPLIFETIME(UPGInventoryComponent, CurrentInventoryIndex);
 }

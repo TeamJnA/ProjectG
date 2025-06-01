@@ -58,6 +58,12 @@ APGPlayerCharacter::APGPlayerCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	//Attach ItemSocket on character
+	//middle_metacarpal_r
+	ItemSocket = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSocket"));
+	ItemSocket->SetupAttachment(GetMesh(), TEXT("middle_metacarpal_r"));
+	ItemSocket->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+
 	// Create InventoryComponent and Set changing Itemslot Input Action
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
 
@@ -233,6 +239,7 @@ void APGPlayerCharacter::SetHandActionAnimMontage(EHandActionMontageType _HandAc
 	HandActionMontageType = _HandActionMontageType;
 }
 
+//After HandAction, this function is called to activate currentitem's ability.
 void APGPlayerCharacter::EquipCurrentInventoryItem()
 {
 	InventoryComponent->ActivateCurrentItemAbility();
@@ -241,6 +248,11 @@ void APGPlayerCharacter::EquipCurrentInventoryItem()
 
 void APGPlayerCharacter::AttachMeshOnHand()
 {
+	// Need to Multicast.
+	// Different in client and server.
+	// Client : Attach mesh on sub Hand.
+	// Server : Attach mesh on main hand and multicast
+
 	UE_LOG(LogTemp, Log, TEXT("Attach Item On Hand"));
 	/*
 	void AMyCharacter::AttachItemMeshToHand(UItemData* ItemData)
@@ -272,7 +284,7 @@ void APGPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
-
+	
 	if (Controller != nullptr)
 	{
 		// find out which way is forward

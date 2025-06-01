@@ -173,6 +173,9 @@ public:
 
 	void DetachMeshOnHand();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attachment")
+	TObjectPtr<USceneComponent> ItemSocket;
+
 ///
 ///********* UI and Components ******************
 /// 	

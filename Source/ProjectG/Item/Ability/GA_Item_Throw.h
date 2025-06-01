@@ -9,6 +9,8 @@
 /**
  * 
  */
+DECLARE_LOG_CATEGORY_EXTERN(LogAbility, Log, All);
+
 UCLASS()
 class PROJECTG_API UGA_Item_Throw : public UGameplayAbility
 {
@@ -28,7 +30,7 @@ public:
 		bool bReplicateEndAbility,
 		bool bWasCancelled) override;
 
-private:
+protected:
 	UFUNCTION()
 	void MouseLeft();
 
@@ -41,11 +43,27 @@ private:
 
 	FGameplayTag MouseLeftTag;
 
+	FGameplayTag HandActionTag;
+
+	// Projectile item to spawn.
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	TSubclassOf<class APGProjectileItemBase> ProjectileItem;
+
+	// It is possible to do hand action while right-clicking.
+	// In this case, we need a boolean variable to prevent behavior 
+	// when releasing right-click after performing a different action during the right-click.
 	bool bThrowReady;
 
 	UFUNCTION()
-	void OnCompletedFullThrowAnim();
+	void ThrowItemComplete();
 
 	UFUNCTION()
-	void OnCompletedThrowStartAnim();
+	void RightInputCanceled();
+
+	//This function will be implement in child class.
+	UFUNCTION()
+	virtual void SpawnProjectileActor();
+
+	UFUNCTION()
+	void ThrowReadyCanceled();
 };

@@ -50,8 +50,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ChangeCurrentInventoryIndex(int32 NewItemIndex);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Item")
 	int32 CurrentInventoryIndex = 0;
+
+	UFUNCTION(Server, Reliable)
+	void SetCurrentInventoryIndex(int32 NewIndex);
 
 	//When GA_Interact(GA_Interact_Item) get itemData from ItemActor, this function is called to add item to inventory.
 	UFUNCTION()
