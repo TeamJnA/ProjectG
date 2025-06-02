@@ -201,7 +201,7 @@ void APGGameMode::SpawnAllPlayers()
 			continue;
 		}
 
-		FVector spawnLoc = FVector(700.0f, 0.0f + SpawnOffset, 100.0f);
+		FVector spawnLoc = FVector(920.0f, 0.0f + SpawnOffset, 100.0f);
 		FRotator spawnRot = FRotator::ZeroRotator;
 
 		// APGPlayerCharacter* newPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, spawnLoc, spawnRot);
