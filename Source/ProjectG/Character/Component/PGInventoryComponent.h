@@ -60,9 +60,16 @@ public:
 	UFUNCTION()
 	void AddItemToInventory(UPGItemData* ItemData);
 
+	// Activate current item's ability.
 	void ActivateCurrentItemAbility();
 
+	// Deactivate current item's ability.
 	void DeactivateCurrentItemAbility();
+
+	// Remove Item on current item index.
+	void RemoveCurrentItem();
+
+	void DropCurrentItem(const FVector& DropLocation);
 
 	bool IsInventoryFull();
 
@@ -75,4 +82,8 @@ private:
 	int32 InventoryItemCount;
 
 	bool bInventoryFull;
+
+	// Drop item to spawn
+	UPROPERTY()
+	TSubclassOf<class APGItemActor> ItemActor;
 };

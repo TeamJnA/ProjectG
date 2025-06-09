@@ -48,6 +48,7 @@ void UGA_Interact_Item::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     // If player inventory is full, return.
     if (PGInventory->IsInventoryFull())
     {
+        UE_LOG(LogTemp, Log, TEXT("Failed to get item. Inventory is full."));
         EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
         return;
     }

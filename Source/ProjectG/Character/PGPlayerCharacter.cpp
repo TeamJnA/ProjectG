@@ -84,6 +84,12 @@ APGPlayerCharacter::APGPlayerCharacter()
 	if (ChangeMontageRef.Object){
 		HandActionAnimMontages.Add(ChangeMontageRef.Object);
 	}
+
+	// 2 : Drop Anim Montage
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DropMontageRef(TEXT("/Game/ProjectG/Character/Animation/Interact/AM_Pick_Item.AM_Pick_Item"));
+	if (DropMontageRef.Object) {
+		HandActionAnimMontages.Add(DropMontageRef.Object);
+	}
 }
 
 void APGPlayerCharacter::NotifyControllerChanged()
@@ -122,6 +128,9 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		//Interacting
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, InteractTag);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, InteractTag);
+
+		//DropItem
+		EnhancedInputComponent->BindAction(DropItemAction, ETriggerEvent::Started, this, &APGPlayerCharacter::DropItem);
 
 		//Mouse Clicks
 		EnhancedInputComponent->BindAction(MouseLeftAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, MouseLeftTag);
@@ -248,8 +257,20 @@ TObjectPtr<UAnimMontage> APGPlayerCharacter::GetHandActionAnimMontages()
 void APGPlayerCharacter::SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType)
 {
 	// EHandActionMontageType 
-	// 0 : Pick		1 : Change
+	// 0 : Pick		1 : Change 	 2 : Drop
 	HandActionMontageType = _HandActionMontageType;
+}
+
+void APGPlayerCharacter::PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType)
+{
+	SetHandActionAnimMontage(_HandActionMontageType);
+
+	FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
+
+	FGameplayTagContainer HandActionTagContainer;
+	HandActionTagContainer.AddTag(HandActionTag);
+
+	ActivateAbilityByTag(HandActionTagContainer);
 }
 
 //After HandAction, this function is called to activate currentitem's ability.
@@ -291,6 +312,30 @@ void APGPlayerCharacter::AttachMeshOnHand()
 void APGPlayerCharacter::DetachMeshOnHand()
 {
 	UE_LOG(LogTemp, Log, TEXT("Detach Item On Hand"));
+}
+
+void APGPlayerCharacter::RemoveItemFromInventory()
+{
+	InventoryComponent->RemoveCurrentItem();
+}
+
+void APGPlayerCharacter::DropItem_Implementation()
+{
+	//Cannot drop item during a HandAction.
+	FGameplayTag HandActionActivateTag = FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked"));
+
+	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionActivateTag))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot drop item during a HandAction."));
+		return;
+	}
+
+	FVector DropItemLocation;
+	FRotator TempRotation;
+	GetActorEyesViewPoint(DropItemLocation, TempRotation);
+	DropItemLocation += GetActorForwardVector() * 10 + GetActorUpVector() * (-10);
+
+	InventoryComponent->DropCurrentItem(DropItemLocation);
 }
 
 void APGPlayerCharacter::Move(const FInputActionValue& Value)

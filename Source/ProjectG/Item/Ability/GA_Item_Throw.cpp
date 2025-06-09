@@ -6,6 +6,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
 #include "AbilitySystemComponent.h"
+#include "Character/PGPlayerCharacter.h"
 
 DEFINE_LOG_CATEGORY(LogAbility);
 
@@ -64,11 +65,13 @@ void UGA_Item_Throw::MouseLeft()
 		UE_LOG(LogAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s"), *GetName());
 		return;
 	}
+
 	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionTag))
 	{
 		UE_LOG(LogAbility, Log, TEXT("Cannot do %s during hand action."), *GetName());
 		return;
 	}
+
 	AbilitySystemComponent->AddLooseGameplayTag(HandActionTag);
 	//AbilitySystemComponent->AddReplicatedLooseGameplayTag(HandActionTag);
 
@@ -85,9 +88,11 @@ void UGA_Item_Throw::MouseLeft()
 	MontageTask->OnBlendOut.AddDynamic(this, &UGA_Item_Throw::ThrowItemComplete);
 	MontageTask->ReadyForActivation();
 
-	//Spawn actor only at server.
-	if(HasAuthority(&CurrentActivationInfo))
+	// Spawn item actor only on the server.
+	if (HasAuthority(&CurrentActivationInfo))
+	{
 		SpawnProjectileActor();
+	}
 }
 
 void UGA_Item_Throw::ThrowItemComplete()
@@ -103,6 +108,19 @@ void UGA_Item_Throw::ThrowItemComplete()
 	}
 	AbilitySystemComponent->RemoveLooseGameplayTag(HandActionTag);
 	//AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(HandActionTag);
+
+	// Remove item. Inventory is replicated, so remove item also only on the server.
+	if (HasAuthority(&CurrentActivationInfo))
+	{
+		AActor* AvatarActor = GetAvatarActorFromActorInfo();
+		APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(AvatarActor);
+		if (!PGPC) {
+			UE_LOG(LogAbility, Warning, TEXT("Cannot found avatar actor in RemoveItem %s"), *GetName());
+			return;
+		}
+
+		PGPC->RemoveItemFromInventory();
+	}
 }
 
 void UGA_Item_Throw::MouseRight()

@@ -9,7 +9,7 @@
 
 UGA_ThrowBrick::UGA_ThrowBrick()
 {
-   static ConstructorHelpers::FClassFinder<APGProjectileItemBrick> ProjectileItemRef(TEXT("/Game/ProjectG/Items/Consumable/BP_PGProjectileItemBrick.BP_PGProjectileItemBrick_C"));
+   static ConstructorHelpers::FClassFinder<APGProjectileItemBrick> ProjectileItemRef(TEXT("/Game/ProjectG/Items/Consumable/Brick/BP_PGProjectileItemBrick.BP_PGProjectileItemBrick_C"));
    if (ProjectileItemRef.Class)
    {
        ProjectileItem = ProjectileItemRef.Class;
@@ -36,13 +36,20 @@ void UGA_ThrowBrick::SpawnProjectileActor()
         return;
     }
     
-    //Start location is little right of character eye.
-    //
+    // Start location is little right of character eye.
     FVector ThrowStartLocation;
     FRotator ThrowStartRotation;
 
     PGPC->GetActorEyesViewPoint(ThrowStartLocation, ThrowStartRotation);
-    ThrowStartLocation = ThrowStartLocation + PGPC->GetActorRightVector() * 25 + PGPC->GetActorForwardVector() * 40;
+    
+    // Check if the character is moving forward; if true, spawn the object slightly farther ahead.
+    float ForwardMovementAmount = FVector::DotProduct(PGPC->GetVelocity().GetSafeNormal(), PGPC->GetActorForwardVector());
+    if (ForwardMovementAmount < 0)
+        ForwardMovementAmount = 0;
+
+    FVector ForwardSpawnOffset = PGPC->GetActorForwardVector() * (40 + ForwardMovementAmount * 20);
+
+    ThrowStartLocation = ThrowStartLocation + (PGPC->GetActorRightVector() * 25) + ForwardSpawnOffset;
     ThrowStartRotation.Pitch += 10.0f;
 
     UWorld* World = GetWorld();
@@ -60,6 +67,9 @@ void UGA_ThrowBrick::SpawnProjectileActor()
         
         if (Projectile)
         {
+            Projectile->ThrowInDirection(ThrowStartRotation.Vector());
+
+            /*
             // Delay the throw to ensure the mesh's physics initialized.
             // ThrowInDirection(SetPhysicsLinearVelocity) could be ignored if the physics system isn't ready yet.
             FTimerHandle TimerHandle;
@@ -71,6 +81,7 @@ void UGA_ThrowBrick::SpawnProjectileActor()
                     }
 
                 }, 0.01f, false);
+             */
         }
     }
 

@@ -9,13 +9,14 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Type/CharacterTypes.h"
 #include "AbilitySystemComponent.h"
+#include "Item/PGItemActor.h"
 
 // Sets default values for this component's properties
 UPGInventoryComponent::UPGInventoryComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	//PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	bInventoryFull = false;
 
@@ -24,6 +25,12 @@ UPGInventoryComponent::UPGInventoryComponent()
 	CurrentInventoryIndex = 0;
 
 	SetIsReplicatedByDefault(true);
+
+	static ConstructorHelpers::FClassFinder<APGItemActor> ItemActorRef(TEXT("/Game/ProjectG/Items/BP_PGItemActor.BP_PGItemActor_C"));
+	if (ItemActorRef.Class)
+	{
+		ItemActor = ItemActorRef.Class;
+	}
 }
 
 
@@ -92,13 +99,7 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(int32 NewInventoryIndex)
 	DeactivateCurrentItemAbility();
 
 	// Set the Change Item montage in player character and activate GA_HandAction to play Change item anim.
-	PlayerCharacter->SetHandActionAnimMontage(EHandActionMontageType::Change);
-
-	FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
-	FGameplayTagContainer HandActionTagContainer;
-	HandActionTagContainer.AddTag(HandActionTag);
-
-	PlayerCharacter->ActivateAbilityByTag(HandActionTagContainer);
+	PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Change);
 
 	// Change current inventory index
 	SetCurrentInventoryIndex(NewInventoryIndex);
@@ -118,14 +119,7 @@ void UPGInventoryComponent::SetCurrentInventoryIndex_Implementation(int32 NewInd
 void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 {
 	// Set the Pick Item montage in player character and activate GA_HandAction to play pick item anim.
-	PlayerCharacter->SetHandActionAnimMontage(EHandActionMontageType::Pick);
-
-	FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
-
-	FGameplayTagContainer HandActionTagContainer;
-	HandActionTagContainer.AddTag(HandActionTag);
-
-	PlayerCharacter->ActivateAbilityByTag(HandActionTagContainer);
+	PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
 	//If invectory is full, return.
 	if (bInventoryFull)
@@ -205,6 +199,52 @@ void UPGInventoryComponent::DeactivateCurrentItemAbility()
 		return;
 	}
 	AbilitySystemComponent->CancelAbilityHandle(InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle);
+}
+
+void UPGInventoryComponent::RemoveCurrentItem()
+{
+	DeactivateCurrentItemAbility();
+
+	AbilitySystemComponent->ClearAbility(InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle);
+
+	InventoryItems[CurrentInventoryIndex].ItemData = nullptr;
+
+	InventoryItemCount--;
+	bInventoryFull = false;
+
+	UE_LOG(LogTemp, Log, TEXT("Remove item and clear ability."));
+}
+
+void UPGInventoryComponent::DropCurrentItem(const FVector& DropLocation)
+{
+	// Check current index item is valid
+	if (InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
+		return;
+
+	// Play Hand Action : Drop
+	PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Drop);
+	
+	// Spawn Item ( Set collision Thrown, if hit floor change return )
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = GetOwner();
+		SpawnParams.Instigator = Cast<APawn>(GetOwner());
+
+		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, FRotator::ZeroRotator, SpawnParams);
+		
+		UE_LOG(LogTemp, Log, TEXT("DropItem is %s /  DropItemMesh : %s"), *DropItem->GetName(), *DropItem->GetItemData()->ItemMesh.GetFName().ToString());
+		if (DropItem)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Item mesh is %s "), *InventoryItems[CurrentInventoryIndex].ItemData->ItemMesh.GetFName().ToString());
+			DropItem->InitWithData(InventoryItems[CurrentInventoryIndex].ItemData);
+			DropItem->DropItemSpawned();
+		}
+	}
+
+	// Remove current Item
+	RemoveCurrentItem();
 }
 
 bool UPGInventoryComponent::IsInventoryFull()

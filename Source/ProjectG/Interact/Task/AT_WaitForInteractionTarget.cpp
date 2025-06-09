@@ -63,7 +63,8 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 		IInteractableActorInterface* InteractInterface = Cast<IInteractableActorInterface>(HitResult.GetActor());
 
 		// If there's new interactable target, Broadcast the target.
-		if (InteractInterface && (!PreviousTargetActor.IsValid() || PreviousTargetActor != HitResult.GetActor()) )
+		//if (InteractInterface && (!PreviousTargetActor.IsValid() || PreviousTargetActor != HitResult.GetActor()) )
+		if (InteractInterface)
 		{
 			PreviousTargetActor = HitResult.GetActor();
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());

@@ -32,3 +32,7 @@ void APGProjectileItemBase::OnHit(UPrimitiveComponent* HitComponent,
     const FHitResult& Hit)
 {
 }
+
+void APGProjectileItemBase::PlaySound_Implementation(const FVector& HitLocation, float HitPower)
+{
+}
