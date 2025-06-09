@@ -438,7 +438,8 @@ void APGLevelGenerator::CheckForDungeonComplete()
 
 		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
 		{
-			GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+			//GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+			GetWorld()->ServerTravel("/Game/ProjectG/Levels/TestLevel?listen", true);
 		}));
 	}
 	else

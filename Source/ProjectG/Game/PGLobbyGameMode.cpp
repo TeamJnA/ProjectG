@@ -46,7 +46,8 @@ void APGLobbyGameMode::StartGame()
 		world->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
 		{
 			UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel"));
-			GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+			// GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+			GetWorld()->ServerTravel("/Game/ProjectG/Levels/TestLevel?listen", true);
 		}));
 	}
 }

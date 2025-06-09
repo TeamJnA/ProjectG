@@ -14,8 +14,6 @@ UGA_Item_Use::UGA_Item_Use()
 	KeyTag = FGameplayTag::RequestGameplayTag(FName("Item.Consumable.Key"));
     
 	ActivationOwnedTags.AddTag(KeyTag);
-	//Block ability when using hands.
-	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked")));
 
     NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;

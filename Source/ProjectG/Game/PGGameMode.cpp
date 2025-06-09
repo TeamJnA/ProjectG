@@ -148,7 +148,8 @@ void APGGameMode::PostTravel()
 			world->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
 			{
 				UE_LOG(LogTemp, Warning, TEXT("PGGM::Server_RequestServerTravel: Start travel"));
-				GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+				//GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+				GetWorld()->ServerTravel("/Game/ProjectG/Levels/TestLevel?listen", true);
 			}));
 		}
 	}
