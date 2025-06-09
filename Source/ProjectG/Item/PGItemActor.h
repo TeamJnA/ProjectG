@@ -20,6 +20,7 @@ public:
 	// Sets default values for this actor's properties
 	APGItemActor();
 
+	UFUNCTION(NetMulticast, Reliable)
 	void InitWithData(UPGItemData* InData);
 
 	//Return Interact Ability of actor.
@@ -31,18 +32,28 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	// When player drop item, this two functions are used to spawn item.
+	void DropItemSpawned();
+
+	UFUNCTION()
+	void StopItemOnGroundHit(
+		UPrimitiveComponent* HitComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComponent,
+		FVector NormalImpulse,
+		const FHitResult& Hit);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_ItemData)
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGItemData> ItemData;
-
-	UFUNCTION()
-	void OnRep_ItemData();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
 	bool bOwned = false;
+
+
 };

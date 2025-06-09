@@ -65,6 +65,9 @@ public:
 	TObjectPtr<UInputAction> InteractAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> DropItemAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MouseLeftAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -159,6 +162,8 @@ public:
 
 	void SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
 
+	void PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
+
 protected:
 	//The interactive actor currently watching
 	TObjectPtr<AActor> InteractionTargetActor;
@@ -172,6 +177,11 @@ public:
 	void AttachMeshOnHand();
 
 	void DetachMeshOnHand();
+
+	void RemoveItemFromInventory();
+
+	UFUNCTION(Server, Reliable)
+	void DropItem();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attachment")
 	TObjectPtr<USceneComponent> ItemSocket;

@@ -36,4 +36,12 @@ public:
 		UPrimitiveComponent* OtherComponent, 
 		FVector NormalImpulse, 
 		const FHitResult& Hit) override;
+
+protected:
+	TArray<TObjectPtr<AActor>> HitActors;
+
+	virtual void PlaySound_Implementation(const FVector& HitLocation, float HitImpact) override;
+
+private:
+	bool bBounceOnce;
 };

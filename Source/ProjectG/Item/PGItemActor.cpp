@@ -26,22 +26,11 @@ TSubclassOf<UGameplayAbility> APGItemActor::GetAbilityToInteract() const
 	return InteractAbility;
 }
 
-void APGItemActor::InitWithData(UPGItemData* InData)
+void APGItemActor::InitWithData_Implementation(UPGItemData* InData)
 {
 	ItemData = InData;
 
-	if (HasAuthority())
-	{
-		OnRep_ItemData();
-	}
-}
-
-void APGItemActor::OnRep_ItemData()
-{
-	if (ItemData && StaticMesh)
-	{
-		StaticMesh->SetStaticMesh(ItemData->ItemMesh);
-	}
+	StaticMesh->SetStaticMesh(ItemData->ItemMesh);
 }
 
 void APGItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -51,13 +40,25 @@ void APGItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(APGItemActor, ItemData);
 }
 
+void APGItemActor::DropItemSpawned()
+{
+	UE_LOG(LogTemp, Log, TEXT("Set spawned drop item coliision and physics."));
+	StaticMesh->SetSimulatePhysics(true);
+	StaticMesh->OnComponentHit.AddDynamic(this, &APGItemActor::StopItemOnGroundHit);
+}
+
+void APGItemActor::StopItemOnGroundHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+{
+	ECollisionChannel ObjectType = OtherComponent->GetCollisionObjectType();
+
+	if ((ObjectType == ECC_WorldDynamic || ObjectType == ECC_WorldStatic) && Hit.ImpactNormal.Z > 0.6)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Drop item hit on ground."));
+		StaticMesh->SetSimulatePhysics(false);
+	}
+}
+
 UPGItemData* APGItemActor::GetItemData()
 {
-	if (bOwned)
-	{
-		return nullptr;
-	}
-	bOwned = true;
-
 	return ItemData;
 }

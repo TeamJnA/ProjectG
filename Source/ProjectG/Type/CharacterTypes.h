@@ -11,5 +11,6 @@ UENUM(BlueprintType)
 enum class EHandActionMontageType : uint8
 {
 	Pick,
-	Change
+	Change,
+	Drop
 };

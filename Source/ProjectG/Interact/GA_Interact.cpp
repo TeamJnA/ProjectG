@@ -110,6 +110,7 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 	// Check the interface to ensure the target hasn't changed while waiting for the input tag.
 	if (!InteractInterface)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("TargetActor is not interactable."));
 		WaitForInteractTag->EndTask();
 		WaitForInteractTag = nullptr;
 		return;
