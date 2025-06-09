@@ -7,6 +7,7 @@
 #include "Interface/ItemInteractInterface.h"
 #include "Level/PGDoor1.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
 
 UGA_Interact_Door::UGA_Interact_Door()
 {
@@ -24,12 +25,6 @@ UGA_Interact_Door::UGA_Interact_Door()
 
     NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-
-    static ConstructorHelpers::FObjectFinder<UAnimMontage> ThrowAnimMontageRef(TEXT("/Game/ProjectG/Character/Animation/Throw/AM_Throw.AM_Throw"));
-    if (ThrowAnimMontageRef.Object) 
-    {
-        ThrowAnimMontage = ThrowAnimMontageRef.Object;
-    }
 }
 
 void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -88,8 +83,18 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
             PGCharacter->ActivateAbilityByTag(HandActionTagContainer);
 
+            UAbilityTask_WaitGameplayTagRemoved* WaitTask = UAbilityTask_WaitGameplayTagRemoved::WaitGameplayTagRemove(
+                this,
+                FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"))
+            );
+
+            WaitTask->Removed.AddDynamic(this, &UGA_Interact_Door::OnHandActionEnd);
+            WaitTask->ReadyForActivation();
+
             Door->UnLock();
-            // Remove item from inven comp
+            /*
+            * after hand action end -> OnHandActionEnd -> Remove item 
+            */
             EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
         }
         else
@@ -119,6 +124,23 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }    
 }
+
+void UGA_Interact_Door::OnHandActionEnd()
+{
+    // Remove item. Inventory is replicated, so remove item also only on the server.
+    if (HasAuthority(&CurrentActivationInfo))
+    {
+        AActor* AvatarActor = GetAvatarActorFromActorInfo();
+        APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(AvatarActor);
+        if (!PGCharacter) {
+            UE_LOG(LogTemp, Warning, TEXT("Cannot found avatar actor in RemoveItem %s"), *GetName());
+            return;
+        }
+
+        PGCharacter->RemoveItemFromInventory();
+    }
+}
+
 
 void UGA_Interact_Door::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
