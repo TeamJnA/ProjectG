@@ -14,7 +14,7 @@ APGDoor3::APGDoor3()
 	SetReplicateMovement(true);
 	bAlwaysRelevant = true;
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Script/Engine.StaticMesh'/Game/StarterBundle/ModularSci_Int/Meshes/SM_Door_L.SM_Door_L'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Script/Engine.StaticMesh'/Game/Imports/SICKA_mansion/StaticMeshes/SM_DoorCarved.SM_DoorCarved'"));
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -29,6 +29,6 @@ APGDoor3::APGDoor3()
 	{
 		Mesh0->SetStaticMesh(MeshRef.Object);
 	}
-	Mesh0->SetRelativeLocation(FVector(-680.0f, 40.0f, 0.0f));
-	Mesh0->SetRelativeScale3D(FVector(2.0f, 1.0f, 1.02f));
+	Mesh0->SetRelativeLocation(FVector(80.0f, 0.0f, 0.0f));
+	Mesh0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 }

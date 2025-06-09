@@ -4,16 +4,29 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
+#include "Interface/InteractableActorInterface.h"
+
 #include "PGDoor1.generated.h"
 
 UCLASS()
-class PROJECTG_API APGDoor1 : public AActor
+class PROJECTG_API APGDoor1 : public AActor, public IInteractableActorInterface
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
 	APGDoor1();
+	static void SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool _bIsLocked);
+
+	// IInteractableActorInterface
+	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
+
+	void ToggleDoor();
+	bool IsOpen() const { return bIsOpen; }
+	bool IsLocked() const { return bIsLocked; }
+	void Lock() { bIsLocked = true; OnRep_LockState(); }
+	void UnLock() { bIsLocked = false; OnRep_LockState(); }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
@@ -21,4 +34,23 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WallMesh")
 	TObjectPtr<UStaticMeshComponent> Mesh0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayAbility> InteractAbility;
+
+	UPROPERTY(ReplicatedUsing = OnRep_DoorState)
+	bool bIsOpen = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lock", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_LockState)
+	bool bIsLocked = false;
+
+	UFUNCTION()
+	void OnRep_DoorState();
+
+	UFUNCTION()
+	void OnRep_LockState();
+
+	void SetDoorState(bool _bIsOpen);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };

@@ -20,8 +20,7 @@
 #include "PGRoom3.h"
 #include "PGStairRoom1.h"
 #include "PGDoor1.h"
-#include "PGDoor2.h"
-#include "PGDoor3.h"
+#include "PGWall.h"
 #include "PGGlobalLightManager.h"
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerController.h"
@@ -42,27 +41,29 @@ APGLevelGenerator::APGLevelGenerator()
 	Root->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	
 	RoomsList = {
-		APGRoom1::StaticClass(), APGRoom1::StaticClass(),
 		APGRoom2::StaticClass(), APGRoom2::StaticClass(),
 		APGRoom3::StaticClass(),
-	};
-		
-	SpecialRoomsList = {
 		APGStairRoom1::StaticClass()
 	};
+		
+	//SpecialRoomsList = {
+	//	APGStairRoom1::StaticClass()
+	//};
 
-	BaseRoomsList = {
-		APGRoom1::StaticClass(), APGRoom1::StaticClass(),
-		APGRoom2::StaticClass(), APGRoom2::StaticClass(),
-		APGRoom3::StaticClass(),
-	};
+	//BaseRoomsList = {
+	//	APGRoom1::StaticClass(), APGRoom1::StaticClass(),
+	//	APGRoom2::StaticClass(), APGRoom2::StaticClass(),
+	//	APGRoom3::StaticClass(),
+	//};
 
 	// max room spawn amount
-	RoomAmount = 10;
+	RoomAmount = 20;
 	// max door spawn amount
 	// door: created between rooms
 	// wall: created between room and outside
-	DoorAmount = 3;
+	DoorAmount = 0;
+	LockedDoorAmount = 0;
+
 	// max item spawn amount
 	ItemAmount = 10;
 
@@ -117,7 +118,6 @@ void APGLevelGenerator::SpawnNextRoom()
 		// get random room spawn point from ExitsList by stream(seed)
 		SelectedExitPoint = ExitsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, ExitsList.Num())];
 		// get random class of room type from RoomsList by stream(seed)
-		TSubclassOf<APGMasterRoom> newRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
 
 		// spawn setting
 		FVector spawnLocation = SelectedExitPoint->GetComponentLocation();
@@ -126,7 +126,18 @@ void APGLevelGenerator::SpawnNextRoom()
 		FActorSpawnParameters spawnParams;
 		spawnParams.Owner = this;
 		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		APGMasterRoom* newRoom = world->SpawnActor<APGMasterRoom>(newRoomClass, spawnTransform, spawnParams);
+		APGMasterRoom* newRoom = nullptr;
+
+		if (RoomAmount > 14)
+		{
+			newRoom = world->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), spawnTransform, spawnParams);
+		}
+		else
+		{
+			TSubclassOf<APGMasterRoom> newRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
+			newRoom = world->SpawnActor<APGMasterRoom>(newRoomClass, spawnTransform, spawnParams);
+		}
+
 		// set spawned room as LatestRoom
 		LatestRoom = newRoom;
 
@@ -134,12 +145,12 @@ void APGLevelGenerator::SpawnNextRoom()
 		// Check if the created room exceeds the room amount
 		// CheckOverlap();
 
-		// Delay 0.5 sec
+		// Delay before spawn next room
 		GetWorld()->GetTimerManager().SetTimer(
 			DelayTimerHandler,
 			this,
 			&APGLevelGenerator::CheckOverlap,
-			0.5f,
+			0.1f,
 			false
 		);
 	}
@@ -209,18 +220,19 @@ void APGLevelGenerator::CheckOverlap()
 		// can generate next room
 		if (RoomAmount > 0)
 		{
-			// next room == special room(PGStairRoom)
-			if (RoomAmount == 4 || RoomAmount == 8)
-			{
-				RoomsList = SpecialRoomsList;
-				SpawnNextRoom();
-			}
-			// next room == base room(PGRoom1 ~ PGRoom3)
-			else
-			{
-				RoomsList = BaseRoomsList;
-				SpawnNextRoom();
-			}
+			//// next room == special room(PGStairRoom)
+			//if (RoomAmount == 4 || RoomAmount == 8)
+			//{
+			//	RoomsList = SpecialRoomsList;
+			//	SpawnNextRoom();
+			//}
+			//// next room == base room(PGRoom1 ~ PGRoom3)
+			//else
+			//{
+			//	RoomsList = BaseRoomsList;
+			//	SpawnNextRoom();
+			//}
+			SpawnNextRoom();
 		}
 		// stop generation => spawn walls, doors, items and clear timer, spawn global light manager(PGGlobalLightManager)
 		else
@@ -263,22 +275,7 @@ void APGLevelGenerator::CloseHoles()
 			FActorSpawnParameters spawnParams;
 			spawnParams.Owner = this;
 			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			// spawn walls to fit the size of the hole
-			// categorized hole size by exitpoint's ArrowLength
-			UArrowComponent* CastedSelectedDoorPoint = Cast<UArrowComponent>(exitPoint);
-			if (CastedSelectedDoorPoint->ArrowLength == 80.0f)
-			{
-				world->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform, spawnParams);
-			}
-			else if (CastedSelectedDoorPoint->ArrowLength == 80.1f)
-			{
-				world->SpawnActor<APGDoor2>(APGDoor2::StaticClass(), spawnTransform, spawnParams);
-			}
-			else
-			{
-				world->SpawnActor<APGDoor3>(APGDoor3::StaticClass(), spawnTransform, spawnParams);
-			}
+			world->SpawnActor<APGWall>(APGWall::StaticClass(), spawnTransform, spawnParams);
 		}
 	}
 }
@@ -289,6 +286,8 @@ void APGLevelGenerator::SpawnDoors()
 	UWorld* world = GetWorld();
 	if (world)
 	{
+		DoorAmount = DoorPointsList.Num() * 0.8f;
+		LockedDoorAmount = DoorAmount * 0.3f;
 		while (DoorAmount > 0)
 		{
 			// get random door spawn point from DoorPointsList by stream(seed)
@@ -302,22 +301,31 @@ void APGLevelGenerator::SpawnDoors()
 			FActorSpawnParameters spawnParams;
 			spawnParams.Owner = this;
 			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			// spawn doors to fit the size of the hole
-			// categorized hole size by exitpoint's ArrowLength
-			UArrowComponent* CastedSelectedDoorPoint = Cast<UArrowComponent>(SelectedDoorPoint);
-			if (CastedSelectedDoorPoint->ArrowLength == 80.0f)
+			if (LockedDoorAmount > 0)
 			{
-				world->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform, spawnParams);
-			}
-			else if (CastedSelectedDoorPoint->ArrowLength == 80.1f)
-			{
-				world->SpawnActor<APGDoor2>(APGDoor2::StaticClass(), spawnTransform, spawnParams);
+				APGDoor1::SpawnDoor(world, spawnTransform, spawnParams, /*bIsLocked*/ true);
+				LockedDoorAmount--;
 			}
 			else
 			{
-				world->SpawnActor<APGDoor3>(APGDoor3::StaticClass(), spawnTransform, spawnParams);
+				APGDoor1::SpawnDoor(world, spawnTransform, spawnParams, /*bIsLocked*/ false);
 			}
+
+			// spawn doors to fit the size of the hole
+			// categorized hole size by exitpoint's ArrowLength
+			//UArrowComponent* CastedSelectedDoorPoint = Cast<UArrowComponent>(SelectedDoorPoint);
+			//if (CastedSelectedDoorPoint->ArrowLength == 80.0f)
+			//{
+			//	world->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform, spawnParams);
+			//}
+			//else if (CastedSelectedDoorPoint->ArrowLength == 80.1f)
+			//{
+			//	world->SpawnActor<APGDoor2>(APGDoor2::StaticClass(), spawnTransform, spawnParams);
+			//}
+			//else
+			//{
+			//	world->SpawnActor<APGDoor3>(APGDoor3::StaticClass(), spawnTransform, spawnParams);
+			//}
 
 			// after spawn door, remove used spawn point from DoorPointsList and DoorAmount--
 			DoorPointsList.Remove(SelectedDoorPoint);

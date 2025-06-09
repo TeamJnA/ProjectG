@@ -41,12 +41,12 @@ APGRoom3::APGRoom3()
 
 	RoomDir->SetRelativeLocation(FVector(370.0f, 0.0f, 130.0f));
 
-	OverlapBox->SetRelativeLocation(FVector(650.0f, 600.0f, 345.0f));
+	OverlapBox->SetRelativeLocation(FVector(641.5f, 600.0f, 345.0f));
 	OverlapBox->SetRelativeScale3D(FVector(20.0f, 29.5f, 10.5f));
 	
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(GeometryFolder);
 	Mesh->SetChildActorClass(MeshRef.Class);
-	Mesh->SetRelativeLocation(FVector(652.0f, 560.0f, -16.7f));
+	Mesh->SetRelativeLocation(FVector(643.5f, 560.0f, -16.7f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 }

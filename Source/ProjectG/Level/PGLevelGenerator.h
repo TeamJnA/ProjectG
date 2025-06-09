@@ -80,6 +80,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MaxDoorAmount", meta = (AllowPrivateAccess = "true"))
 	int DoorAmount;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MaxLockedDoorAmount", meta = (AllowPrivateAccess = "true"))
+	int LockedDoorAmount;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MaxItemAmount", meta = (AllowPrivateAccess = "true"))
 	int ItemAmount;
 

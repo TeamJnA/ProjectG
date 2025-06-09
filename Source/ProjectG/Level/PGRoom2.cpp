@@ -14,7 +14,7 @@ APGRoom2::APGRoom2()
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitsFolder);
 	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir0->SetRelativeLocation(FVector(1817.0f, -10.0f, 0.0f));
+	ExitDir0->SetRelativeLocation(FVector(1799.8f, -10.0f, 0.0f));
 	ExitDir0->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->SetArrowLength(80.1f);
@@ -43,12 +43,12 @@ APGRoom2::APGRoom2()
 
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
 
-	OverlapBox->SetRelativeLocation(FVector(910.0f, -295.0f, 275.0f));
-	OverlapBox->SetRelativeScale3D(FVector(28.25f, 19.75f, 8.25f));
+	OverlapBox->SetRelativeLocation(FVector(901.0f, -295.0f, 275.0f));
+	OverlapBox->SetRelativeScale3D(FVector(27.9f, 19.25f, 8.25f));
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
 	Mesh->SetChildActorClass(MeshRef.Class);
-	Mesh->SetRelativeLocation(FVector(932.0f, -287.0f, 0.0f));
+	Mesh->SetRelativeLocation(FVector(923.0f, -287.0f, 0.0f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 }

@@ -4,16 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "PGDoor2.generated.h"
+#include "PGWall.generated.h"
 
 UCLASS()
-class PROJECTG_API APGDoor2 : public AActor
+class PROJECTG_API APGWall : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	APGDoor2();
+	APGWall();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
@@ -21,5 +21,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WallMesh")
 	TObjectPtr<UStaticMeshComponent> Mesh0;
-
 };
