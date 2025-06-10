@@ -22,6 +22,8 @@ APGProjectileItemBase::APGProjectileItemBase()
     ProjectileMovementComponent->bShouldBounce = true;
     */
 
+    StaticMesh->SetAllUseCCD(true);
+
     InitialSpeed = 700.0f;
 }
 
