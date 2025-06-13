@@ -160,6 +160,20 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 	}
 	FGameplayAbilitySpec AbilitySpec(ItemData->ItemAbility, 1);
 	InventoryItems[ItemInputIdx].ItemAbilitySpecHandle = AbilitySystemComponent->GiveAbility(AbilitySpec);
+
+	/*
+	* Broadcast to Inventory Widget
+	*/
+	OnInventoryItemUpdate.Broadcast(InventoryItems);
+}
+
+/*
+* On client
+* inventory items update (add/delete) -> update inventory widget
+*/
+void UPGInventoryComponent::OnRep_InventoryItems()
+{
+	OnInventoryItemUpdate.Broadcast(InventoryItems);
 }
 
 void UPGInventoryComponent::ActivateCurrentItemAbility()
@@ -213,6 +227,11 @@ void UPGInventoryComponent::RemoveCurrentItem()
 	bInventoryFull = false;
 
 	UE_LOG(LogTemp, Log, TEXT("Remove item and clear ability."));
+
+	/*
+	* Broadcast to Inventory Widget
+	*/
+	OnInventoryItemUpdate.Broadcast(InventoryItems);
 }
 
 void UPGInventoryComponent::DropCurrentItem(const FVector& DropLocation)
@@ -259,3 +278,4 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPGInventoryComponent, InventoryItems);
 	DOREPLIFETIME(UPGInventoryComponent, CurrentInventoryIndex);
 }
+

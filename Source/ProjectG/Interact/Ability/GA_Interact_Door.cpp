@@ -5,9 +5,10 @@
 #include "AbilitySystemComponent.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Interface/ItemInteractInterface.h"
-#include "Level/PGDoor1.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
+
+#include "Level/PGDoor1.h"
 
 UGA_Interact_Door::UGA_Interact_Door()
 {
@@ -73,7 +74,12 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                 return;
             }
 
-            // Set the Pick Item montage in player character and activate GA_HandAction to play pick item anim.
+            /*
+            * If door is locked and player has key on hand
+            * Start hand action tag
+            * Wait for hand action tag removed
+            * On removed delegate to delete key
+            */
             PGCharacter->SetHandActionAnimMontage(EHandActionMontageType::Pick);
 
             FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
@@ -125,6 +131,9 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
     }    
 }
 
+/*
+* On hand action end -> remove used key item
+*/
 void UGA_Interact_Door::OnHandActionEnd()
 {
     // Remove item. Inventory is replicated, so remove item also only on the server.

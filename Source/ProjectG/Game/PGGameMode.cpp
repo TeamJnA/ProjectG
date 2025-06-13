@@ -13,6 +13,7 @@
 #include "Level/PGGlobalLightManager.h"
 #include "Level/PGLevelGenerator.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
+#include "UI/PGHUD.h"
 
 APGGameMode::APGGameMode()
 {
@@ -27,6 +28,12 @@ APGGameMode::APGGameMode()
 	GameStateClass = APGGameState::StaticClass();
 	PlayerStateClass = APGPlayerState::StaticClass();
 	PlayerControllerClass = APGPlayerController::StaticClass();
+	
+	static ConstructorHelpers::FClassFinder<AHUD> HUDBPClass(TEXT("/Game/ProjectG/UI/BP_PGHUD"));
+	if (HUDBPClass.Class != nullptr)
+	{
+		HUDClass = HUDBPClass.Class;
+	}
 
 	DefaultPawnClass = nullptr;
 
@@ -211,6 +218,7 @@ void APGGameMode::SpawnAllPlayers()
 		{
 			newPawn->FinishSpawning(FTransform(spawnRot, spawnLoc));
 			PC->Possess(newPawn);
+			//newPawn->InitHUD();
 		}
 
 		// need update!!

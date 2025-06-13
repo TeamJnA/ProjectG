@@ -11,6 +11,7 @@ class UPGItemData;
 class APGPlayerCharacter;
 class UAbilitySystemComponent;
 
+DECLARE_DYNAMIC_DELEGATE(FOnInventoryComponentReady);
 
 //Store item data and ability spec handle from ability in item data.
 USTRUCT(BlueprintType)
@@ -24,6 +25,8 @@ struct FInventoryItem
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 	FGameplayAbilitySpecHandle ItemAbilitySpecHandle;
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryItemUpdate, const TArray<FInventoryItem>&, InventoryItems);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECTG_API UPGInventoryComponent : public UActorComponent
@@ -43,7 +46,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_InventoryItems, EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 	TArray<FInventoryItem> InventoryItems;
 
 	//Changes the current inventory index and updates the active ability.
@@ -86,4 +89,15 @@ private:
 	// Drop item to spawn
 	UPROPERTY()
 	TSubclassOf<class APGItemActor> ItemActor;
+
+public:
+	UPROPERTY()
+	FOnInventoryComponentReady OnInventoryComponentReady;
+
+	UPROPERTY()
+	FOnInventoryItemUpdate OnInventoryItemUpdate;
+
+protected:
+	UFUNCTION()
+	void OnRep_InventoryItems();
 };
