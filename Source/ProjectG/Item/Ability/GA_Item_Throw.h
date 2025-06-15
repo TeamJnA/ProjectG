@@ -11,6 +11,8 @@
  */
 DECLARE_LOG_CATEGORY_EXTERN(LogAbility, Log, All);
 
+// GA_Item_Throw is local predicted ability.
+// This ability is executed both server and client.
 UCLASS()
 class PROJECTG_API UGA_Item_Throw : public UGameplayAbility
 {
@@ -66,4 +68,7 @@ protected:
 
 	UFUNCTION()
 	void ThrowReadyCanceled();
+
+	UFUNCTION(Server, Reliable)
+	void RemoveItem();
 };

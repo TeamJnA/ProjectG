@@ -34,8 +34,12 @@ public:
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
 	/** Follow camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	/** First Person camera */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraComponent> FirstPersonCamera;
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -81,6 +85,10 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	// Update server camera pitch rotation. It sends client camera to server.
+	UFUNCTION(Server, Reliable)
+	void Server_SendCameraRotation(FRotator NewRotation);
+
 	/** Called for Input ability Actions. Sprint, interaction*/
 	void StartInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
 	void StopInputActionByTag(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
@@ -99,6 +107,8 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	FORCEINLINE class UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
 
 ///
 ///*********	Gameplay Ability System ******************

@@ -107,11 +107,103 @@ void UGA_Item_Throw::ThrowItemComplete()
 		return;
 	}
 	AbilitySystemComponent->RemoveLooseGameplayTag(HandActionTag);
-	//AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(HandActionTag);
+	// AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(HandActionTag);
+
+	// Wait for tag removed on client and clear this ability in the inventory component on server.
+	// If clear ability directly, remove tag does not replicated in client by clear ability.
+	if (!GetAvatarActorFromActorInfo()->HasAuthority())
+	{
+		UE_LOG(LogAbility, Log, TEXT("Wait for HandActionTag removed in client of %s"), *GetName());
+
+		UAbilityTask_WaitGameplayTagRemoved* WaitHandActionTagRemoved = UAbilityTask_WaitGameplayTagRemoved::WaitGameplayTagRemove(
+			this,
+			HandActionTag );
+		WaitHandActionTagRemoved->Removed.AddDynamic(this, &UGA_Item_Throw::RemoveItem);
+		WaitHandActionTagRemoved->ReadyForActivation();
+	}
+
+	UE_LOG(LogAbility, Log, TEXT("IsLocallyControlled: %s"), IsLocallyControlled() ? TEXT("TRUE") : TEXT("FALSE"));
+	UE_LOG(LogAbility, Log, TEXT("AvatarActor HasAuthority: %s"), GetAvatarActorFromActorInfo()->HasAuthority() ? TEXT("TRUE") : TEXT("FALSE"));
+	UE_LOG(LogAbility, Log, TEXT("OwningActor HasAuthority: %s"), GetOwningActorFromActorInfo()->HasAuthority() ? TEXT("TRUE") : TEXT("FALSE"));
+
+	ENetRole OwningActorNetRole = GetOwningActorFromActorInfo()->GetLocalRole();
+
+	switch (OwningActorNetRole)
+	{
+	case ROLE_None:
+		UE_LOG(LogTemp, Warning, TEXT("NetRole: None"));
+		break;
+	case ROLE_SimulatedProxy:
+		UE_LOG(LogTemp, Warning, TEXT("NetRole: Simulated Proxy"));
+		break;
+	case ROLE_AutonomousProxy:
+		UE_LOG(LogTemp, Warning, TEXT("NetRole: Autonomous Proxy"));
+		break;
+	case ROLE_Authority:
+		UE_LOG(LogTemp, Warning, TEXT("NetRole: Authority"));
+		break;
+	default:
+		UE_LOG(LogTemp, Warning, TEXT("NetRole: Unknown"));
+		break;
+	}
+
+	
+	ENetMode NetMode = GetWorld()->GetNetMode();
+
+	switch (NetMode)
+	{
+	case NM_Standalone:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Standalone"));
+		break;
+	case NM_DedicatedServer:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Dedicated Server"));
+		break;
+	case NM_ListenServer:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Listen Server"));
+		break;
+	case NM_Client:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Client"));
+		break;
+	default:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Unknown"));
+		break;
+	}
+}
+// RemoveItem의 Server함수를 만드는 건 어떨까? 그게 좋을거 같음.
+// Server_RemoveItem 이런식으로 하면 좋을 거 같음.
+// 그러면 IsLocallyControlled : true, HasAuthority : true (리슨서버의 호스트 캐릭터) 바로 RemoveItem 호출.
+// HasAuthority : false. (클라이언트) 인 경우에는 client의 handaction.Lock Tag 제거 기다린 후 Server_RemoveItem 호출.
+void UGA_Item_Throw::RemoveItem_Implementation()
+{
+	UE_LOG(LogAbility, Log, TEXT("HandActionTag removed in client of %s. Now clear ability and delete the item by requesting to inventory.[1]"), *GetName());
+	UE_LOG(LogAbility, Log, TEXT("HasAuthority: %s"), GetAvatarActorFromActorInfo()->HasAuthority() ? TEXT("TRUE") : TEXT("FALSE"));
+	UE_LOG(LogAbility, Log, TEXT("IsLocallyControlled: %s"), IsLocallyControlled() ? TEXT("TRUE") : TEXT("FALSE"));
+
+	ENetMode NetMode = GetWorld()->GetNetMode();
+
+	switch (NetMode)
+	{
+	case NM_Standalone:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Standalone"));
+		break;
+	case NM_DedicatedServer:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Dedicated Server"));
+		break;
+	case NM_ListenServer:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Listen Server"));
+		break;
+	case NM_Client:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Client"));
+		break;
+	default:
+		UE_LOG(LogTemp, Warning, TEXT("NetMode: Unknown"));
+		break;
+	}
 
 	// Remove item. Inventory is replicated, so remove item also only on the server.
-	if (HasAuthority(&CurrentActivationInfo))
+	if (GetAvatarActorFromActorInfo()->HasAuthority())
 	{
+		UE_LOG(LogAbility, Log, TEXT("HandActionTag removed in client of %s. Now clear ability and delete the item by requesting to inventory.[2]"), *GetName());
 		AActor* AvatarActor = GetAvatarActorFromActorInfo();
 		APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(AvatarActor);
 		if (!PGPC) {
