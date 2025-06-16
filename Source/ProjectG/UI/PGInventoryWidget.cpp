@@ -36,8 +36,8 @@ void UPGInventoryWidget::BindInventorySlots()
 }
 
 /*
-* When inventory updated, update each inventory slots
-* if item added -> update slot with added item's date
+* When inventory updated, update each inventory slots by delegate
+* if item added -> update slot with added item's data
 * if item deleted -> update slot to empty
 */
 void UPGInventoryWidget::HandleOnInventoryUpdate(const TArray<FInventoryItem>& InventoryItems)

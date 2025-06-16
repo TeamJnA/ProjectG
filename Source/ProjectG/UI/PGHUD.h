@@ -9,6 +9,8 @@
 class UPGAttributesWidget;
 class UPGInventoryWidget;
 class UPGInventoryComponent;
+class UPGMessageManagerWidget;
+
 /**
  * 
  */
@@ -29,10 +31,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGInventoryWidget> InventoryWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGMessageManagerWidget> MessageManagerWidgetClass;
+
 private:
 	UPROPERTY()
 	TObjectPtr<UPGAttributesWidget> AttributeWidget;
 
 	UPROPERTY()
 	TObjectPtr<UPGInventoryWidget> InventoryWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGMessageManagerWidget> MessageManagerWidget;
 };
