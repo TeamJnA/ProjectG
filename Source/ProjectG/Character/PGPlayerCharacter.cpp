@@ -60,6 +60,10 @@ APGPlayerCharacter::APGPlayerCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	// Create a first person camera
+	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+	FirstPersonCamera->SetupAttachment(GetMesh(), TEXT("head"));
+
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
 	ItemSocket = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSocket"));
@@ -404,7 +408,18 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+		if (LookAxisVector.Y != 0)
+		{
+			FRotator NewRotation;
+			NewRotation = FirstPersonCamera->GetComponentRotation();
+			Server_SendCameraRotation(NewRotation);
+		}
 	}
+}
+
+void APGPlayerCharacter::Server_SendCameraRotation_Implementation(FRotator NewRotation)
+{
+	FirstPersonCamera->SetWorldRotation(NewRotation);
 }
 
 //Activate Input Action Ability by Tag

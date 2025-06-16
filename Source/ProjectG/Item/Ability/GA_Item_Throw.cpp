@@ -2,10 +2,14 @@
 
 
 #include "Item/Ability/GA_Item_Throw.h"
+#include "AbilitySystemComponent.h"
+
 #include "Character/Ability/Task/AT_PGWaitGameplayTagReAdded.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
-#include "AbilitySystemComponent.h"
+
+#include "Item/Ability/Consumable/GA_ThrowAction.h"
+
 #include "Character/PGPlayerCharacter.h"
 
 DEFINE_LOG_CATEGORY(LogAbility);
@@ -58,7 +62,7 @@ void UGA_Item_Throw::MouseLeft()
 {
 	UE_LOG(LogAbility, Log, TEXT("MouseLeft Input. Start to throw item! %s | %s"), *GetClass()->GetName(), *GetName());
 
-	//Throwing Start. Check HandAction.Lock tag.
+	// Throwing Start. Check HandAction.Lock tag.
 	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
 	if (!AbilitySystemComponent)
 	{
@@ -71,54 +75,23 @@ void UGA_Item_Throw::MouseLeft()
 		UE_LOG(LogAbility, Log, TEXT("Cannot do %s during hand action."), *GetName());
 		return;
 	}
-
-	AbilitySystemComponent->AddLooseGameplayTag(HandActionTag);
-	//AbilitySystemComponent->AddReplicatedLooseGameplayTag(HandActionTag);
-
-	//Play Throw anim montage
-	UAbilityTask_PlayMontageAndWait* MontageTask =
-		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-			this,
-			TEXT("FullThrowAnimMontage"),
-			ThrowAnimMontage,
-			1.0f,
-			TEXT("Throw")
-		);
-	MontageTask->OnCancelled.AddDynamic(this, &UGA_Item_Throw::ThrowItemComplete);
-	MontageTask->OnBlendOut.AddDynamic(this, &UGA_Item_Throw::ThrowItemComplete);
-	MontageTask->ReadyForActivation();
-
+		
 	// Spawn item actor only on the server.
+	// ThrowAnimMontageAbility is local predicted. It is also run on th server. This manage hand action tag.
+	// And end this ability by remove ability's owner item from inventory.
 	if (HasAuthority(&CurrentActivationInfo))
 	{
 		SpawnProjectileActor();
-	}
-}
 
-void UGA_Item_Throw::ThrowItemComplete()
-{
-	UE_LOG(LogAbility, Log, TEXT("Throw item completely! %s"), *GetName());
+		FGameplayAbilitySpec AbilitySpec(UGA_ThrowAction::StaticClass(), 1);
+		AbilitySystemComponent->GiveAbilityAndActivateOnce(AbilitySpec);
 
-	//Unlock handaction
-	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
-	if (!AbilitySystemComponent)
-	{
-		UE_LOG(LogAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s"), *GetName());
-		return;
-	}
-	AbilitySystemComponent->RemoveLooseGameplayTag(HandActionTag);
-	//AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(HandActionTag);
-
-	// Remove item. Inventory is replicated, so remove item also only on the server.
-	if (HasAuthority(&CurrentActivationInfo))
-	{
 		AActor* AvatarActor = GetAvatarActorFromActorInfo();
 		APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(AvatarActor);
 		if (!PGPC) {
 			UE_LOG(LogAbility, Warning, TEXT("Cannot found avatar actor in RemoveItem %s"), *GetName());
 			return;
 		}
-
 		PGPC->RemoveItemFromInventory();
 	}
 }
@@ -206,8 +179,8 @@ void UGA_Item_Throw::RightInputCanceled()
 	MontageTask->ReadyForActivation();
 }
 
-//This fuction implemented in child classes.
-//It is implemented differently depending on which actor item to spawn.
+// This fuction implemented in child classes.
+// It is implemented differently depending on which actor item to spawn.
 void UGA_Item_Throw::SpawnProjectileActor()
 {
 	UE_LOG(LogAbility, Log, TEXT("SpawnProjectileActor"));

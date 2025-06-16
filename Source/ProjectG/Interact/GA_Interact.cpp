@@ -23,7 +23,7 @@ void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 
 	// Starts the ability task to trace forward from the given start location to detect objects in front.
-	UCameraComponent* LinetraceStartPosition = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo())->GetFollowCamera();
+	UCameraComponent* LinetraceStartPosition = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo())->GetFirstPersonCamera();
 
 	WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, true);
 	WaitForInteractionTarget->InteractionTarget.AddDynamic(this, &UGA_Interact::WaitInteractionInput);
@@ -177,7 +177,7 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 			WaitForInteractionTarget->EndTask();
 			WaitForInteractionTarget = nullptr;
 		}
-		UCameraComponent* LinetraceStartPosition = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo())->GetFollowCamera();
+		UCameraComponent* LinetraceStartPosition = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo())->GetFirstPersonCamera();
 
 		WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, true);
 		WaitForInteractionTarget->InteractionTarget.AddDynamic(this, &UGA_Interact::WaitInteractionInput);

@@ -11,6 +11,8 @@
  */
 DECLARE_LOG_CATEGORY_EXTERN(LogAbility, Log, All);
 
+// GA_Item_Throw is local predicted ability.
+// This ability is executed both server and client.
 UCLASS()
 class PROJECTG_API UGA_Item_Throw : public UGameplayAbility
 {
@@ -53,9 +55,6 @@ protected:
 	// In this case, we need a boolean variable to prevent behavior 
 	// when releasing right-click after performing a different action during the right-click.
 	bool bThrowReady;
-
-	UFUNCTION()
-	void ThrowItemComplete();
 
 	UFUNCTION()
 	void RightInputCanceled();
