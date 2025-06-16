@@ -23,6 +23,7 @@
 
 //UI and Components
 #include "Component/PGInventoryComponent.h"
+#include "UI/PGHUD.h"
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -103,6 +104,18 @@ void APGPlayerCharacter::NotifyControllerChanged()
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
+	}
+}
+
+void APGPlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (IsLocallyControlled())
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::BeginPlay: Init HUD [%s] | HasAuthority %d"), *GetNameSafe(this), HasAuthority());
+
+		InitHUD();
 	}
 }
 
@@ -207,6 +220,26 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		AttributeSet->GetMovementSpeedAttribute()
 	);
 	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
+}
+
+void APGPlayerCharacter::InitHUD() const
+{
+	const APlayerController* PC = Cast<APlayerController>(Controller);
+	if (PC)
+	{
+		if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
+		{
+			HUD->Init();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::InitHUD: Get HUD failed | HasAuthority = %d"), HasAuthority());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::InitHUD: Get player controller failed | HasAuthority = %d"), HasAuthority());
+	}
 }
 
 void APGPlayerCharacter::AddTagToCharacter_Implementation(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)

@@ -74,7 +74,8 @@ public:
 	TObjectPtr<UInputAction> MouseRightAction;
 	
 protected:
-
+	virtual void BeginPlay() override;
+	
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
@@ -188,8 +189,16 @@ public:
 
 ///
 ///********* UI and Components ******************
-/// 	
+///
+
+public:
+	UPGInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPGInventoryComponent> InventoryComponent;
+
+
+public:
+	void InitHUD() const;
 };

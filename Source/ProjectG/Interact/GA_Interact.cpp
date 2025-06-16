@@ -10,8 +10,6 @@
 #include "Camera/CameraComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Interface/InteractableActorInterface.h"
-#include "Level/PGDoor1.h"
-
 
 void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 	const FGameplayAbilityActorInfo* ActorInfo, 
