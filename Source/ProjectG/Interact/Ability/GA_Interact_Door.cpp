@@ -77,25 +77,15 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
             /*
             * If door is locked and player has key on hand
             * Start hand action tag
-            * Wait for hand action tag removed
-            * On removed delegate to delete key
+            * Remove key item
             */
-            PGCharacter->SetHandActionAnimMontage(EHandActionMontageType::Pick);
+            // Play open door animation montage
+            PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
-            FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
-
-            FGameplayTagContainer HandActionTagContainer;
-            HandActionTagContainer.AddTag(HandActionTag);
-
-            PGCharacter->ActivateAbilityByTag(HandActionTagContainer);
-
-            UAbilityTask_WaitGameplayTagRemoved* WaitTask = UAbilityTask_WaitGameplayTagRemoved::WaitGameplayTagRemove(
-                this,
-                FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"))
-            );
-
-            WaitTask->Removed.AddDynamic(this, &UGA_Interact_Door::OnHandActionEnd);
-            WaitTask->ReadyForActivation();
+            if (HasAuthority(&CurrentActivationInfo))
+            {
+                PGCharacter->RemoveItemFromInventory();
+            }
 
             Door->UnLock();
             /*
@@ -116,40 +106,13 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
             UE_LOG(LogTemp, Log, TEXT("Cannot do %s during hand action."), *GetName());
             return;
         }
-        PGCharacter->SetHandActionAnimMontage(EHandActionMontageType::Pick);
+        // Play open door animation montage
+        PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
-        FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
-
-        FGameplayTagContainer HandActionTagContainer;
-        HandActionTagContainer.AddTag(HandActionTag);
-
-        PGCharacter->ActivateAbilityByTag(HandActionTagContainer);
-
-        // Active hand action tag and play animation montage
         Door->ToggleDoor();
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }    
 }
-
-/*
-* On hand action end -> remove used key item
-*/
-void UGA_Interact_Door::OnHandActionEnd()
-{
-    // Remove item. Inventory is replicated, so remove item also only on the server.
-    if (HasAuthority(&CurrentActivationInfo))
-    {
-        AActor* AvatarActor = GetAvatarActorFromActorInfo();
-        APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(AvatarActor);
-        if (!PGCharacter) {
-            UE_LOG(LogTemp, Warning, TEXT("Cannot found avatar actor in RemoveItem %s"), *GetName());
-            return;
-        }
-
-        PGCharacter->RemoveItemFromInventory();
-    }
-}
-
 
 void UGA_Interact_Door::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {

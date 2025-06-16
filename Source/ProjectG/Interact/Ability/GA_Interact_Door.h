@@ -39,7 +39,4 @@ public:
 protected:
 	FGameplayTag HandActionLockTag;
 	TObjectPtr<UAnimMontage> ThrowAnimMontage;
-
-	UFUNCTION()
-	void OnHandActionEnd();
 };
