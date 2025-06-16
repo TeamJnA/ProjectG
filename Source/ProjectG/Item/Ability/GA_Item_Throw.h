@@ -57,9 +57,6 @@ protected:
 	bool bThrowReady;
 
 	UFUNCTION()
-	void ThrowItemComplete();
-
-	UFUNCTION()
 	void RightInputCanceled();
 
 	//This function will be implement in child class.
@@ -68,7 +65,4 @@ protected:
 
 	UFUNCTION()
 	void ThrowReadyCanceled();
-
-	UFUNCTION(Server, Reliable)
-	void RemoveItem();
 };
