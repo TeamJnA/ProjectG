@@ -11,7 +11,7 @@ public class ProjectG : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
 															"GameplayAbilities", "GameplayTags", "GameplayTasks",
                                                             "UMG", "Slate", "SlateCore",
-                                                            "OnlineSubsystem", "OnlineSubsystemUtils" });
+                                                            "OnlineSubsystem", "OnlineSubsystemUtils",							"AIModule", "NavigationSystem"});
 
         PrivateDependencyModuleNames.AddRange(new string[] {  });
 
