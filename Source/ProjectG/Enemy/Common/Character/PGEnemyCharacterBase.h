@@ -30,6 +30,7 @@ public:
 
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 
+	//주변 감지용 collider
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")
 	UBoxComponent* TouchCollider;
 

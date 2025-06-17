@@ -22,11 +22,7 @@ void APGEnemyAIControllerBase::OnPossess(APawn* InPawn)
 			UBlackboardComponent* b;
 			UseBlackboard(tree->BlackboardAsset,b);
 			Blackboard = b;
-
-
-			//ASC 가져와서 넣기.
-			GetBlackboardComponent()->SetValueAsObject("ASC", enemy->GetAbilitySystemComponent());
-			
+					
 			RunBehaviorTree(tree);
 		}
 	}
