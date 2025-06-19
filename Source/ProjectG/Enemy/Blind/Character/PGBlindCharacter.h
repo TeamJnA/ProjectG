@@ -10,7 +10,7 @@
 #include "PGBlindCharacter.generated.h"
 
 class UPGBlindAttributeSet;
-
+class UBoxComponent;
 /**
  * 
  */
@@ -29,17 +29,51 @@ public:
 
 
 	float GetNoiseLevelThreshold() const;
+	float GetNoiseMaxThreshold() const;
 
 	int GetHuntLevel() const;
 	void SetHuntLevel(int Level);
 
 
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	
+	//bite ¿ë collider
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+	UBoxComponent* BiteCollider;
+
+
+
+	//Animation Montages
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimMontage* BiteMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UAnimMontage* RoarMontage;
+
+
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UPGBlindAttributeSet> BlindAttributeSet;
+
+	virtual void BeginPlay() override;
 	
 	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+
+	UFUNCTION()
+	void OnBiteColliderOverlapBegin(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+
+
+
+
 
 	
 private:
@@ -51,7 +85,7 @@ private:
 
 
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", Replicated, meta = (AllowPrivateAccess = "true"))
 	int HuntLevel = 0;
 
 
@@ -69,6 +103,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	float NoiseLevelThreshold = 1000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
+	float NoiseMaxThreshold = 2000.f;
 
 
 };

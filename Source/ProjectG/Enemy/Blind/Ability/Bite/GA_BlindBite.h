@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "GA_BlindChase.generated.h"
+#include "GA_BlindBite.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API UGA_BlindChase : public UGameplayAbility
+class PROJECTG_API UGA_BlindBite : public UGameplayAbility
 {
 	GENERATED_BODY()
 	
 public:
-	UGA_BlindChase();
+	UGA_BlindBite();
 
 	/** Actually activate ability, do not call this directly */
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -28,10 +28,9 @@ public:
 
 private:
 	UPROPERTY()
-	TSubclassOf<UGameplayEffect> ChaseEffectClass;
+	TSubclassOf<UGameplayEffect> BiteEffectClass;
 
 	UFUNCTION()
 	void OnMontageCompleted();
-	
-};
 
+};

@@ -47,7 +47,7 @@ protected:
 
 
 	UFUNCTION()
-	void OnOverlapBegin(
+	void OnTouchColliderOverlapBegin(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,

@@ -13,6 +13,7 @@
 #include "Enemy/Blind/Ability/Investigate/GA_BlindInvestigate.h"
 #include "Enemy/Common/AbilitySystem/GA_Exploration.h"
 #include "Enemy/Blind/Ability/Chase/GA_BlindChase.h"
+#include "Enemy/Blind/Ability/Bite/GA_BlindBite.h"
 
 
 APGBlindAIController::APGBlindAIController(FObjectInitializer const& ObjectInitializer) :
@@ -91,7 +92,8 @@ void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Sti
 
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
 	{
-		UE_LOG(LogTemp, Log, TEXT(" I FOUND YOU ATTACK!!"));
+		GetBlackboardComponent()->SetValueAsVector("TargetLocation", Actor->GetActorLocation());
+		OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindBite::StaticClass(), true);
 	}
 
 	/*
@@ -112,7 +114,27 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 
 	float CurNoise = Noise / (Distance + 0.1f) * 100000.f;
 
+	float MaxThreshold = OwnerPawn->GetNoiseMaxThreshold();
+
 	float DetectedMaxNoiseMagnitude = GetBlackboardComponent()->GetValueAsFloat("DetectedMaxNoiseMagnitude");
+
+
+	
+	if (CurNoise > MaxThreshold && OwnerPawn->GetHuntLevel()==2)
+	{
+		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoise);
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
+			FString::Printf(TEXT("MaxThreshold")));
+
+		GetBlackboardComponent()->SetValueAsVector("TargetLocation", SourceLocation);
+
+		
+		return;
+	}
+
+
+
+	
 
 	if (DetectedMaxNoiseMagnitude < CurNoise)
 	{
