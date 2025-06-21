@@ -77,7 +77,8 @@ APGPlayerCharacter::APGPlayerCharacter()
 
 	HeadlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadlightMesh"));
 	HeadlightMesh->SetupAttachment(FirstPersonCamera);
-	HeadlightMesh->SetVisibility(false);
+	HeadlightMesh->SetVisibility(true);
+	HeadlightMesh->SetOwnerNoSee(true);
 
 	HeadlightLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("HeadlightLight"));
 	HeadlightLight->SetupAttachment(FirstPersonCamera);
@@ -272,13 +273,18 @@ void APGPlayerCharacter::Client_PlayerStareAtTarget_Implementation(AActor* Targe
 		if (TargetActor != StaringTargetActor)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("APGPlayerCharacter::Client_PlayerStareAtTarget: %s"), *TargetActor->GetName());
-			StaringTargetActor = TargetActor;
+			if (IInteractableActorInterface* InterfaceIneract = Cast<IInteractableActorInterface>(StaringTargetActor))
+			{
+				InterfaceIneract->HighlightOff();
+			}
+
 			OnStareTargetUpdate.Broadcast(TargetActor);
 			if (IInteractableActorInterface* InterfaceIneract = Cast<IInteractableActorInterface>(TargetActor))
 			{
 				InterfaceIneract->HighlightOn();
 			}
-		}		
+			StaringTargetActor = TargetActor;
+		}
 	}
 	else
 	{
