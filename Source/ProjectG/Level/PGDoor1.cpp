@@ -72,6 +72,16 @@ void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(APGDoor1, bIsLocked);
 }
 
+void APGDoor1::HighlightOn() const
+{
+	Mesh0->SetRenderCustomDepth(true);
+}
+
+void APGDoor1::HighlightOff() const
+{
+	Mesh0->SetRenderCustomDepth(false);
+}
+
 // Client action after toggle door
 void APGDoor1::OnRep_DoorState()
 {

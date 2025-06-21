@@ -22,6 +22,6 @@ void APGHUD::Init()
 	InventoryWidget->AddToViewport();
 
 	MessageManagerWidget = CreateWidget<UPGMessageManagerWidget>(GetOwningPlayerController(), MessageManagerWidgetClass);
-	// bind
+	MessageManagerWidget->BindMessageEntry();
 	MessageManagerWidget->AddToViewport();
 }

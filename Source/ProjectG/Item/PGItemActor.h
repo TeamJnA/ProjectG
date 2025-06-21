@@ -23,8 +23,12 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void InitWithData(UPGItemData* InData);
 
+	//IInteractableActorInterface~
 	//Return Interact Ability of actor.
 	TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
+	void HighlightOn() const override;
+	void HighlightOff() const override;
+	//~IInteractableActorInterface end
 
 	//IItemInteractInterface~
 	virtual UPGItemData* GetItemData() override;
@@ -54,6 +58,4 @@ protected:
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
 	bool bOwned = false;
-
-
 };

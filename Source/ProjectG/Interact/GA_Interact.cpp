@@ -10,6 +10,7 @@
 #include "Camera/CameraComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Interface/InteractableActorInterface.h"
+#include "Item/PGItemActor.h"
 
 void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 	const FGameplayAbilityActorInfo* ActorInfo, 
@@ -46,6 +47,19 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 	if (!TargetActor)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Linetrace interact target is changed to null or invalid object."));
+
+		// Starts an Ability Task that waits for the Interact tag and triggers the interaction once the tag is received.
+		APGPlayerCharacter* OwnerCharacter = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo());
+		if (!OwnerCharacter) {
+			UE_LOG(LogTemp, Error, TEXT("Failed to cast AvatarActor to APGPlayerCharacter"));
+			return;
+		}
+		/*
+		* On local player stare at interactable actor
+		* display message UI for each TargetActor
+		*/
+		OwnerCharacter->Client_PlayerStareAtTarget(nullptr);
+
 		AbilityToInteract = nullptr;
 		if (WaitForInteractTag)
 		{
@@ -78,6 +92,12 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 		UE_LOG(LogTemp, Warning, TEXT("InteractTag is Null"));
 		return;
 	}
+
+	/*
+	* On local player stare at interactable actor
+	* display message UI for each TargetActor
+	*/
+	OwnerCharacter->Client_PlayerStareAtTarget(TargetActor);
 
 	FGameplayTag InteractTag = InteractTagContainer.First();
 

@@ -25,4 +25,6 @@ class PROJECTG_API IInteractableActorInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const = 0;
+	virtual void HighlightOn() const = 0;
+	virtual void HighlightOff() const = 0;
 };

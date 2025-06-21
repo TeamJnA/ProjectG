@@ -13,8 +13,6 @@
 class UAT_PGWaitGameplayTagAdded;
 class UAT_WaitForInteractionTarget;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractTargetUpdate, AActor*, InteractableActor);
-
 UCLASS()
 class PROJECTG_API UGA_Interact : public UGameplayAbility
 {
@@ -40,8 +38,4 @@ protected:
 	TObjectPtr<UAT_PGWaitGameplayTagAdded> WaitForInteractTag;
 
 	TObjectPtr<UAT_WaitForInteractionTarget> WaitForInteractionTarget;
-
-public:
-	UPROPERTY()
-	FOnInteractTargetUpdate OnInteractTargetUpdate;
 };

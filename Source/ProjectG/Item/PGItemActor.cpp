@@ -13,7 +13,7 @@ APGItemActor::APGItemActor()
 	//PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
-	SetReplicateMovement(true);
+	SetReplicateMovement(true);	
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	RootComponent = StaticMesh;
@@ -24,6 +24,16 @@ APGItemActor::APGItemActor()
 TSubclassOf<UGameplayAbility> APGItemActor::GetAbilityToInteract() const
 {
 	return InteractAbility;
+}
+
+void APGItemActor::HighlightOn() const
+{
+	StaticMesh->SetRenderCustomDepth(true);
+}
+
+void APGItemActor::HighlightOff() const
+{
+	StaticMesh->SetRenderCustomDepth(false);
 }
 
 void APGItemActor::InitWithData_Implementation(UPGItemData* InData)

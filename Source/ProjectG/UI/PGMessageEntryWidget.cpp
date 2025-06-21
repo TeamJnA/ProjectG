@@ -5,12 +5,14 @@
 
 void UPGMessageEntryWidget::SetMessage(FText _Message)
 {
-	if (!Message.IsEmpty())
-	{
-		Message = _Message;
-	}
-	else
-	{
-		Message = FText::GetEmpty();
-	}
+	UE_LOG(LogTemp, Warning, TEXT("UPGMessageEntryWidget::SetMessage: Set Message"));
+	Message = _Message;
+	//if (!Message.IsEmpty())
+	//{
+	//	Message = _Message;
+	//}
+	//else
+	//{
+	//	Message = FText::GetEmpty();
+	//}
 }

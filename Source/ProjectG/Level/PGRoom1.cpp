@@ -14,7 +14,7 @@ APGRoom1::APGRoom1()
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitsFolder);
 	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir0->SetRelativeLocation(FVector(1539.0f, -359.0f, 0.0f));
+	ExitDir0->SetRelativeLocation(FVector(1538.95f, -411.0f, 0.0f));
 	ExitDir0->SetRelativeRotation(FRotator(0.0f, 270.f, 0.0f));
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->bHiddenInGame = false;
@@ -22,7 +22,7 @@ APGRoom1::APGRoom1()
 	ExitDir1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection1"));
 	ExitDir1->SetupAttachment(ExitsFolder);
 	ExitDir1->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir1->SetRelativeLocation(FVector(2739.0f, -359.0f, 0.0f));
+	ExitDir1->SetRelativeLocation(FVector(2738.95f, -411.0f, 0.0f));
 	ExitDir1->SetRelativeRotation(FRotator(0.0f, 270.0f, 0.0f));
 	ExitDir1->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir1->bHiddenInGame = false;
@@ -30,7 +30,7 @@ APGRoom1::APGRoom1()
 	ExitDir2 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection2"));
 	ExitDir2->SetupAttachment(ExitsFolder);
 	ExitDir2->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir2->SetRelativeLocation(FVector(3658.0f, -11.0f, 0.0f));
+	ExitDir2->SetRelativeLocation(FVector(3691.0f, 0.0f, 0.0f));
 	ExitDir2->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 	ExitDir2->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir2->bHiddenInGame = false;
@@ -38,7 +38,7 @@ APGRoom1::APGRoom1()
 	ExitDir3 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection3"));
 	ExitDir3->SetupAttachment(ExitsFolder);
 	ExitDir3->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir3->SetRelativeLocation(FVector(2139.0f, 329.0f, 0.0f));
+	ExitDir3->SetRelativeLocation(FVector(2138.95f, 407.0f, 0.0f));
 	ExitDir3->SetRelativeRotation(FRotator(0.0f, 90.f, 0.0f));
 	ExitDir3->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir3->bHiddenInGame = false;
@@ -46,47 +46,47 @@ APGRoom1::APGRoom1()
 	ExitDir4 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection4"));
 	ExitDir4->SetupAttachment(ExitsFolder);
 	ExitDir4->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir4->SetRelativeLocation(FVector(939.0f, 329.0f, 0.0f));
+	ExitDir4->SetRelativeLocation(FVector(938.95f, 407.0f, 0.0f));
 	ExitDir4->SetRelativeRotation(FRotator(0.0f, 90.f, 0.0f));
 	ExitDir4->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir4->bHiddenInGame = false;
 
 	SpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint0"));
 	SpawnPoint0->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint0->SetRelativeLocation(FVector(1154.0f, -182.0f, 81.5f));
+	SpawnPoint0->SetRelativeLocation(FVector(1154.0f, 151.0f, 81.5f));
 	SpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	SpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	SpawnPoint0->bHiddenInGame = false;
 
 	SpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint1"));
 	SpawnPoint1->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint1->SetRelativeLocation(FVector(1244.0f, -182.0f, 81.5f));
+	SpawnPoint1->SetRelativeLocation(FVector(1244.0f, 151.0f, 81.5f));
 	SpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	SpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	SpawnPoint1->bHiddenInGame = false;
 
 	SpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint2"));
 	SpawnPoint2->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint2->SetRelativeLocation(FVector(1340.0f, -182.0f, 81.5f));
+	SpawnPoint2->SetRelativeLocation(FVector(1340.0f, 151.0f, 81.5f));
 	SpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	SpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	SpawnPoint2->bHiddenInGame = false;
 
 	SpawnPoint3 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint3"));
 	SpawnPoint3->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint3->SetRelativeLocation(FVector(1424.0f, -182.0f, 81.5f));
+	SpawnPoint3->SetRelativeLocation(FVector(1424.0f, 151.0f, 81.5f));
 	SpawnPoint3->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	SpawnPoint3->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	SpawnPoint3->bHiddenInGame = false;
 
 	RoomDir->SetRelativeLocation(FVector(900.0f, 0.0f, 130.0f));
 
-	OverlapBox->SetRelativeLocation(FVector(1834.0f, -15.0f, 310.0f));
-	OverlapBox->SetRelativeScale3D(FVector(56.75f, 10.5f, 9.25f));
+	OverlapBox->SetRelativeLocation(FVector(1830.0f, -5.0f, 310.0f));
+	OverlapBox->SetRelativeScale3D(FVector(56.75f, 12.0f, 9.25f));
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(GeometryFolder);
 	Mesh->SetChildActorClass(MeshRef.Class);
-	Mesh->SetRelativeLocation(FVector(1852.0f, -15.0f, -49.0f));
+	Mesh->SetRelativeLocation(FVector(1885.0f, 63.0f, -49.1f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 }

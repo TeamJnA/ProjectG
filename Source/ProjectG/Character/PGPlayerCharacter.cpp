@@ -25,6 +25,9 @@
 #include "Component/PGInventoryComponent.h"
 #include "UI/PGHUD.h"
 
+//Interface
+#include "Interface/InteractableActorInterface.h"
+
 APGPlayerCharacter::APGPlayerCharacter()
 {
 	// Set size for collision capsule
@@ -244,6 +247,34 @@ void APGPlayerCharacter::InitHUD() const
 	{
 		UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::InitHUD: Get player controller failed | HasAuthority = %d"), HasAuthority());
 	}
+}
+
+void APGPlayerCharacter::Client_PlayerStareAtTarget_Implementation(AActor* TargetActor)
+{
+	if (TargetActor)
+	{
+		if (TargetActor != StaringTargetActor)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("APGPlayerCharacter::Client_PlayerStareAtTarget: %s"), *TargetActor->GetName());
+			StaringTargetActor = TargetActor;
+			OnStareTargetUpdate.Broadcast(TargetActor);
+			if (IInteractableActorInterface* InterfaceIneract = Cast<IInteractableActorInterface>(TargetActor))
+			{
+				InterfaceIneract->HighlightOn();
+			}
+		}		
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("APGPlayerCharacter::Client_PlayerStareAtTarget: null"));
+		OnStareTargetUpdate.Broadcast(nullptr);
+		if (IInteractableActorInterface* InterfaceIneract = Cast<IInteractableActorInterface>(StaringTargetActor))
+		{
+			InterfaceIneract->HighlightOff();
+		}
+		StaringTargetActor = nullptr;
+	}
+	
 }
 
 void APGPlayerCharacter::AddTagToCharacter_Implementation(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)

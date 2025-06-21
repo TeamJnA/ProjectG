@@ -19,9 +19,12 @@ public:
 	APGDoor1();
 	static void SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool _bIsLocked);
 
-	// IInteractableActorInterface
+	//IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
-
+	void HighlightOn() const override;
+	void HighlightOff() const override;
+	//IInteractableActorInterface end
+	
 	void ToggleDoor();
 	bool IsOpen() const { return bIsOpen; }
 	bool IsLocked() const { return bIsLocked; }

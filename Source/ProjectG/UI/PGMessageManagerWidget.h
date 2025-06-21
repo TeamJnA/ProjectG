@@ -7,6 +7,7 @@
 #include "PGMessageManagerWidget.generated.h"
 
 class UPGMessageEntryWidget;
+class APGPlayerCharacter;
 
 /**
  * 
@@ -17,9 +18,14 @@ class PROJECTG_API UPGMessageManagerWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void BindMessageEntry(AActor* InteractableActor);
+	void BindMessageEntry();
 
-private:
+protected:
+	UFUNCTION()
+	void HandleOnStareTargetUpdate(AActor* TargetActor);
+		
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UPGMessageEntryWidget> MessageEntry;
+
+	TObjectPtr<APGPlayerCharacter> PlayerRef;
 };

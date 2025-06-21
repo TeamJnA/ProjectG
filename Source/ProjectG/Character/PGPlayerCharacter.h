@@ -18,6 +18,8 @@ struct FOnAttributeChangeData;
 
 class UPGInventoryComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
+
 /**
  * 
  */
@@ -208,7 +210,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UPGInventoryComponent> InventoryComponent;
 
+	TObjectPtr<AActor> StaringTargetActor = nullptr;
 
 public:
 	void InitHUD() const;
+
+	UFUNCTION(Client, Reliable)
+	void Client_PlayerStareAtTarget(AActor* TargetActor);
+
+	UPROPERTY()
+	FOnStareTargetUpdate OnStareTargetUpdate;
 };
