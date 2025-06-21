@@ -24,6 +24,7 @@
 //UI and Components
 #include "Component/PGInventoryComponent.h"
 #include "UI/PGHUD.h"
+#include "Components/SpotLightComponent.h"
 
 //Interface
 #include "Interface/InteractableActorInterface.h"
@@ -66,12 +67,22 @@ APGPlayerCharacter::APGPlayerCharacter()
 	// Create a first person camera
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCamera->SetupAttachment(GetMesh(), TEXT("head"));
+	FirstPersonCamera->SetIsReplicated(true);
 
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
 	ItemSocket = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSocket"));
 	ItemSocket->SetupAttachment(GetMesh(), TEXT("middle_metacarpal_r"));
 	ItemSocket->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+
+	HeadlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadlightMesh"));
+	HeadlightMesh->SetupAttachment(FirstPersonCamera);
+	HeadlightMesh->SetVisibility(false);
+
+	HeadlightLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("HeadlightLight"));
+	HeadlightLight->SetupAttachment(FirstPersonCamera);
+	HeadlightLight->SetVisibility(false);
+	HeadlightLight->SetIsReplicated(true);
 
 	// Create InventoryComponent and Set changing Itemslot Input Action
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
@@ -247,6 +258,11 @@ void APGPlayerCharacter::InitHUD() const
 	{
 		UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::InitHUD: Get player controller failed | HasAuthority = %d"), HasAuthority());
 	}
+}
+
+void APGPlayerCharacter::MC_SetFlashlightState(bool _bIsFlashlightOn)
+{
+	HeadlightLight->SetVisibility(_bIsFlashlightOn);
 }
 
 void APGPlayerCharacter::Client_PlayerStareAtTarget_Implementation(AActor* TargetActor)

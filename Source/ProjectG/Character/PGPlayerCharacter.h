@@ -17,6 +17,7 @@ struct FInputActionValue;
 struct FOnAttributeChangeData;
 
 class UPGInventoryComponent;
+class USpotLightComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 
@@ -42,6 +43,13 @@ public:
 	/** First Person camera */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Headlight, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> HeadlightMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Headlight, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USpotLightComponent> HeadlightLight;
+
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -220,4 +228,6 @@ public:
 
 	UPROPERTY()
 	FOnStareTargetUpdate OnStareTargetUpdate;
+
+	void MC_SetFlashlightState(bool _bIsFlashlightOn);
 };
