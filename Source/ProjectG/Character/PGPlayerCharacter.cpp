@@ -25,6 +25,12 @@
 #include "Component/PGInventoryComponent.h"
 #include "UI/PGHUD.h"
 
+//Sound Manager
+#include "Sound/PGSoundManager.h"
+
+// 삭제 예정
+#include "Net/UnrealNetwork.h"
+
 APGPlayerCharacter::APGPlayerCharacter()
 {
 	// Set size for collision capsule
@@ -224,6 +230,25 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		AttributeSet->GetMovementSpeedAttribute()
 	);
 	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
+}
+
+void APGPlayerCharacter::InitSoundManager(APGSoundManager* SoundManagerRef)
+{
+	SoundManager = SoundManagerRef;
+
+	// LogNet: Warning: UNetDriver::ProcessRemoteFunction: No owning connection for actor PGSoundManager_0. Function PlaySoundWithNoise will not be processed.
+	// ????
+	/*
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (PC)
+	{
+		SoundManager->SetOwner(PC);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Failed to init SoundManager"));
+	}
+	*/
 }
 
 void APGPlayerCharacter::InitHUD() const
@@ -444,4 +469,39 @@ void APGPlayerCharacter::StopInputActionByTag(const FInputActionValue& Value, FG
 void APGPlayerCharacter::ChangingItemSlot(const FInputActionValue& Value, int32 NumofSlot)
 {
 	InventoryComponent->ChangeCurrentInventoryIndex(NumofSlot);
+}
+
+
+void APGPlayerCharacter::TestSoundMulticast_Implementation(USoundBase* InSound)
+{
+	if (SoundManager)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SoundManager is valid"));
+		SoundManager->PlaySoundWithNoise(InSound, FVector::ZeroVector, 1, 1);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("SoundManager is not valid"));
+	}
+}
+
+void APGPlayerCharacter::TestSoundForSelf(USoundBase* InSound)
+{
+	if (SoundManager)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SoundManager is valid"));
+		SoundManager->PlaySoundForSelf(InSound, 1);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("SoundManager is not valid"));
+	}
+}
+
+// 삭제 예정
+void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APGPlayerCharacter, SoundManager);
 }

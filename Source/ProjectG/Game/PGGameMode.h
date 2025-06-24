@@ -7,6 +7,7 @@
 #include "PGGameMode.generated.h"
 
 class APGPlayerController;
+class APGSoundManager;
 
 /**
  * 
@@ -20,6 +21,8 @@ public:
 	APGGameMode();
 
 	void SetIsTravelFailedExist();
+
+	TObjectPtr<APGSoundManager> GetSoundManager();
 
 protected:
 	virtual void BeginPlay() override;
@@ -50,4 +53,9 @@ protected:
 	TSet<APlayerController*> ClientTravelCompletedPlayersSet;
 	bool bIsTravelFailedExist = false;
 	FTimerHandle TravelCheckTimer;
+
+	void InitSoundManagerToPlayers();
+
+	UPROPERTY()
+	TObjectPtr<APGSoundManager> SoundManager;
 };

@@ -2,18 +2,28 @@
 
 #include "Game/PGGameMode.h"
 #include "EngineUtils.h"
+
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerController.h"
+
 #include "Kismet/GameplayStatics.h"
+
 #include "Player/PGPlayerController.h"
 #include "Player/PGPlayerState.h"
+
 #include "Character/PGPlayerCharacter.h"
+
 #include "Game/PGGameState.h"
+
+#include "Game/PGAdvancedFriendsGameInstance.h"
+
 #include "Level/PGGlobalLightManager.h"
 #include "Level/PGLevelGenerator.h"
-#include "Game/PGAdvancedFriendsGameInstance.h"
+
 #include "UI/PGHUD.h"
+
+#include "Sound/PGSoundManager.h"
 
 APGGameMode::APGGameMode()
 {
@@ -64,12 +74,22 @@ void APGGameMode::BeginPlay()
 			*/
 			GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
 		}
+
+		/*
+		* Waiting for all players' travel success information
+		*/
+		GetWorld()->GetTimerManager().SetTimer(TravelCheckTimer, this, &APGGameMode::PostTravel, 4.0f, false);
+
+		// Spawn sound manager on the lever.
+		SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
+		if (SoundManager) {
+			UE_LOG(LogTemp, Log, TEXT("Sound manager spawn complete."));
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
+		}
 	}
 
-	/*
-	* Waiting for all players' travel success information
-	*/
-	GetWorld()->GetTimerManager().SetTimer(TravelCheckTimer, this, &APGGameMode::PostTravel, 4.0f, false);
 }
 
 void APGGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
@@ -232,10 +252,13 @@ void APGGameMode::SpawnAllPlayers()
 
 		// need retry count limit
 	}
+	// All player spawned completely.
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager."));
+		UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager and SoundManager."));
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnGlobalLightManager);
+
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::InitSoundManagerToPlayers);
 	}
 }
 
@@ -269,4 +292,26 @@ void APGGameMode::SpawnGlobalLightManager()
 		UE_LOG(LogTemp, Warning, TEXT("GameMode: GlobalLightManager Spawned"));
 		bManagerSpawned = true;
 	}
+}
+
+void APGGameMode::InitSoundManagerToPlayers()
+{
+	// Set the character's SoundManager pointer to the globally spawned soundmanager instance.
+	for (FConstPlayerControllerIterator it = GetWorld()->GetPlayerControllerIterator(); it; ++it)
+	{
+		APlayerController* PC = it->Get();
+		if (!PC) continue;
+
+		APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(PC->GetPawn());
+		if (PGPC)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s"), *PGPC->GetName());
+			PGPC->InitSoundManager(GetSoundManager());
+		}
+	}
+}
+
+TObjectPtr<APGSoundManager> APGGameMode::GetSoundManager()
+{
+	return SoundManager;
 }
