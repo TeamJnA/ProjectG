@@ -37,7 +37,7 @@ void UGA_BlindBite::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
 	AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
 	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
-	Blackboard->SetValueAsBool(FName("DetectedPlayer"), true);
+	Blackboard->SetValueAsBool(FName("DetectedPlayer"), true); //Behavior tree의 Detected Player 값 변경.
 
 
 
@@ -70,7 +70,7 @@ void UGA_BlindBite::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
 	AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
 	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
-	Blackboard->SetValueAsBool(FName("DetectedPlayer"), false);
+	Blackboard->SetValueAsBool(FName("DetectedPlayer"), false);//Behavior tree의 Detected Player 값 변경.
 	APGBlindAIController* AIC = Cast<APGBlindAIController>(AIController);
 	AIC->ResetHuntLevel();
 	

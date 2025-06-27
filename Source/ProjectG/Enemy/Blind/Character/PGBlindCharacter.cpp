@@ -83,14 +83,14 @@ void APGBlindCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
-    
+    //collider 붙이기.
     if (BiteCollider && GetMesh())
     {
         BiteCollider->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("Jaw1Socket"));
     }
 
 
-    
+    //callback 함수  등록
     if (BiteCollider)
     {
         BiteCollider->OnComponentBeginOverlap.AddDynamic(this, &APGBlindCharacter::OnBiteColliderOverlapBegin);
@@ -107,7 +107,8 @@ void APGBlindCharacter::OnBiteColliderOverlapBegin(UPrimitiveComponent* Overlapp
     if (!OtherActor || OtherActor == this)
         return;
     
-    // 예: 플레이어만 감지 (필요 시 다른 조건 추가)
+    // 플레이어만 감지 (필요 시 다른 조건 추가)
+    // 현재는 tag 기반으로 작동. 로그 대신 다른 기능 추가하면 됨.
     if (OtherActor->ActorHasTag(FName("Player")))
     {
         UE_LOG(LogTemp, Log, TEXT(" Bite Successful"));
