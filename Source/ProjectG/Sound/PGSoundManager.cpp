@@ -17,6 +17,14 @@ APGSoundManager::APGSoundManager()
 	bReplicates = true;
 
 	bAlwaysRelevant = true;
+
+	static ConstructorHelpers::FObjectFinder<USoundAttenuation> SoundAttenuationRef(TEXT("/Game/ProjectG/Sound/BaseSoundAttenuation.BaseSoundAttenuation"));
+	if (SoundAttenuationRef.Object)
+	{
+		BaseSoundAttenuation = SoundAttenuationRef.Object;
+	}
+
+	bDebugSoundRange = true;
 }
 
 
@@ -24,43 +32,81 @@ APGSoundManager::APGSoundManager()
 void APGSoundManager::BeginPlay()
 {
 	Super::BeginPlay();
-
 	// ...
-	
 }
 
 void APGSoundManager::PlaySoundForSelf(USoundBase* SoundAsset, uint8 SoundVolumeLevel)
 {
-	if (!GetWorld())
+	if (!SoundAsset)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PlaySoundForSelf failed: World is null."));
+		UE_LOG(LogTemp, Warning, TEXT("SoundAsset is Null"));
 		return;
 	}
+
 	UE_LOG(LogTemp, Log, TEXT("Play sound %s in PlaySoundForSelf"), *SoundAsset->GetName());
 	UGameplayStatics::PlaySound2D(GetWorld(), SoundAsset, 1);
 }
 
-void APGSoundManager::PlaySoundWithNoise_Implementation(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundVolumeLevel, uint8 SoundRangeLevel)
+void APGSoundManager::PlaySoundForAllPlayers_Implementation(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel)
 {
-	if (!GetWorld())
+	if (!SoundAsset)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PlaySoundWithNoise failed: World is null."));
+		UE_LOG(LogTemp, Warning, TEXT("SoundAsset is Null"));
 		return;
 	}
-	UE_LOG(LogTemp, Log, TEXT("Start to multicast sound %s in PlaySoundWithNoise"), *SoundAsset->GetName());
-	PlaySoundMulticast(SoundAsset, SoundLocation, SoundVolumeLevel, SoundRangeLevel);
+
+	UE_LOG(LogTemp, Log, TEXT("Play sound for all players %s in PlaySoundForAllPlayers"), *SoundAsset->GetName());
+
+	PlaySoundMulticast(SoundAsset, SoundLocation, SoundPowerLevel);
 }
 
-//void APGSoundManager::PlaySoundClient(USoundBase* SoundAsset, uint8 SoundVolumeLevel)
-
-void APGSoundManager::PlaySoundMulticast_Implementation(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundVolumeLevel, uint8 SoundRangeLevel)
+void APGSoundManager::PlaySoundWithNoise_Implementation(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound)
 {
-	if (!GetWorld())
+	if (!SoundAsset)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PlaySoundMulticast failed: World is null."));
+		UE_LOG(LogTemp, Warning, TEXT("SoundAsset is Null"));
 		return;
 	}
-	UE_LOG(LogTemp, Log, TEXT("Play sound %s in PlaySoundWithNoise, PlaySoundMulticast"), *SoundAsset->GetName());
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundAsset, SoundLocation, SoundVolumeLevel);
+
+	UE_LOG(LogTemp, Log, TEXT("Start sound multicast %s in PlaySoundWithNoise"), *SoundAsset->GetName());
+	PlaySoundMulticast(SoundAsset, SoundLocation, SoundPowerLevel);
+
+	// Make noise for enemy AI chase sound.
+	float SoundRange = 200 * SoundPowerLevel * SoundPowerLevel;
+	if (bIntensedSound)
+		SoundPowerLevel++;
+
+	MakeNoise(SoundPowerLevel, nullptr, SoundLocation, SoundRange);
+
+	// Draw debug sphere of makenoise range
+	if (bDebugSoundRange)
+	{
+		if (bIntensedSound)
+		{
+			DrawDebugSphere(GetWorld(), SoundLocation, SoundRange, 8, FColor::Red, false, 3.0f, 0U, 3.0f);
+		}
+		else
+		{
+			float StrongSoundRange = 200 * (SoundPowerLevel - 1) * (SoundPowerLevel - 1);
+			DrawDebugSphere(GetWorld(), SoundLocation, StrongSoundRange, 8, FColor::Red, false, 3.0f, 0U, 3.0f);
+			DrawDebugSphere(GetWorld(), SoundLocation, SoundRange, 8, FColor::Yellow, false, 3.0f, 0U, 3.0f);
+		}
+	}
+	
+}
+
+void APGSoundManager::PlaySoundMulticast_Implementation(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel)
+{
+	// Sets the audible range and the radius where sound attenuation starts.
+	float AttenuationExtentRange, AttenuationFalloffDistance;
+	AttenuationExtentRange = 200 * SoundPowerLevel * SoundPowerLevel;
+	AttenuationFalloffDistance = 200 * (SoundPowerLevel - 1) * (SoundPowerLevel - 1);
+
+	// AttenuationShapeExtents.X is the sphere radius of attenuation.
+	BaseSoundAttenuation->Attenuation.AttenuationShapeExtents.X = AttenuationExtentRange;
+	BaseSoundAttenuation->Attenuation.FalloffDistance = AttenuationFalloffDistance;
+
+	UE_LOG(LogTemp, Log, TEXT("Play sound %s in PlaySoundMulticast"), *SoundAsset->GetName());
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundAsset, SoundLocation, 1.0f, 1.0f, 0.0f, BaseSoundAttenuation);
 }
 

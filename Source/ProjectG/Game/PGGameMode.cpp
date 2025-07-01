@@ -311,7 +311,7 @@ void APGGameMode::InitSoundManagerToPlayers()
 	}
 }
 
-TObjectPtr<APGSoundManager> APGGameMode::GetSoundManager()
+APGSoundManager* APGGameMode::GetSoundManager()
 {
 	return SoundManager;
 }

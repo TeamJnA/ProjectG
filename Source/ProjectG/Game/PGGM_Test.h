@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+
+#include "Interface/SoundManagerInterface.h"
+
 #include "PGGM_Test.generated.h"
 
 class APGSoundManager;
@@ -11,10 +14,15 @@ class APGSoundManager;
  * 
  */
 UCLASS()
-class PROJECTG_API APGGM_Test : public AGameModeBase
+class PROJECTG_API APGGM_Test : public AGameModeBase, public ISoundManagerInterface
 {
 	GENERATED_BODY()
 	
+public:
+	// ISoundManagerInterface~
+	virtual APGSoundManager* GetSoundManager() override;
+	// ~ISoundManagerInterface
+
 protected:
 	virtual void BeginPlay() override;
 

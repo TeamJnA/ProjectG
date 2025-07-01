@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+
+#include "Interface/SoundManagerInterface.h"
+
 #include "PGGameMode.generated.h"
 
 class APGPlayerController;
@@ -13,7 +16,7 @@ class APGSoundManager;
  * 
  */
 UCLASS()
-class PROJECTG_API APGGameMode : public AGameMode
+class PROJECTG_API APGGameMode : public AGameMode, public ISoundManagerInterface
 {
 	GENERATED_BODY()
 
@@ -22,7 +25,9 @@ public:
 
 	void SetIsTravelFailedExist();
 
-	TObjectPtr<APGSoundManager> GetSoundManager();
+	// ISoundManagerInterface~
+	virtual APGSoundManager* GetSoundManager() override;
+	// ~ISoundManagerInterface
 
 protected:
 	virtual void BeginPlay() override;

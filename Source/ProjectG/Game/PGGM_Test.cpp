@@ -5,6 +5,11 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Sound/PGSoundManager.h"
 
+APGSoundManager* APGGM_Test::GetSoundManager()
+{
+	return SoundManager;
+}
+
 void APGGM_Test::BeginPlay()
 {
 	// Spawn sound manager on the lever.
@@ -32,7 +37,6 @@ void APGGM_Test::InitSoundManagerToPlayers()
 		{
 			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s"), *PGPC->GetName());
 			PGPC->InitSoundManager(SoundManager);
-			// 아 깨달았다. Server에서 Init을 해서 클라에서는 Init이 안 된 거임....
 		}
 	}
 }

@@ -17,6 +17,7 @@ struct FInputActionValue;
 struct FOnAttributeChangeData;
 
 class UPGInventoryComponent;
+class UPGSoundManagerComponent;
 
 class APGSoundManager;
 
@@ -209,11 +210,11 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UPGInventoryComponent> InventoryComponent;
+	TObjectPtr<UPGInventoryComponent> InventoryComponent;
 
-// Sound system
-	UPROPERTY(Replicated)
-	TObjectPtr<APGSoundManager> SoundManager;
+// -----------Sound parts-------------
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Sound, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPGSoundManagerComponent> SoundManagerComponent;
 
 public:
 	void InitSoundManager(APGSoundManager* SoundManagerRef);
@@ -222,7 +223,7 @@ public:
 	void InitHUD() const;
 
 
-
+	/*
 	//
 	// Test
 	//
@@ -231,8 +232,5 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void TestSoundForSelf(USoundBase* InSound);
-
-	// 컴포넌트로 옮기고 Replicate 컴포넌트 내부에서 진행시킬 예정
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
+	*/
 };

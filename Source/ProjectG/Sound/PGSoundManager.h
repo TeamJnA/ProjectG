@@ -34,29 +34,30 @@ public:
 	// Play sound for a only client who called this function. 
 	void 	PlaySoundForSelf(USoundBase* SoundAsset, uint8 SoundVolumeLevel);
 
-	// 
-	// 	PlaySoundForAllPlayers()
-	//  Server_PlaySoundForAllPlayers()
-	// 
-
+	// Play sound for all players.
 	UFUNCTION(Server, Reliable)
-	void 	PlaySoundWithNoise(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundVolumeLevel, uint8 SoundRangeLevel);
+	void PlaySoundForAllPlayers(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel);
 
-	// 	Server_PlaySoundWithNoise()
-
-	// HasAuthority로 함수 내부에서 알아서 진행할까.
+	//  Play sound for all players and make noise. All players and enemy AI can hear sound.
+	UFUNCTION(Server, Reliable)
+	void 	PlaySoundWithNoise(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound = false);
 
 private:
 	//UFUNCTION(Client, Reliable)
 	//void PlaySoundClient(USoundBase* SoundAsset, uint8 SoundVolumeLevel);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void PlaySoundMulticast(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundVolumeLevel, uint8 SoundRangeLevel);
+	void PlaySoundMulticast(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundVolumeLevel);
+
+	UPROPERTY()
+	TObjectPtr<USoundAttenuation> BaseSoundAttenuation;
+
+	bool bDebugSoundRange;
 };
 
 /*
-Server	-> Server	0 작동	로컬 호출 (리플리케이션 아님)
-Client	-> Client	x 작동 안함	클라이언트는 자기 자신에게 클라이언트 함수 호출 불가
-Client	-> NetMulticast	x 작동 안함	클라이언트는 멀티캐스트 호출 권한 없음
-Server	-> NetMulticast	0 작동	서버 → 모든 클라이언트 및 자기 자신
+Server	-> [Server] 0 작동	로컬 호출 (리플리케이션 아님)
+Client	-> [Client]	x 작동 안함	클라이언트는 자기 자신에게 클라이언트 함수 호출 불가
+Client	-> [NetMulticast]	x 작동 안함	클라이언트는 멀티캐스트 호출 권한 없음
+Server	-> [NetMulticast]	0 작동	서버 → 모든 클라이언트 및 자기 자신
 */

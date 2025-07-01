@@ -23,13 +23,11 @@
 
 //UI and Components
 #include "Component/PGInventoryComponent.h"
+#include "Component/PGSoundManagerComponent.h"
 #include "UI/PGHUD.h"
 
 //Sound Manager
 #include "Sound/PGSoundManager.h"
-
-// 삭제 예정
-#include "Net/UnrealNetwork.h"
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -76,8 +74,10 @@ APGPlayerCharacter::APGPlayerCharacter()
 	ItemSocket->SetupAttachment(GetMesh(), TEXT("middle_metacarpal_r"));
 	ItemSocket->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 
-	// Create InventoryComponent and Set changing Itemslot Input Action
+	// Create Components
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
+
+	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
 
 	// Set hand actions anim montages
 	// EHandActionMontageType
@@ -234,21 +234,7 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 
 void APGPlayerCharacter::InitSoundManager(APGSoundManager* SoundManagerRef)
 {
-	SoundManager = SoundManagerRef;
-
-	// LogNet: Warning: UNetDriver::ProcessRemoteFunction: No owning connection for actor PGSoundManager_0. Function PlaySoundWithNoise will not be processed.
-	// ????
-	/*
-	APlayerController* PC = Cast<APlayerController>(Controller);
-	if (PC)
-	{
-		SoundManager->SetOwner(PC);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Failed to init SoundManager"));
-	}
-	*/
+	SoundManagerComponent->SetSoundManager(SoundManagerRef);
 }
 
 void APGPlayerCharacter::InitHUD() const
@@ -471,7 +457,7 @@ void APGPlayerCharacter::ChangingItemSlot(const FInputActionValue& Value, int32 
 	InventoryComponent->ChangeCurrentInventoryIndex(NumofSlot);
 }
 
-
+/*
 void APGPlayerCharacter::TestSoundMulticast_Implementation(USoundBase* InSound)
 {
 	if (SoundManager)
@@ -497,11 +483,4 @@ void APGPlayerCharacter::TestSoundForSelf(USoundBase* InSound)
 		UE_LOG(LogTemp, Log, TEXT("SoundManager is not valid"));
 	}
 }
-
-// 삭제 예정
-void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(APGPlayerCharacter, SoundManager);
-}
+*/
