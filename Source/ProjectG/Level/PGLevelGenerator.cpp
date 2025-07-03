@@ -24,14 +24,16 @@
 #include "PGGlobalLightManager.h"
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerController.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 APGLevelGenerator::APGLevelGenerator()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	bReplicates = true;
-	SetReplicateMovement(true);
+	bReplicates = false;
+	//SetReplicateMovement(true);
+	//bAlwaysRelevant = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -79,13 +81,29 @@ APGLevelGenerator::APGLevelGenerator()
 // If a specific value is specified, set that value as seed.
 void APGLevelGenerator::SetSeed()
 {
-	if (SeedValue == -1)
+	if (HasAuthority())
 	{
-		UKismetMathLibrary::SeedRandomStream(Seed);
+		if (SeedValue == -1)
+		{
+			Seed.Initialize(FDateTime::Now().GetTicks());
+			//ReplicatedSeedValue = Seed.GetCurrentSeed();
+			//UKismetMathLibrary::SeedRandomStream(Seed);
+		}
+		else
+		{
+			Seed.Initialize(SeedValue);
+			//ReplicatedSeedValue = SeedValue;
+			//UKismetMathLibrary::SetRandomStreamSeed(Seed, SeedValue);
+		}
+
+		//UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator Seed: %d"), ReplicatedSeedValue);
 	}
 	else
 	{
-		UKismetMathLibrary::SetRandomStreamSeed(Seed, SeedValue);
+		// 클라이언트는 이미 복제된 ReplicatedSeedValue를 사용하여 자신의 스트림을 초기화합니다.
+		//Seed.Initialize(ReplicatedSeedValue);
+		// 디버깅을 위해 클라이언트에서 설정된 시드 값을 로그로 남길 수 있습니다.
+		//UE_LOG(LogTemp, Warning, TEXT("[CLIENT] APGLevelGenerator Seed Replicated: %d"), ReplicatedSeedValue);
 	}
 }
 
@@ -286,8 +304,16 @@ void APGLevelGenerator::SpawnDoors()
 	UWorld* world = GetWorld();
 	if (world)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] DoorPointsList Contents:"), HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
+		for (auto Point : DoorPointsList)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Point: %s"), *Point->GetComponentLocation().ToString());
+		}
+
 		DoorAmount = DoorPointsList.Num() * 0.8f;
 		LockedDoorAmount = DoorAmount * 0.3f;
+
+		int32 DoorIndex = 0; // 문 인덱스를 추가하여 고유한 이름 생성
 		while (DoorAmount > 0)
 		{
 			// get random door spawn point from DoorPointsList by stream(seed)
@@ -301,15 +327,38 @@ void APGLevelGenerator::SpawnDoors()
 			FActorSpawnParameters spawnParams;
 			spawnParams.Owner = this;
 			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			if (LockedDoorAmount > 0)
+
+			UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNING DOOR: Owner NetGUID=%s"), *spawnParams.Owner->GetActorGuid().ToString());
+
+			APGDoor1* NewDoor = world->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform, spawnParams);
+
+			if (NewDoor)
 			{
-				APGDoor1::SpawnDoor(world, spawnTransform, spawnParams, /*bIsLocked*/ true);
-				LockedDoorAmount--;
+				if (LockedDoorAmount > 0)
+				{
+					NewDoor->Lock();
+					LockedDoorAmount--;
+				}
+				else
+				{
+					// bIsLock deafult = false
+				}
+				UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED DOOR: Name=%s, Location=%s, NetGUID=%s"), *NewDoor->GetFName().ToString(), *NewDoor->GetActorLocation().ToString(), *NewDoor->GetActorGuid().ToString()); //
 			}
 			else
 			{
-				APGDoor1::SpawnDoor(world, spawnTransform, spawnParams, /*bIsLocked*/ false);
+				UE_LOG(LogTemp, Error, TEXT("Failed to spawn APGDoor1 from APGLevelGenerator::SpawnDoors!")); // 에러 로그 추가
 			}
+
+			//if (LockedDoorAmount > 0)
+			//{
+			//	APGDoor1::SpawnDoor(world, spawnTransform, spawnParams, /*bIsLocked*/ true);
+			//	LockedDoorAmount--;
+			//}
+			//else
+			//{
+			//	APGDoor1::SpawnDoor(world, spawnTransform, spawnParams, /*bIsLocked*/ false);
+			//}
 
 			// spawn doors to fit the size of the hole
 			// categorized hole size by exitpoint's ArrowLength
@@ -330,6 +379,7 @@ void APGLevelGenerator::SpawnDoors()
 			// after spawn door, remove used spawn point from DoorPointsList and DoorAmount--
 			DoorPointsList.Remove(SelectedDoorPoint);
 			DoorAmount--;
+			DoorIndex++; // 다음 문을 위해 인덱스 증가
 		}
 	}
 }
@@ -356,6 +406,8 @@ void APGLevelGenerator::SpawnItems()
 			UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance());
 			
 			APGItemActor* newItem = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnTransform, spawnParams);
+
+			UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED Item: Name=%s, Location=%s, NetGUID=%s"), *newItem->GetFName().ToString(), *newItem->GetActorLocation().ToString(), *newItem->GetActorGuid().ToString()); //
 
 			// spawn items that must be spawned(Item_Escape) (ItemAmount == 10, 9, 8)
 			// other items spawn randomly
@@ -453,14 +505,50 @@ void APGLevelGenerator::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//if (HasAuthority())
+	//{
+	//	SetSeed();
+	//	SpawnStartRoom();
+
+	//	GenerationStartTime = GetWorld()->GetTimeSeconds();
+	//	StartDungeonTimer();
+
+	//	SpawnNextRoom();
+	//}
+
 	if (HasAuthority())
 	{
-		SetSeed();
-		SpawnStartRoom();
+		FTimerHandle WaitingTimer;
+		GetWorld()->GetTimerManager().SetTimer(WaitingTimer, FTimerDelegate::CreateLambda([this]()
+		{
+            UE_LOG(LogTemp, Warning, TEXT("2sec"));
 
-		GenerationStartTime = GetWorld()->GetTimeSeconds();
-		StartDungeonTimer();
+			UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator BeginPlay. Role: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *GetActorGuid().ToString());
+			SetSeed();
+			SpawnStartRoom();
 
-		SpawnNextRoom();
+			GenerationStartTime = GetWorld()->GetTimeSeconds();
+			StartDungeonTimer();
+
+			SpawnNextRoom();
+			UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator BeginPlay. Role: %s, RemoteRole: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *UEnum::GetValueAsString(GetRemoteRole()), *GetActorGuid().ToString());
+		}), 10.0f, false);
+	}
+	else // 클라이언트에서 APGLevelGenerator가 복제되었다면
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[CLIENT] APGLevelGenerator BeginPlay. Role: %s, RemoteRole: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *UEnum::GetValueAsString(GetRemoteRole()), *GetActorGuid().ToString());
 	}
 }
+
+//void APGLevelGenerator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+//{
+//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+//
+//	DOREPLIFETIME(APGLevelGenerator, ReplicatedSeedValue); // <-- Seed 변수를 복제 목록에 추가합니다.
+//	DOREPLIFETIME(APGLevelGenerator, DoorPointsList);
+//}
+//
+//void APGLevelGenerator::OnRep_ReplicatedSeedValue()
+//{
+//	SetSeed();
+//}

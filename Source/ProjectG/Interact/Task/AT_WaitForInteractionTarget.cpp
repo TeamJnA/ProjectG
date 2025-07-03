@@ -70,7 +70,7 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());
 		}
 		// If the new actor doesn't have InteractInterface, broadcast NullPtr.
-		else if (!InteractInterface && PreviousTargetActor.IsValid())
+		else if (!InteractInterface)
 		{
 			PreviousTargetActor.Reset();
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());

@@ -24,7 +24,10 @@
 //UI and Components
 #include "Component/PGInventoryComponent.h"
 #include "UI/PGHUD.h"
+#include "UI/PGMessageManagerWidget.h"
+#include "UI/PGInventoryWidget.h"
 #include "Components/SpotLightComponent.h"
+
 
 //Interface
 #include "Interface/InteractableActorInterface.h"
@@ -130,12 +133,12 @@ void APGPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsLocallyControlled())
-	{
-		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::BeginPlay: Init HUD [%s] | HasAuthority %d"), *GetNameSafe(this), HasAuthority());
+	//if (Controller->IsLocalController())
+	//{
+	//	UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::BeginPlay: Init HUD [%s] | HasAuthority %d"), *GetNameSafe(this), HasAuthority());
 
-		InitHUD();
-	}
+	//	InitHUD();
+	//}
 }
 
 void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -197,6 +200,12 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	GiveDefaultAbilities();
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
+
+	if (NewController && NewController->IsLocalController()) //
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init HUD [%s]"), *GetNameSafe(this)); //
+		InitHUD(); //
+	}
 }
 
 //This function is called on the client When the server updates PlayerState.
@@ -206,6 +215,12 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	
 	InitAbilitySystemComponent();
 	InitDefaultAttributes();
+
+	if (Controller && Controller->IsLocalController())
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
+		InitHUD(); //
+	}
 }
 
 void APGPlayerCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
@@ -227,8 +242,9 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		{
 			UE_LOG(LogTemp, Warning, TEXT("In the Client!!!"));
 		}
+		return;
 	}
-	check(PGPlayerState);
+	//check(PGPlayerState);
 	AbilitySystemComponent = CastChecked<UPGAbilitySystemComponent>(
 		PGPlayerState->GetAbilitySystemComponent());
 	AbilitySystemComponent->InitAbilityActorInfo(PGPlayerState, this);
@@ -241,7 +257,7 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
 }
 
-void APGPlayerCharacter::InitHUD() const
+void APGPlayerCharacter::InitHUD()
 {
 	const APlayerController* PC = Cast<APlayerController>(Controller);
 	if (PC)
@@ -249,6 +265,29 @@ void APGPlayerCharacter::InitHUD() const
 		if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
 		{
 			HUD->Init();
+
+			UPGMessageManagerWidget* MessageManager = HUD->GetMessageManagerWidget();
+			if (MessageManager)
+			{
+				// 현재 캐릭터(this)를 직접 전달하여 바인딩
+				MessageManager->BindMessageEntry(this);
+				UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::InitHUD: MessageManagerWidget Bound to character.")); //
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("APGPlayerCharacter::InitHUD: MessageManagerWidget is NULL in HUD!")); //
+			}
+
+			UPGInventoryWidget* InventoryWidget = HUD->GetInventoryWidget();
+			if (InventoryWidget)
+			{
+				InventoryWidget->BindInventorySlots(this);
+				UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::InitHUD: InventoryWidget Bound to character.")); //
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("APGPlayerCharacter::InitHUD: InventoryWidget is NULL in HUD!")); //
+			}
 		}
 		else
 		{
@@ -288,7 +327,8 @@ void APGPlayerCharacter::Client_PlayerStareAtTarget_Implementation(AActor* Targe
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("APGPlayerCharacter::Client_PlayerStareAtTarget: null"));
+		//UE_LOG(LogTemp, Warning, TEXT("APGPlayerCharacter::Client_PlayerStareAtTarget: null"));
+
 		OnStareTargetUpdate.Broadcast(nullptr);
 		if (IInteractableActorInterface* InterfaceIneract = Cast<IInteractableActorInterface>(StaringTargetActor))
 		{

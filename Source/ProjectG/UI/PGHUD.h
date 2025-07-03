@@ -21,7 +21,12 @@ class PROJECTG_API APGHUD : public AHUD
 
 public:
 	void Init();
-	
+
+	// MessageManagerWidget Getter
+	UPGMessageManagerWidget* GetMessageManagerWidget() const { return MessageManagerWidget; }
+	// InventoryWidgetGetter
+	UPGInventoryWidget* GetInventoryWidget() const { return InventoryWidget; }
+
 protected:
 	APGHUD();
 

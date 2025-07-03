@@ -58,4 +58,7 @@ protected:
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
 	bool bOwned = false;
+
+	virtual void PostNetInit() override;
+	virtual void PostNetReceive() override;
 };

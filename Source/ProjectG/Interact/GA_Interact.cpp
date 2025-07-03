@@ -46,7 +46,7 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 	// And end the ability task that was waiting for interaction input.
 	if (!TargetActor)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Linetrace interact target is changed to null or invalid object."));
+		//UE_LOG(LogTemp, Log, TEXT("Linetrace interact target is changed to null or invalid object."));
 
 		// Starts an Ability Task that waits for the Interact tag and triggers the interaction once the tag is received.
 		APGPlayerCharacter* OwnerCharacter = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo());

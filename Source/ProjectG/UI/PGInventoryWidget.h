@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "PGInventoryWidget.generated.h"
 
+class APGPlayerCharacter;
 class UPGInventoryComponent;
 class UPGInventorySlotWidget;
 class UPGItemData;
@@ -20,7 +21,7 @@ class PROJECTG_API UPGInventoryWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	void BindInventorySlots();
+	void BindInventorySlots(APGPlayerCharacter* PlayerCharacter);
 
 protected:
 	TObjectPtr<UPGInventoryComponent> InventoryRef;

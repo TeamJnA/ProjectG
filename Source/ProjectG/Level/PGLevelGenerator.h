@@ -34,6 +34,7 @@ protected:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;
@@ -71,6 +72,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SeedValue", meta = (AllowPrivateAccess = "true"))
 	int SeedValue = -1;
 
+	//UPROPERTY(ReplicatedUsing = OnRep_ReplicatedSeedValue)
+	//int32 ReplicatedSeedValue;
+
+	//UFUNCTION()
+	//void OnRep_ReplicatedSeedValue();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LatestRoom", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<APGMasterRoom> LatestRoom;
 
@@ -100,5 +107,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MaxGenerateTime", meta = (AllowPrivateAccess = "true"))
 	float MaxGenerateTime;
-
 };

@@ -18,10 +18,28 @@ void APGHUD::Init()
 	AttributeWidget->AddToViewport();
 
 	InventoryWidget = CreateWidget<UPGInventoryWidget>(GetOwningPlayerController(), InventoryWidgetClass);
-	InventoryWidget->BindInventorySlots();
-	InventoryWidget->AddToViewport();
+	if (InventoryWidget)
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: InventoryWidget created successfully."));
+		// InventoryWidget->BindMessageEntry();
+		InventoryWidget->AddToViewport();
+		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: InventoryWidget added to viewport."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("APGHUD::Init: Failed to create InventoryWidget! Check InventoryWidgetClass in HUD Blueprint."));
+	}
 
 	MessageManagerWidget = CreateWidget<UPGMessageManagerWidget>(GetOwningPlayerController(), MessageManagerWidgetClass);
-	MessageManagerWidget->BindMessageEntry();
-	MessageManagerWidget->AddToViewport();
+	if (MessageManagerWidget)
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: MessageManagerWidget created successfully."));
+		// MessageManagerWidget->BindMessageEntry();
+		MessageManagerWidget->AddToViewport();
+		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: MessageManagerWidget added to viewport."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("APGHUD::Init: Failed to create MessageManagerWidget! Check MessageManagerWidgetClass in HUD Blueprint."));
+	}
 }

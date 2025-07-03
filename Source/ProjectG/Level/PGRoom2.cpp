@@ -49,6 +49,6 @@ APGRoom2::APGRoom2()
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
 	Mesh->SetChildActorClass(MeshRef.Class);
-	Mesh->SetRelativeLocation(FVector(923.0f, -287.0f, 0.0f));
+	Mesh->SetRelativeLocation(FVector(923.0f, -286.94f, 0.0f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 }

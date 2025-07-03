@@ -72,3 +72,22 @@ UPGItemData* APGItemActor::GetItemData()
 {
 	return ItemData;
 }
+
+
+void APGItemActor::PostNetInit()
+{
+	Super::PostNetInit();
+	if (!HasAuthority()) // 클라이언트에서만
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CLIENT POSTNETINIT Item: Name=%s, Location=%s, NetGUID=%s"), *GetName(), *GetActorLocation().ToString(), *GetActorGuid().ToString());
+	}
+}
+
+void APGItemActor::PostNetReceive()
+{
+	Super::PostNetReceive();
+	if (!HasAuthority()) // 클라이언트에서만
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CLIENT PostNetReceive Item: Name=%s, Location=%s, NetGUID=%s"), *GetName(), *GetActorLocation().ToString(), *GetActorGuid().ToString());
+	}
+}

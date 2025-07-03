@@ -6,15 +6,21 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
 
-void UPGInventoryWidget::BindInventorySlots()
+void UPGInventoryWidget::BindInventorySlots(APGPlayerCharacter* PlayerCharacter)
 {	
-	APlayerController* Controller = GetOwningPlayer();
-	if (!Controller) return;
+	//APlayerController* Controller = GetOwningPlayer();
+	//if (!Controller) return;
 
-	APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(Controller->GetPawn());
-	if (!PGCharacter) return;
+	//APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(Controller->GetPawn());
+	//if (!PGCharacter) return;
 
-	InventoryRef = PGCharacter->GetInventoryComponent();
+	if (!PlayerCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UPGInventoryWidget::BindInventorySlots: InPlayerCharacter is NULL!"));
+		return;
+	}
+
+	InventoryRef = PlayerCharacter->GetInventoryComponent();
 	if (InventoryRef)
 	{
 		/*

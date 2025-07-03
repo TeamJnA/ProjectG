@@ -18,7 +18,7 @@ class PROJECTG_API UPGMessageManagerWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void BindMessageEntry();
+	void BindMessageEntry(APGPlayerCharacter* PlayerCharacter);
 
 protected:
 	UFUNCTION()

@@ -221,7 +221,7 @@ protected:
 	TObjectPtr<AActor> StaringTargetActor = nullptr;
 
 public:
-	void InitHUD() const;
+	void InitHUD();
 
 	UFUNCTION(Client, Reliable)
 	void Client_PlayerStareAtTarget(AActor* TargetActor);

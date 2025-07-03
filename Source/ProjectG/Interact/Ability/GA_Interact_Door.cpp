@@ -41,6 +41,10 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         UE_LOG(LogTemp, Log, TEXT("Activate interact %s ability to %s"), *TriggerEventData->Target.GetFName().ToString(), *GetOwningActorFromActorInfo()->GetName());
     }
 
+    // 어빌리티가 클라이언트에서 호출되었을 때, NetExecutionPolicy::ServerOnly에 의해 실제로 서버로 넘어가는지 확인하는 로그
+    UE_LOG(LogTemp, Warning, TEXT("GA_Interact_Door::ActivateAbility - Called. IsLocalController: %d, HasAuthority: %d"),
+        ActorInfo->IsLocallyControlled(), HasAuthority(&CurrentActivationInfo));
+
 	APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(AvatarActor);
 	PG_CHECK_VALID_INTERACT(PGCharacter);
 
@@ -107,9 +111,11 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
             return;
         }
         // Play open door animation montage
+
         PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
-        Door->ToggleDoor();
+        UE_LOG(LogTemp, Warning, TEXT("GA_Interact_Door::ActivateAbility - Calling Door->ToggleDoor() for %s."), *GetNameSafe(Door));
+        Door->Server_ToggleDoor();
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }    
 }
