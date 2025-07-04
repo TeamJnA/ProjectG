@@ -32,12 +32,18 @@ public:
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	FName ItemHitSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	FName ItemThrowSound;
+
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = "Movement", meta = (AllowPrivateAccess = "true"))
 	float InitialSpeed;
 
-	UFUNCTION(NetMulticast, Reliable)
-	virtual void PlaySound(const FVector& HitLocation, float HitImpact);
+	UFUNCTION(Server, Reliable)
+	virtual void PlaySound(const FVector& HitLocation, uint8 HitImpact);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USoundBase> HitSound;

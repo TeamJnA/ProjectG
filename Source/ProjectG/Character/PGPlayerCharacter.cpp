@@ -23,6 +23,7 @@
 
 //UI and Components
 #include "Component/PGInventoryComponent.h"
+#include "Component/PGSoundManagerComponent.h"
 #include "UI/PGHUD.h"
 #include "UI/PGMessageManagerWidget.h"
 #include "UI/PGInventoryWidget.h"
@@ -31,6 +32,9 @@
 
 //Interface
 #include "Interface/InteractableActorInterface.h"
+
+//Sound Manager
+#include "Sound/PGSoundManager.h"
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -89,7 +93,11 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeadlightLight->SetIsReplicated(true);
 
 	// Create InventoryComponent and Set changing Itemslot Input Action
+
+	// Create Components
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
+
+	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
 
 	// Set hand actions anim montages
 	// EHandActionMontageType
@@ -255,6 +263,11 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		AttributeSet->GetMovementSpeedAttribute()
 	);
 	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
+}
+
+void APGPlayerCharacter::InitSoundManager(APGSoundManager* SoundManagerRef)
+{
+	SoundManagerComponent->SetSoundManager(SoundManagerRef);
 }
 
 void APGPlayerCharacter::InitHUD()

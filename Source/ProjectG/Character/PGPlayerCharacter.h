@@ -21,6 +21,9 @@ class USpotLightComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 
+class UPGSoundManagerComponent;
+class APGSoundManager;
+
 /**
  * 
  */
@@ -211,12 +214,13 @@ public:
 ///********* UI and Components ******************
 ///
 
+// --------------Inventory parts------------------
 public:
 	UPGInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UPGInventoryComponent> InventoryComponent;
+	TObjectPtr<UPGInventoryComponent> InventoryComponent;
 
 	TObjectPtr<AActor> StaringTargetActor = nullptr;
 
@@ -230,4 +234,15 @@ public:
 	FOnStareTargetUpdate OnStareTargetUpdate;
 
 	void MC_SetFlashlightState(bool _bIsFlashlightOn);
+
+// -----------Sound parts-------------
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Sound, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPGSoundManagerComponent> SoundManagerComponent;
+
+public:
+	void InitSoundManager(APGSoundManager* SoundManagerRef);
+
+// UI
+	void InitHUD() const;
+
 };

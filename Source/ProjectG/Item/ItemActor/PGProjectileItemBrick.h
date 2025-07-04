@@ -21,6 +21,7 @@ public:
 
 	void ThrowInDirection(const FVector& ShootDirection);
 
+	/*
 	UFUNCTION()
 	void OnOverlapBegin(
 		UPrimitiveComponent* OverlappedComponent,
@@ -29,6 +30,7 @@ public:
 		int32 OtherBodyIndex,
 		bool bFromSweep,
 		const FHitResult& SweepResult);
+	*/
 
 	virtual void OnHit(
 		UPrimitiveComponent* HitComponent, 
@@ -40,8 +42,7 @@ public:
 protected:
 	TArray<TObjectPtr<AActor>> HitActors;
 
-	virtual void PlaySound_Implementation(const FVector& HitLocation, float HitImpact) override;
+	virtual void PlaySound_Implementation(const FVector& HitLocation, uint8 HitImpact) override;
 
-private:
-	bool bBounceOnce;
+	bool bAlreadyHit;
 };
