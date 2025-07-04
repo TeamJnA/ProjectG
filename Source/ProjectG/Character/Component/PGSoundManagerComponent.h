@@ -20,13 +20,13 @@ public:
 	void SetSoundManager(APGSoundManager* InSoundManager);
 
 	UFUNCTION(BlueprintCallable)
-	void TriggerSoundForSelf(USoundBase* InSound, uint8 SoundVolumeLevel);
+	void TriggerSoundForSelf(FName InSoundName, uint8 SoundVolumeLevel);
 
 	UFUNCTION(BlueprintCallable, Server, Reliable)
-	void TriggerSoundForAllPlayers(USoundBase* InSound, FVector SoundLocation, uint8 SoundPowerLevel);
+	void TriggerSoundForAllPlayers(FName InSoundName, FVector SoundLocation, uint8 SoundPowerLevel);
 
 	UFUNCTION(BlueprintCallable, Server, Reliable)
-	void TriggerSoundWithNoise(USoundBase* InSound, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound);
+	void TriggerSoundWithNoise(FName InSoundName, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound);
 
 protected:
 	// Called when the game starts

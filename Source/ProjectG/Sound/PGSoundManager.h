@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Sound/PGSoundPlayData.h"
 #include "PGSoundManager.generated.h"
 
 /*
@@ -29,25 +30,28 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+	UPROPERTY()
+	TMap<FName, FPGSoundPlayData> SoundDataMap;
+
 public:	
 
 	// Play sound for a only client who called this function. 
-	void 	PlaySoundForSelf(USoundBase* SoundAsset, uint8 SoundVolumeLevel);
+	void 	PlaySoundForSelf(FName SoundName, uint8 SoundVolumeLevel);
 
 	// Play sound for all players.
 	UFUNCTION(Server, Reliable)
-	void PlaySoundForAllPlayers(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel);
+	void PlaySoundForAllPlayers(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel);
 
 	//  Play sound for all players and make noise. All players and enemy AI can hear sound.
 	UFUNCTION(Server, Reliable)
-	void 	PlaySoundWithNoise(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound = false);
+	void 	PlaySoundWithNoise(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound = false);
 
 private:
 	//UFUNCTION(Client, Reliable)
 	//void PlaySoundClient(USoundBase* SoundAsset, uint8 SoundVolumeLevel);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void PlaySoundMulticast(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundVolumeLevel);
+	void PlaySoundMulticast(USoundBase* SoundAsset, float SoundStartTime, FVector SoundLocation, uint8 SoundVolumeLevel);
 
 	UPROPERTY()
 	TObjectPtr<USoundAttenuation> BaseSoundAttenuation;

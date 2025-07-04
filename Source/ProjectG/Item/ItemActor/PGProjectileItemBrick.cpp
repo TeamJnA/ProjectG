@@ -80,7 +80,7 @@ void APGProjectileItemBrick::PlaySound_Implementation(const FVector& HitLocation
 		{
 			UE_LOG(LogTemp, Log, TEXT("Call Soundmanager in Brick"));
 
-			SoundManager->PlaySoundWithNoise(HitSound, HitLocation, HitImpact, false);
+			SoundManager->PlaySoundWithNoise(ItemHitSound, HitLocation, HitImpact, false);
 		}
 	}
 }

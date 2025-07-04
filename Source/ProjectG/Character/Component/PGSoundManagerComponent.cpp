@@ -20,19 +20,19 @@ void UPGSoundManagerComponent::SetSoundManager(APGSoundManager* InSoundManager)
 	SoundManager = InSoundManager;
 }
 
-void UPGSoundManagerComponent::TriggerSoundForSelf(USoundBase* InSound, uint8 SoundVolumeLevel)
+void UPGSoundManagerComponent::TriggerSoundForSelf(FName InSoundName, uint8 SoundVolumeLevel)
 {
-	SoundManager->PlaySoundForSelf(InSound, SoundVolumeLevel);
+	SoundManager->PlaySoundForSelf(InSoundName, SoundVolumeLevel);
 }
 
-void UPGSoundManagerComponent::TriggerSoundForAllPlayers_Implementation(USoundBase* InSound, FVector SoundLocation, uint8 SoundPowerLevel)
+void UPGSoundManagerComponent::TriggerSoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel)
 {
-	SoundManager->PlaySoundForAllPlayers(InSound, SoundLocation, SoundPowerLevel);
+	SoundManager->PlaySoundForAllPlayers(SoundName, SoundLocation, SoundPowerLevel);
 }
 
-void UPGSoundManagerComponent::TriggerSoundWithNoise_Implementation(USoundBase* InSound, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound)
+void UPGSoundManagerComponent::TriggerSoundWithNoise_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound)
 {
-	SoundManager->PlaySoundWithNoise(InSound, SoundLocation, SoundPowerLevel, bIntensedSound);
+	SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, SoundPowerLevel, bIntensedSound);
 }
 
 void UPGSoundManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

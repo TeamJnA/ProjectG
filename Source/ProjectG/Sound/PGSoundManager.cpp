@@ -3,6 +3,7 @@
 
 #include "Sound/PGSoundManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/DataTable.h"
 
 // Sets default values for this component's properties
 APGSoundManager::APGSoundManager()
@@ -18,13 +19,43 @@ APGSoundManager::APGSoundManager()
 
 	bAlwaysRelevant = true;
 
+	bDebugSoundRange = true;
+
 	static ConstructorHelpers::FObjectFinder<USoundAttenuation> SoundAttenuationRef(TEXT("/Game/ProjectG/Sound/BaseSoundAttenuation.BaseSoundAttenuation"));
 	if (SoundAttenuationRef.Object)
 	{
 		BaseSoundAttenuation = SoundAttenuationRef.Object;
 	}
 
-	bDebugSoundRange = true;
+	// Load SoundDatas from DataTable 
+	static ConstructorHelpers::FObjectFinder<UDataTable> SoundDataTableRef(TEXT("/Game/ProjectG/Sound/PGSoundDataTable.PGSoundDataTable"));
+	if (SoundDataTableRef.Object)
+	{
+		UDataTable* SoundDataTable = SoundDataTableRef.Object;
+
+		// Get a map of all the rows in the DataTable
+		// The map key is the row name, and the value is a pointer to the row data (uint8*)
+		const TMap<FName, uint8*>& DataTableRows = SoundDataTable->GetRowMap();
+
+		// Loop through each row
+		for (const TPair<FName, uint8*>& DataTableRow : DataTableRows)
+		{
+			FName RowName = DataTableRow.Key;
+
+			// Cast the row data from pointer(uint8*) to our custom struct type
+			FPGSoundPlayData* RowData = reinterpret_cast<FPGSoundPlayData*>(DataTableRow.Value);
+
+			if (RowData && RowData->SoundAsset)
+			{
+				UE_LOG(LogTemp, Log, TEXT("Add SoundData to SoundDataMap : %s"), *RowName.ToString());
+				SoundDataMap.Add(RowName, FPGSoundPlayData(RowData->SoundAsset, RowData->SoundStartTime));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Invalid Row or missing SoundAsset for row: %s"), *RowName.ToString());
+			}
+		}
+	}
 }
 
 
@@ -35,44 +66,51 @@ void APGSoundManager::BeginPlay()
 	// ...
 }
 
-void APGSoundManager::PlaySoundForSelf(USoundBase* SoundAsset, uint8 SoundVolumeLevel)
+void APGSoundManager::PlaySoundForSelf(FName SoundName, uint8 SoundVolumeLevel)
 {
-	if (!SoundAsset)
+	FPGSoundPlayData* SoundData = SoundDataMap.Find(SoundName);
+	if (!SoundData)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SoundAsset is Null"));
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundData from %s"), *SoundName.ToString());
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Play sound %s in PlaySoundForSelf"), *SoundAsset->GetName());
-	UGameplayStatics::PlaySound2D(GetWorld(), SoundAsset, 1);
+	UE_LOG(LogTemp, Log, TEXT("Play sound %s in PlaySoundForSelf"), *SoundName.ToString());
+	UGameplayStatics::PlaySound2D(GetWorld(), SoundData->SoundAsset, 1.0f, 1.0f, SoundData->SoundStartTime);
 }
 
-void APGSoundManager::PlaySoundForAllPlayers_Implementation(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel)
+void APGSoundManager::PlaySoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel)
 {
-	if (!SoundAsset)
+	FPGSoundPlayData* SoundData = SoundDataMap.Find(SoundName);
+	if (!SoundData)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SoundAsset is Null"));
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundData from %s"), *SoundName.ToString());
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Play sound for all players %s in PlaySoundForAllPlayers"), *SoundAsset->GetName());
+	// Play sound for all players by execute PlaySoundMulticast.
+	UE_LOG(LogTemp, Log, TEXT("Play sound for all players %s in PlaySoundForAllPlayers"), *SoundName.ToString());
 
-	PlaySoundMulticast(SoundAsset, SoundLocation, SoundPowerLevel);
+	PlaySoundMulticast(SoundData->SoundAsset, SoundData->SoundStartTime, SoundLocation, SoundPowerLevel);
 }
 
-void APGSoundManager::PlaySoundWithNoise_Implementation(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound)
+void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound)
 {
-	if (!SoundAsset)
+	FPGSoundPlayData* SoundData = SoundDataMap.Find(SoundName);
+	if (!SoundData)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SoundAsset is Null"));
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundData from %s"), *SoundName.ToString());
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Start sound multicast %s in PlaySoundWithNoise"), *SoundAsset->GetName());
-	PlaySoundMulticast(SoundAsset, SoundLocation, SoundPowerLevel);
+	UE_LOG(LogTemp, Log, TEXT("Start sound multicast %s in PlaySoundWithNoise"), *SoundName.ToString());
+	// Play sound for all players by execute PlaySoundMulticast.
+	PlaySoundMulticast(SoundData->SoundAsset, SoundData->SoundStartTime, SoundLocation, SoundPowerLevel);
 
 	// Make noise for enemy AI chase sound.
 	float SoundRange = 200 * SoundPowerLevel * SoundPowerLevel;
+
+	// When bIntensedSound is true, the sound power increases but the range remains the same.
 	if (bIntensedSound)
 		SoundPowerLevel++;
 
@@ -95,7 +133,7 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(USoundBase* SoundAsset, 
 	
 }
 
-void APGSoundManager::PlaySoundMulticast_Implementation(USoundBase* SoundAsset, FVector SoundLocation, uint8 SoundPowerLevel)
+void APGSoundManager::PlaySoundMulticast_Implementation(USoundBase* SoundAsset, float SoundStartTime, FVector SoundLocation, uint8 SoundPowerLevel)
 {
 	// Sets the audible range and the radius where sound attenuation starts.
 	float AttenuationExtentRange, AttenuationFalloffDistance;
@@ -107,6 +145,6 @@ void APGSoundManager::PlaySoundMulticast_Implementation(USoundBase* SoundAsset, 
 	BaseSoundAttenuation->Attenuation.FalloffDistance = AttenuationFalloffDistance;
 
 	UE_LOG(LogTemp, Log, TEXT("Play sound %s in PlaySoundMulticast"), *SoundAsset->GetName());
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundAsset, SoundLocation, 1.0f, 1.0f, 0.0f, BaseSoundAttenuation);
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundAsset, SoundLocation, 1.0f, 1.0f, SoundStartTime, BaseSoundAttenuation);
 }
 
