@@ -34,7 +34,8 @@ APGDoor1::APGDoor1()
 	}
 	//Mesh0->SetRelativeLocation(FVector(80.5f, 0.0f, 7.0f));
 	//Mesh0->SetRelativeScale3D(FVector(0.985f, 1.0f, 0.985f));
-	Mesh0->SetRelativeLocation(FVector(40.5f, 0.0f, 40.0f));
+	Mesh0->SetRelativeLocation(FVector(40.5f, 40.0f, 40.0f));
+	Mesh0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	Mesh0->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
 
 
@@ -98,24 +99,24 @@ void APGDoor1::NM_SetDoorState_Implementation(bool _bIsOpen)
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGDoor1::SetDoorState - Server changing state for %s to %s. (Current: %s)"),
 			*GetName(), _bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
-		UE_LOG(LogTemp, Log, TEXT("APGDoor1::SetDoorState: %s (NetGUID: %s)"), *GetName(), *GetActorGuid().ToString());
+		//UE_LOG(LogTemp, Log, TEXT("APGDoor1::SetDoorState: %s (NetGUID: %s)"), *GetName(), *GetActorGuid().ToString());
 
 	}
 	else
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGDoor1::SetDoorState - Client changing state for %s to %s. (Current: %s)"),
 			*GetName(), _bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
-		UE_LOG(LogTemp, Log, TEXT("APGDoor1::SetDoorState: %s (NetGUID: %s)"), *GetName(), *GetActorGuid().ToString());
+		//UE_LOG(LogTemp, Log, TEXT("APGDoor1::SetDoorState: %s (NetGUID: %s)"), *GetName(), *GetActorGuid().ToString());
 
 	}
 
 	bIsOpen = _bIsOpen;
 
-	FRotator NewRot = _bIsOpen ? FRotator(0.0f, 90.0f, 0.0f) : FRotator(0.0f, 0.0f, 0.0f);
+	FRotator NewRot = _bIsOpen ? FRotator(0.0f, GetActorRotation().Yaw + 90.0f, 0.0f) : FRotator(0.0f, GetActorRotation().Yaw - 90.0f, 0.0f);
 	//Mesh0->SetRelativeRotation(NewRot);
 	SetActorRotation(NewRot);
 
-	UE_LOG(LogTemp, Log, TEXT("APGDoor1::SetDoorState: %s "), *Mesh0->GetRelativeRotation().ToString());
+	UE_LOG(LogTemp, Log, TEXT("APGDoor1::SetDoorState: %s "), *GetActorRotation().ToString());
 }
 
 void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -130,7 +131,7 @@ void APGDoor1::PostNetInit()
 	Super::PostNetInit();
 	if (!HasAuthority()) // 클라이언트에서만
 	{
-		UE_LOG(LogTemp, Warning, TEXT("CLIENT POSTNETINIT DOOR: Name=%s, Location=%s, NetGUID=%s"), *GetName(), *GetActorLocation().ToString(), *GetActorGuid().ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("CLIENT POSTNETINIT DOOR: Name=%s, Location=%s, NetGUID=%s"), *GetName(), *GetActorLocation().ToString(), *GetActorGuid().ToString());
 	}
 }
 
@@ -139,7 +140,7 @@ void APGDoor1::PostNetReceive()
 	Super::PostNetReceive();
 	if (!HasAuthority()) // 클라이언트에서만
 	{
-		UE_LOG(LogTemp, Warning, TEXT("CLIENT PostNetReceive DOOR: Name=%s, Location=%s, NetGUID=%s"), *GetName(), *GetActorLocation().ToString(), *GetActorGuid().ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("CLIENT PostNetReceive DOOR: Name=%s, Location=%s, NetGUID=%s"), *GetName(), *GetActorLocation().ToString(), *GetActorGuid().ToString());
 	}
 }
 
@@ -154,28 +155,28 @@ void APGDoor1::HighlightOff() const
 }
 
 // Client action after toggle door
-void APGDoor1::OnRep_DoorState()
-{
-	//SetDoorState(bIsOpen);
-
-	// 이 함수는 클라이언트에서만 호출되어야 함 (bIsOpen 복제될 때)
-
-	/*
-	if (!HasAuthority()) // 클라이언트만
-	{
-		UE_LOG(LogTemp, Warning, TEXT("APGDoor1::OnRep_DoorState - Client received replication for %s. New bIsOpen: %s."),
-			*GetName(), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
-
-		// 클라이언트에서 Mesh0의 회전을 업데이트하여 문 상태를 시각적으로 반영
-		FRotator NewRot = bIsOpen ? FRotator(0.0f, 90.0f, 0.0f) : FRotator(0.0f, 0.0f, 0.0f);
-		Mesh0->SetRelativeRotation(NewRot);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("APGDoor1::OnRep_DoorState - Server received OnRep_DoorState (SHOULD NOT HAPPEN)."), *GetName());
-	}
-	*/
-}
+//void APGDoor1::OnRep_DoorState()
+//{
+//	//SetDoorState(bIsOpen);
+//
+//	// 이 함수는 클라이언트에서만 호출되어야 함 (bIsOpen 복제될 때)
+//
+//	/*
+//	if (!HasAuthority()) // 클라이언트만
+//	{
+//		UE_LOG(LogTemp, Warning, TEXT("APGDoor1::OnRep_DoorState - Client received replication for %s. New bIsOpen: %s."),
+//			*GetName(), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
+//
+//		// 클라이언트에서 Mesh0의 회전을 업데이트하여 문 상태를 시각적으로 반영
+//		FRotator NewRot = bIsOpen ? FRotator(0.0f, 90.0f, 0.0f) : FRotator(0.0f, 0.0f, 0.0f);
+//		Mesh0->SetRelativeRotation(NewRot);
+//	}
+//	else
+//	{
+//		UE_LOG(LogTemp, Warning, TEXT("APGDoor1::OnRep_DoorState - Server received OnRep_DoorState (SHOULD NOT HAPPEN)."), *GetName());
+//	}
+//	*/
+//}
 
 // Client action after change lock state
 void APGDoor1::OnRep_LockState()

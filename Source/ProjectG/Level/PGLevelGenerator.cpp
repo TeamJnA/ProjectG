@@ -31,9 +31,9 @@ APGLevelGenerator::APGLevelGenerator()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	bReplicates = false;
-	//SetReplicateMovement(true);
-	//bAlwaysRelevant = true;
+	bReplicates = true;
+	SetReplicateMovement(true);
+	bAlwaysRelevant = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -322,13 +322,13 @@ void APGLevelGenerator::SpawnDoors()
 			// spawn setting
 			FVector spawnLocation = SelectedDoorPoint->GetComponentLocation();
 			FRotator spawnRotation = SelectedDoorPoint->GetComponentRotation();
-			spawnRotation.Yaw += 90.0f;
+			//spawnRotation.Yaw += 90.0f;
 			FTransform spawnTransform(spawnRotation, spawnLocation, FVector(1.0f, 1.0f, 1.0f));
 			FActorSpawnParameters spawnParams;
 			spawnParams.Owner = this;
 			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-			UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNING DOOR: Owner NetGUID=%s"), *spawnParams.Owner->GetActorGuid().ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNING DOOR: Owner NetGUID=%s"), *spawnParams.Owner->GetActorGuid().ToString());
 
 			APGDoor1* NewDoor = world->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform, spawnParams);
 
@@ -343,7 +343,7 @@ void APGLevelGenerator::SpawnDoors()
 				{
 					// bIsLock deafult = false
 				}
-				UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED DOOR: Name=%s, Location=%s, NetGUID=%s"), *NewDoor->GetFName().ToString(), *NewDoor->GetActorLocation().ToString(), *NewDoor->GetActorGuid().ToString()); //
+				//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED DOOR: Name=%s, Location=%s, NetGUID=%s"), *NewDoor->GetFName().ToString(), *NewDoor->GetActorLocation().ToString(), *NewDoor->GetActorGuid().ToString()); //
 			}
 			else
 			{
@@ -407,7 +407,7 @@ void APGLevelGenerator::SpawnItems()
 			
 			APGItemActor* newItem = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnTransform, spawnParams);
 
-			UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED Item: Name=%s, Location=%s, NetGUID=%s"), *newItem->GetFName().ToString(), *newItem->GetActorLocation().ToString(), *newItem->GetActorGuid().ToString()); //
+			//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED Item: Name=%s, Location=%s, NetGUID=%s"), *newItem->GetFName().ToString(), *newItem->GetActorLocation().ToString(), *newItem->GetActorGuid().ToString()); //
 
 			// spawn items that must be spawned(Item_Escape) (ItemAmount == 10, 9, 8)
 			// other items spawn randomly
@@ -523,7 +523,7 @@ void APGLevelGenerator::BeginPlay()
 		{
             UE_LOG(LogTemp, Warning, TEXT("2sec"));
 
-			UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator BeginPlay. Role: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *GetActorGuid().ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator BeginPlay. Role: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *GetActorGuid().ToString());
 			SetSeed();
 			SpawnStartRoom();
 
@@ -531,12 +531,12 @@ void APGLevelGenerator::BeginPlay()
 			StartDungeonTimer();
 
 			SpawnNextRoom();
-			UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator BeginPlay. Role: %s, RemoteRole: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *UEnum::GetValueAsString(GetRemoteRole()), *GetActorGuid().ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator BeginPlay. Role: %s, RemoteRole: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *UEnum::GetValueAsString(GetRemoteRole()), *GetActorGuid().ToString());
 		}), 10.0f, false);
 	}
 	else // 클라이언트에서 APGLevelGenerator가 복제되었다면
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[CLIENT] APGLevelGenerator BeginPlay. Role: %s, RemoteRole: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *UEnum::GetValueAsString(GetRemoteRole()), *GetActorGuid().ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("[CLIENT] APGLevelGenerator BeginPlay. Role: %s, RemoteRole: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *UEnum::GetValueAsString(GetRemoteRole()), *GetActorGuid().ToString());
 	}
 }
 

@@ -246,12 +246,14 @@ void APGGameMode::SpawnLevelGenerator()
 	UE_LOG(LogTemp, Warning, TEXT("GameMode: Spawn LevelGenerator"));
 
 	FTransform spawnTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector(1.0f, 1.0f, 1.0f));	
+
 	APGLevelGenerator* LG = GetWorld()->SpawnActor<APGLevelGenerator>(APGLevelGenerator::StaticClass(), spawnTransform);
 	if (LG)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GameMode: LevelGenerator Spawned"));
 		bLevelGeneratorSpawned = true;
 	}
+
 }
 
 void APGGameMode::SpawnGlobalLightManager()
