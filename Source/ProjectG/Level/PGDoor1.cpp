@@ -34,7 +34,7 @@ APGDoor1::APGDoor1()
 	}
 	//Mesh0->SetRelativeLocation(FVector(80.5f, 0.0f, 7.0f));
 	//Mesh0->SetRelativeScale3D(FVector(0.985f, 1.0f, 0.985f));
-	Mesh0->SetRelativeLocation(FVector(40.5f, 40.0f, 0.0f));
+	Mesh0->SetRelativeLocation(FVector(40.5f, 40.0f, 40.0f));
 	Mesh0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	Mesh0->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
 

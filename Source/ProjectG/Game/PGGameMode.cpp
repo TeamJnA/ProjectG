@@ -20,6 +20,7 @@
 
 #include "Level/PGGlobalLightManager.h"
 #include "Level/PGLevelGenerator.h"
+#include "Level/PGDoor1.h"
 
 #include "UI/PGHUD.h"
 
@@ -88,6 +89,23 @@ void APGGameMode::BeginPlay()
 		else {
 			UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
 		}
+
+
+
+
+
+
+
+
+
+		// spawn setting
+		FVector spawnLocation = FVector(910.0f, 550.0f, 50.0f);
+		FTransform spawnTransform(FRotator::ZeroRotator, spawnLocation, FVector(1.0f, 1.0f, 1.0f));
+		FActorSpawnParameters spawnParams;
+		spawnParams.Owner = this;
+		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		spawnParams.bNoFail = true;
+		GetWorld()->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform, spawnParams);
 	}
 
 }
@@ -294,6 +312,27 @@ void APGGameMode::SpawnGlobalLightManager()
 		UE_LOG(LogTemp, Warning, TEXT("GameMode: GlobalLightManager Spawned"));
 		bManagerSpawned = true;
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// spawn setting
+	FVector spawnLocation = FVector(910.0f, 350.0f, 50.0f);
+	FTransform spawnTransform2(FRotator::ZeroRotator, spawnLocation, FVector(1.0f, 1.0f ,1.0f));
+	FActorSpawnParameters spawnParams;
+	spawnParams.Owner = this;
+	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	spawnParams.bNoFail = true;
+	GetWorld()->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform2, spawnParams);
 }
 
 void APGGameMode::InitSoundManagerToPlayers()

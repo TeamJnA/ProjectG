@@ -5,6 +5,15 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Sound/PGSoundManager.h"
 
+APGGM_Test::APGGM_Test()
+{
+	bStartPlayersAsSpectators = true;
+
+	DefaultPawnClass = nullptr;
+
+	bUseSeamlessTravel = true;
+}
+
 APGSoundManager* APGGM_Test::GetSoundManager()
 {
 	return SoundManager;

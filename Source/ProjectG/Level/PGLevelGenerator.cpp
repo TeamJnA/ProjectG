@@ -259,9 +259,9 @@ void APGLevelGenerator::CheckOverlap()
 			GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandler);
 			UE_LOG(LogTemp, Warning, TEXT("Done"));
 
-			CloseHoles();
+			//CloseHoles();
 			SpawnDoors();
-			SpawnItems();
+			//SpawnItems();
 			bIsGenerationDone = true;
 
 			if (GetWorld())
@@ -365,14 +365,13 @@ void APGLevelGenerator::SpawnDoorLoop()
 		// 모두 스폰 완료, 타이머 종료
 		GetWorldTimerManager().ClearTimer(DoorSpawnTimerHandle);
 		UE_LOG(LogTemp, Log, TEXT("All doors spawned!"));
-		return;
 	}
 
 	// get random door spawn point from DoorPointsList by stream(seed)
 	SelectedDoorPoint = DoorPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, DoorPointsList.Num())];
 
 	// spawn setting
-	FVector spawnLocation = SelectedDoorPoint->GetComponentLocation() + FVector(0.0f, 0.0f, 40.0f);
+	FVector spawnLocation = SelectedDoorPoint->GetComponentLocation();
 	FRotator spawnRotation = SelectedDoorPoint->GetComponentRotation();
 	//spawnRotation.Yaw += 90.0f;
 	FTransform spawnTransform(spawnRotation, spawnLocation, FVector(1.0f, 1.0f, 1.0f));
