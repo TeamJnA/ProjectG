@@ -52,10 +52,13 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 	HitActors.Add(OtherActor);
 
 	// Play sound at hit location.
-	if(bAlreadyHit)
-		PlaySound(Hit.Location, 2);
-	else
-		PlaySound(Hit.Location, 3);
+	if (HasAuthority())
+	{
+		if (bAlreadyHit)
+			PlaySound(Hit.Location, 2);
+		else
+			PlaySound(Hit.Location, 3);
+	}
 
 	// Check if the impact normal's Z component indicates a floor (upward-facing surface).
 	// If true, disable physics and set the object as an item.
