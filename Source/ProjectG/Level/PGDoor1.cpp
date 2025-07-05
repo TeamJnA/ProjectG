@@ -15,7 +15,7 @@ APGDoor1::APGDoor1()
 	bReplicates = true;
 	SetReplicateMovement(true);
 	bAlwaysRelevant = true;
-
+	bNetLoadOnClient = true;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Script/Engine.StaticMesh'/Game/Imports/SICKA_mansion/StaticMeshes/SM_DoorCarved.SM_DoorCarved'"));
 
@@ -34,7 +34,7 @@ APGDoor1::APGDoor1()
 	}
 	//Mesh0->SetRelativeLocation(FVector(80.5f, 0.0f, 7.0f));
 	//Mesh0->SetRelativeScale3D(FVector(0.985f, 1.0f, 0.985f));
-	Mesh0->SetRelativeLocation(FVector(40.5f, 40.0f, 40.0f));
+	Mesh0->SetRelativeLocation(FVector(40.5f, 40.0f, 0.0f));
 	Mesh0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	Mesh0->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
 
@@ -181,5 +181,12 @@ void APGDoor1::HighlightOff() const
 // Client action after change lock state
 void APGDoor1::OnRep_LockState()
 {
-	UE_LOG(LogTemp, Log, TEXT("Door lock state changed: %s"), bIsLocked ? TEXT("Locked") : TEXT("Unlocked"));
+	if (HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[SERVER] OnRep_LockState::Door lock state changed: %s"), bIsLocked ? TEXT("Locked") : TEXT("Unlocked"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[CLIENT] OnRep_LockState::Door lock state changed: %s"), bIsLocked ? TEXT("Locked") : TEXT("Unlocked"));
+	}
 }

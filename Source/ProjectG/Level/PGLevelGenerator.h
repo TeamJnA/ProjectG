@@ -107,4 +107,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MaxGenerateTime", meta = (AllowPrivateAccess = "true"))
 	float MaxGenerateTime;
+
+	void SpawnDoorLoop();
+
+	FTimerHandle DoorSpawnTimerHandle;
 };
