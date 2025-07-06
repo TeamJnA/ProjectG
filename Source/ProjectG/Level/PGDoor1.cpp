@@ -89,7 +89,7 @@ void APGDoor1::SetDoorState(bool _bIsOpen)
 
 	bIsOpen = _bIsOpen;
 
-	FRotator NewRot = _bIsOpen ? FRotator(0.0f, 90.0f, 0.0f) : FRotator(0.0f, 0.0f, 0.0f);
+	FRotator NewRot = _bIsOpen ? FRotator(0.0f, 0.0f, 0.0f) : FRotator(0.0f, 90.0f, 0.0f);
 	Mesh0->SetRelativeRotation(NewRot);
 	//SetActorRotation(NewRot);
 }
@@ -169,7 +169,7 @@ void APGDoor1::OnRep_DoorState()
 			*GetName(), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
 
 		// 클라이언트에서 Mesh0의 회전을 업데이트하여 문 상태를 시각적으로 반영
-		FRotator NewRot = bIsOpen ? FRotator(0.0f, 90.0f, 0.0f) : FRotator(0.0f, 0.0f, 0.0f);
+		FRotator NewRot = bIsOpen ? FRotator(0.0f, 0.0f, 0.0f) : FRotator(0.0f, 90.0f, 0.0f);
 		Mesh0->SetRelativeRotation(NewRot);
 
 		//FRotator NewRot = bIsOpen ? FRotator(0.0f, GetActorRotation().Yaw + 90.0f, 0.0f) : FRotator(0.0f, GetActorRotation().Yaw - 90.0f, 0.0f);

@@ -31,13 +31,7 @@ UGA_Interact_Door::UGA_Interact_Door()
 }
 
 void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
-{
-    if (IsActive())
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Ability already active, skipping activation"));
-        return;
-    }
-
+{    
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	PG_CHECK_VALID_INTERACT(ASC);
 
@@ -124,22 +118,24 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
         UE_LOG(LogTemp, Warning, TEXT("GA_Interact_Door::ActivateAbility - Calling Door->ToggleDoor() for %s."), *GetNameSafe(Door));
 
+        PGCharacter->TEST_Server_Interact(Door);
 
-        APGGameState* GS = Cast<APGGameState>(PGCharacter->GetWorld()->GetGameState());
-        PG_CHECK_VALID_INTERACT(GS);
+        //APGGameState* GS = Cast<APGGameState>(PGCharacter->GetWorld()->GetGameState());
+        //PG_CHECK_VALID_INTERACT(GS);
+        //APGPlayerCharacter* HostChar = nullptr;
 
-        for (APlayerState* PS : GS->PlayerArray)
-        {
-            APlayerController* PC = Cast<APlayerController>(PS->GetOwner());
+        //for (APlayerState* PS : GS->PlayerArray)
+        //{
+        //    APlayerController* PC = Cast<APlayerController>(PS->GetOwner());
 
-            if (PC && PC->IsLocalController())
-            {
-                APGPlayerCharacter* HostChar = Cast<APGPlayerCharacter>(PC->GetPawn());
-                PG_CHECK_VALID_INTERACT(HostChar);
+        //    if (PC && PC->IsLocalController() && PC->HasAuthority())
+        //    {
+        //        HostChar = Cast<APGPlayerCharacter>(PC->GetPawn());
+        //        PG_CHECK_VALID_INTERACT(HostChar);
+        //    }
+        //}
 
-                HostChar->TEST_Server_Interact(Door);
-            }
-        }
+        //HostChar->TEST_Server_Interact(Door);
 
         //Door->Server_ToggleDoor();
         //Door->ToggleDoor();
