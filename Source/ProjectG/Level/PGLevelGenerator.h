@@ -111,4 +111,6 @@ protected:
 	void SpawnDoorLoop();
 
 	FTimerHandle DoorSpawnTimerHandle;
+
+	APlayerController* HostPCRef;
 };

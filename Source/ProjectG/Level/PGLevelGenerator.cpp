@@ -386,6 +386,8 @@ void APGLevelGenerator::SpawnDoorLoop()
 
 	if (NewDoor)
 	{
+		NewDoor->SetOwner(HostPCRef);
+
 		if (LockedDoorAmount > 0)
 		{
 			NewDoor->Lock();
@@ -540,6 +542,17 @@ void APGLevelGenerator::BeginPlay()
 
 	if (HasAuthority())
 	{
+		if (!GetWorld()) return;
+
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* PC = It->Get();
+			if (PC && PC->IsLocalController())
+			{
+				HostPCRef = PC;
+			}
+		}
+
 		FTimerHandle WaitingTimer;
 		GetWorld()->GetTimerManager().SetTimer(WaitingTimer, FTimerDelegate::CreateLambda([this]()
 		{

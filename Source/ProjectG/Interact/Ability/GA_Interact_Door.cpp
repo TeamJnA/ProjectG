@@ -9,6 +9,8 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
 
 #include "Level/PGDoor1.h"
+#include "Game/PGGameState.h"
+#include "GameFramework/PlayerState.h"
 
 UGA_Interact_Door::UGA_Interact_Door()
 {
@@ -30,6 +32,12 @@ UGA_Interact_Door::UGA_Interact_Door()
 
 void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+    if (IsActive())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Ability already active, skipping activation"));
+        return;
+    }
+
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	PG_CHECK_VALID_INTERACT(ASC);
 
@@ -115,7 +123,26 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
         UE_LOG(LogTemp, Warning, TEXT("GA_Interact_Door::ActivateAbility - Calling Door->ToggleDoor() for %s."), *GetNameSafe(Door));
-        Door->Server_ToggleDoor();
+
+
+        APGGameState* GS = Cast<APGGameState>(PGCharacter->GetWorld()->GetGameState());
+        PG_CHECK_VALID_INTERACT(GS);
+
+        for (APlayerState* PS : GS->PlayerArray)
+        {
+            APlayerController* PC = Cast<APlayerController>(PS->GetOwner());
+
+            if (PC && PC->IsLocalController())
+            {
+                APGPlayerCharacter* HostChar = Cast<APGPlayerCharacter>(PC->GetPawn());
+                PG_CHECK_VALID_INTERACT(HostChar);
+
+                HostChar->TEST_Server_Interact(Door);
+            }
+        }
+
+        //Door->Server_ToggleDoor();
+        //Door->ToggleDoor();
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }    
 }

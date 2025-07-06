@@ -45,14 +45,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_DoorState)
 	bool bIsOpen = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lock", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_LockState)
 	bool bIsLocked = false;
 
-	//UFUNCTION()
-	//void OnRep_DoorState();
+	UFUNCTION()
+	void OnRep_DoorState();
 
 	UFUNCTION()
 	void OnRep_LockState();

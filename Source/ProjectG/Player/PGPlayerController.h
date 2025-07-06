@@ -12,6 +12,8 @@ class UInputAction;
 struct FInputActionValue;
 class ACharacter;
 
+class APGDoor1;
+
 /**
  * 
  */

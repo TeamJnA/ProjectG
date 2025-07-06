@@ -36,6 +36,9 @@
 //Sound Manager
 #include "Sound/PGSoundManager.h"
 
+//TEST
+#include "Level/PGDoor1.h"
+
 APGPlayerCharacter::APGPlayerCharacter()
 {
 	// Set size for collision capsule
@@ -182,6 +185,9 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(MouseRightAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, MouseRightTag);
 		EnhancedInputComponent->BindAction(MouseRightAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, MouseRightTag);
 
+		//TEST
+		EnhancedInputComponent->BindAction(TEST_DoorInteract, ETriggerEvent::Started, this, &APGPlayerCharacter::TEST_Interact);
+
 		//ChangeItemSlot
 		UPGAdvancedFriendsGameInstance * PGAdvancedFriendsGameInstance = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
 
@@ -268,6 +274,44 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 void APGPlayerCharacter::InitSoundManager(APGSoundManager* SoundManagerRef)
 {
 	SoundManagerComponent->SetSoundManager(SoundManagerRef);
+}
+
+void APGPlayerCharacter::TEST_Interact()
+{
+	FVector TraceStartLocation = FirstPersonCamera->GetComponentLocation();
+	FVector TraceStartDirection = FirstPersonCamera->GetForwardVector();
+
+	FCollisionQueryParams TraceParams;
+	TraceParams.AddIgnoredActor(this);
+
+	//Do linetrace and show debug
+	FHitResult HitResult;
+	FVector TraceEndLocation = TraceStartLocation + TraceStartDirection * 250.0f;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, TraceParams);
+	DrawDebugLine(GetWorld(), TraceStartLocation, TraceEndLocation, FColor::Green, false, 0.5f);
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, TraceParams))
+	{
+		if (APGDoor1* Door = Cast<APGDoor1>(HitResult.GetActor()))
+		{
+			if (HasAuthority())
+			{
+				Door->ToggleDoor();
+			}
+			else
+			{
+				TEST_Server_Interact(Door);
+			}
+		}
+	}
+}
+
+void APGPlayerCharacter::TEST_Server_Interact_Implementation(APGDoor1* Door)
+{
+	if (Door)
+	{
+		Door->ToggleDoor();
+	}
 }
 
 void APGPlayerCharacter::InitHUD()

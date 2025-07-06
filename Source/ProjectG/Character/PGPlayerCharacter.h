@@ -24,6 +24,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, Inter
 class UPGSoundManagerComponent;
 class APGSoundManager;
 
+//TEST
+class APGDoor1;
+
 /**
  * 
  */
@@ -245,4 +248,14 @@ public:
 // UI
 	void InitHUD() const;
 
+
+// TEST
+	void TEST_Interact();
+
+	UFUNCTION(Server, Reliable)
+	void TEST_Server_Interact(APGDoor1* Door);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> TEST_DoorInteract;
+	
 };
