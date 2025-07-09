@@ -39,6 +39,8 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
 
 					auto const Origin = enemy->GetActorLocation();
 
+					
+					//Navigation system 기반으로 탐색
 					if (auto* const NavSys = UNavigationSystemV1::GetCurrent(GetWorld()))
 					{
 						FNavLocation Loc;
