@@ -37,7 +37,7 @@ void UGA_Interact::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const
 {
 	Super::OnAvatarSet(ActorInfo, Spec);
 	
-	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle);
+	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
 }
 
 void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
