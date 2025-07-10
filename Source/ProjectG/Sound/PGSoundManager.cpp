@@ -5,6 +5,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DataTable.h"
 
+// This header is required to use ReportNoiseEvent
+#include "Perception/AISense_Hearing.h"
+
 // Sets default values for this component's properties
 APGSoundManager::APGSoundManager()
 {
@@ -114,7 +117,14 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector
 	if (bIntensedSound)
 		SoundPowerLevel++;
 
-	MakeNoise(SoundPowerLevel, nullptr, SoundLocation, SoundRange);
+	UE_LOG(LogTemp, Log, TEXT("Make Noise Level %d. [ Location : %s ], [ Range : %f ]"), SoundPowerLevel, *SoundLocation.ToString(), SoundRange);
+	UAISense_Hearing::ReportNoiseEvent(
+        GetWorld(),    
+		SoundLocation,
+		SoundPowerLevel,
+        this, 
+		SoundRange
+    );
 
 	// Draw debug sphere of makenoise range
 	if (bDebugSoundRange)

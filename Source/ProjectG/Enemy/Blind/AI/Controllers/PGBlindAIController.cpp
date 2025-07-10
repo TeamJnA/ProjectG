@@ -84,6 +84,8 @@ void APGBlindAIController::SetupPerceptionSystem()
 
 void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
+	UE_LOG(LogTemp, Log, TEXT("AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
+
 	//듣기로 감지된 거면
 	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
 	{

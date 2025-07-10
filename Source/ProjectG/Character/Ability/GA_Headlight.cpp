@@ -26,7 +26,7 @@ void UGA_Headlight::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, cons
 {
 	Super::OnAvatarSet(ActorInfo, Spec);
 
-	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle);
+	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
 }
 
 void UGA_Headlight::MouseLeft()
