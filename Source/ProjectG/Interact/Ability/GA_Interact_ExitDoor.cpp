@@ -42,7 +42,6 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
         UE_LOG(LogTemp, Log, TEXT("Activate interact %s ability to %s"), *TriggerEventData->Target.GetFName().ToString(), *GetOwningActorFromActorInfo()->GetName());
     }
 
-    // 어빌리티가 클라이언트에서 호출되었을 때, NetExecutionPolicy::ServerOnly에 의해 실제로 서버로 넘어가는지 확인하는 로그
     UE_LOG(LogTemp, Warning, TEXT("GA_Interact_ExitDoor::ActivateAbility - Called. IsLocalController: %d, HasAuthority: %d"),
         ActorInfo->IsLocallyControlled(), HasAuthority(&CurrentActivationInfo));
 
@@ -59,15 +58,67 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
     APGExitDoor* ExitDoor = Cast<APGExitDoor>(TargetActor);
     PG_CHECK_VALID_INTERACT(ExitDoor);
+    
+    /*
+    * if exit door is already opened
+    * just end ability
+    */
+    if (ExitDoor->IsOpened())
+    {
+        UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit door already opened"));
+
+        EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+    }
 
     if (ExitDoor->IsLocked())
     {
-        // Check ExitDoor Key Tag
-        ExitDoor->SubtractLockStack();
+        /*
+        * if exit door is locked
+        * player should find 3 exit key and use each one to unlock the exit door
+        */
+        UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit Door is locked."));
+
+        // check player has exit key in hand
+        if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.ExitKey"))))
+        {
+            // block entry when hand action is in progress
+            if (ASC->HasMatchingGameplayTag(HandActionLockTag))
+            {
+                UE_LOG(LogTemp, Log, TEXT("Cannot do %s during hand action."), *GetName());
+                return;
+            }
+
+            // play hand action(unlock motion)
+            PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+
+            // remove exit key item after use
+            if (HasAuthority(&CurrentActivationInfo))
+            {
+                PGCharacter->RemoveItemFromInventory();
+            }
+
+            ExitDoor->SubtractLockStack();
+
+            EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Player doesnt have exit key."));
+            EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+        }
     }
     else
     {
-        
+        UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit door is unlocked. Open exit door"));
+        ExitDoor->ToggleDoor();
+        /*
+        * if exit door is unlocked
+        * end game
+        * show score board, enter spectator mode
+        */
+        // PGCharacter->InitScoreboard
+        // InitScoreboard->SpectateButton bind to enter spectate mode
+        EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }
 }
 

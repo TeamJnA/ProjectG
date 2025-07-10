@@ -25,7 +25,9 @@ public:
 	// ~IInteractableActorInterface
 
 	void SubtractLockStack() { LockStack--; }
-	bool IsLocked() const { return (LockStack > 0); }
+	bool IsLocked() const;
+	bool IsOpened() const;
+	void ToggleDoor();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
@@ -42,8 +44,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_LockStack)
 	int32 LockStack;
+
+	UFUNCTION()
+	void OnRep_LockStack();
 
 	UPROPERTY(ReplicatedUsing = OnRep_DoorState)
 	bool bIsOpen = false;

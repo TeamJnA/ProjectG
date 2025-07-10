@@ -23,11 +23,13 @@ APGExitDoor::APGExitDoor()
 	Mesh0->SetupAttachment(Root);
 	Mesh0->SetRelativeLocation(FVector(-163.0f, 22.1f, 0.0f));
 	Mesh0->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
+	Mesh0->SetRelativeScale3D(FVector(1.0f, 1.0f, 0.96f));
 
 	Mesh1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh1"));
 	Mesh1->SetupAttachment(Root);
 	Mesh1->SetRelativeLocation(FVector(163.0f, 0.0f, 0.0f));
 	Mesh1->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	Mesh1->SetRelativeScale3D(FVector(1.0f, 1.0f, 0.96f));
 
 	if (MeshRef.Object)
 	{
@@ -57,6 +59,30 @@ void APGExitDoor::HighlightOff() const
 	Mesh1->SetRenderCustomDepth(false);
 }
 
+bool APGExitDoor::IsLocked() const
+{
+	UE_LOG(LogTemp, Log, TEXT("ExitDoor::IsLocked: [SERVER] Current LockStack = %d"), LockStack);
+
+	return LockStack > 0;
+}
+
+bool APGExitDoor::IsOpened() const
+{
+	UE_LOG(LogTemp, Log, TEXT("ExitDoor::IsOpened: door %s"), bIsOpen ? TEXT("Opened") : TEXT("Closed"));
+
+	return bIsOpen;
+}
+
+void APGExitDoor::ToggleDoor()
+{
+	bIsOpen = true;
+
+	UE_LOG(LogTemp, Log, TEXT("ExitDoor::ToggleDoor: [SERVER] Open Door"));
+
+	Mesh0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+	Mesh1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+}
+
 void APGExitDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -65,8 +91,15 @@ void APGExitDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(APGExitDoor, LockStack);
 }
 
+void APGExitDoor::OnRep_LockStack()
+{
+	UE_LOG(LogTemp, Log, TEXT("ExitDoor::OnRep_LockStack: [CLIENT] LockStack = %d"), LockStack);
+}
+
 void APGExitDoor::OnRep_DoorState()
 {
+	UE_LOG(LogTemp, Log, TEXT("ExitDoor::OnRep_DoorState: [Client] Open Door"));
+
 	Mesh0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	Mesh1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 }

@@ -23,7 +23,9 @@ APGProjectileItemBrick::APGProjectileItemBrick()
 	static ConstructorHelpers::FObjectFinder<UPGItemData> ItemDataRef(TEXT("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick"));
 	if (ItemDataRef.Object)
 	{
-		ItemData = ItemDataRef.Object;
+		UPGItemData* ItemData = ItemDataRef.Object;
+
+		ItemDataPtr = ItemData;
 	}
 
 	StaticMesh->OnComponentHit.AddDynamic(this, &APGProjectileItemBrick::OnHit);
