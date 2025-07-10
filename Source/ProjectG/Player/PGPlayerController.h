@@ -24,6 +24,7 @@ public:
 	APGPlayerController();
 
 	void NotifyTravelFailed();
+	void StartSpectate();
 
 protected:	
 	virtual void BeginPlay() override;

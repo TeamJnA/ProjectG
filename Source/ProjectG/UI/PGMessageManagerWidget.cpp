@@ -7,12 +7,7 @@
 
 void UPGMessageManagerWidget::BindMessageEntry(APGPlayerCharacter* PlayerCharacter)
 {
-	// GetOwningPlayer()나 GetPawn()으로 캐릭터를 찾을 필요 없음
-	// APlayerController* Controller = GetOwningPlayer();
-	// if (!Controller) return;
-	// APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(Controller->GetPawn());
-
-	if (!PlayerCharacter) // 인자로 받은 캐릭터 포인터가 유효한지 확인
+	if (!PlayerCharacter)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPGMessageManagerWidget::BindMessageEntry: InPlayerCharacter is NULL! Cannot bind delegate."));
 		return;
@@ -29,7 +24,7 @@ void UPGMessageManagerWidget::HandleOnStareTargetUpdate(AActor* TargetActor)
 	if (TargetActor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UPGMessageManagerWidget::HandleOnStareTargetUpdate: TargetActor Update"));
-		if (MessageEntry) // MessageEntry 널 체크 추가 (안전성 강화)
+		if (MessageEntry)
 		{
 			MessageEntry->SetMessage(FText::FromString(TargetActor->GetName()));
 		}

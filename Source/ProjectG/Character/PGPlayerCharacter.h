@@ -222,8 +222,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGInventoryComponent> InventoryComponent;
 
-	TObjectPtr<AActor> StaringTargetActor = nullptr;
-
+// UI
 public:
 	void InitHUD();
 
@@ -235,14 +234,16 @@ public:
 
 	void MC_SetFlashlightState(bool _bIsFlashlightOn);
 
+	UFUNCTION(Client, Reliable)
+	void Client_InitScoreBoardWidget();
+
+protected:
+	TObjectPtr<AActor> StaringTargetActor = nullptr;
+
 // -----------Sound parts-------------
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Sound, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGSoundManagerComponent> SoundManagerComponent;
 
 public:
 	void InitSoundManager(APGSoundManager* SoundManagerRef);
-
-// UI
-	void InitHUD() const;
-
 };

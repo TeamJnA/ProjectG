@@ -4,20 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "PGMessageEntryWidget.generated.h"
+#include "PGPlayerEntryWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API UPGMessageEntryWidget : public UUserWidget
+class PROJECTG_API UPGPlayerEntryWidget : public UUserWidget
 {
 	GENERATED_BODY()
-
 public:
-	void SetMessage(FText _Message) { Message = _Message; }
+	void SetPlayerText(FText _Player) { Player = _Player; }
 
 protected:
 	UPROPERTY(BlueprintReadOnly)
-	FText Message;
+	FText Player;
 };

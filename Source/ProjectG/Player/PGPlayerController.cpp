@@ -133,6 +133,23 @@ void APGPlayerController::OnSpectate(const FInputActionValue& Value)
 	UE_LOG(LogTemp, Warning, TEXT("PC: OnSpectateActionTriggered: Client requested EnterSpectatorMode."));
 }
 
+void APGPlayerController::StartSpectate()
+{
+	if (!IsLocalController()) return;
+
+	if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
+	{
+		ViewPort->RemoveAllViewportWidgets();
+	}
+
+	bShowMouseCursor = false;
+	SetInputMode(FInputModeGameOnly());
+
+	Server_EnterSpectatorMode();
+
+	UE_LOG(LogTemp, Warning, TEXT("PC::StartSpectate: Client requested EnterSpectatorMode."));
+}
+
 void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 {
 	// 서버에서만 실행

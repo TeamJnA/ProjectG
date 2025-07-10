@@ -118,6 +118,9 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
         */
         // PGCharacter->InitScoreboard
         // InitScoreboard->SpectateButton bind to enter spectate mode
+
+        PGCharacter->Client_InitScoreBoardWidget();
+
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }
 }
