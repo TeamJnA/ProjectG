@@ -21,9 +21,6 @@ class USpotLightComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 
-class UPGSoundManagerComponent;
-class APGSoundManager;
-
 /**
  * 
  */
@@ -234,13 +231,6 @@ public:
 	FOnStareTargetUpdate OnStareTargetUpdate;
 
 	void MC_SetFlashlightState(bool _bIsFlashlightOn);
-
-// -----------Sound parts-------------
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Sound, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UPGSoundManagerComponent> SoundManagerComponent;
-
-public:
-	void InitSoundManager(APGSoundManager* SoundManagerRef);
 
 // UI
 	void InitHUD() const;

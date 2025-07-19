@@ -22,16 +22,31 @@ void UPGSoundManagerComponent::SetSoundManager(APGSoundManager* InSoundManager)
 
 void UPGSoundManagerComponent::TriggerSoundForSelf(FName InSoundName, uint8 SoundVolumeLevel)
 {
+	if (!SoundManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *InSoundName.ToString());
+		return;
+	}
 	SoundManager->PlaySoundForSelf(InSoundName, SoundVolumeLevel);
 }
 
 void UPGSoundManagerComponent::TriggerSoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel)
 {
+	if (!SoundManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *SoundName.ToString());
+		return;
+	}
 	SoundManager->PlaySoundForAllPlayers(SoundName, SoundLocation, SoundPowerLevel);
 }
 
 void UPGSoundManagerComponent::TriggerSoundWithNoise_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound)
 {
+	if (!SoundManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *SoundName.ToString());
+		return;
+	}
 	SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, SoundPowerLevel, bIntensedSound);
 }
 

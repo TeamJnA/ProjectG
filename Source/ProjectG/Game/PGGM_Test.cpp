@@ -3,7 +3,9 @@
 
 #include "Game/PGGM_Test.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Character/PGCharacterBase.h"
 #include "Sound/PGSoundManager.h"
+#include "Kismet/GameplayStatics.h"
 
 APGSoundManager* APGGM_Test::GetSoundManager()
 {
@@ -37,6 +39,24 @@ void APGGM_Test::InitSoundManagerToPlayers()
 		{
 			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s"), *PGPC->GetName());
 			PGPC->InitSoundManager(SoundManager);
+		}
+	}
+
+
+	// Enemy 찾아서 InitSoundManager하고 Test 할 것
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	TArray<AActor*> AllCharacters;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APGCharacterBase::StaticClass(), AllCharacters);
+
+	for (AActor* Character : AllCharacters)
+	{
+		APGCharacterBase* PGCB = Cast<APGCharacterBase>(Character);
+		if (PGCB)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s [2nd]"), *PGCB->GetName());
+			PGCB->InitSoundManager(SoundManager);
 		}
 	}
 }

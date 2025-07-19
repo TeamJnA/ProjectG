@@ -123,7 +123,8 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector
 		SoundLocation,
 		SoundPowerLevel,
         this, 
-		SoundRange
+		SoundRange,
+		SoundName
     );
 
 	// Draw debug sphere of makenoise range

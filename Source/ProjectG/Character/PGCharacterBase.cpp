@@ -4,6 +4,10 @@
 #include "Character/PGCharacterBase.h"
 #include "AbilitySystem/PGAbilitySystemComponent.h"
 
+//Sound Manager
+#include "Component/PGSoundManagerComponent.h"
+#include "Sound/PGSoundManager.h"
+
 // Sets default values
 APGCharacterBase::APGCharacterBase()
 {
@@ -66,4 +70,9 @@ void APGCharacterBase::GiveAndActivatePassiveEffects()
 			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		}
 	}
+}
+
+void APGCharacterBase::InitSoundManager(APGSoundManager* SoundManagerRef)
+{
+	SoundManagerComponent->SetSoundManager(SoundManagerRef);
 }

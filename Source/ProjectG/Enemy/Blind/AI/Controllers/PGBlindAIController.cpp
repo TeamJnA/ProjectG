@@ -84,16 +84,18 @@ void APGBlindAIController::SetupPerceptionSystem()
 
 void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
-	UE_LOG(LogTemp, Log, TEXT("AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
+	UE_LOG(LogTemp, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
 
 	//듣기로 감지된 거면
 	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
 	{
+		UE_LOG(LogTemp, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Hearing."));
 		CalculateNoise(Stimulus.Strength, Stimulus.StimulusLocation);
 	}
 	//touch로 감지된 거라면
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
 	{
+		UE_LOG(LogTemp, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Touching."));
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", Actor->GetActorLocation());
 		OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindBite::StaticClass(), true);
 	}
