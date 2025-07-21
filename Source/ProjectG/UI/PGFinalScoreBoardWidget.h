@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "PGScoreBoardWidget.generated.h"
+#include "PGFinalScoreBoardWidget.generated.h"
 
 class UPGPlayerEntryWidget;
 class APGPlayerCharacter;
@@ -15,9 +15,10 @@ class UButton;
  * 
  */
 UCLASS()
-class PROJECTG_API UPGScoreBoardWidget : public UUserWidget
+class PROJECTG_API UPGFinalScoreBoardWidget : public UUserWidget
 {
 	GENERATED_BODY()
+
 public:
 	void BindPlayerEntry(APlayerController* _PC);
 	void UpdatePlayerEntry();
@@ -25,19 +26,13 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
+	UFUNCTION()
+	void OnReturnToMainMenuButtonClicked();
+
+	UFUNCTION()
+	void OnReturnToLobbyButtonClicked();
+
 	TObjectPtr<APlayerController> PCRef;
-
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UPGPlayerEntryWidget> PlayerEntry0;
-
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UPGPlayerEntryWidget> PlayerEntry1;
-
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UPGPlayerEntryWidget> PlayerEntry2;
-
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UPGPlayerEntryWidget> PlayerEntry3;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UVerticalBox> PlayerContainer;
@@ -46,8 +41,8 @@ protected:
 	TSubclassOf<UPGPlayerEntryWidget> PlayerEntryWidgetClass;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> SpectateButton;
+	TObjectPtr<UButton> ReturnToMainMenuButton;
 
-	UFUNCTION()
-	void OnSpectateButtonClicked();
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> ReturnToLobbyButton;
 };

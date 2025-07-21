@@ -16,6 +16,10 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 
+#include "Blueprint/UserWidget.h"
+#include "UI/PGFinalScoreBoardWidget.h"
+#include "UI/PGHUD.h"
+
 #include "EngineUtils.h"
 #include "Net/UnrealNetwork.h"
 
@@ -51,6 +55,12 @@ APGPlayerController::APGPlayerController()
 		SpectatePrevAction = SpectatePrevActionObj.Object;
 	}
 
+	static ConstructorHelpers::FClassFinder<UUserWidget> ScoreBoardWidgetRef(TEXT("/Game/ProjectG/UI/WBP_PGFinalScoreBoardWidget.WBP_PGFinalScoreBoardWidget_C"));
+	if (ScoreBoardWidgetRef.Class != nullptr)
+	{
+		ScoreBoardWidgetClass = ScoreBoardWidgetRef.Class;
+	}
+
 	OriginalPlayerCharacter = nullptr;
 }
 
@@ -67,7 +77,7 @@ void APGPlayerController::BeginPlay()
 	{
 		Subsystem->AddMappingContext(DefaultMappingContext, 1);
 	}
-	// 클라이언트에서 각 PlayerController 인스턴스의 로컬성 확인
+
 	UE_LOG(LogTemp, Log, TEXT("CLIENT/SERVER: %s BeginPlay. IsLocalController: %d, Role: %s"),
 		*GetName(), IsLocalController(), *UEnum::GetValueAsString(GetLocalRole()));
 }
@@ -148,6 +158,58 @@ void APGPlayerController::StartSpectate()
 	Server_EnterSpectatorMode();
 
 	UE_LOG(LogTemp, Warning, TEXT("PC::StartSpectate: Client requested EnterSpectatorMode."));
+}
+
+void APGPlayerController::InitFinalScoreBoardWidget()
+{
+	if (IsLocalController() && ScoreBoardWidgetClass)
+	{
+		// clear current viewport
+		if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
+		{
+			ViewPort->RemoveAllViewportWidgets();
+		}
+
+		//APGHUD* HUD = Cast<APGHUD>(GetHUD());
+		//HUD->InitFinalScoreBoardWidget()
+
+		ScoreBoardWidgetInstance = CreateWidget<UPGFinalScoreBoardWidget>(this, ScoreBoardWidgetClass);
+		if (ScoreBoardWidgetInstance)
+		{
+			bShowMouseCursor = true;
+			SetInputMode(FInputModeUIOnly());
+
+			UE_LOG(LogTemp, Log, TEXT("PC::InitFinalScoreBoardWidget: FinalScoreBoardWidget created successfully."));
+			ScoreBoardWidgetInstance->AddToViewport();
+			UE_LOG(LogTemp, Log, TEXT("PC::InitFinalScoreBoardWidget: FinalScoreBoardWidget added to viewport."));
+
+			ScoreBoardWidgetInstance->BindPlayerEntry(this);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PC::InitFinalScoreBoardWidget: Failed to create FinalScoreBoardWidget"));
+		}
+	}
+}
+
+void APGPlayerController::NotifyReadyToReturnLobby()
+{
+	if (!IsLocalController())
+	{
+		UE_LOG(LogTemp, Error, TEXT("PC::NotifyReturnToLobby: PC is not local"));
+		return;
+	}
+
+	Server_SetReadyToReturnLobby();
+}
+
+void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
+{
+	APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode());
+	if (GM && PlayerState)
+	{
+		GM->SetPlayerReadyToReturnLobby(PlayerState);
+	}
 }
 
 void APGPlayerController::Server_EnterSpectatorMode_Implementation()

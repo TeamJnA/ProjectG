@@ -2,69 +2,37 @@
 
 
 #include "PGLobbyWidget.h"
-#include "Components/ScrollBox.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
-#include "UI/PGSessionSlotWidget.h"
-#include "Game/PGAdvancedFriendsGameInstance.h"
-#include "Kismet/GameplayStatics.h"
+
 #include "Player/PGLobbyPlayerController.h"
 
-void UPGLobbyWidget::AddSessionSlot(const FString& ServerName, int32 Index)
+void UPGLobbyWidget::Init(APGLobbyPlayerController* PC)
 {
-	if (!SessionListContainer || !SessionSlotWidgetClass) return;
+	LocalPC = PC;
 
-	UPGSessionSlotWidget* slot = CreateWidget<UPGSessionSlotWidget>(this, SessionSlotWidgetClass);
-	if (slot)
+	if (ReadyButton)
 	{
-		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
-		{
-			slot->Setup(ServerName, Index, GI);
-		}
-		SessionListContainer->AddChild(slot);
+		ReadyButton->OnClicked.AddDynamic(this, &UPGLobbyWidget::OnReadyClicked);
 	}
-}
 
-void UPGLobbyWidget::ClearSessionList()
-{
-	if (SessionListContainer)
-	{
-		SessionListContainer->ClearChildren();
-	}
+	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::Init: Bind button delegate"));
 }
 
 void UPGLobbyWidget::OnReadyClicked()
 {
-	APGLobbyPlayerController* PC = Cast<APGLobbyPlayerController>(CachedPC);
-	if (PC)
+	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::OnReadyClicked: Ready button clicked"));
+
+	if (LocalPC)
 	{
-		PC->SetReady();
+		LocalPC->SetReady();
 	}
 
 	ReadyButton->SetIsEnabled(false);
 	ReadyText->SetText(FText::FromString(TEXT("Waiting...")));
 }
 
-//void UPGLobbyWidget::OnRefreshClicked()
-//{
-//	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
-//	{
-//		GI->FindSessions();	
-//	}
-//}
-
 void UPGLobbyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	CachedPC = UGameplayStatics::GetPlayerController(this, 0);
-	
-	if (ReadyButton)
-	{
-		ReadyButton->OnClicked.AddDynamic(this, &UPGLobbyWidget::OnReadyClicked);
-	}
-	//if (RefreshButton)
-	//{
-	//	RefreshButton->OnClicked.AddDynamic(this, &UPGLobbyWidget::OnRefreshClicked);
-	//}
 }

@@ -11,16 +11,16 @@
 #include "Player/PGPlayerState.h"
 #include "Player/PGPlayerController.h"
 
-void UPGScoreBoardWidget::BindPlayerEntry(APGPlayerCharacter* PlayerCharacter)
+void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
 {
-	if (!PlayerCharacter)
+	if (!_PC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPGScoreBoardWidget::BindPlayerEntry: InPlayerCharacter is NULL! Cannot bind delegate."));
 		return;
 	}
 	UE_LOG(LogTemp, Log, TEXT("UPGScoreBoardWidget::BindPlayerEntry: InPlayerCharacter is valid. Binding delegate."));
 
-	PlayerRef = PlayerCharacter;
+	PCRef = _PC;
 
 	UpdatePlayerEntry();
 }
@@ -69,22 +69,15 @@ void UPGScoreBoardWidget::NativeConstruct()
 
 void UPGScoreBoardWidget::OnSpectateButtonClicked()
 {
-	UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: Spectate button clicked"), *PlayerRef->GetName());
+	UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: Spectate button clicked"), *PCRef->GetName());
 
-	if (!PlayerRef)
+	if (!PCRef)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: PlayerRef is null"));
+		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: PCRef is null"));
 		return;
 	}
 
-	APlayerController* PC = Cast<APlayerController>(PlayerRef->GetController());
-	if (!PC)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: PC is null"));
-		return;
-	}
-
-	APGPlayerController* PGPC = Cast<APGPlayerController>(PC);
+	APGPlayerController* PGPC = Cast<APGPlayerController>(PCRef);
 	if (!PGPC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: PC is not PG class"));

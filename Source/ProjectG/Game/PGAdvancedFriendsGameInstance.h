@@ -4,8 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "AdvancedFriendsGameInstance.h"
+
+#include "Game/PGGameState.h"
+#include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
+
 #include "PGAdvancedFriendsGameInstance.generated.h"
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCreateSessionBPCompleteDelegate, FName /*SessionName*/, bool /*bWasSuccessful*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionBPCompleteDelegate, bool /*bWasSuccessful*/);
 
 class UPGItemData;
 
@@ -32,6 +39,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
 
+	bool IsHost() { return bIsHost; }
+
 	//UFUNCTION(BlueprintCallable)
 	//void HostSession(FName SessionName = FName("GameSession"), int32 MaxPlayers = 4);
 
@@ -45,6 +54,21 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	FString Playername;
+
+	FOnCreateSessionBPCompleteDelegate OnCreateSessionBPComplete;
+	FOnJoinSessionBPCompleteDelegate OnJoinSessionBPComplete;
+	
+	FDelegateHandle DestroySessionCompleteDelegateHandle;
+
+	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
+	void HandleOnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+
+	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
+	void HandleOnJoinSessionComplete(bool bWasSuccessful);
+
+	// GameState
+	void SaveGameStateOnTravel(EGameState StateToSave);
+	EGameState LoadGameStateOnTravel();
 
 protected:
 	virtual void Init() override;
@@ -64,6 +88,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ItemData", meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TSoftObjectPtr<UPGItemData>> ItemDataMap;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameState", meta = (AllowPrivateAccess = "true"))
+	EGameState CurrentSavedGameState;
+
 private:
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSearch> SessionSearch;
@@ -75,6 +102,8 @@ private:
 	bool bDidRetryClientTravel = false;
 	bool bTimeoutProcessInProgress = false;
 	bool bOnTravelFailureDetected = false;
+
+	bool bIsHost = false;
 
 	//void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	//void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);

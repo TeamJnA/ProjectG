@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "PGFriendListUI.generated.h"
+#include "PGFriendListWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API UPGFriendListUI : public UUserWidget
+class PROJECTG_API UPGFriendListWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	

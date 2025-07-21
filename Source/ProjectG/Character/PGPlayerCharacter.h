@@ -246,4 +246,5 @@ protected:
 
 public:
 	void InitSoundManager(APGSoundManager* SoundManagerRef);
+
 };

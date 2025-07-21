@@ -48,7 +48,7 @@ void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActo
 	{
 		NewDoor->bIsLocked = _bIsLocked;
 		//NewDoor->OnRep_LockState();
-		UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED DOOR: Name=%s, Location=%s, NetGUID=%s"), *NewDoor->GetFName().ToString(), *NewDoor->GetActorLocation().ToString(), *NewDoor->GetActorGuid().ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED DOOR: Name=%s, Location=%s, NetGUID=%s"), *NewDoor->GetFName().ToString(), *NewDoor->GetActorLocation().ToString(), *NewDoor->GetActorGuid().ToString());
 	}
 }
 

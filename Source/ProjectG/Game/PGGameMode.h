@@ -24,6 +24,7 @@ public:
 	APGGameMode();
 
 	void SetIsTravelFailedExist();
+	void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
 
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;

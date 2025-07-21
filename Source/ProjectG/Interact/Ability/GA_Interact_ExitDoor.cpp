@@ -3,10 +3,12 @@
 
 #include "Interact/Ability/GA_Interact_ExitDoor.h"
 #include "AbilitySystemComponent.h"
-#include "Character/PGPlayerCharacter.h"
 #include "Interface/ItemInteractInterface.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
+
+#include "Game/PGGameState.h"
+#include "Character/PGPlayerCharacter.h"
 
 #include "Level/PGExitDoor.h"
 
@@ -67,7 +69,26 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
     {
         UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit door already opened"));
 
+        APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+        if (GS)
+        {
+            GS->IncreaseFinishedPlayersCount();
+
+            if (GS->IsGameFinished())
+            {
+                UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Game Finished"));
+
+                GS->SetCurrentGameState(EGameState::EndGame);
+                GS->NotifyGameFinished();
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("UGA_Interact_ExitDoor::ActivateAbility: No GS"));
+        }
+
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+        return;
     }
 
     if (ExitDoor->IsLocked())
@@ -120,6 +141,24 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
         // InitScoreboard->SpectateButton bind to enter spectate mode
 
         PGCharacter->Client_InitScoreBoardWidget();
+        
+        APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+        if (GS)
+        {
+            GS->IncreaseFinishedPlayersCount();
+
+            if (GS->IsGameFinished())
+            {
+                UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Game Finished"));
+
+                GS->SetCurrentGameState(EGameState::EndGame);
+                GS->NotifyGameFinished();
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("UGA_Interact_ExitDoor::ActivateAbility: No GS"));
+        }
 
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }
