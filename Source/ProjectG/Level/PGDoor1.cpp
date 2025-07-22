@@ -41,6 +41,9 @@ APGDoor1::APGDoor1()
 
 	Mesh0->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Ignore);
 
+	// Door does not affect to NavMesh. AI ignore door.
+	Mesh0->SetCanEverAffectNavigation(false);
+
 	InteractAbility = UGA_Interact_Door::StaticClass();
 }
 
@@ -182,4 +185,10 @@ void APGDoor1::HighlightOff() const
 void APGDoor1::OnRep_LockState()
 {
 	UE_LOG(LogTemp, Log, TEXT("Door lock state changed: %s"), bIsLocked ? TEXT("Locked") : TEXT("Unlocked"));
+}
+
+void APGDoor1::TEST_OpenDoorByAI()
+{
+	UE_LOG(LogTemp, Log, TEXT("OpenDoor by AI"));
+	NM_SetDoorState(true);
 }

@@ -26,10 +26,11 @@ public:
 
 	APGBlindCharacter();
 
-	// IPGAIExplorationInterface
+	// IPGAIExplorationInterface~
 	// explore 기능 쓰려면 해당 interface 상속 받아야합니다.
 	virtual float GetExplorationRadius() const override;
 	virtual float GetExplorationWaitTime() const override;
+	// ~IPGAIExplorationInterface
 
 
 	float GetNoiseLevelThreshold() const;
@@ -45,16 +46,18 @@ public:
 	
 	//bite 용 collider
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
-	UBoxComponent* BiteCollider;
+	TObjectPtr<UBoxComponent> BiteCollider;
 
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+	TObjectPtr<UBoxComponent> DoorDetectCollider;
 
 	//Animation Montages
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	UAnimMontage* BiteMontage;
+	TObjectPtr<UAnimMontage> BiteMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	UAnimMontage* RoarMontage;
+	TObjectPtr<UAnimMontage> RoarMontage;
 
 
 protected:
@@ -75,8 +78,16 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-
-
+	// When BlindCharacter's HuntLevel is over than 0( State is Chase or Investigate ), 
+	// the door ovelaped with BlindCharacter need to be broken.
+	UFUNCTION()
+	void OnOpenDoorColliderOverlapBegin(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
 
 
 	

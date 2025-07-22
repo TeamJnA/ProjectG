@@ -27,33 +27,30 @@ UGA_BlindChase::UGA_BlindChase()
 
 	CancelAbilitiesWithTag.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior")));
 
-	/*
 	static ConstructorHelpers::FObjectFinder<UClass> ChaseGERef(TEXT("/Game/ProjectG/Enemy/Blind/Ability/Effect/GE_BlindChase.GE_BlindChase_C"));
 	if (ChaseGERef.Object)
 	{
 		ChaseEffectClass = ChaseGERef.Object;
 	}
-	*/
 }
 
 void UGA_BlindChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	/*
+	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find OwnerPawn in UGA_BlindChase::ActivateAbility"));
+		return;
+	}
+
+	// Apply chase state gameplay effect.
 	if (ChaseEffectClass)
 	{
 		UE_LOG(LogTemp, Log, TEXT("DoChase"));
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(ChaseEffectClass);
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-	}
-	*/
-
-	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
-	if (!OwnerPawn)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot find OwnerPawn in UGA_BlindChase"));
-		return;
 	}
 
 	// Play roar sound before chasing.

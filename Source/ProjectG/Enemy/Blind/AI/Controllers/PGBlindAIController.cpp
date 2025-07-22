@@ -127,6 +127,7 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	float DetectedMaxNoiseMagnitude = GetBlackboardComponent()->GetValueAsFloat("DetectedMaxNoiseMagnitude");
 
 
+	// While in HuntLevel 2 (Chase), keep chasing the target that is making noise
 	//방금 들린 소리가 최대 소리라면, 
 	// huntlevel은 탐색레벨인데, 애니메이션블루프린트때문에 추가한 변수임. 
 	// hunt level 0: explore, 1: investigate, 2: chase

@@ -28,7 +28,9 @@ public:
 	
 	void SetMovementSpeed(float speed);
 
+	// IGameplayTagAssetInterface~
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
+	// ~IGameplayTagAssetInterface
 
 	//주변 감지용 collider
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")

@@ -6,13 +6,12 @@
 #include "Net/UnrealNetwork.h"
 #include "Components/BoxComponent.h"
 
+#include "Level/PGDoor1.h"
+
 APGBlindCharacter::APGBlindCharacter()
 {
     BlindAttributeSet = CreateDefaultSubobject<UPGBlindAttributeSet>("BlindAttributeSet");
-
-    
-
-    
+        
     BiteCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BiteCollider"));
     BiteCollider->SetupAttachment(GetMesh());
     BiteCollider->SetBoxExtent(FVector(50.f)); // 기본 크기 (BP에서 조정 가능)
@@ -20,6 +19,12 @@ APGBlindCharacter::APGBlindCharacter()
     BiteCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
     BiteCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
+    DoorDetectCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("DoorDetectCollider"));
+    DoorDetectCollider->SetupAttachment(RootComponent);
+    DoorDetectCollider->SetBoxExtent(FVector(50.f));
+    DoorDetectCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    DoorDetectCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+    DoorDetectCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     
     static ConstructorHelpers::FObjectFinder<UAnimMontage> BiteMontageRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/Animation/Fight/AM_BlindBite.AM_BlindBite"));
     if (BiteMontageRef.Succeeded())
@@ -66,6 +71,23 @@ void APGBlindCharacter::SetHuntLevel(int Level)
 {
     if (HasAuthority())
     {
+        // 문 탐색 콜리더를 이용해서, 
+        // Huntlevel에 따라 닿은 문을 부순다는 함수를 bind하고 unbind한다
+        // NewHuntLevel(Level) > 0 && CurHuntLevel(HuntLevel) == 0, AddDynamic
+        // NewHuntLevel(Level) == 0 && CurHuntLevel(HuntLevel) > 0, RemoveDynamic
+
+        if (Level > 0 && HuntLevel == 0)
+        {
+            UE_LOG(LogTemp, Log, TEXT("Hunt level become 1,2 : Add OnOpenDoorColliderOverlapBegin"))
+            DoorDetectCollider->OnComponentBeginOverlap.AddDynamic(this, &APGBlindCharacter::OnOpenDoorColliderOverlapBegin);
+        }
+
+        if (Level == 0 && HuntLevel > 0)
+        {
+            UE_LOG(LogTemp, Log, TEXT("Hunt level become 0 : Remove OnOpenDoorColliderOverlapBegin"))
+            DoorDetectCollider->OnComponentBeginOverlap.Clear();
+        }
+
         HuntLevel = Level;
     }
     
@@ -116,4 +138,17 @@ void APGBlindCharacter::OnBiteColliderOverlapBegin(UPrimitiveComponent* Overlapp
     
     
 
+}
+
+void APGBlindCharacter::OnOpenDoorColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    // if other actor is door, break the door!
+    UE_LOG(LogTemp, Log, TEXT("OtherActor was detected by BlindCharacter"));
+
+    APGDoor1* OverlappedDoor = Cast<APGDoor1>(OtherActor);
+    if (OverlappedDoor)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Door was detected by BlindCharacter"));
+        OverlappedDoor->TEST_OpenDoorByAI();
+    }
 }

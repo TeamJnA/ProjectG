@@ -22,7 +22,7 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 	EnemyAttributeSet = CreateDefaultSubobject<UPGEnemyAttributeSet>("EnemyAttributeSet");
 
 
-
+	
 	
 	TouchCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("TouchCollider"));
 	TouchCollider->SetupAttachment(RootComponent);

@@ -41,6 +41,11 @@ void UGA_BlindInvestigate::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	}
 
 	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find OwnerPawn in UGA_BlindInvestigate::ActivateAbility"));
+		return;
+	}
 	OwnerPawn->SetHuntLevel(1);
 
 	GetAbilitySystemComponentFromActorInfo()->
