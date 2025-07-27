@@ -59,7 +59,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> RoarMontage;
 
-
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UPGBlindAttributeSet> BlindAttributeSet;
@@ -89,7 +88,8 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-
+public:
+	void ForceOpenDoorsAroundCharacter();
 	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
@@ -102,17 +102,6 @@ private:
 	//hunt level은 animation bp 추적용 변수
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", Replicated, meta = (AllowPrivateAccess = "true"))
 	int HuntLevel = 0;
-
-
-
-
-
-
-
-	
-	
-
-
 
 private:
 

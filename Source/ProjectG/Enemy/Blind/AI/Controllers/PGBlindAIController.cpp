@@ -27,6 +27,10 @@ void APGBlindAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	OwnerPawn = Cast<APGBlindCharacter>(InPawn);
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot find APGBlindCharacter in APGBlindAIController"));
+	}
 }
 
 
@@ -92,6 +96,7 @@ void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Sti
 		UE_LOG(LogTemp, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Hearing."));
 		CalculateNoise(Stimulus.Strength, Stimulus.StimulusLocation);
 	}
+
 	//touch로 감지된 거라면
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
 	{
@@ -120,7 +125,7 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	float CurNoise = Noise / (Distance + 0.1f) * 100000.f;
 
 	//MaxThreshold = 이 정도 기준값 이상이면 그냥 최대소리로 인식.
-	float MaxThreshold = OwnerPawn->GetNoiseMaxThreshold(); //캐릭터에서 가져오고
+	float NoiseMaxThreshold = OwnerPawn->GetNoiseMaxThreshold(); //캐릭터에서 가져오고
 
 	// DetectedMaxNoiseMagnitude = 현재 감지되어있는, 가장 큰 소리 레벨. 
 	// 해당 값은 블랙보드에서 관리함. 그래서 블랙보드에서 가져옴.
@@ -132,7 +137,7 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	// huntlevel은 탐색레벨인데, 애니메이션블루프린트때문에 추가한 변수임. 
 	// hunt level 0: explore, 1: investigate, 2: chase
 	// if 문이 있는 이유가 상대방이 뛰어갈때 쫓아갈 수 있게 갱신하기 위한 if문
-	if (CurNoise > MaxThreshold && OwnerPawn->GetHuntLevel()==2)
+	if (CurNoise > NoiseMaxThreshold && OwnerPawn->GetHuntLevel()==2)
 	{
 		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoise);
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
@@ -151,6 +156,12 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	//-> 얘를 쫓아가게 바꿔줘야대
 	if (DetectedMaxNoiseMagnitude < CurNoise)
 	{
+		// If now hunt level is 0, open all doors around character.
+		if (OwnerPawn->GetHuntLevel() == 0)
+		{
+			OwnerPawn->ForceOpenDoorsAroundCharacter();
+		}
+
 		//갱신하기
 		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoise);
 		
