@@ -130,5 +130,5 @@ void APGDoor1::OnRep_LockState()
 void APGDoor1::TEST_OpenDoorByAI()
 {
 	UE_LOG(LogTemp, Log, TEXT("OpenDoor by AI"));
-	NM_SetDoorState(true);
+	SetDoorState(true);
 }

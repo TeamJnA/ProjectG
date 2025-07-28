@@ -236,12 +236,4 @@ public:
 
 protected:
 	TObjectPtr<AActor> StaringTargetActor = nullptr;
-
-// -----------Sound parts-------------
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Sound, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UPGSoundManagerComponent> SoundManagerComponent;
-
-public:
-	void InitSoundManager(APGSoundManager* SoundManagerRef);
-
 };
