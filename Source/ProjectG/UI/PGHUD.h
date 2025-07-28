@@ -10,6 +10,8 @@ class UPGAttributesWidget;
 class UPGInventoryWidget;
 class UPGInventoryComponent;
 class UPGMessageManagerWidget;
+class UPGScoreBoardWidget;
+class UPGCrosshairWidget;
 
 /**
  * 
@@ -21,11 +23,14 @@ class PROJECTG_API APGHUD : public AHUD
 
 public:
 	void Init();
+	void InitScoreBoardWidget();
 
 	// MessageManagerWidget Getter
 	UPGMessageManagerWidget* GetMessageManagerWidget() const { return MessageManagerWidget; }
 	// InventoryWidgetGetter
 	UPGInventoryWidget* GetInventoryWidget() const { return InventoryWidget; }
+	// ScoreBoardWidgetGetter
+	UPGScoreBoardWidget* GetScoreBoardWidget() const { return ScoreBoardWidget; }
 
 protected:
 	APGHUD();
@@ -39,6 +44,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGMessageManagerWidget> MessageManagerWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGScoreBoardWidget> ScoreBoardWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGCrosshairWidget> CrosshairWidgetClass;
+
 private:
 	UPROPERTY()
 	TObjectPtr<UPGAttributesWidget> AttributeWidget;
@@ -48,4 +59,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGMessageManagerWidget> MessageManagerWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGScoreBoardWidget> ScoreBoardWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGCrosshairWidget> CrosshairWidget;
 };

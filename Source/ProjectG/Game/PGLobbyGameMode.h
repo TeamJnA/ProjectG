@@ -20,4 +20,8 @@ public:
 	void CheckAllPlayersReady();
 	void StartGame();
 	
+protected:
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<APawn> PlayerPawnClass;
+
 };

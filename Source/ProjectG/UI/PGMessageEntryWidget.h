@@ -15,7 +15,7 @@ class PROJECTG_API UPGMessageEntryWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void SetMessage(FText _Message);
+	void SetMessage(FText _Message) { Message = _Message; }
 
 protected:
 	UPROPERTY(BlueprintReadOnly)

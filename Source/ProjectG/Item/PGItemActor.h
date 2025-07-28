@@ -20,7 +20,6 @@ public:
 	// Sets default values for this actor's properties
 	APGItemActor();
 
-	UFUNCTION(NetMulticast, Reliable)
 	void InitWithData(UPGItemData* InData);
 
 	//IInteractableActorInterface~
@@ -51,14 +50,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
 
-	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UPGItemData> ItemData;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"), Replicatedusing = OnRep_ItemData)
+	TSoftObjectPtr<UPGItemData> ItemDataPtr;
+
+	UFUNCTION()
+	void OnRep_ItemData();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
 	bool bOwned = false;
-
-	virtual void PostNetInit() override;
-	virtual void PostNetReceive() override;
 };

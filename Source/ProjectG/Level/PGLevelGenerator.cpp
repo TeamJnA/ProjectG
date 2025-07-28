@@ -21,6 +21,8 @@
 #include "PGStairRoom1.h"
 #include "PGDoor1.h"
 #include "PGWall.h"
+#include "PGExitDoor.h"
+
 #include "PGGlobalLightManager.h"
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerController.h"
@@ -67,7 +69,7 @@ APGLevelGenerator::APGLevelGenerator()
 	LockedDoorAmount = 0;
 
 	// max item spawn amount
-	ItemAmount = 10;
+	ItemAmount = 20;
 
 	bIsGenerationDone = false;
 
@@ -86,24 +88,13 @@ void APGLevelGenerator::SetSeed()
 		if (SeedValue == -1)
 		{
 			Seed.Initialize(FDateTime::Now().GetTicks());
-			//ReplicatedSeedValue = Seed.GetCurrentSeed();
 			//UKismetMathLibrary::SeedRandomStream(Seed);
 		}
 		else
 		{
 			Seed.Initialize(SeedValue);
-			//ReplicatedSeedValue = SeedValue;
 			//UKismetMathLibrary::SetRandomStreamSeed(Seed, SeedValue);
 		}
-
-		//UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator Seed: %d"), ReplicatedSeedValue);
-	}
-	else
-	{
-		// 클라이언트는 이미 복제된 ReplicatedSeedValue를 사용하여 자신의 스트림을 초기화합니다.
-		//Seed.Initialize(ReplicatedSeedValue);
-		// 디버깅을 위해 클라이언트에서 설정된 시드 값을 로그로 남길 수 있습니다.
-		//UE_LOG(LogTemp, Warning, TEXT("[CLIENT] APGLevelGenerator Seed Replicated: %d"), ReplicatedSeedValue);
 	}
 }
 
@@ -119,6 +110,28 @@ void APGLevelGenerator::SpawnStartRoom()
 		spawnParams.Owner = this;
 		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		APGStartRoom* newRoom = world->SpawnActor<APGStartRoom>(APGStartRoom::StaticClass(), spawnTransform, spawnParams);
+
+		// spawn default key item
+		// get game instance for use PGItemData instances
+		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance());
+
+		APGItemActor* DefaultKey1 = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnParams);
+		if (UPGItemData* ItemData1 = GI->GetItemDataByKey("Key"))
+		{
+			DefaultKey1->InitWithData(ItemData1);
+		}
+		DefaultKey1->SetActorRelativeLocation(FVector(538.0f, 271.0f, 90.0f));
+
+		APGItemActor* DeafultKey2 = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnParams);
+		if (UPGItemData* ItemData2 = GI->GetItemDataByKey("Key"))
+		{
+			DeafultKey2->InitWithData(ItemData2);
+		}
+		DeafultKey2->SetActorRelativeLocation(FVector(538.0f, 356.0f, 90.0f));
+
+		APGExitDoor* ExitDoor = world->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), spawnParams);
+		ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
+		ExitDoor->SetActorRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 
 		// Add the Points(exitpoints) where the next Room can be created to the ExitsList.
 		TArray<USceneComponent*> exitsItem;
@@ -238,18 +251,6 @@ void APGLevelGenerator::CheckOverlap()
 		// can generate next room
 		if (RoomAmount > 0)
 		{
-			//// next room == special room(PGStairRoom)
-			//if (RoomAmount == 4 || RoomAmount == 8)
-			//{
-			//	RoomsList = SpecialRoomsList;
-			//	SpawnNextRoom();
-			//}
-			//// next room == base room(PGRoom1 ~ PGRoom3)
-			//else
-			//{
-			//	RoomsList = BaseRoomsList;
-			//	SpawnNextRoom();
-			//}
 			SpawnNextRoom();
 		}
 		// stop generation => spawn walls, doors, items and clear timer, spawn global light manager(PGGlobalLightManager)
@@ -313,73 +314,33 @@ void APGLevelGenerator::SpawnDoors()
 		DoorAmount = DoorPointsList.Num() * 0.8f;
 		LockedDoorAmount = DoorAmount * 0.3f;
 
-		int32 DoorIndex = 0; // 문 인덱스를 추가하여 고유한 이름 생성
 		while (DoorAmount > 0)
 		{
 			// get random door spawn point from DoorPointsList by stream(seed)
 			SelectedDoorPoint = DoorPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, DoorPointsList.Num())];
 
 			// spawn setting
-			FVector spawnLocation = SelectedDoorPoint->GetComponentLocation();
-			FRotator spawnRotation = SelectedDoorPoint->GetComponentRotation();
-			//spawnRotation.Yaw += 90.0f;
-			FTransform spawnTransform(spawnRotation, spawnLocation, FVector(1.0f, 1.0f, 1.0f));
-			FActorSpawnParameters spawnParams;
-			spawnParams.Owner = this;
-			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			FVector SpawnLocation = SelectedDoorPoint->GetComponentLocation();
+			FRotator SpawnRotation = SelectedDoorPoint->GetComponentRotation();
+			FTransform SpawnTransform(SpawnRotation, SpawnLocation, FVector(1.0f, 1.0f, 1.0f));
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			SpawnParams.bNoFail = true;
 
-			//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNING DOOR: Owner NetGUID=%s"), *spawnParams.Owner->GetActorGuid().ToString());
-
-			APGDoor1* NewDoor = world->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform, spawnParams);
-
-			if (NewDoor)
+			if (LockedDoorAmount > 0)
 			{
-				if (LockedDoorAmount > 0)
-				{
-					NewDoor->Lock();
-					LockedDoorAmount--;
-				}
-				else
-				{
-					// bIsLock deafult = false
-				}
-				//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED DOOR: Name=%s, Location=%s, NetGUID=%s"), *NewDoor->GetFName().ToString(), *NewDoor->GetActorLocation().ToString(), *NewDoor->GetActorGuid().ToString()); //
+				APGDoor1::SpawnDoor(world, SpawnTransform, SpawnParams, /*bIsLocked*/ true);
+				LockedDoorAmount--;
 			}
 			else
 			{
-				UE_LOG(LogTemp, Error, TEXT("Failed to spawn APGDoor1 from APGLevelGenerator::SpawnDoors!")); // 에러 로그 추가
+				APGDoor1::SpawnDoor(world, SpawnTransform, SpawnParams, /*bIsLocked*/ false);
 			}
-
-			//if (LockedDoorAmount > 0)
-			//{
-			//	APGDoor1::SpawnDoor(world, spawnTransform, spawnParams, /*bIsLocked*/ true);
-			//	LockedDoorAmount--;
-			//}
-			//else
-			//{
-			//	APGDoor1::SpawnDoor(world, spawnTransform, spawnParams, /*bIsLocked*/ false);
-			//}
-
-			// spawn doors to fit the size of the hole
-			// categorized hole size by exitpoint's ArrowLength
-			//UArrowComponent* CastedSelectedDoorPoint = Cast<UArrowComponent>(SelectedDoorPoint);
-			//if (CastedSelectedDoorPoint->ArrowLength == 80.0f)
-			//{
-			//	world->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), spawnTransform, spawnParams);
-			//}
-			//else if (CastedSelectedDoorPoint->ArrowLength == 80.1f)
-			//{
-			//	world->SpawnActor<APGDoor2>(APGDoor2::StaticClass(), spawnTransform, spawnParams);
-			//}
-			//else
-			//{
-			//	world->SpawnActor<APGDoor3>(APGDoor3::StaticClass(), spawnTransform, spawnParams);
-			//}
 
 			// after spawn door, remove used spawn point from DoorPointsList and DoorAmount--
 			DoorPointsList.Remove(SelectedDoorPoint);
 			DoorAmount--;
-			DoorIndex++; // 다음 문을 위해 인덱스 증가
 		}
 	}
 }
@@ -412,30 +373,23 @@ void APGLevelGenerator::SpawnItems()
 			// spawn items that must be spawned(Item_Escape) (ItemAmount == 10, 9, 8)
 			// other items spawn randomly
 			// InitWithData => spawn item actor's class(PGItemActor) then attach actual data(PGItemData) for item
-			if (ItemAmount == 10)
+			if (ItemAmount >= 18)
 			{
-				if (UPGItemData* itemData = GI->GetItemDataByKey("AdminDevice"))
+				if (UPGItemData* itemData = GI->GetItemDataByKey("ExitKey"))
 				{
 					newItem->InitWithData(itemData);
 				}
 			}
-			else if (ItemAmount == 9)
+			else if (ItemAmount >= 10)
 			{
-				if (UPGItemData* itemData = GI->GetItemDataByKey("EnergyCore"))
-				{
-					newItem->InitWithData(itemData);
-				}
-			}
-			else if (ItemAmount == 8)
-			{
-				if (UPGItemData* itemData = GI->GetItemDataByKey("RootCalculator"))
+				if (UPGItemData* itemData = GI->GetItemDataByKey("Brick"))
 				{
 					newItem->InitWithData(itemData);
 				}
 			}
 			else
 			{
-				if (UPGItemData* itemData = GI->GetItemDataByKey("Brick"))
+				if (UPGItemData* itemData = GI->GetItemDataByKey("Key"))
 				{
 					newItem->InitWithData(itemData);
 				}
@@ -505,50 +459,14 @@ void APGLevelGenerator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//if (HasAuthority())
-	//{
-	//	SetSeed();
-	//	SpawnStartRoom();
-
-	//	GenerationStartTime = GetWorld()->GetTimeSeconds();
-	//	StartDungeonTimer();
-
-	//	SpawnNextRoom();
-	//}
-
 	if (HasAuthority())
 	{
-		FTimerHandle WaitingTimer;
-		GetWorld()->GetTimerManager().SetTimer(WaitingTimer, FTimerDelegate::CreateLambda([this]()
-		{
-            UE_LOG(LogTemp, Warning, TEXT("2sec"));
-
-			//UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator BeginPlay. Role: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *GetActorGuid().ToString());
-			SetSeed();
-			SpawnStartRoom();
-
-			GenerationStartTime = GetWorld()->GetTimeSeconds();
-			StartDungeonTimer();
-
-			SpawnNextRoom();
-			//UE_LOG(LogTemp, Warning, TEXT("[SERVER] APGLevelGenerator BeginPlay. Role: %s, RemoteRole: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *UEnum::GetValueAsString(GetRemoteRole()), *GetActorGuid().ToString());
-		}), 10.0f, false);
-	}
-	else // 클라이언트에서 APGLevelGenerator가 복제되었다면
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("[CLIENT] APGLevelGenerator BeginPlay. Role: %s, RemoteRole: %s, NetGUID: %s"), *UEnum::GetValueAsString(GetLocalRole()), *UEnum::GetValueAsString(GetRemoteRole()), *GetActorGuid().ToString());
+		SetSeed();
+		SpawnStartRoom();
+		
+		GenerationStartTime = GetWorld()->GetTimeSeconds();
+		StartDungeonTimer();
+		
+		SpawnNextRoom();
 	}
 }
-
-//void APGLevelGenerator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-//{
-//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-//
-//	DOREPLIFETIME(APGLevelGenerator, ReplicatedSeedValue); // <-- Seed 변수를 복제 목록에 추가합니다.
-//	DOREPLIFETIME(APGLevelGenerator, DoorPointsList);
-//}
-//
-//void APGLevelGenerator::OnRep_ReplicatedSeedValue()
-//{
-//	SetSeed();
-//}

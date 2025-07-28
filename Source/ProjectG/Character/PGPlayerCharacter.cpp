@@ -27,6 +27,7 @@
 #include "UI/PGHUD.h"
 #include "UI/PGMessageManagerWidget.h"
 #include "UI/PGInventoryWidget.h"
+#include "UI/PGScoreBoardWidget.h"
 #include "Components/SpotLightComponent.h"
 
 
@@ -316,6 +317,44 @@ void APGPlayerCharacter::InitHUD()
 void APGPlayerCharacter::MC_SetFlashlightState(bool _bIsFlashlightOn)
 {
 	HeadlightLight->SetVisibility(_bIsFlashlightOn);
+}
+
+void APGPlayerCharacter::Client_InitScoreBoardWidget_Implementation()
+{
+	if (Controller && Controller->IsLocalController())
+	{
+		APlayerController* PC = Cast<APlayerController>(Controller);
+		if (PC)
+		{
+			PC->bShowMouseCursor = true;
+			PC->SetInputMode(FInputModeUIOnly());
+
+			if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
+			{
+				HUD->InitScoreBoardWidget();
+
+				UPGScoreBoardWidget* ScoreBoardWidget = HUD->GetScoreBoardWidget();
+				if (ScoreBoardWidget)
+				{
+					// 현재 캐릭터(this)를 직접 전달하여 바인딩
+					ScoreBoardWidget->BindPlayerEntry(PC);
+					UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::Client_InitScoreBoardWidget: ScoreBoardWidget Bound to character.")); //
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("APGPlayerCharacter::Client_InitScoreBoardWidget: ScoreBoardWidget is NULL in HUD!")); //
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::Client_InitScoreBoardWidget: Get HUD failed | HasAuthority = %d"), HasAuthority());
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::Client_InitScoreBoardWidget: Get player controller failed | HasAuthority = %d"), HasAuthority());
+		}
+	}
 }
 
 void APGPlayerCharacter::Client_PlayerStareAtTarget_Implementation(AActor* TargetActor)

@@ -5,6 +5,9 @@
 #include "UI/PGAttributesWidget.h"
 #include "UI/PGInventoryWidget.h"
 #include "UI/PGMessageManagerWidget.h"
+#include "UI/PGScoreBoardWidget.h"
+#include "UI/PGCrosshairWidget.h"
+
 #include "Character/Component/PGInventoryComponent.h"
 
 APGHUD::APGHUD()
@@ -41,5 +44,23 @@ void APGHUD::Init()
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("APGHUD::Init: Failed to create MessageManagerWidget! Check MessageManagerWidgetClass in HUD Blueprint."));
+	}
+
+	CrosshairWidget = CreateWidget<UPGCrosshairWidget>(GetOwningPlayerController(), CrosshairWidgetClass);
+	CrosshairWidget->AddToViewport();
+}
+
+void APGHUD::InitScoreBoardWidget()
+{
+	ScoreBoardWidget = CreateWidget<UPGScoreBoardWidget>(GetOwningPlayerController(), ScoreBoardWidgetClass);
+	if (ScoreBoardWidget)
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGHUD::InitScoreBoardWidget: ScoreBoardWidget created successfully."));
+		ScoreBoardWidget->AddToViewport();
+		UE_LOG(LogTemp, Log, TEXT("APGHUD::InitScoreBoardWidget: ScoreBoardWidget added to viewport."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("APGHUD::InitScoreBoardWidget: Failed to create ScoreBoardWidget! Check ScoreBoardWidgetClass in HUD Blueprint."));
 	}
 }

@@ -6,10 +6,9 @@
 #include "Blueprint/UserWidget.h"
 #include "PGLobbyWidget.generated.h"
 
-class UScrollBox;
 class UButton;
 class UTextBlock;
-class UPGSessionSlotWidget;
+class APGLobbyPlayerController;
 
 /**
  * 
@@ -20,35 +19,18 @@ class PROJECTG_API UPGLobbyWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void AddSessionSlot(const FString& ServerName, int32 Index);
+	void Init(APGLobbyPlayerController* PC);
 
-	UFUNCTION(BlueprintCallable)
-	void ClearSessionList();
-
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	void OnReadyClicked();
 
-	//UFUNCTION(BlueprintCallable)
-	//void OnRefreshClicked();
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> ReadyButton;
 
 	UPROPERTY(meta = (BindWidget))
-	UScrollBox* SessionListContainer;
+	TObjectPtr<UTextBlock> ReadyText;
 
-	UPROPERTY(meta = (BindWidget))
-	UButton* ReadyButton;
-
-	UPROPERTY(meta = (BindWidget))
-	UButton* RefreshButton;
-
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* ReadyText;
-
-	UPROPERTY()
-	APlayerController* CachedPC;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UPGSessionSlotWidget> SessionSlotWidgetClass;
+	TObjectPtr<APGLobbyPlayerController> LocalPC;
 
 protected:
 	virtual void NativeConstruct() override;

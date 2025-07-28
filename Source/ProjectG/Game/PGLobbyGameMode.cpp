@@ -3,14 +3,16 @@
 
 #include "Game/PGLobbyGameMode.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
-#include "Kismet/GameplayStatics.h"
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerState.h"
 #include "PGGameState.h"
 
+#include "Character/PGPlayerCharacter.h"
+
+#include "Kismet/GameplayStatics.h"
+
 APGLobbyGameMode::APGLobbyGameMode()
 {
-	PlayerControllerClass = APGLobbyPlayerController::StaticClass();
 	PlayerStateClass = APGPlayerState::StaticClass();
 	GameStateClass = APGGameState::StaticClass();
 

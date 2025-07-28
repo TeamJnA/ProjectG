@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+
+#include "Blueprint/UserWidget.h"
+
 #include "PGPlayerController.generated.h"
 
 class APGSpectatorPawn;
@@ -11,6 +14,7 @@ class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
 class ACharacter;
+class UPGFinalScoreBoardWidget;
 
 /**
  * 
@@ -24,6 +28,10 @@ public:
 	APGPlayerController();
 
 	void NotifyTravelFailed();
+	void StartSpectate();
+	void InitFinalScoreBoardWidget();
+
+	void NotifyReadyToReturnLobby();
 
 protected:	
 	virtual void BeginPlay() override;
@@ -36,6 +44,9 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Server_ReportTravelFailed();	
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetReadyToReturnLobby();
 
 	void OnSpectate(const FInputActionValue& Value);
 
@@ -87,4 +98,10 @@ protected:
 	void Server_ChangeSpectateTarget(bool bNext);
 
 	bool IsSpectateTargetCached = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UPGFinalScoreBoardWidget> ScoreBoardWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UPGFinalScoreBoardWidget> ScoreBoardWidgetInstance;
 };

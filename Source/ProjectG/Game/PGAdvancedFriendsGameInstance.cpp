@@ -2,12 +2,17 @@
 
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
+#include "Game/PGGameState.h"
+
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerController.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+
 #include "Item/PGItemData.h"
-#include "UI/PGLobbyWidget.h"
+
+#include "UI/PGMainMenuWidget.h"
 
 void UPGAdvancedFriendsGameInstance::Init()
 {
@@ -38,14 +43,42 @@ void UPGAdvancedFriendsGameInstance::Init()
 	//{
 	//	UE_LOG(LogTemp, Error, TEXT("OnlineSubsystem is NULL"));
 	}
+	
+	// gamestate initiate
+	CurrentSavedGameState = EGameState::MainMenu;
 
 	// Consumable
 	ItemDataMap.Add("Brick", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick")));
+	ItemDataMap.Add("Key", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/Key/DA_Consumable_Key.DA_Consumable_Key")));
 
 	// Escape
-	ItemDataMap.Add("AdminDevice", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Escape/DA_Escape_AdminDevice.DA_Escape_AdminDevice")));
-	ItemDataMap.Add("EnergyCore", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Escape/DA_Escape_EnergyCore.DA_Escape_EnergyCore")));
-	ItemDataMap.Add("RootCalculator", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Escape/DA_Escape_RootCalculator.DA_Escape_RootCalculator")));
+	ItemDataMap.Add("ExitKey", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/ExitKey/DA_Consumable_ExitKey.DA_Consumable_ExitKey")));
+}
+
+void UPGAdvancedFriendsGameInstance::HandleOnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Log, TEXT("GI::HandleOnCreateSessionComplete: C++ HandleOnlineCreateSessionComplete called."));
+
+	CurrentSavedGameState = EGameState::Lobby;
+	bIsHost = true;
+}
+
+void UPGAdvancedFriendsGameInstance::HandleOnJoinSessionComplete(bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Log, TEXT("GI::HandleOnJoinSessionComplete: C++ HandleOnJoinSessionComplete called."));
+	OnJoinSessionBPComplete.Broadcast(bWasSuccessful);
+}
+
+void UPGAdvancedFriendsGameInstance::SaveGameStateOnTravel(EGameState StateToSave)
+{
+	CurrentSavedGameState = StateToSave;
+	//UE_LOG(LogTemp, Log, TEXT("GI::SaveGameStateOnTravel: CurrentSavedGameState: %s"), *UEnum::GetValueAsString(TEXT("EGameState"), CurrentSavedGameState));
+}
+
+EGameState UPGAdvancedFriendsGameInstance::LoadGameStateOnTravel()
+{
+	//UE_LOG(LogTemp, Log, TEXT("GI::LoadGameStateOnTravel: CurrentSavedGameState: %s"), *UEnum::GetValueAsString(TEXT("EGameState"), CurrentSavedGameState));
+	return CurrentSavedGameState;
 }
 
 void UPGAdvancedFriendsGameInstance::SetPlayerName(const FString& NewName)
@@ -304,21 +337,102 @@ bool UPGAdvancedFriendsGameInstance::DidRetryClientTravel() const
 
 void UPGAdvancedFriendsGameInstance::LeaveSessionAndReturnToLobby()
 {
-	IOnlineSubsystem* subsystem = IOnlineSubsystem::Get();
-	if (subsystem)
+	UE_LOG(LogTemp, Log, TEXT("GI::LeaveSessionAndReturnToLobby: Attempting to leave current game session."));
+
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (OnlineSubsystem)
 	{
-		IOnlineSessionPtr sessions = subsystem->GetSessionInterface();
-		if (sessions.IsValid())
+		IOnlineSessionPtr SessionInterfaceRef = OnlineSubsystem->GetSessionInterface();
+		if (SessionInterfaceRef.IsValid())
 		{
-			sessions->DestroySession(NAME_GameSession, FOnDestroySessionCompleteDelegate::CreateUObject(this, &UPGAdvancedFriendsGameInstance::OnDestroySessionComplete));
+			// 세션 파괴 후 호출될 델리게이트 바인딩
+			// 기존 핸들이 있다면 제거(중복방지)		
+			if (DestroySessionCompleteDelegateHandle.IsValid())
+			{
+				SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
+			}
+			DestroySessionCompleteDelegateHandle = SessionInterfaceRef->AddOnDestroySessionCompleteDelegate_Handle(
+				FOnDestroySessionCompleteDelegate::CreateUObject(this, &UPGAdvancedFriendsGameInstance::OnDestroySessionComplete)
+			);
+			// 현재 플레이어가 세션의 호스트인지 확인
+			// 일반적으로 CreateSession/FindSessions/JoinSession 함수 호출 시 세션 이름을 저장
+			FName CurrentSessionName = NAME_GameSession;
+
+			UWorld* World = GetWorld();
+			// 호스트라면 세션을 파괴
+			if (World && World->IsNetMode(NM_ListenServer))
+			{
+				// 세션을 파괴하기 전에 플레이어를 먼저 등록 해제 (선택 사항이지만 좋은 관행)
+				// SessionInterface->UnregisterPlayer(CurrentSessionName, GetPrimaryPlayerController()->GetLocalPlayer()->GetPreferredUniqueNetId().ToSharedRef());
+				UE_LOG(LogTemp, Log, TEXT("This instance is the host. Destroying session."));
+
+				bool bDestroyed = SessionInterfaceRef->DestroySession(CurrentSessionName);
+				if (!bDestroyed)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Failed to initiate session destruction for %s."), *CurrentSessionName.ToString());
+					// 세션 파괴가 실패했을 경우에도 일단 메인 메뉴로 이동 시도
+					UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+				}
+			}
+			else // 클라이언트라면 (또는 세션이 존재하지 않거나 이미 종료된 상태라면)
+			{
+				// 세션 연결을 끊고 메인 메뉴로 이동합니다.
+				UE_LOG(LogTemp, Log, TEXT("Not host or session not active. Returning to main menu."));
+				UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+			}
 		}
+		else
+		{
+			// 온라인 서브시스템이 세션 인터페이스를 제공하지 않을 경우 (예: Null Subsystem)
+			UE_LOG(LogTemp, Warning, TEXT("Online Session Interface not valid. Returning to main menu."));
+			UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+		}
+	}
+	else
+	{
+		// 온라인 서브시스템을 찾을 수 없을 경우
+		UE_LOG(LogTemp, Warning, TEXT("Online Subsystem not found. Returning to main menu."));
+		UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
 	}
 }
 
 void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Session destroy complete, back to lobby"));
-	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_Lobby"), true);
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (OnlineSubsystem)
+	{
+		IOnlineSessionPtr SessionInterfaceRef = OnlineSubsystem->GetSessionInterface();
+		if (SessionInterfaceRef.IsValid())
+		{
+			SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
+		}
+	}
+
+	if (bWasSuccessful)
+	{
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+
+		CurrentSavedGameState = EGameState::MainMenu;
+		bIsHost = false;
+		UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Session %s destroyed successfully"), *SessionName.ToString());
+	}
+	else
+	{
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+
+		CurrentSavedGameState = EGameState::MainMenu;
+		bIsHost = false;
+		UE_LOG(LogTemp, Warning, TEXT("GI::OnDestroySessionComplete: Failed to destroy session %s"), *SessionName.ToString());
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("GI::OnDestroySessionComplete: Session destroy complete, back to lobby"));
+	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
 }
 
 int32 UPGAdvancedFriendsGameInstance::GetExpectedPlayerCount()

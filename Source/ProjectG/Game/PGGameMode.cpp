@@ -151,6 +151,51 @@ void APGGameMode::SetIsTravelFailedExist()
 	bIsTravelFailedExist = true;
 }
 
+void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
+{
+	if (!HasAuthority()) return;
+
+	APGGameState* GS = GetGameState<APGGameState>();
+	if (GS && PlayerState)
+	{
+		GS->SetPlayerReadyStateForReturnLobby(PlayerState, true);
+		UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: Player %s ready state updated"), *PlayerState->GetPlayerName());
+
+		if (GS->IsAllReadyToReturnLobby())
+		{
+			UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: All players are ready to return lobby"));
+
+			GS->SetCurrentGameState(EGameState::Lobby);
+			UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
+			if (GI)
+			{
+				GI->SaveGameStateOnTravel(GS->GetCurrentGameState());
+				UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: Saving GameState to GameInstance before travel."));
+			}
+
+			UWorld* World = GetWorld();
+			if (World)
+			{
+				UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: Server initiated travel to Lobby."));
+
+				World->ServerTravel("/Game/ProjectG/Levels/LV_PGLobbyRoom?listen", true);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Failed to get world"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: Not all players are ready yet"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GM::SetPlayerReadyToReturnLobby: Failed to get GS or passed PlayerState"));
+	}
+}
+
 /*
 * if there is travel failed client
 * retry server travel

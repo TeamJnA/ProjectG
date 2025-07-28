@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Item/PGItemActor.h"
 #include "Net/UnrealNetwork.h"
 #include "Abilities/GameplayAbility.h"
@@ -14,6 +13,7 @@ APGItemActor::APGItemActor()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	SetReplicateMovement(true);	
+	bAlwaysRelevant = true;
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	RootComponent = StaticMesh;
@@ -36,18 +36,46 @@ void APGItemActor::HighlightOff() const
 	StaticMesh->SetRenderCustomDepth(false);
 }
 
-void APGItemActor::InitWithData_Implementation(UPGItemData* InData)
+void APGItemActor::InitWithData(UPGItemData* _ItemData)
 {
-	ItemData = InData;
+	ItemDataPtr = _ItemData;
 
-	StaticMesh->SetStaticMesh(ItemData->ItemMesh);
+	StaticMesh->SetStaticMesh(_ItemData->ItemMesh);
+
+	if (HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[SERVER] ItemActor::InitWithData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), _ItemData ? *_ItemData->GetName() : TEXT("nullptr"));
+	}
 }
 
 void APGItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(APGItemActor, ItemData);
+	DOREPLIFETIME(APGItemActor, ItemDataPtr);
+}
+
+void APGItemActor::OnRep_ItemData()
+{
+	UPGItemData* LoadedItemData = ItemDataPtr.LoadSynchronous();
+	if (LoadedItemData)
+	{
+		StaticMesh->SetStaticMesh(LoadedItemData->ItemMesh);
+
+		if (!HasAuthority())
+		{
+			UE_LOG(LogTemp, Log, TEXT("[CLIENT] ItemActor::OnRep_ItemData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), *LoadedItemData->GetName());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[CLIENT] ItemActor::OnRep_ItemData %s, ItemData: nullptr"), *GetName());
+	}
+}
+
+UPGItemData* APGItemActor::GetItemData()
+{
+	return ItemDataPtr.Get();
 }
 
 void APGItemActor::DropItemSpawned()
@@ -65,29 +93,5 @@ void APGItemActor::StopItemOnGroundHit(UPrimitiveComponent* HitComponent, AActor
 	{
 		UE_LOG(LogTemp, Log, TEXT("Drop item hit on ground."));
 		StaticMesh->SetSimulatePhysics(false);
-	}
-}
-
-UPGItemData* APGItemActor::GetItemData()
-{
-	return ItemData;
-}
-
-
-void APGItemActor::PostNetInit()
-{
-	Super::PostNetInit();
-	if (!HasAuthority()) // 클라이언트에서만
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("CLIENT POSTNETINIT Item: Name=%s, Location=%s, NetGUID=%s"), *GetName(), *GetActorLocation().ToString(), *GetActorGuid().ToString());
-	}
-}
-
-void APGItemActor::PostNetReceive()
-{
-	Super::PostNetReceive();
-	if (!HasAuthority()) // 클라이언트에서만
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("CLIENT PostNetReceive Item: Name=%s, Location=%s, NetGUID=%s"), *GetName(), *GetActorLocation().ToString(), *GetActorGuid().ToString());
 	}
 }
