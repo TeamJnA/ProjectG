@@ -21,9 +21,6 @@ class USpotLightComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 
-class UPGSoundManagerComponent;
-class APGSoundManager;
-
 /**
  * 
  */

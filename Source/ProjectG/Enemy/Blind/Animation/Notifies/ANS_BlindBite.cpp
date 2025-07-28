@@ -28,7 +28,6 @@ void UANS_BlindBite::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 
 void UANS_BlindBite::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	Super::NotifyEnd(MeshComp, Animation);
 
 	AActor* OwnerActor = MeshComp->GetOwner();
 
@@ -39,4 +38,5 @@ void UANS_BlindBite::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 			Blind->BiteCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 	}
+	Super::NotifyEnd(MeshComp, Animation);
 }

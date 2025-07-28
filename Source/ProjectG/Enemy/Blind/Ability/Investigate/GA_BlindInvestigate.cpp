@@ -41,6 +41,11 @@ void UGA_BlindInvestigate::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	}
 
 	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find OwnerPawn in UGA_BlindInvestigate::ActivateAbility"));
+		return;
+	}
 	OwnerPawn->SetHuntLevel(1);
 
 	GetAbilitySystemComponentFromActorInfo()->
@@ -49,8 +54,8 @@ void UGA_BlindInvestigate::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 
 void UGA_BlindInvestigate::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-
 	GetAbilitySystemComponentFromActorInfo()->
 		RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsInvestigating")));
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

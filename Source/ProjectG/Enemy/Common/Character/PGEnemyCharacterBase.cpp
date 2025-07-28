@@ -7,15 +7,7 @@
 #include "ProjectG/Enemy/Common/AbilitySystem/PGEnemyAttributeSet.h"
 #include "Components/BoxComponent.h"
 #include "Perception/AISense_Touch.h"
-
-
-
-
-
-
-
-
-
+#include "Character/Component/PGSoundManagerComponent.h"
 
 
 APGEnemyCharacterBase::APGEnemyCharacterBase()
@@ -30,7 +22,7 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 	EnemyAttributeSet = CreateDefaultSubobject<UPGEnemyAttributeSet>("EnemyAttributeSet");
 
 
-
+	
 	
 	TouchCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("TouchCollider"));
 	TouchCollider->SetupAttachment(RootComponent);
@@ -39,6 +31,8 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 	TouchCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	TouchCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	
+
+	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
 }
 
 

@@ -32,6 +32,8 @@ public:
 	void Lock() { bIsLocked = true; OnRep_LockState(); }
 	void UnLock() { bIsLocked = false; OnRep_LockState(); }
 
+	void TEST_OpenDoorByAI();
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
 	TObjectPtr<USceneComponent> Root;

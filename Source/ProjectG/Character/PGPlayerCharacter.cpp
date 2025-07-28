@@ -30,12 +30,8 @@
 #include "UI/PGScoreBoardWidget.h"
 #include "Components/SpotLightComponent.h"
 
-
 //Interface
 #include "Interface/InteractableActorInterface.h"
-
-//Sound Manager
-#include "Sound/PGSoundManager.h"
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -264,11 +260,6 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		AttributeSet->GetMovementSpeedAttribute()
 	);
 	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
-}
-
-void APGPlayerCharacter::InitSoundManager(APGSoundManager* SoundManagerRef)
-{
-	SoundManagerComponent->SetSoundManager(SoundManagerRef);
 }
 
 void APGPlayerCharacter::InitHUD()

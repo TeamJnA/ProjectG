@@ -7,11 +7,15 @@
 #include "AbilitySystemInterface.h"
 #include "PGCharacterBase.generated.h"
 
-//Forward declarations
+// Ability
 class UPGAbilitySystemComponent;
 class UGameplayAbility;
 class UPGAttributeSet;
 class UGameplayEffect;
+
+// Sound
+class UPGSoundManagerComponent;
+class APGSoundManager;
 
 UCLASS()
 class PROJECTG_API APGCharacterBase : public ACharacter, public IAbilitySystemInterface
@@ -22,6 +26,7 @@ public:
 	// Sets default values for this character's properties
 	APGCharacterBase();
 
+// -----------Ability-------------
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	virtual UPGAttributeSet* GetAttributeSet() const;
@@ -45,5 +50,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability")
 	TArray<TSubclassOf<UGameplayEffect>> PassiveEffects;
-public:	
+
+// -----------Sound-------------
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Sound, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPGSoundManagerComponent> SoundManagerComponent;
+
+public:
+	void InitSoundManager(APGSoundManager* SoundManagerRef);
 };

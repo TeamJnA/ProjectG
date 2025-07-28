@@ -62,8 +62,6 @@ void UGA_BlindBite::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 
 void UGA_BlindBite::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-
 	GetAbilitySystemComponentFromActorInfo()->
 		RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting")));
 
@@ -73,7 +71,8 @@ void UGA_BlindBite::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 	Blackboard->SetValueAsBool(FName("DetectedPlayer"), false);//Behavior tree의 Detected Player 값 변경.
 	APGBlindAIController* AIC = Cast<APGBlindAIController>(AIController);
 	AIC->ResetHuntLevel();
-	
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGA_BlindBite::OnMontageCompleted()
