@@ -10,6 +10,8 @@ class UScrollBox;
 class UButton;
 class UTextBlock;
 class UPGSessionSlotWidget;
+class UPGConfirmWidget;
+class UPGSettingMenuWidget;
 
 /**
  * 
@@ -30,17 +32,41 @@ public:
 	//void OnRefreshClicked();
 
 	UPROPERTY(meta = (BindWidget))
-	UScrollBox* SessionListContainer;
+	TObjectPtr<UScrollBox> SessionListContainer;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* RefreshButton;
+	TObjectPtr<UButton> RefreshButton;
 
 	UPROPERTY()
-	APlayerController* CachedPC;
+	TObjectPtr<APlayerController> CachedPC;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGSessionSlotWidget> SessionSlotWidgetClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UPGConfirmWidget> ConfirmWidgetInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UPGSettingMenuWidget> SettingMenuWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UPGSettingMenuWidget> SettingMenuWidgetInstance;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> OptionButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> ExitButton;
+
 protected:
 	virtual void NativeConstruct() override;
+
+	UFUNCTION()
+	void OnExitButtonClicked();
+
+	UFUNCTION()
+	void OnOptionButtonClicked();
 };

@@ -11,6 +11,7 @@ class UPGInventoryWidget;
 class UPGInventoryComponent;
 class UPGMessageManagerWidget;
 class UPGScoreBoardWidget;
+class UPGCrosshairWidget;
 
 /**
  * 
@@ -46,6 +47,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGScoreBoardWidget> ScoreBoardWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGCrosshairWidget> CrosshairWidgetClass;
+
 private:
 	UPROPERTY()
 	TObjectPtr<UPGAttributesWidget> AttributeWidget;
@@ -58,4 +62,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGScoreBoardWidget> ScoreBoardWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGCrosshairWidget> CrosshairWidget;
 };

@@ -6,7 +6,6 @@
 #include "OnlineSessionSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerState.h"
-#include "UI/PGLobbyUI.h"
 #include "Player/PGLobbyPlayerController.h"
 
 void UPGGameInstance::Init()

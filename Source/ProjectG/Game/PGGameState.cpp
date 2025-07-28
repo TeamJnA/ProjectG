@@ -25,7 +25,6 @@ void APGGameState::SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState,
 				if (State.bIsReady != _bIsReady)
 				{
 					State.bIsReady = _bIsReady;
-					//MARK_PROPERTY_DIRTY_FROM_NAME(APGGameState, PlayerReadyStates, this);
 				}
 				bFound = true;
 				break;
@@ -35,8 +34,6 @@ void APGGameState::SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState,
 		if (!bFound)
 		{
 			PlayerReadyStates.Add(FPlayerReadyState(PlayerId, _bIsReady));
-
-			//MARK_PROPERTY_DIRTY_FROM_NAME(APGGameState, PlayerReadyStates, this);
 		}
 
 		// for server

@@ -11,7 +11,6 @@
 
 #include "PGAdvancedFriendsGameInstance.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCreateSessionBPCompleteDelegate, FName /*SessionName*/, bool /*bWasSuccessful*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionBPCompleteDelegate, bool /*bWasSuccessful*/);
 
 class UPGItemData;
@@ -55,7 +54,6 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	FString Playername;
 
-	FOnCreateSessionBPCompleteDelegate OnCreateSessionBPComplete;
 	FOnJoinSessionBPCompleteDelegate OnJoinSessionBPComplete;
 	
 	FDelegateHandle DestroySessionCompleteDelegateHandle;

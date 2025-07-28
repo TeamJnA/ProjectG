@@ -111,6 +111,24 @@ void APGLevelGenerator::SpawnStartRoom()
 		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		APGStartRoom* newRoom = world->SpawnActor<APGStartRoom>(APGStartRoom::StaticClass(), spawnTransform, spawnParams);
 
+		// spawn default key item
+		// get game instance for use PGItemData instances
+		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance());
+
+		APGItemActor* DefaultKey1 = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnParams);
+		if (UPGItemData* ItemData1 = GI->GetItemDataByKey("Key"))
+		{
+			DefaultKey1->InitWithData(ItemData1);
+		}
+		DefaultKey1->SetActorRelativeLocation(FVector(538.0f, 271.0f, 90.0f));
+
+		APGItemActor* DeafultKey2 = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnParams);
+		if (UPGItemData* ItemData2 = GI->GetItemDataByKey("Key"))
+		{
+			DeafultKey2->InitWithData(ItemData2);
+		}
+		DeafultKey2->SetActorRelativeLocation(FVector(538.0f, 356.0f, 90.0f));
+
 		APGExitDoor* ExitDoor = world->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), spawnParams);
 		ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
 		ExitDoor->SetActorRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
@@ -233,18 +251,6 @@ void APGLevelGenerator::CheckOverlap()
 		// can generate next room
 		if (RoomAmount > 0)
 		{
-			//// next room == special room(PGStairRoom)
-			//if (RoomAmount == 4 || RoomAmount == 8)
-			//{
-			//	RoomsList = SpecialRoomsList;
-			//	SpawnNextRoom();
-			//}
-			//// next room == base room(PGRoom1 ~ PGRoom3)
-			//else
-			//{
-			//	RoomsList = BaseRoomsList;
-			//	SpawnNextRoom();
-			//}
 			SpawnNextRoom();
 		}
 		// stop generation => spawn walls, doors, items and clear timer, spawn global light manager(PGGlobalLightManager)
@@ -321,27 +327,6 @@ void APGLevelGenerator::SpawnDoors()
 			SpawnParams.Owner = this;
 			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 			SpawnParams.bNoFail = true;
-
-			//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNING DOOR: Owner NetGUID=%s"), *spawnParams.Owner->GetActorGuid().ToString());
-
-			//APGDoor1* NewDoor = world->SpawnActor<APGDoor1>(APGDoor1::StaticClass(), SpawnTransform, SpawnParams);
-			//if (NewDoor)
-			//{
-			//	if (LockedDoorAmount > 0)
-			//	{
-			//		NewDoor->Lock();
-			//		LockedDoorAmount--;
-			//	}
-			//	else
-			//	{
-			//		// bIsLock deafult = false
-			//	}
-			//	//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED DOOR: Name=%s, Location=%s, NetGUID=%s"), *NewDoor->GetFName().ToString(), *NewDoor->GetActorLocation().ToString(), *NewDoor->GetActorGuid().ToString()); //
-			//}
-			//else
-			//{
-			//	UE_LOG(LogTemp, Error, TEXT("Failed to spawn APGDoor1 from APGLevelGenerator::SpawnDoors!")); 
-			//}
 
 			if (LockedDoorAmount > 0)
 			{

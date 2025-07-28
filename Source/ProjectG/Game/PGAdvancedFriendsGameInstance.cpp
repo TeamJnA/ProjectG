@@ -59,10 +59,8 @@ void UPGAdvancedFriendsGameInstance::HandleOnCreateSessionComplete(FName Session
 {
 	UE_LOG(LogTemp, Log, TEXT("GI::HandleOnCreateSessionComplete: C++ HandleOnlineCreateSessionComplete called."));
 
-	//CurrentSavedGameState = EGameState::Lobby;
+	CurrentSavedGameState = EGameState::Lobby;
 	bIsHost = true;
-
-	OnCreateSessionBPComplete.Broadcast(SessionName, bWasSuccessful);
 }
 
 void UPGAdvancedFriendsGameInstance::HandleOnJoinSessionComplete(bool bWasSuccessful)
@@ -412,10 +410,24 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 
 	if (bWasSuccessful)
 	{
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+
+		CurrentSavedGameState = EGameState::MainMenu;
+		bIsHost = false;
 		UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Session %s destroyed successfully"), *SessionName.ToString());
 	}
 	else
 	{
+		bDidRetryClientTravel = false;
+		bTimeoutProcessInProgress = false;
+		bOnTravelFailureDetected = false;
+		TravelRetryCount = 0;
+
+		CurrentSavedGameState = EGameState::MainMenu;
+		bIsHost = false;
 		UE_LOG(LogTemp, Warning, TEXT("GI::OnDestroySessionComplete: Failed to destroy session %s"), *SessionName.ToString());
 	}
 

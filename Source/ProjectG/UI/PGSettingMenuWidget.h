@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "PGLobbyUI.generated.h"
+#include "PGSettingMenuWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API UPGLobbyUI : public UUserWidget
+class PROJECTG_API UPGSettingMenuWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	

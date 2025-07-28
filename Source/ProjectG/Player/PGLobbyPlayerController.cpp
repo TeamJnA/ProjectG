@@ -43,8 +43,6 @@ void APGLobbyPlayerController::BeginPlay()
 
 		if (GI)
 		{
-			GI->OnCreateSessionBPComplete.AddUObject(this, &APGLobbyPlayerController::OnCreateSessionComplete);
-
 			if (GI->IsHost())
 			{
 				Server_SpawnAndPossessPlayer();
@@ -140,29 +138,6 @@ void APGLobbyPlayerController::SetReady()
 		{
 			Cast<APGLobbyGameMode>(GetWorld()->GetAuthGameMode())->CheckAllPlayersReady();
 		}
-	}
-}
-
-void APGLobbyPlayerController::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
-{
-	if (bWasSuccessful)
-	{
-		UE_LOG(LogTemp, Log, TEXT("LobbyPC::OnCreateSessionComplete: Session create successfully : %s"), *SessionName.ToString());
-		// Set current game state to Lobby state (only server)
-		if (HasAuthority())
-		{
-			APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-			if (GS)
-			{
-				GS->SetCurrentGameState(EGameState::Lobby);
-			}
-		}
-		Server_SpawnAndPossessPlayer();
-		SetupLobbyUI();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("LobbyPC::OnCreateSessionComplete: Failed to create session"));
 	}
 }
 

@@ -35,7 +35,6 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SpawnAndPossessPlayer();
 
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void SetupLobbyUI();
 	void SetupMainMenuUI();
 	void SetupMainMenuView();
