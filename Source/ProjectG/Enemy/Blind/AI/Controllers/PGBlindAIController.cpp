@@ -5,16 +5,19 @@
 
 #include "ProjectG/Enemy/Common/Character/PGEnemyCharacterBase.h"
 #include "Character/PGPlayerCharacter.h"
+
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
-#include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AISenseConfig_Touch.h"
+#include "BehaviorTree/BlackboardComponent.h"
+
 #include "AbilitySystemComponent.h"
 #include "Enemy/Blind/Ability/Investigate/GA_BlindInvestigate.h"
 #include "Enemy/Common/AbilitySystem/GA_Exploration.h"
 #include "Enemy/Blind/Ability/Chase/GA_BlindChase.h"
 #include "Enemy/Blind/Ability/Bite/GA_BlindBite.h"
 
+DEFINE_LOG_CATEGORY(LogEnemy);
 
 APGBlindAIController::APGBlindAIController(FObjectInitializer const& ObjectInitializer) :
 	APGEnemyAIControllerBase{ ObjectInitializer }
@@ -26,6 +29,8 @@ APGBlindAIController::APGBlindAIController(FObjectInitializer const& ObjectIniti
 void APGBlindAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::OnPossess"));
+
 	OwnerPawn = Cast<APGBlindCharacter>(InPawn);
 	if (!OwnerPawn)
 	{
@@ -36,6 +41,7 @@ void APGBlindAIController::OnPossess(APawn* InPawn)
 
 void APGBlindAIController::SetHearingRange(float NewRange)
 {
+	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::SetHearingRange"));
 	if (HearingConfig)
 	{
 		HearingConfig->HearingRange = NewRange;
@@ -45,6 +51,7 @@ void APGBlindAIController::SetHearingRange(float NewRange)
 
 void APGBlindAIController::SetHearingEnabled(bool Enable)
 {
+	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::SetHearingEnabled"));
 	if (HearingConfig)
 	{
 		GetPerceptionComponent()->SetSenseEnabled(UAISense_Hearing::StaticClass(), Enable);
@@ -53,6 +60,7 @@ void APGBlindAIController::SetHearingEnabled(bool Enable)
 
 void APGBlindAIController::ResetHuntLevel()
 {
+	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::ResetHuntLevel"));
 	GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
 	OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
 	OwnerPawn->SetHuntLevel(0);
@@ -60,6 +68,8 @@ void APGBlindAIController::ResetHuntLevel()
 
 void APGBlindAIController::SetupPerceptionSystem()
 {
+	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::SetupPerceptionSystem"));
+
 	SetPerceptionComponent(*CreateDefaultSubobject<UAIPerceptionComponent>(
 		TEXT("Perception Component")));
 
@@ -88,19 +98,19 @@ void APGBlindAIController::SetupPerceptionSystem()
 
 void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
-	UE_LOG(LogTemp, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
+	UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
 
 	//듣기로 감지된 거면
 	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
 	{
-		UE_LOG(LogTemp, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Hearing."));
+		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Hearing."));
 		CalculateNoise(Stimulus.Strength, Stimulus.StimulusLocation);
 	}
 
 	//touch로 감지된 거라면
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
 	{
-		UE_LOG(LogTemp, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Touching."));
+		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Touching."));
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", Actor->GetActorLocation());
 		OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindBite::StaticClass(), true);
 	}

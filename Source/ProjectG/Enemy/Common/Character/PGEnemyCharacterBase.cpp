@@ -21,8 +21,6 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 	EnemyAttributeSet = CreateDefaultSubobject<UPGEnemyAttributeSet>("EnemyAttributeSet");
 
-
-	
 	
 	TouchCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("TouchCollider"));
 	TouchCollider->SetupAttachment(RootComponent);
@@ -47,23 +45,14 @@ void APGEnemyCharacterBase::BeginPlay()
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
 	//기본스킬 부여
-
 	InitDefaultAttributes();
-
 	GiveAndActivatePassiveEffects();
-
 	GiveDefaultAbilities();
-
-
-
-
 
 	if (TouchCollider)
 	{
 		TouchCollider->OnComponentBeginOverlap.AddDynamic(this, &APGEnemyCharacterBase::OnTouchColliderOverlapBegin);
 	}
-
-	
 }
 
 void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -77,12 +66,6 @@ void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* Ove
 		UAISense_Touch::ReportTouchEvent(GetWorld(), this, OtherActor, OtherActor->GetActorLocation());
 	}
 }
-
-
-
-
-
-
 
 UBehaviorTree* APGEnemyCharacterBase::GetBehaviorTree() const
 {

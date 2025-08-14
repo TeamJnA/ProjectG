@@ -253,26 +253,33 @@ void APGLevelGenerator::CheckOverlap()
 		{
 			SpawnNextRoom();
 		}
+		// Generate Rooms Completely
 		// stop generation => spawn walls, doors, items and clear timer, spawn global light manager(PGGlobalLightManager)
 		else
 		{
-			GetWorld()->GetTimerManager().ClearTimer(TimerHandler);
-			GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandler);
-			UE_LOG(LogTemp, Warning, TEXT("Done"));
+			SetupLevelEnvironment();
+		}
+	}
+}
 
-			CloseHoles();
-			SpawnDoors();
-			SpawnItems();
-			bIsGenerationDone = true;
+void APGLevelGenerator::SetupLevelEnvironment()
+{
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandler);
+	GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandler);
+	UE_LOG(LogTemp, Warning, TEXT("Generate Rooms Completely"));
 
-			if (GetWorld())
-			{
-				if (APGGameState* gs = GetWorld()->GetGameState<APGGameState>())
-				{	
-					UE_LOG(LogTemp, Warning, TEXT("LevelGenerator: Notify map generation complete to GameState"));
-					gs->NotifyMapGenerationComplete();
-				}
-			}
+	CloseHoles();
+	SpawnDoors();
+	SpawnItems();
+	bIsGenerationDone = true;
+
+	// Called GameState and inside GS, trigger a delegate to notify GameMode to spawn the player.
+	if (GetWorld())
+	{
+		if (APGGameState* gs = GetWorld()->GetGameState<APGGameState>())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("LevelGenerator: Notify map generation complete to GameState"));
+			gs->NotifyMapGenerationComplete();
 		}
 	}
 }
