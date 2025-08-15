@@ -348,58 +348,129 @@ void APGLevelGenerator::SpawnDoors()
 // spawn items by a certain number(ItemAmount)
 void APGLevelGenerator::SpawnItems()
 {
-	UWorld* world = GetWorld();
-	if (world)
+	SpawnSingleItem_Async();
+
+	//UWorld* world = GetWorld();
+	//if (world)
+	//{
+	//	while (ItemAmount > 0)
+	//	{
+	//		// get random item spawn point from FloorSpawnPointsList by stream(seed)
+	//		SelectedFloorSpawnPoint = FloorSpawnPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, FloorSpawnPointsList.Num())];
+	//		
+	//		// spawn setting
+	//		FVector spawnLocation = SelectedFloorSpawnPoint->GetComponentLocation();
+	//		FTransform spawnTransform(FRotator(0.0f, 0.0f, 0.0f), spawnLocation, FVector(1.0f, 1.0f, 1.0f));
+	//		FActorSpawnParameters spawnParams;
+	//		spawnParams.Owner = this;
+	//		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	//		// get game instance for use PGItemData instances
+	//		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance());
+	//		
+	//		APGItemActor* newItem = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnTransform, spawnParams);
+
+	//		//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED Item: Name=%s, Location=%s, NetGUID=%s"), *newItem->GetFName().ToString(), *newItem->GetActorLocation().ToString(), *newItem->GetActorGuid().ToString()); //
+
+	//		// spawn items that must be spawned(Item_Escape) (ItemAmount == 10, 9, 8)
+	//		// other items spawn randomly
+	//		// InitWithData => spawn item actor's class(PGItemActor) then attach actual data(PGItemData) for item
+	//		if (ItemAmount >= 18)
+	//		{
+	//			if (UPGItemData* itemData = GI->GetItemDataByKey("ExitKey"))
+	//			{
+	//				newItem->InitWithData(itemData);
+	//			}
+	//		}
+	//		else if (ItemAmount >= 10)
+	//		{
+	//			if (UPGItemData* itemData = GI->GetItemDataByKey("Brick"))
+	//			{
+	//				newItem->InitWithData(itemData);
+	//			}
+	//		}
+	//		else
+	//		{
+	//			if (UPGItemData* itemData = GI->GetItemDataByKey("Key"))
+	//			{
+	//				newItem->InitWithData(itemData);
+	//			}
+	//		}
+
+	//		// after spawn item, remove used spawn point from FloorSpawnPointsList and ItemAmount--
+	//		FloorSpawnPointsList.Remove(SelectedFloorSpawnPoint);
+	//		ItemAmount--;
+	//	}
+	//}
+}
+
+void APGLevelGenerator::SpawnSingleItem_Async()
+{
+	UWorld* World = GetWorld();
+	// 아이템을 모두 스폰했거나, 스폰 위치가 더이상 없거나, world가 없으면 중단
+	if (!World || ItemAmount <= 0 || FloorSpawnPointsList.Num() <= 0)
 	{
-		while (ItemAmount > 0)
-		{
-			// get random item spawn point from FloorSpawnPointsList by stream(seed)
-			SelectedFloorSpawnPoint = FloorSpawnPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, FloorSpawnPointsList.Num())];
-			
-			// spawn setting
-			FVector spawnLocation = SelectedFloorSpawnPoint->GetComponentLocation();
-			FTransform spawnTransform(FRotator(0.0f, 0.0f, 0.0f), spawnLocation, FVector(1.0f, 1.0f, 1.0f));
-			FActorSpawnParameters spawnParams;
-			spawnParams.Owner = this;
-			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			// get game instance for use PGItemData instances
-			UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance());
-			
-			APGItemActor* newItem = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnTransform, spawnParams);
-
-			//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED Item: Name=%s, Location=%s, NetGUID=%s"), *newItem->GetFName().ToString(), *newItem->GetActorLocation().ToString(), *newItem->GetActorGuid().ToString()); //
-
-			// spawn items that must be spawned(Item_Escape) (ItemAmount == 10, 9, 8)
-			// other items spawn randomly
-			// InitWithData => spawn item actor's class(PGItemActor) then attach actual data(PGItemData) for item
-			if (ItemAmount >= 18)
-			{
-				if (UPGItemData* itemData = GI->GetItemDataByKey("ExitKey"))
-				{
-					newItem->InitWithData(itemData);
-				}
-			}
-			else if (ItemAmount >= 10)
-			{
-				if (UPGItemData* itemData = GI->GetItemDataByKey("Brick"))
-				{
-					newItem->InitWithData(itemData);
-				}
-			}
-			else
-			{
-				if (UPGItemData* itemData = GI->GetItemDataByKey("Key"))
-				{
-					newItem->InitWithData(itemData);
-				}
-			}
-
-			// after spawn item, remove used spawn point from FloorSpawnPointsList and ItemAmount--
-			FloorSpawnPointsList.Remove(SelectedFloorSpawnPoint);
-			ItemAmount--;
-		}
+		UE_LOG(LogTemp, Log, TEXT("LG::SpawnSingleItem_Async: Item spawning process finished or stopped"));
+		return;
 	}
+
+	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(World->GetGameInstance());
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Error, TEXT("LG::SpawnSingleItem_Async: GI is not valid"));
+	}
+
+	// 1) 스폰 위치 선정 (Seed 기반)
+	int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, FloorSpawnPointsList.Num());
+	SelectedFloorSpawnPoint = FloorSpawnPointsList[RandomIndex];
+	FloorSpawnPointsList.RemoveAt(RandomIndex);
+
+	// 2) 스폰 아이템 키(key) 결정
+	FName ItemKeyToLoad;
+	if (ItemAmount >= 18)
+	{
+		ItemKeyToLoad = FName("ExitKey");
+	}
+	else if (ItemAmount >= 10)
+	{
+		ItemKeyToLoad = FName("Brick");
+	}
+	else
+	{
+		ItemKeyToLoad = FName("Key");
+	}
+
+	// 3) 스폰할 아이템 수 감소
+	ItemAmount--;
+
+	// 4) 스폰 위치, 파라미터 준비
+	FVector SpawnLocation = SelectedFloorSpawnPoint->GetComponentLocation();
+	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation, FVector::OneVector);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// 5) GameInstance에 데이터 로드 요청
+	// 로드 완료시 람다함수(아이템 스폰) 실행
+	GI->RequestLoadItemData(ItemKeyToLoad, FOnItemDataLoaded::CreateLambda([World, SpawnTransform, SpawnParams, this](UPGItemData* LoadedItemData)
+	{
+		if (World && LoadedItemData)
+		{
+			APGItemActor* NewItem = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
+			if (NewItem)
+			{
+				NewItem->InitWithData(LoadedItemData);
+				UE_LOG(LogTemp, Log, TEXT("LG::SpawnSingleItem_Async: Item Spawned: %s"), *LoadedItemData->GetName());
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("LG::SpawnSingleItem_Async: Failed to load item data or world is invalid"));
+		}
+
+		// 6) 현재 아이템 스폰 후 다음 아이템 스폰을 위해 재귀 호출
+		SpawnSingleItem_Async();
+	}));
 }
 
 // Start check level generating time

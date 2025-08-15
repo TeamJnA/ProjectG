@@ -28,6 +28,7 @@ protected:
 	void CloseHoles();
 	void SpawnDoors();
 	void SpawnItems();
+	void SpawnSingleItem_Async();
 
 	void StartDungeonTimer();
 	void CheckForDungeonComplete();

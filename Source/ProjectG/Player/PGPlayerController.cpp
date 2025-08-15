@@ -16,8 +16,8 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 
-#include "Blueprint/UserWidget.h"
 #include "UI/PGFinalScoreBoardWidget.h"
+#include "UI/PGPauseMenuWidget.h"
 #include "UI/PGHUD.h"
 
 #include "EngineUtils.h"
@@ -31,12 +31,6 @@ APGPlayerController::APGPlayerController()
 		DefaultMappingContext = MappingContextObj.Object;
 	}
 
-	ConstructorHelpers::FObjectFinder<UInputAction> SpectateActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_Spectate.IA_Spectate"));
-	if (SpectateActionObj.Succeeded())
-	{
-		SpectateAction = SpectateActionObj.Object;
-	}
-	
 	ConstructorHelpers::FObjectFinder<UInputAction> OrbitYawActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_OrbitYaw.IA_OrbitYaw"));
 	if (OrbitYawActionObj.Succeeded())
 	{
@@ -55,10 +49,22 @@ APGPlayerController::APGPlayerController()
 		SpectatePrevAction = SpectatePrevActionObj.Object;
 	}
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> ScoreBoardWidgetRef(TEXT("/Game/ProjectG/UI/WBP_PGFinalScoreBoardWidget.WBP_PGFinalScoreBoardWidget_C"));
-	if (ScoreBoardWidgetRef.Class != nullptr)
+	ConstructorHelpers::FObjectFinder<UInputAction> ShowPauseMenuActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_ShowPauseMenu.IA_ShowPauseMenu"));
+	if (ShowPauseMenuActionObj.Succeeded())
 	{
-		ScoreBoardWidgetClass = ScoreBoardWidgetRef.Class;
+		ShowPauseMenuAction = ShowPauseMenuActionObj.Object;
+	}
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> FinalScoreBoardWidgetRef(TEXT("/Game/ProjectG/UI/WBP_PGFinalScoreBoardWidget.WBP_PGFinalScoreBoardWidget_C"));
+	if (FinalScoreBoardWidgetRef.Class != nullptr)
+	{
+		FinalScoreBoardWidgetClass = FinalScoreBoardWidgetRef.Class;
+	}
+
+	ConstructorHelpers::FClassFinder<UUserWidget> PauseMenuWidgetRef(TEXT("/Game/ProjectG/UI/WBP_PGPauseMenuWidget.WBP_PGPauseMenuWidget_C"));
+	if (PauseMenuWidgetRef.Class != nullptr)
+	{
+		PauseMenuWidgetClass = PauseMenuWidgetRef.Class;
 	}
 
 	OriginalPlayerCharacter = nullptr;
@@ -99,12 +105,13 @@ void APGPlayerController::SetupInputComponent()
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
-		EnhancedInputComponent->BindAction(SpectateAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectate);
 		// up, down
 		EnhancedInputComponent->BindAction(SpectateNextAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectateNext);
 		EnhancedInputComponent->BindAction(SpectatePrevAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectatePrev);
 		// left, right
 		EnhancedInputComponent->BindAction(OrbitYawAction, ETriggerEvent::Triggered, this, &APGPlayerController::OnOrbitYaw);
+		// ESC
+		EnhancedInputComponent->BindAction(ShowPauseMenuAction, ETriggerEvent::Started, this, &APGPlayerController::OnShowPauseMenu);
 	}
 }
 
@@ -133,16 +140,6 @@ void APGPlayerController::Client_PostSeamlessTravel_Implementation()
 	}
 }
 
-void APGPlayerController::OnSpectate(const FInputActionValue& Value)
-{
-	// 이 함수는 항상 로컬 클라이언트에서 실행됩니다.
-	// 여기서 서버 RPC를 호출하여 서버에 관전 모드 진입을 요청합니다.
-	if (!IsLocalController()) return;
-	Server_EnterSpectatorMode();
-
-	UE_LOG(LogTemp, Warning, TEXT("PC: OnSpectateActionTriggered: Client requested EnterSpectatorMode."));
-}
-
 void APGPlayerController::StartSpectate()
 {
 	if (!IsLocalController()) return;
@@ -162,7 +159,7 @@ void APGPlayerController::StartSpectate()
 
 void APGPlayerController::InitFinalScoreBoardWidget()
 {
-	if (IsLocalController() && ScoreBoardWidgetClass)
+	if (IsLocalController() && FinalScoreBoardWidgetClass)
 	{
 		// clear current viewport
 		if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
@@ -173,17 +170,17 @@ void APGPlayerController::InitFinalScoreBoardWidget()
 		//APGHUD* HUD = Cast<APGHUD>(GetHUD());
 		//HUD->InitFinalScoreBoardWidget()
 
-		ScoreBoardWidgetInstance = CreateWidget<UPGFinalScoreBoardWidget>(this, ScoreBoardWidgetClass);
-		if (ScoreBoardWidgetInstance)
+		FinalScoreBoardWidgetInstance = CreateWidget<UPGFinalScoreBoardWidget>(this, FinalScoreBoardWidgetClass);
+		if (FinalScoreBoardWidgetInstance)
 		{
 			bShowMouseCursor = true;
 			SetInputMode(FInputModeUIOnly());
 
 			UE_LOG(LogTemp, Log, TEXT("PC::InitFinalScoreBoardWidget: FinalScoreBoardWidget created successfully."));
-			ScoreBoardWidgetInstance->AddToViewport();
+			FinalScoreBoardWidgetInstance->AddToViewport();
 			UE_LOG(LogTemp, Log, TEXT("PC::InitFinalScoreBoardWidget: FinalScoreBoardWidget added to viewport."));
 
-			ScoreBoardWidgetInstance->BindPlayerEntry(this);
+			FinalScoreBoardWidgetInstance->BindPlayerEntry(this);
 		}
 		else
 		{
@@ -201,6 +198,16 @@ void APGPlayerController::NotifyReadyToReturnLobby()
 	}
 
 	Server_SetReadyToReturnLobby();
+}
+
+void APGPlayerController::Client_ForceReturnToLobby_Implementation()
+{
+	UE_LOG(LogTemp, Log, TEXT("PGPC::Client_ForceReturnToLobby: Received command from host to leave session"));
+
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		GI->LeaveSessionAndReturnToLobby();
+	}
 }
 
 void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
@@ -361,6 +368,36 @@ void APGPlayerController::OnSpectatePrev(const FInputActionValue& Value)
 	{
 		Server_ChangeSpectateTarget(false);
 		UE_LOG(LogTemp, Log, TEXT("PC::OnSpectatePrev: Client requested previous spectate target."));
+	}
+}
+
+void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
+{
+	if (!IsLocalController()) return;
+
+	if (FinalScoreBoardWidgetInstance && FinalScoreBoardWidgetInstance->IsInViewport()) return;
+
+	if (PauseMenuWidgetClass)
+	{
+		PauseMenuWidgetInstance = CreateWidget<UPGPauseMenuWidget>(this, PauseMenuWidgetClass);
+		if (PauseMenuWidgetInstance)
+		{
+			UE_LOG(LogTemp, Log, TEXT("PC::OnShowPauseMenu: PauseMenuWidget created successfully"));
+
+			bShowMouseCursor = true;
+			SetInputMode(FInputModeUIOnly());
+
+			PauseMenuWidgetInstance->AddToViewport();
+			PauseMenuWidgetInstance->Init(this);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PC::OnShowPauseMenu: Failed to create PauseMenuWidget"))
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("PC::OnShowPauseMenu: No PauseMenuWidget Class"));
 	}
 }
 

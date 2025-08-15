@@ -168,7 +168,8 @@ void APGGlobalLightManager::InitializeEmissiveMIDs()
 				{
 					const FString paramName = info.Name.ToString().ToLower();
 
-					if (paramName == "light intensity" || paramName == "intensity" || paramName == "brightness")
+					//if (paramName == "light intensity" || paramName == "intensity" || paramName == "brightness")
+					if (paramName == "emissivevalue")
 					{
 						float defaultValue = 1.0f;
 

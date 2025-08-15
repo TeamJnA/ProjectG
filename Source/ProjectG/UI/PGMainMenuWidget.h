@@ -12,6 +12,7 @@ class UTextBlock;
 class UPGSessionSlotWidget;
 class UPGConfirmWidget;
 class UPGSettingMenuWidget;
+class UWidgetSwitcher;
 
 /**
  * 
@@ -61,6 +62,12 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> ExitButton;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> BackButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
+
 protected:
 	virtual void NativeConstruct() override;
 
@@ -69,4 +76,7 @@ protected:
 
 	UFUNCTION()
 	void OnOptionButtonClicked();
+
+	UFUNCTION()
+	void OnBackButtonClicked();
 };

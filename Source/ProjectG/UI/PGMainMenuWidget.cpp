@@ -5,12 +5,14 @@
 #include "Components/ScrollBox.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
+#include "Components/WidgetSwitcher.h"
 #include "UI/PGSessionSlotWidget.h"
 #include "UI/PGConfirmWidget.h"
 #include "UI/PGSettingMenuWidget.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/PGLobbyPlayerController.h"
+#include "PGPauseMenuWidget.h"
 
 void UPGMainMenuWidget::AddSessionSlot(const FString& ServerName, int32 Index)
 {
@@ -58,6 +60,11 @@ void UPGMainMenuWidget::NativeConstruct()
 	{
 		ExitButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnExitButtonClicked);
 	}
+
+	if (BackButton)
+	{
+		BackButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnBackButtonClicked);
+	}
 	//if (RefreshButton)
 	//{
 	//	RefreshButton->OnClicked.AddDynamic(this, &UPGLobbyWidget::OnRefreshClicked);
@@ -90,22 +97,16 @@ void UPGMainMenuWidget::OnExitButtonClicked()
 
 void UPGMainMenuWidget::OnOptionButtonClicked()
 {
-	if (SettingMenuWidgetInstance && SettingMenuWidgetInstance->IsInViewport())
+	if (WidgetSwitcher)
 	{
-		return;
+		WidgetSwitcher->SetActiveWidgetIndex(1);
 	}
+}
 
-	if (SettingMenuWidgetClass)
+void UPGMainMenuWidget::OnBackButtonClicked()
+{
+	if (WidgetSwitcher)
 	{
-		SettingMenuWidgetInstance = CreateWidget<UPGSettingMenuWidget>(this, SettingMenuWidgetClass);
-		if (SettingMenuWidgetInstance)
-		{
-			SettingMenuWidgetInstance->AddToViewport();
-			UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::OnOptionButtonClicked: Option menu widget added"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("MainMenuWidget::OnOptionButtonClicked: SettingMenuWidget class is null"));
+		WidgetSwitcher->SetActiveWidgetIndex(0);
 	}
 }

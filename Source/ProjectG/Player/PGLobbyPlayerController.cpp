@@ -6,6 +6,7 @@
 
 #include "UI/PGMainMenuWidget.h"
 #include "UI/PGLobbyWidget.h"
+#include "UI/PGPauseMenuWidget.h"
 
 #include "PGPlayerState.h"
 #include "Game/PGGameState.h"
@@ -16,6 +17,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
+
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "InputAction.h"
+#include "InputActionValue.h"
 
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
@@ -37,6 +44,11 @@ void APGLobbyPlayerController::BeginPlay()
 	if (IsLocalController())
 	{
 		UE_LOG(LogTemp, Log, TEXT("LobbyPC::BeginPlay: %s"), *GetNameSafe(this));
+
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 1);
+		}
 
 		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
 		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
@@ -79,6 +91,47 @@ void APGLobbyPlayerController::BeginPlay()
 
 			}
 		}
+	}
+}
+
+void APGLobbyPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		// ESC
+		EnhancedInputComponent->BindAction(ShowPauseMenuAction, ETriggerEvent::Started, this, &APGLobbyPlayerController::OnShowPauseMenu);
+	}
+}
+
+void APGLobbyPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
+{
+	if (!IsLocalController()) return;
+
+	if (MainMenuWidgetInstance && MainMenuWidgetInstance->IsInViewport()) return;
+
+	if (PauseMenuWidgetClass)
+	{
+		PauseMenuWidgetInstance = CreateWidget<UPGPauseMenuWidget>(this, PauseMenuWidgetClass);
+		if (PauseMenuWidgetInstance)
+		{
+			UE_LOG(LogTemp, Log, TEXT("PC::OnShowPauseMenu: PauseMenuWidget created successfully"));
+
+			bShowMouseCursor = true;
+			SetInputMode(FInputModeUIOnly());
+
+			PauseMenuWidgetInstance->AddToViewport();
+			PauseMenuWidgetInstance->Init(this);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PC::OnShowPauseMenu: Failed to create PauseMenuWidget"))
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("PC::OnShowPauseMenu: No PauseMenuWidget Class"));
 	}
 }
 
@@ -138,6 +191,16 @@ void APGLobbyPlayerController::SetReady()
 		{
 			Cast<APGLobbyGameMode>(GetWorld()->GetAuthGameMode())->CheckAllPlayersReady();
 		}
+	}
+}
+
+void APGLobbyPlayerController::Client_ForceReturnToLobby_Implementation()
+{
+	UE_LOG(LogTemp, Log, TEXT("LobbyPC::Client_ForceReturnToLobby: Received command from host to leave session"));
+
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		GI->LeaveSessionAndReturnToLobby();
 	}
 }
 

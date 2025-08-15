@@ -11,6 +11,13 @@ APGStairRoom1::APGStairRoom1()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_MansionBigRoom.LI_MansionBigRoom_C'"));
 
+	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
+	ExitDir0->SetupAttachment(ExitsFolder);
+	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
+	ExitDir0->SetRelativeLocation(FVector(1888.0f, -1214.0f, 414.0f));
+	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
+	ExitDir0->bHiddenInGame = false;
+
 	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 480.0f));
 	OverlapBox->SetRelativeScale3D(FVector(19.5f, 19.5f, 14.75f));
 
@@ -20,8 +27,8 @@ APGStairRoom1::APGStairRoom1()
 	OverlapBox1->SetCollisionObjectType(ECC_GameTraceChannel1);
 	OverlapBox1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox1->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
-	OverlapBox1->SetRelativeLocation(FVector(1269.0f, -940.0f, 695.0f));
-	OverlapBox1->SetRelativeScale3D(FVector(19.5f, 18.5f, 8.25f));
+	OverlapBox1->SetRelativeLocation(FVector(1255.0f, -940.0f, 695.0f));
+	OverlapBox1->SetRelativeScale3D(FVector(19.25f, 18.5f, 8.25f));
 
 	RoomDir->SetRelativeLocation(FVector(89.0f, 0.0f, 130.0f));
 	RoomDir->SetRelativeScale3D(FVector(3.0f, 3.0f, 3.0f));

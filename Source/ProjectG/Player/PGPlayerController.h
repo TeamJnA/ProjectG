@@ -15,6 +15,7 @@ class UInputAction;
 struct FInputActionValue;
 class ACharacter;
 class UPGFinalScoreBoardWidget;
+class UPGPauseMenuWidget;
 
 /**
  * 
@@ -33,6 +34,9 @@ public:
 
 	void NotifyReadyToReturnLobby();
 
+	UFUNCTION(Client, Reliable)
+	void Client_ForceReturnToLobby();
+
 protected:	
 	virtual void BeginPlay() override;
 	virtual void PostSeamlessTravel() override;
@@ -48,8 +52,6 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetReadyToReturnLobby();
 
-	void OnSpectate(const FInputActionValue& Value);
-
 	UFUNCTION(Server, Reliable)
 	void Server_EnterSpectatorMode();
 
@@ -58,9 +60,6 @@ protected:
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> SpectateAction;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> OrbitYawAction;
@@ -70,6 +69,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SpectatePrevAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ShowPauseMenuAction;
 
 	/** 현재 SpectatorPawn 캐시 */
 	UPROPERTY(Transient) // 이 변수는 PlayerController가 Pawn을 Possess하면 자연스럽게 클라이언트에 동기화됩니다.
@@ -89,10 +91,12 @@ protected:
 	// 플레이 가능한 캐릭터들을 캐싱하여 재사용하기 위한 변수
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<ACharacter>> CachedAllPlayableCharacters; // TObjectPtr 사용 권장
+	TArray<TObjectPtr<ACharacter>> CachedAllPlayableCharacters;
 
 	void OnSpectateNext(const FInputActionValue& Value);
 	void OnSpectatePrev(const FInputActionValue& Value);
+
+	void OnShowPauseMenu(const FInputActionValue& Value);
 
 	UFUNCTION(Server, Reliable)
 	void Server_ChangeSpectateTarget(bool bNext);
@@ -100,8 +104,14 @@ protected:
 	bool IsSpectateTargetCached = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UPGFinalScoreBoardWidget> ScoreBoardWidgetClass;
+	TSubclassOf<UPGFinalScoreBoardWidget> FinalScoreBoardWidgetClass;
 
 	UPROPERTY()
-	TObjectPtr<UPGFinalScoreBoardWidget> ScoreBoardWidgetInstance;
+	TObjectPtr<UPGFinalScoreBoardWidget> FinalScoreBoardWidgetInstance;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UPGPauseMenuWidget> PauseMenuWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UPGPauseMenuWidget> PauseMenuWidgetInstance;
 };

@@ -21,6 +21,9 @@ public:
 	APGStairRoom1();
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
+	TObjectPtr<UArrowComponent> ExitDir0;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "OverlapBox")
 	TObjectPtr<UBoxComponent> OverlapBox1;
 	

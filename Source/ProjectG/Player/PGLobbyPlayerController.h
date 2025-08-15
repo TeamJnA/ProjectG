@@ -10,10 +10,15 @@
 
 #include "PGLobbyPlayerController.generated.h"
 
-class UPGMainMenuWidget;
-class UPGLobbyWidget;
 class ACameraActor;
 
+class UInputMappingContext;
+class UInputAction;
+struct FInputActionValue;
+
+class UPGMainMenuWidget;
+class UPGLobbyWidget;
+class UPGPauseMenuWidget;
 /**
  * 
  */
@@ -28,9 +33,13 @@ public:
 	UPGMainMenuWidget* GetMainMenuWidget() const;
 
 	void SetReady();
+
+	UFUNCTION(Client, Reliable)
+	void Client_ForceReturnToLobby();
 	
 protected:
 	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
 
 	UFUNCTION(Server, Reliable)
 	void Server_SpawnAndPossessPlayer();
@@ -53,9 +62,23 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	TSubclassOf<ACameraActor> LobbyCameraClass;
 
+	/** MappingContext */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputMappingContext> DefaultMappingContext;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ShowPauseMenuAction;
+
+	void OnShowPauseMenu(const FInputActionValue& Value);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UPGPauseMenuWidget> PauseMenuWidgetClass;
+
 private:
 	TObjectPtr<UPGMainMenuWidget> MainMenuWidgetInstance;
 
 	TObjectPtr<UPGLobbyWidget> LobbyWidgetInstance;
+
+	TObjectPtr<UPGPauseMenuWidget> PauseMenuWidgetInstance;
 
 };

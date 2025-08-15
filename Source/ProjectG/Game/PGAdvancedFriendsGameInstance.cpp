@@ -11,6 +11,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 #include "Item/PGItemData.h"
+#include "Engine/StreamableManager.h"
 
 #include "UI/PGMainMenuWidget.h"
 
@@ -340,60 +341,76 @@ void UPGAdvancedFriendsGameInstance::LeaveSessionAndReturnToLobby()
 	UE_LOG(LogTemp, Log, TEXT("GI::LeaveSessionAndReturnToLobby: Attempting to leave current game session."));
 
 	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
-	if (OnlineSubsystem)
+	if (!OnlineSubsystem)
 	{
-		IOnlineSessionPtr SessionInterfaceRef = OnlineSubsystem->GetSessionInterface();
-		if (SessionInterfaceRef.IsValid())
+		// 온라인 서브시스템을 찾을 수 없으면 즉시 로비로 이동
+		UE_LOG(LogTemp, Warning, TEXT("GI::LeaveSessionAndReturnToLobby: Online Subsystem not found. Forcing return to main menu."));
+		UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+		return;
+	}
+
+	// 호스트가 세션을 나가는 경우, 나머지 클라이언트들 세션에서 내보내기
+	if (bIsHost)
+	{
+		UE_LOG(LogTemp, Log, TEXT("GI::LeaveSessionAndReturnToLobby: Host is leaving session. Notifying all clients"));
+
+		UWorld* World = GetWorld();
+		if (World)
 		{
-			// 세션 파괴 후 호출될 델리게이트 바인딩
-			// 기존 핸들이 있다면 제거(중복방지)		
-			if (DestroySessionCompleteDelegateHandle.IsValid())
+			for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 			{
-				SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
-			}
-			DestroySessionCompleteDelegateHandle = SessionInterfaceRef->AddOnDestroySessionCompleteDelegate_Handle(
-				FOnDestroySessionCompleteDelegate::CreateUObject(this, &UPGAdvancedFriendsGameInstance::OnDestroySessionComplete)
-			);
-			// 현재 플레이어가 세션의 호스트인지 확인
-			// 일반적으로 CreateSession/FindSessions/JoinSession 함수 호출 시 세션 이름을 저장
-			FName CurrentSessionName = NAME_GameSession;
-
-			UWorld* World = GetWorld();
-			// 호스트라면 세션을 파괴
-			if (World && World->IsNetMode(NM_ListenServer))
-			{
-				// 세션을 파괴하기 전에 플레이어를 먼저 등록 해제 (선택 사항이지만 좋은 관행)
-				// SessionInterface->UnregisterPlayer(CurrentSessionName, GetPrimaryPlayerController()->GetLocalPlayer()->GetPreferredUniqueNetId().ToSharedRef());
-				UE_LOG(LogTemp, Log, TEXT("This instance is the host. Destroying session."));
-
-				bool bDestroyed = SessionInterfaceRef->DestroySession(CurrentSessionName);
-				if (!bDestroyed)
+				APlayerController* PC = It->Get();
+				// PC가 유효하고 본인(호스트)의 PC가 아닌 경우 -> 클라이언트 PC인 경우
+				if (PC && !PC->IsLocalController())
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Failed to initiate session destruction for %s."), *CurrentSessionName.ToString());
-					// 세션 파괴가 실패했을 경우에도 일단 메인 메뉴로 이동 시도
-					UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+					if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+					{
+						LobbyPC->Client_ForceReturnToLobby();
+					}
+
+					if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+					{
+						PGPC->Client_ForceReturnToLobby();
+					}
 				}
 			}
-			else // 클라이언트라면 (또는 세션이 존재하지 않거나 이미 종료된 상태라면)
-			{
-				// 세션 연결을 끊고 메인 메뉴로 이동합니다.
-				UE_LOG(LogTemp, Log, TEXT("Not host or session not active. Returning to main menu."));
-				UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
-			}
-		}
-		else
-		{
-			// 온라인 서브시스템이 세션 인터페이스를 제공하지 않을 경우 (예: Null Subsystem)
-			UE_LOG(LogTemp, Warning, TEXT("Online Session Interface not valid. Returning to main menu."));
-			UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
 		}
 	}
-	else
+
+	IOnlineSessionPtr SessionInterfaceRef = OnlineSubsystem->GetSessionInterface();
+	if (!SessionInterfaceRef.IsValid())
 	{
-		// 온라인 서브시스템을 찾을 수 없을 경우
-		UE_LOG(LogTemp, Warning, TEXT("Online Subsystem not found. Returning to main menu."));
+		// 세션 인터페이스를 제공하지 않으면 즉시 로비로 이동
+		UE_LOG(LogTemp, Warning, TEXT("GI::LeaveSessionAndReturnToLobby: Online Session Interface not valid. Forcing return to main menu."));
 		UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+		return;
 	}
+
+	// 세션 파괴 후 호출될 델리게이트 바인딩
+	// 기존 핸들이 있다면 제거(중복방지)		
+	if (DestroySessionCompleteDelegateHandle.IsValid())
+	{
+		SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
+	}
+	DestroySessionCompleteDelegateHandle = SessionInterfaceRef->AddOnDestroySessionCompleteDelegate_Handle(
+		FOnDestroySessionCompleteDelegate::CreateUObject(this, &UPGAdvancedFriendsGameInstance::OnDestroySessionComplete)
+	);
+
+	// 호스트든 클라이언트든 현재 세션에 있다면 DestroySession을 호출
+	// 호스트 -> 세션 전체를 파괴
+	// 클라이언트 -> 해당 세션에서 '나감' 처리
+	const FName CurrentSessionName = NAME_GameSession; // 또는 세션 생성 시 사용한 이름
+	if (!SessionInterfaceRef->DestroySession(CurrentSessionName))
+	{
+		// DestroySession 호출 자체가 실패한 경우 (매우 드문 경우)
+		// 델리게이트를 바로 해제하고 로비로 이동합니다.
+		UE_LOG(LogTemp, Warning, TEXT("Failed to initiate session destruction for %s. Forcing return."), *CurrentSessionName.ToString());
+		SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
+
+		// 이 경우에도 OnDestroySessionComplete를 수동으로 호출하여 상태를 정리하고 이동하는 것이 더 안전
+		OnDestroySessionComplete(CurrentSessionName, false);
+	}
+	// 성공적으로 DestroySession 호출이 시작되었다면, OnDestroySessionComplete 콜백이 올 때까지 대기
 }
 
 void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
@@ -410,28 +427,23 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 
 	if (bWasSuccessful)
 	{
-		bDidRetryClientTravel = false;
-		bTimeoutProcessInProgress = false;
-		bOnTravelFailureDetected = false;
-		TravelRetryCount = 0;
-
-		CurrentSavedGameState = EGameState::MainMenu;
-		bIsHost = false;
 		UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Session %s destroyed successfully"), *SessionName.ToString());
 	}
 	else
 	{
-		bDidRetryClientTravel = false;
-		bTimeoutProcessInProgress = false;
-		bOnTravelFailureDetected = false;
-		TravelRetryCount = 0;
-
-		CurrentSavedGameState = EGameState::MainMenu;
-		bIsHost = false;
 		UE_LOG(LogTemp, Warning, TEXT("GI::OnDestroySessionComplete: Failed to destroy session %s"), *SessionName.ToString());
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("GI::OnDestroySessionComplete: Session destroy complete, back to lobby"));
+	UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Session destroy complete, back to lobby"));
+
+	bDidRetryClientTravel = false;
+	bTimeoutProcessInProgress = false;
+	bOnTravelFailureDetected = false;
+	TravelRetryCount = 0;
+
+	CurrentSavedGameState = EGameState::MainMenu;
+	bIsHost = false;
+
 	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
 }
 
@@ -499,4 +511,38 @@ UPGItemData* UPGAdvancedFriendsGameInstance::GetItemDataByKey(FName Key)
 		return ptr->LoadSynchronous();
 	}
 	return nullptr;
+}
+
+void UPGAdvancedFriendsGameInstance::RequestLoadItemData(FName Key, FOnItemDataLoaded OnLoadedDelegate)
+{
+	// Delegate가 바인딩되어있지 않으면 return
+	if (!OnLoadedDelegate.IsBound())
+	{
+		return;
+	}
+
+	if (TSoftObjectPtr<UPGItemData>* ptr = ItemDataMap.Find(Key))
+	{
+		// 이미 로드되었는지 확인
+		if (ptr->IsValid())
+		{
+			OnLoadedDelegate.Execute(ptr->Get());
+			return;
+		}
+
+		// 비동기 로드 요청
+		StreamableManager.RequestAsyncLoad(ptr->ToSoftObjectPath(), FStreamableDelegate::CreateLambda([OnLoadedDelegate, ptr]()
+		{		
+			// 람다가 호출되는 시점에는 OnLoadedDelegate가 유효하지 않을 수 있으므로 IsBound()를 한번 더 체크
+			if (OnLoadedDelegate.IsBound())
+			{
+				OnLoadedDelegate.Execute(ptr->Get());
+			}
+		}));
+	}
+	else
+	{
+		// ItemDataMap에 키가 없는경우
+		OnLoadedDelegate.Execute(nullptr);
+	}
 }

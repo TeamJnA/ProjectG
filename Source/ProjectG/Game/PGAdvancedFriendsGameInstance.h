@@ -7,13 +7,15 @@
 
 #include "Game/PGGameState.h"
 #include "OnlineSubsystem.h"
+#include "Engine/StreamableManager.h"
 #include "Interfaces/OnlineSessionInterface.h"
 
 #include "PGAdvancedFriendsGameInstance.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionBPCompleteDelegate, bool /*bWasSuccessful*/);
-
 class UPGItemData;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionBPCompleteDelegate, bool /*bWasSuccessful*/);
+DECLARE_DELEGATE_OneParam(FOnItemDataLoaded, UPGItemData*);
 
 /**
  * 
@@ -50,6 +52,8 @@ public:
 	//void FindSessions();
 
 	UPGItemData* GetItemDataByKey(FName Key);
+
+	void RequestLoadItemData(FName Key, FOnItemDataLoaded OnLoadedDelegate);
 
 	UPROPERTY(BlueprintReadOnly)
 	FString Playername;
@@ -102,6 +106,8 @@ private:
 	bool bOnTravelFailureDetected = false;
 
 	bool bIsHost = false;
+
+	FStreamableManager StreamableManager;
 
 	//void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	//void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
