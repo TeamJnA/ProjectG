@@ -127,14 +127,11 @@ void APGBlindCharacter::BeginPlay()
         BiteCollider->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("Jaw1Socket"));
     }
 
-
     //callback 함수  등록
     if (BiteCollider)
     {
         BiteCollider->OnComponentBeginOverlap.AddDynamic(this, &APGBlindCharacter::OnBiteColliderOverlapBegin);
     }
-
-
 }
 
 
@@ -144,22 +141,19 @@ void APGBlindCharacter::OnBiteColliderOverlapBegin(UPrimitiveComponent* Overlapp
 {
     if (!OtherActor || OtherActor == this)
         return;
-    
+
     // 플레이어만 감지 (필요 시 다른 조건 추가)
     // 현재는 tag 기반으로 작동. 로그 대신 다른 기능 추가하면 됨.
     if (OtherActor->ActorHasTag(FName("Player")))
     {
         UE_LOG(LogTemp, Log, TEXT(" Bite Successful"));
     }
-    
-    
-
 }
 
 void APGBlindCharacter::OnOpenDoorColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     // if other actor is door, break the door!
-    UE_LOG(LogTemp, Log, TEXT("OtherActor was detected by BlindCharacter"));
+    UE_LOG(LogTemp, Log, TEXT("OtherActor was detected by BlindCharacter Door Collision"));
 
     APGDoor1* OverlappedDoor = Cast<APGDoor1>(OtherActor);
     if (OverlappedDoor)

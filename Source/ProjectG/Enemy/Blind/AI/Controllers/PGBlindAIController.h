@@ -7,7 +7,7 @@
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "PGBlindAIController.generated.h"
 
-
+DECLARE_LOG_CATEGORY_EXTERN(LogEnemy, Log, All);
 /**
  * 
  */

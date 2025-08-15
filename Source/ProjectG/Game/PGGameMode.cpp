@@ -15,15 +15,15 @@
 #include "Character/PGPlayerCharacter.h"
 
 #include "Game/PGGameState.h"
-
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
-#include "Level/PGGlobalLightManager.h"
 #include "Level/PGLevelGenerator.h"
-
+#include "Level/PGGlobalLightManager.h"
 #include "UI/PGHUD.h"
-
 #include "Sound/PGSoundManager.h"
+
+#include "Enemy/Blind/Character/PGBlindCharacter.h"
+
 
 APGGameMode::APGGameMode()
 {
@@ -48,6 +48,14 @@ APGGameMode::APGGameMode()
 	DefaultPawnClass = nullptr;
 
 	bUseSeamlessTravel = true;
+
+	// TEST TO REMOVE
+	BlindCharacterToSpawnTEST;
+	static ConstructorHelpers::FClassFinder<AActor> BlindCharacterRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/BP_BlindCharacter.BP_BlindCharacter_C"));
+	if (BlindCharacterRef.Class)
+	{
+		BlindCharacterToSpawnTEST = BlindCharacterRef.Class;
+	}
 }
 
 void APGGameMode::BeginPlay()
@@ -75,11 +83,6 @@ void APGGameMode::BeginPlay()
 			GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
 		}
 
-		/*
-		* Waiting for all players' travel success information
-		*/
-		GetWorld()->GetTimerManager().SetTimer(TravelCheckTimer, this, &APGGameMode::PostTravel, 4.0f, false);
-
 		// Spawn sound manager on the lever.
 		SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
 		if (SoundManager) {
@@ -88,6 +91,11 @@ void APGGameMode::BeginPlay()
 		else {
 			UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
 		}
+
+		/*
+		* Waiting for all players' travel success information
+		*/
+		GetWorld()->GetTimerManager().SetTimer(TravelCheckTimer, this, &APGGameMode::PostTravel, 4.0f, false);
 	}
 
 }
@@ -298,12 +306,15 @@ void APGGameMode::SpawnAllPlayers()
 		// need retry count limit
 	}
 	// All player spawned completely.
+	// Set basic managers and spawn Enemys.
 	else
 	{
 		UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager and SoundManager."));
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnGlobalLightManager);
 
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::InitSoundManagerToPlayers);
+
+		SpawnEnemy();
 	}
 }
 
@@ -355,6 +366,19 @@ void APGGameMode::InitSoundManagerToPlayers()
 			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s"), *PGPC->GetName());
 			PGPC->InitSoundManager(GetSoundManager());
 		}
+	}
+}
+
+void APGGameMode::SpawnEnemy()
+{
+	UE_LOG(LogTemp, Warning, TEXT("GameMode: SpawnEnemy"));		
+	FVector SpawnLocation = FVector(920.0f, -50.0f, 100.0f);
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+	APGBlindCharacter* SpawnedBlindCharacter;
+	SpawnedBlindCharacter = GetWorld()->SpawnActor<APGBlindCharacter>(BlindCharacterToSpawnTEST, SpawnLocation, SpawnRotation);
+	if (SpawnedBlindCharacter)
+	{
+		SpawnedBlindCharacter->InitSoundManager(GetSoundManager());
 	}
 }
 

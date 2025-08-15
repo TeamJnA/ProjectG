@@ -19,6 +19,8 @@ class PROJECTG_API APGGM_Test : public AGameModeBase, public ISoundManagerInterf
 	GENERATED_BODY()
 	
 public:
+	APGGM_Test();
+
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;
 	// ~ISoundManagerInterface

@@ -25,6 +25,11 @@ protected:
 	void AddOverlappingRoomsToList();
 	void AddFloorSpawnPointsToList();
 	void CheckOverlap();
+
+	// After Rooms are completely generated,
+	// Spawn items, doors, walls, players, mobs, game managers and etc.
+	void SetupLevelEnvironment();
+
 	void CloseHoles();
 	void SpawnDoors();
 	void SpawnItems();

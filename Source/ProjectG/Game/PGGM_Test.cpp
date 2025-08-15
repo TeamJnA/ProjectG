@@ -7,6 +7,11 @@
 #include "Sound/PGSoundManager.h"
 #include "Kismet/GameplayStatics.h"
 
+
+APGGM_Test::APGGM_Test()
+{
+}
+
 APGSoundManager* APGGM_Test::GetSoundManager()
 {
 	return SoundManager;
@@ -29,21 +34,6 @@ void APGGM_Test::BeginPlay()
 void APGGM_Test::InitSoundManagerToPlayers()
 {
 	// Set the character's SoundManager pointer to the globally spawned soundmanager instance.
-	for (FConstPlayerControllerIterator it = GetWorld()->GetPlayerControllerIterator(); it; ++it)
-	{
-		APlayerController* PC = it->Get();
-		if (!PC) continue;
-
-		APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(PC->GetPawn());
-		if (PGPC)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s"), *PGPC->GetName());
-			PGPC->InitSoundManager(SoundManager);
-		}
-	}
-
-
-	// Enemy 찾아서 InitSoundManager하고 Test 할 것
 	UWorld* World = GetWorld();
 	if (!World) return;
 

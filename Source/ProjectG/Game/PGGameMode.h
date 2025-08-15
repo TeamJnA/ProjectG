@@ -12,6 +12,9 @@
 class APGPlayerController;
 class APGSoundManager;
 
+// TEST TO REMOVE
+class APGBlindCharacter;
+
 /**
  * 
  */
@@ -44,6 +47,7 @@ protected:
 	void SpawnAllPlayers();
 	void SpawnLevelGenerator();
 	void SpawnGlobalLightManager();
+	void SpawnEnemy();
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
@@ -64,4 +68,8 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<APGSoundManager> SoundManager;
+
+	//TEST TO REMOVE
+	UPROPERTY(EditAnywhere, Category = "Enemy")
+	TSubclassOf<APGBlindCharacter> BlindCharacterToSpawnTEST;
 };
