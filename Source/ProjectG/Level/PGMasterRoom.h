@@ -40,9 +40,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> FloorSpawnPointsFolder;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "EnemySpawnPoint")
+	TObjectPtr<UArrowComponent> EnemySpawnPoint;
+
 public:
 	virtual USceneComponent* GetExitsFolder();
 	virtual USceneComponent* GetOverlapBoxFolder();
 	virtual USceneComponent* GetFloorSpawnPointsFolder();
+	virtual FVector GetEnemySpawnLocation();
 
 };

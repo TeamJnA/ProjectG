@@ -30,6 +30,8 @@ APGStairRoom1::APGStairRoom1()
 	OverlapBox1->SetRelativeLocation(FVector(1255.0f, -940.0f, 695.0f));
 	OverlapBox1->SetRelativeScale3D(FVector(19.25f, 18.5f, 8.25f));
 
+	EnemySpawnPoint->SetRelativeLocation(FVector(1090.0f, -920.0f, 630.0f));
+
 	RoomDir->SetRelativeLocation(FVector(89.0f, 0.0f, 130.0f));
 	RoomDir->SetRelativeScale3D(FVector(3.0f, 3.0f, 3.0f));
 

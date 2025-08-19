@@ -7,6 +7,7 @@
 #include "PGLevelGenerator.generated.h"
 
 class APGMasterRoom;
+class APGBlindCharacter;
 
 UCLASS()
 class PROJECTG_API APGLevelGenerator : public AActor
@@ -16,6 +17,9 @@ class PROJECTG_API APGLevelGenerator : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APGLevelGenerator();
+
+	const TArray<TObjectPtr<APGMasterRoom>>& GetAllSpawnedRooms() const { return AllSpawnedRooms; }
+	const TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>>& GetRoomGraph() const { return RoomGraph; }
 
 protected:
 	void SetSeed();
@@ -37,6 +41,8 @@ protected:
 
 	void StartDungeonTimer();
 	void CheckForDungeonComplete();
+
+	APGMasterRoom* FindFarthestRoom() const;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -106,4 +112,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MaxGenerateTime", meta = (AllowPrivateAccess = "true"))
 	float MaxGenerateTime;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "GeneratedRooms")
+	TArray<TObjectPtr<APGMasterRoom>> AllSpawnedRooms;
+
+	TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>> RoomGraph;
+
+	//TEST TO REMOVE
+	UPROPERTY(EditAnywhere, Category = "Enemy")
+	TSubclassOf<APGBlindCharacter> BlindCharacterToSpawnTEST;
 };

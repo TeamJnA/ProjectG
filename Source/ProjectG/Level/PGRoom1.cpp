@@ -79,6 +79,8 @@ APGRoom1::APGRoom1()
 	SpawnPoint3->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	SpawnPoint3->bHiddenInGame = false;
 
+	EnemySpawnPoint->SetRelativeLocation(FVector(1840.0f, 0.0f, 250.0f));
+
 	RoomDir->SetRelativeLocation(FVector(900.0f, 0.0f, 130.0f));
 
 	OverlapBox->SetRelativeLocation(FVector(1830.0f, -5.0f, 310.0f));

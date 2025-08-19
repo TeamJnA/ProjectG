@@ -25,7 +25,7 @@ APGBlindCharacter::APGBlindCharacter()
     DoorDetectCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     DoorDetectCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
     DoorDetectCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    
+        
     static ConstructorHelpers::FObjectFinder<UAnimMontage> BiteMontageRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/Animation/Fight/AM_BlindBite.AM_BlindBite"));
     if (BiteMontageRef.Succeeded())
     {

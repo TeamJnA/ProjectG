@@ -2,17 +2,20 @@
 
 
 #include "PGLevelGenerator.h"
+
 #include "Engine/World.h"
-#include "Components/SceneComponent.h"
-#include "Components/BoxComponent.h"
-#include "Components/ArrowComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetArrayLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
-#include "Game/PGAdvancedFriendsGameInstance.h"
+
+#include "Components/SceneComponent.h"
+#include "Components/BoxComponent.h"
+#include "Components/ArrowComponent.h"
+
 #include "Item/PGItemActor.h"
 #include "Item/PGItemData.h"
+
 #include "PGMasterRoom.h"
 #include "PGStartRoom.h"
 #include "PGRoom1.h"
@@ -23,9 +26,14 @@
 #include "PGWall.h"
 #include "PGExitDoor.h"
 
+#include "Enemy/Blind/Character/PGBlindCharacter.h"
+
 #include "PGGlobalLightManager.h"
+#include "Game/PGAdvancedFriendsGameInstance.h"
+#include "Game/PGGameMode.h"
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerController.h"
+
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -75,6 +83,14 @@ APGLevelGenerator::APGLevelGenerator()
 
 	// reload level if (elpased time > max generation time)
 	MaxGenerateTime = 8.0f;
+
+	// TEST TO REMOVE
+	BlindCharacterToSpawnTEST;
+	static ConstructorHelpers::FClassFinder<AActor> BlindCharacterRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/BP_BlindCharacter.BP_BlindCharacter_C"));
+	if (BlindCharacterRef.Class)
+	{
+		BlindCharacterToSpawnTEST = BlindCharacterRef.Class;
+	}
 }
 
 // set level seed
@@ -110,6 +126,13 @@ void APGLevelGenerator::SpawnStartRoom()
 		spawnParams.Owner = this;
 		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		APGStartRoom* newRoom = world->SpawnActor<APGStartRoom>(APGStartRoom::StaticClass(), spawnTransform, spawnParams);
+
+		// add new room to room graph
+		if (newRoom)
+		{
+			AllSpawnedRooms.Add(newRoom);
+			RoomGraph.Add(newRoom);
+		}
 
 		// spawn default key item
 		// get game instance for use PGItemData instances
@@ -229,7 +252,7 @@ void APGLevelGenerator::CheckOverlap()
 		LatestRoom->Destroy();
 		SpawnNextRoom();
 	}
-	// if there is no overlapped room
+	// if there is no overlapped room (= success to create new room)
 	else
 	{
 		// empty OverlappedList for next spawn room
@@ -237,6 +260,23 @@ void APGLevelGenerator::CheckOverlap()
 		OverlappedList.Empty();
 		ExitsList.Remove(SelectedExitPoint);
 		DoorPointsList.Add(SelectedExitPoint);
+
+		// add new room to array and graph
+		AllSpawnedRooms.Add(LatestRoom);
+		// find connected room(prior or parent room) and add to graph
+		APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(SelectedExitPoint->GetOwner());
+		if (ParentRoom)
+		{
+			// add new room to neighbors list of parent room
+			RoomGraph.FindOrAdd(ParentRoom).Add(LatestRoom);
+			// add parent room to neighbors list of new room
+			RoomGraph.FindOrAdd(LatestRoom).Add(ParentRoom);
+		}
+		else
+		{
+			// if there are no parent rooms(should be none other than the starting room), just add a node to the graph. (can not happen)
+			RoomGraph.Add(LatestRoom);
+		}
 
 		// update RoomAmount
 		RoomAmount--;
@@ -266,12 +306,44 @@ void APGLevelGenerator::SetupLevelEnvironment()
 {
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandler);
 	GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandler);
-	UE_LOG(LogTemp, Warning, TEXT("Generate Rooms Completely"));
+	UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Generate Rooms Completely"));
 
 	CloseHoles();
 	SpawnDoors();
 	SpawnItems();
 	bIsGenerationDone = true;
+
+	// spawn enemy
+	APGMasterRoom* EnemySpawnRoom = FindFarthestRoom();
+	if (EnemySpawnRoom)
+	{
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			APGGameMode* GM = Cast<APGGameMode>(World->GetAuthGameMode());
+			if (!GM)
+			{
+				UE_LOG(LogTemp, Error, TEXT("LG::SetupLevelEnvironment: No valid GM"));
+			}
+
+			// spawn enemy at center of fartherst room
+			FVector SpawnLocation = EnemySpawnRoom->GetEnemySpawnLocation();
+			FRotator SpawnRotation = FRotator::ZeroRotator;
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			APGBlindCharacter* SpawnedBlindCharacter;
+			SpawnedBlindCharacter = World->SpawnActor<APGBlindCharacter>(BlindCharacterToSpawnTEST, SpawnLocation, SpawnRotation, SpawnParams);
+			if (SpawnedBlindCharacter)
+			{
+				SpawnedBlindCharacter->InitSoundManager(GM->GetSoundManager());
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("LG::SetupLevelEnvironment: Spawn enemy at room '%s'"), *EnemySpawnRoom->GetName());
+		}
+	}
 
 	// Called GameState and inside GS, trigger a delegate to notify GameMode to spawn the player.
 	if (GetWorld())
@@ -529,6 +601,85 @@ void APGLevelGenerator::CheckForDungeonComplete()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%.2f seconds elapsed"), elapsedTime);
 	}
+}
+
+APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
+{
+	// if no room is created or no starting room, return nullptr
+	if (AllSpawnedRooms.IsEmpty() || !RoomGraph.Contains(AllSpawnedRooms[0]))
+	{
+		return nullptr;
+	}
+
+	TObjectPtr<APGMasterRoom> StartRoom = AllSpawnedRooms[0];
+
+	// queue to store rooms to visit
+	TQueue<TObjectPtr<APGMasterRoom>> RoomsToVisit;
+	// map to store distance from start room
+	TMap<TObjectPtr<APGMasterRoom>, int32> Distances;
+
+	// initiate BFS
+	RoomsToVisit.Enqueue(StartRoom);
+	Distances.Add(StartRoom, 0);
+
+	// search
+	while (!RoomsToVisit.IsEmpty())
+	{
+		TObjectPtr<APGMasterRoom> CurrentRoom = nullptr;
+		RoomsToVisit.Dequeue(CurrentRoom);
+
+		int32 CurrentDistance = Distances[CurrentRoom];
+
+		// search neighbor rooms connected to the current room
+		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
+		{
+			for (TObjectPtr<APGMasterRoom> Neighbor : *Neighbors)
+			{
+				// if not visited room
+				if (Neighbor && !Distances.Contains(Neighbor))
+				{
+					// add distance(current distance + 1) to Distances and add room to queue
+					Distances.Add(Neighbor, CurrentDistance + 1);
+					RoomsToVisit.Enqueue(Neighbor);
+				}
+			}
+		}
+	}
+
+	// after search, find farthest room	
+	TArray<TObjectPtr<APGMasterRoom>> FarthestRooms;
+	int32 MaxDistance = -1;
+
+	for (const TTuple<TObjectPtr<APGMasterRoom>, int32>& Elem : Distances)
+	{
+		// if current room distance is greater than maximum recorded distance
+		if (Elem.Value > MaxDistance)
+		{
+			// update max distance
+			MaxDistance = Elem.Value;
+
+			// empty prior recorded farthest room list
+			// add current room as new farthest room
+			FarthestRooms.Empty();
+			FarthestRooms.Add(Elem.Key);
+		}
+		// if current room distance is equal to maximum recorded distance
+		else if (Elem.Value == MaxDistance)
+		{
+			// add current room as another farthest room
+			FarthestRooms.Add(Elem.Key);
+		}
+	}
+
+	// random select
+	if (!FarthestRooms.IsEmpty())
+	{
+		int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, FarthestRooms.Num());
+		UE_LOG(LogTemp, Warning, TEXT("LG::FindFarthestRoom: random Fartherst room in %d rooms: '%s' (Distance: %d)"), FarthestRooms.Num(), *FarthestRooms[RandomIndex]->GetName(), MaxDistance);
+		return FarthestRooms[RandomIndex];
+	}	
+		
+	return nullptr;
 }
 
 // Called when the game starts or when spawned

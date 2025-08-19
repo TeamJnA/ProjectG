@@ -314,7 +314,7 @@ void APGGameMode::SpawnAllPlayers()
 
 		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::InitSoundManagerToPlayers);
 
-		SpawnEnemy();
+		//SpawnEnemy();
 	}
 }
 

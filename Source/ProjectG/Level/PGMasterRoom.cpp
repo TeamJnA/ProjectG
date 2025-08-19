@@ -50,6 +50,14 @@ APGMasterRoom::APGMasterRoom()
 
 	OverlapBox->SetRelativeLocation(FVector(990.0f, 0.0f, 0.0f));
 	OverlapBox->SetRelativeScale3D(FVector(30.0f, 30.0f, 1.0f));
+
+	EnemySpawnPoint = CreateDefaultSubobject<UArrowComponent>(TEXT("EnemySpawnPoint"));
+	EnemySpawnPoint->SetupAttachment(RootComponent);
+	EnemySpawnPoint->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
+	EnemySpawnPoint->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	EnemySpawnPoint->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	EnemySpawnPoint->SetRelativeScale3D(FVector(2.0f, 2.0f, 2.0f));
+	EnemySpawnPoint->bHiddenInGame = false;
 }
 
 USceneComponent* APGMasterRoom::GetExitsFolder()
@@ -65,4 +73,9 @@ USceneComponent* APGMasterRoom::GetOverlapBoxFolder()
 USceneComponent* APGMasterRoom::GetFloorSpawnPointsFolder()
 {
 	return FloorSpawnPointsFolder;
+}
+
+FVector APGMasterRoom::GetEnemySpawnLocation()
+{
+	return EnemySpawnPoint->GetComponentLocation();
 }
