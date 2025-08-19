@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "PGInventorySlotWidget.generated.h"
 
+class UBorder;
 class UPGItemData;
 
 /**
@@ -19,11 +20,22 @@ class PROJECTG_API UPGInventorySlotWidget : public UUserWidget
 public:
 	void UpdateSlot(UPGItemData* ItemData);
 
-protected:
+	void HighlightSlot();
+	void UnhighlightSlot();
 
-	UPROPERTY(BlueprintReadOnly)
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	FText ItemName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UTexture2D> ItemImage;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UBorder> HighlightBorder;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	FLinearColor HighlightColor;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	FLinearColor DefaultColor = FLinearColor::Transparent;
 };

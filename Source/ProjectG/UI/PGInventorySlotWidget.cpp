@@ -4,6 +4,7 @@
 #include "UI/PGInventorySlotWidget.h"
 #include "PGInventorySlotWidget.h"
 #include "Item/PGItemData.h"
+#include "Components/Border.h"
 
 /*
 * Update inventory slot widget
@@ -22,4 +23,20 @@ void UPGInventorySlotWidget::UpdateSlot(UPGItemData* ItemData)
 		ItemName = FText::GetEmpty();
 		ItemImage = nullptr;
 	}	
+}
+
+void UPGInventorySlotWidget::HighlightSlot()
+{
+	if (HighlightBorder)
+	{
+		HighlightBorder->SetBrushColor(HighlightColor);
+	}
+}
+
+void UPGInventorySlotWidget::UnhighlightSlot()
+{
+	if (HighlightBorder)
+	{
+		HighlightBorder->SetBrushColor(DefaultColor);
+	}
 }

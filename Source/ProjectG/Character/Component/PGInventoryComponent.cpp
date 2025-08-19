@@ -104,6 +104,12 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(int32 NewInventoryIndex)
 	// Change current inventory index
 	SetCurrentInventoryIndex(NewInventoryIndex);
 
+	// broadcast to InventoryWidget
+	if (OnCurrentSlotIndexChanged.IsBound())
+	{
+		OnCurrentSlotIndexChanged.Broadcast(NewInventoryIndex);
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("Change inventory index to %d"), NewInventoryIndex);
 	// After HandAction, activate new ability and change mesh on hand at PGPlayerCharacter::EquipCurrentInventoryItem.
 }

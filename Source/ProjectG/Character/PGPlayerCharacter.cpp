@@ -327,7 +327,6 @@ void APGPlayerCharacter::Client_InitScoreBoardWidget_Implementation()
 				UPGScoreBoardWidget* ScoreBoardWidget = HUD->GetScoreBoardWidget();
 				if (ScoreBoardWidget)
 				{
-					// 현재 캐릭터(this)를 직접 전달하여 바인딩
 					ScoreBoardWidget->BindPlayerEntry(PC);
 					UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::Client_InitScoreBoardWidget: ScoreBoardWidget Bound to character.")); //
 				}

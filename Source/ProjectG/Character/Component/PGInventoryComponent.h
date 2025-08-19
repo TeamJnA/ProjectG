@@ -12,6 +12,7 @@ class APGPlayerCharacter;
 class UAbilitySystemComponent;
 
 DECLARE_DYNAMIC_DELEGATE(FOnInventoryComponentReady);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCurrentSlotIndexChanged, int32, NewIndex);
 
 //Store item data and ability spec handle from ability in item data.
 USTRUCT(BlueprintType)
@@ -100,4 +101,7 @@ public:
 protected:
 	UFUNCTION()
 	void OnRep_InventoryItems();
+
+public:
+	FOnCurrentSlotIndexChanged OnCurrentSlotIndexChanged;
 };
