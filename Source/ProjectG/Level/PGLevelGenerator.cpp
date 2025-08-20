@@ -314,7 +314,8 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	bIsGenerationDone = true;
 
 	// spawn enemy
-	APGMasterRoom* EnemySpawnRoom = FindFarthestRoom();
+	//APGMasterRoom* EnemySpawnRoom = FindFarthestRoom();
+	APGMasterRoom* EnemySpawnRoom = FindMiddleDistanceRoom();
 	if (EnemySpawnRoom)
 	{
 		UWorld* World = GetWorld();
@@ -679,6 +680,98 @@ APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 		return FarthestRooms[RandomIndex];
 	}	
 		
+	return nullptr;
+}
+
+APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
+{
+	// if no room is created or no starting room, return nullptr
+	if (AllSpawnedRooms.IsEmpty() || !RoomGraph.Contains(AllSpawnedRooms[0]))
+	{
+		return nullptr;
+	}
+
+	TObjectPtr<APGMasterRoom> StartRoom = AllSpawnedRooms[0];
+	TQueue<TObjectPtr<APGMasterRoom>> RoomsToVisit;
+	TMap<TObjectPtr<APGMasterRoom>, int32> Distances;
+
+	RoomsToVisit.Enqueue(StartRoom);
+	Distances.Add(StartRoom, 0);
+
+	while (!RoomsToVisit.IsEmpty())
+	{
+		TObjectPtr<APGMasterRoom> CurrentRoom = nullptr;
+		RoomsToVisit.Dequeue(CurrentRoom);
+		int32 CurrentDistance = Distances[CurrentRoom];
+
+		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
+		{
+			for (TObjectPtr<APGMasterRoom> Neighbor : *Neighbors)
+			{
+				if (Neighbor && !Distances.Contains(Neighbor))
+				{
+					Distances.Add(Neighbor, CurrentDistance + 1);
+					RoomsToVisit.Enqueue(Neighbor);
+				}
+			}
+		}
+	}
+
+	// find max distance
+	int32 MaxDistance = -1;
+	for (const auto& Elem : Distances)
+	{
+		if (Elem.Value > MaxDistance)
+		{
+			MaxDistance = Elem.Value;
+		}
+	}
+
+	// find middle distance room
+	const int32 TargetDistance = MaxDistance / 2;
+	// if middle distance is too short -> just return nullptr (error)
+	if (TargetDistance <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("LG::FindMiddleDistanceRoom: fail to find middle distance room"));
+		return nullptr;
+	}
+
+	TArray<TObjectPtr<APGMasterRoom>> MiddleDistanceRooms;
+
+	for (const auto& Elem : Distances)
+	{
+		if (Elem.Value == TargetDistance)
+		{
+			MiddleDistanceRooms.Add(Elem.Key);
+		}
+	}
+
+	//for (const auto& Elem : Distances)
+	//{
+	//	int32 Difference = FMath::Abs(Elem.Value - TargetDistance);
+	//	if (Difference < MinDifference)
+	//	{
+	//		MinDifference = Difference;
+	//	}
+	//}
+
+	//for (const auto& Elem : Distances)
+	//{
+	//	if (FMath::Abs(Elem.Value - TargetDistance) == MinDifference)
+	//	{
+	//		CandidateRooms.Add(Elem.Key);
+	//	}
+	//}
+
+	if (!MiddleDistanceRooms.IsEmpty())
+	{
+		int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, MiddleDistanceRooms.Num());
+		UE_LOG(LogTemp, Log, TEXT("LG::FindMiddleDistanceRoom: Middle distance %d rooms, choose '%s' (middle distance: %d, max distance: %d)"), 
+			MiddleDistanceRooms.Num(), *MiddleDistanceRooms[RandomIndex]->GetName(), Distances[MiddleDistanceRooms[RandomIndex]], MaxDistance);
+
+		return MiddleDistanceRooms[RandomIndex];
+	}
+
 	return nullptr;
 }
 

@@ -43,6 +43,7 @@ protected:
 	void CheckForDungeonComplete();
 
 	APGMasterRoom* FindFarthestRoom() const;
+	APGMasterRoom* FindMiddleDistanceRoom() const;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
