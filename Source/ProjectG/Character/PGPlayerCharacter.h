@@ -4,8 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Character/PGCharacterBase.h"
+
 #include "GameplayTagContainer.h"
 #include "Type/CharacterTypes.h"
+
+#include "Interface/AttackableTarget.h"
+
 #include "PGPlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -25,7 +29,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, Inter
  * 
  */
 UCLASS()
-class PROJECTG_API APGPlayerCharacter : public APGCharacterBase
+class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget
 {
 	GENERATED_BODY()
 	
@@ -120,6 +124,19 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 	FORCEINLINE class UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
+
+
+///
+///*********	Player State (Dead or Alive) ******************
+/// 	
+	
+
+	// IAttackableTarget~
+	// If player is not dead(check by Gamplay Tag), is valid target is true.
+	bool IsValidAttackableTarget() const;
+
+	void OnAttacked(FVector InstigatorHeadLocation);
+	// ~IAttackableTarget
 
 ///
 ///*********	Gameplay Ability System ******************
