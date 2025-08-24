@@ -55,7 +55,7 @@ bool APGSpectatorPawn::InitCachedAllPlayableCharacters(const APGPlayerCharacter*
 	if (!PrevPGCharacter)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot find PrevPGCharacter in APGPlayerController::Server_EnterSpectatorMode"));
-		return;
+		return false;
 	}
 
 	UWorld* World = GetWorld();
