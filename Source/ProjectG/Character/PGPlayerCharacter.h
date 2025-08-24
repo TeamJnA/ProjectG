@@ -115,6 +115,7 @@ protected:
 
 	virtual void NotifyControllerChanged() override;
 
+	// Controller가 OnPossess할 때, Pawn의 PawnClientRestart를 호출하고 거기서 SetupPlayerInputComponent 호출
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:

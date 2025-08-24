@@ -128,6 +128,8 @@ void APGPlayerCharacter::NotifyControllerChanged()
 	Super::NotifyControllerChanged();
 
 	// Add Input Mapping Context
+	// [NEW] Do this on controller
+	/*
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -135,6 +137,7 @@ void APGPlayerCharacter::NotifyControllerChanged()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	*/
 }
 
 void APGPlayerCharacter::BeginPlay()
@@ -265,7 +268,16 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 	// 적의 Attack이 끝나고.
 	// 6. 캐릭터 레그돌 하고 떨어트리기 [ 나중구현 ] ( Server )
 	// 7. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
-	
+
+	/*
+	if (IsLocallyControlled())
+	{
+		FirstPersonCamera->Deactivate();
+
+		FollowCamera->Activate();
+	}
+	*/
+
 	// 8. 관전 버튼을 통해 관전 기능 추가. [ 다음목표 ] ( Client )
 	if ( IsLocallyControlled() )
 	{
@@ -275,6 +287,7 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 			PGPC->StartSpectate();
 		}
 	}
+	
 }
 
 void APGPlayerCharacter::PossessedBy(AController* NewController)

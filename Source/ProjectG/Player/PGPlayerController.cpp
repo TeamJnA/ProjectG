@@ -25,10 +25,16 @@
 
 APGPlayerController::APGPlayerController()
 {
-	ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextObj(TEXT("/Game/ProjectG/Character/Input/IMC_Default.IMC_Default"));
-	if (MappingContextObj.Succeeded())
+	ConstructorHelpers::FObjectFinder<UInputMappingContext> DefaultGameplayMappingContextRef(TEXT("/Game/ProjectG/Character/Input/IMC_Default.IMC_Default"));
+	if (DefaultGameplayMappingContextRef.Succeeded())
 	{
-		DefaultMappingContext = MappingContextObj.Object;
+		DefaultGameplayMappingContext = DefaultGameplayMappingContextRef.Object;
+	}
+
+	ConstructorHelpers::FObjectFinder<UInputMappingContext> SpectateMappingContextRef(TEXT("/Game/ProjectG/Character/Input/IMC_Spectate.IMC_Spectate"));
+	if (SpectateMappingContextRef.Succeeded())
+	{
+		SpectateMappingContext = SpectateMappingContextRef.Object;
 	}
 
 	ConstructorHelpers::FObjectFinder<UInputAction> OrbitYawActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_OrbitYaw.IA_OrbitYaw"));
@@ -70,6 +76,20 @@ APGPlayerController::APGPlayerController()
 	OriginalPlayerCharacter = nullptr;
 }
 
+
+// when Client possess pawn, 
+void APGPlayerController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	ReplaceInputMappingContext(GetPawn());
+}
+
 void APGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -78,11 +98,6 @@ void APGPlayerController::BeginPlay()
 	SetInputMode(inputMode);
 
 	bShowMouseCursor = false;
-
-	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
-	{
-		Subsystem->AddMappingContext(DefaultMappingContext, 1);
-	}
 
 	UE_LOG(LogTemp, Log, TEXT("CLIENT/SERVER: %s BeginPlay. IsLocalController: %d, Role: %s"),
 		*GetName(), IsLocalController(), *UEnum::GetValueAsString(GetLocalRole()));
@@ -105,13 +120,43 @@ void APGPlayerController::SetupInputComponent()
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
-		// up, down
-		EnhancedInputComponent->BindAction(SpectateNextAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectateNext);
-		EnhancedInputComponent->BindAction(SpectatePrevAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectatePrev);
-		// left, right
-		EnhancedInputComponent->BindAction(OrbitYawAction, ETriggerEvent::Triggered, this, &APGPlayerController::OnOrbitYaw);
 		// ESC
 		EnhancedInputComponent->BindAction(ShowPauseMenuAction, ETriggerEvent::Started, this, &APGPlayerController::OnShowPauseMenu);
+	}
+}
+
+void APGPlayerController::OnPossess(APawn* NewPawn)
+{
+	// Changing mapping context by pawn( Default gameplay or Spectate )
+	Super::OnPossess(NewPawn);
+
+	UE_LOG(LogTemp, Log, TEXT("APGPlayerController::OnPossess new pawn [%s]"), *NewPawn->GetName());
+
+	ReplaceInputMappingContext(NewPawn);
+}
+
+void APGPlayerController::ReplaceInputMappingContext(const APawn* PawnType)
+{
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	{
+		// [NOT COMPLETE]
+		//  현재 priority는 1. 나중에 controller 전용 esc 매핑 콘텍스트를 추가할 예정이 있을 수 있음
+		if (PawnType->IsA(APGPlayerCharacter::StaticClass()))
+		{
+			if (Subsystem->HasMappingContext(SpectateMappingContext))
+			{
+				Subsystem->RemoveMappingContext(SpectateMappingContext);
+			}
+			Subsystem->AddMappingContext(DefaultGameplayMappingContext, 1);
+		}
+		else
+		{
+			if (Subsystem->HasMappingContext(DefaultGameplayMappingContext))
+			{
+				Subsystem->RemoveMappingContext(DefaultGameplayMappingContext);
+			}
+			Subsystem->AddMappingContext(SpectateMappingContext, 1);
+		}
 	}
 }
 
@@ -221,9 +266,6 @@ void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 
 void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 {
-	// 서버에서만 실행
-	if (!HasAuthority()) return;
-
 	// 이미 관전 모드에 진입해 있다면 (APGSpectatorPawn을 빙의하고 있다면) 차단
 	if (Cast<APGSpectatorPawn>(GetPawn()))
 	{
@@ -236,40 +278,14 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 	{
 		// 기존 Pawn의 입력 비활성화
 		PrevPawn->DisableInput(this);
-		// 기존 Pawn의 충돌 비활성화 (필요하다면)
-		// PrevPawn->SetActorEnableCollision(false);
 
-		OriginalPlayerCharacter = Cast<ACharacter>(PrevPawn);
+		OriginalPlayerCharacter = Cast<APGPlayerCharacter>(PrevPawn);
 		UE_LOG(LogTemp, Log, TEXT("PC::Server_EnterSpectatorMode_Implementation: OriginalPlayerCharacter set to: %s"), *GetNameSafe(OriginalPlayerCharacter));
 	}
 
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	// 관전 가능한 캐릭터들을 Iterator를 돌아 채우기
-	// 만약 솔로플레이인 경우 관전모드에 2회 이상 진입 시도할 수있기 때문에, IsSpectateTargetChached 플래그를 따로 두어 진입 차단
-	if (!IsSpectateTargetCached)
-	{
-		for (TActorIterator<ACharacter> It(World); It; ++It)
-		{
-			ACharacter* CurrentChar = *It;
-
-			if (CurrentChar && CurrentChar != OriginalPlayerCharacter)
-			{
-				CachedAllPlayableCharacters.Add(CurrentChar);
-			}
-		}
-
-		IsSpectateTargetCached = true;
-	}
-
-	// 관전할 다른 대상이 없다면 (솔로플레이인 경우) 관전 모드 진입 방지
-	if (CachedAllPlayableCharacters.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Server: Cannot enter spectator mode. No other players to spectate."));
-		return;
-	}
-
+	//
+	// ---------- Spawn SpectatorPawn -----------------
+	//
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -288,14 +304,19 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 
 	ControlledSpectator = GetWorld()->SpawnActor<APGSpectatorPawn>(APGSpectatorPawn::StaticClass(), SpawnLoc, SpawnRot, SpawnParams);
 
+	// ControlledSpectataor에 관전 대상 캐릭터들 추가.
+	// 관전할 다른 대상이 없다면 (솔로플레이인 경우) 관전 모드 진입 방지
+	if (!ControlledSpectator->InitCachedAllPlayableCharacters(OriginalPlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Server: Cannot enter spectator mode. No other players to spectate."));
+		return;
+	}
+
 	if (ControlledSpectator)
 	{
 		Possess(ControlledSpectator);
 
-		// 서버에서 관전 대상 찾기
-		//SpectateTargetCharacter = Cast<ACharacter>(FindSpectateTarget());
-
-		Server_ChangeSpectateTarget(true);
+		ControlledSpectator->Server_SetSpectateTarget(true);
 
 		if (SpectateTargetCharacter)
 		{
