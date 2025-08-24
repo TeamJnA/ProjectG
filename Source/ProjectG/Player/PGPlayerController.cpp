@@ -295,16 +295,7 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 
 		ControlledSpectator->Server_SetSpectateTarget(true);
 
-		// **서버에서 SpectatorPawn을 Possess**
-		// 이 Possess가 ControlledSpectator를 클라이언트에 동기화하고,
-		// 클라이언트 PlayerController의 GetPawn()이 SpectatorPawn을 반환하게 합니다.
 		UE_LOG(LogTemp, Log, TEXT("PC::Server_EnterSpectatorMode: Spectator mode entered and possessed APGSpectatorPawn for %s."), *GetNameSafe(this));
-
-		// 클라이언트에 ControlledSpectator에 TargetToOrbit을 설정하도록 명령합니다.
-		// 클라이언트에게 자신의 SpectatorPawn에 관전 대상을 설정하라고 지시.
-		// Client_PossessSpectatorPawn은 SpectatorPawn이 복제된 후 호출되어야 안전합니다.
-		// ControlledSpectator가 복제된 후 OnRep_SpectateTargetCharacter에서 처리하는 것이 더 낫습니다.
-
 	}
 	else
 	{
