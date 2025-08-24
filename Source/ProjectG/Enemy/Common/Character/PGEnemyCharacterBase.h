@@ -57,8 +57,9 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-
-
+	// Get Enemy's head location.
+	// Enemy's have different head sockets, use the top of the capsule component instead.
+	FVector GetCapsuleTopWorldLocation() const;
 };
 
 

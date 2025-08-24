@@ -11,13 +11,6 @@
 APGBlindCharacter::APGBlindCharacter()
 {
     BlindAttributeSet = CreateDefaultSubobject<UPGBlindAttributeSet>("BlindAttributeSet");
-        
-    BiteCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BiteCollider"));
-    BiteCollider->SetupAttachment(GetMesh());
-    BiteCollider->SetBoxExtent(FVector(50.f)); // 기본 크기 (BP에서 조정 가능)
-    BiteCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    BiteCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-    BiteCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
     DoorDetectCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("DoorDetectCollider"));
     DoorDetectCollider->SetupAttachment(RootComponent);
@@ -75,6 +68,7 @@ void APGBlindCharacter::SetHuntLevel(int Level)
         // Huntlevel에 따라 닿은 문을 부순다는 함수를 bind하고 unbind한다
         // NewHuntLevel(Level) > 0 && CurHuntLevel(HuntLevel) == 0, AddDynamic
         // NewHuntLevel(Level) == 0 && CurHuntLevel(HuntLevel) > 0, RemoveDynamic
+        // 즉, 헌트 레벨이 1or2, 상대를 탐색할 때 문에 닿으면 문을 열도록 한다.
 
         if (Level > 0 && HuntLevel == 0)
         {
@@ -120,34 +114,6 @@ void APGBlindCharacter::ForceOpenDoorsAroundCharacter()
 void APGBlindCharacter::BeginPlay()
 {
     Super::BeginPlay();
-
-    //collider 붙이기.
-    if (BiteCollider && GetMesh())
-    {
-        BiteCollider->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("Jaw1Socket"));
-    }
-
-    //callback 함수  등록
-    if (BiteCollider)
-    {
-        BiteCollider->OnComponentBeginOverlap.AddDynamic(this, &APGBlindCharacter::OnBiteColliderOverlapBegin);
-    }
-}
-
-
-
-void APGBlindCharacter::OnBiteColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent,
-    AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-    if (!OtherActor || OtherActor == this)
-        return;
-
-    // 플레이어만 감지 (필요 시 다른 조건 추가)
-    // 현재는 tag 기반으로 작동. 로그 대신 다른 기능 추가하면 됨.
-    if (OtherActor->ActorHasTag(FName("Player")))
-    {
-        UE_LOG(LogTemp, Log, TEXT(" Bite Successful"));
-    }
 }
 
 void APGBlindCharacter::OnOpenDoorColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

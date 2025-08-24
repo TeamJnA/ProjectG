@@ -23,29 +23,41 @@ UGA_BlindBite::UGA_BlindBite()
 	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior.Attack.Bite")));
 
 	CancelAbilitiesWithTag.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior")));
-
-
-
 }
 
 void UGA_BlindBite::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-
-
 	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
-	AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
-	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
-	Blackboard->SetValueAsBool(FName("DetectedPlayer"), true); //Behavior tree의 Detected Player 값 변경.
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find AvatarActor from UGA_BlindBite"));
+		return;
+	}
 
+	AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
+	if (!AIController)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find AIController in UGA_BlindBite"));
+		return;
+	}
+
+	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
+	if (!Blackboard)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find Blackboard in UGA_BlindBite"));
+		return;
+	}
+
+	Blackboard->SetValueAsBool(FName("DetectedPlayer"), true); //Behavior tree의 Detected Player 값 변경.
 
 
 	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,                                 // Ability 객체
 		TEXT("PlayBiteMontage"),                  // 태스크 이름 (디버깅용)
 		OwnerPawn->BiteMontage,                            // 재생할 몽타주 에셋
-		2.0f,                                // 재생 속도
+		1.0f,                                // 재생 속도
 		NAME_None,                           // 시작 섹션 이름 (필요시)
 		true,                               // bStopWhenAbilityEnds (Ability 종료시 중단 여부)
 		1.0f                               // 애니메이션 루트 모션 스케일
@@ -65,12 +77,19 @@ void UGA_BlindBite::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 	GetAbilitySystemComponentFromActorInfo()->
 		RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting")));
 
-	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
-	AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
-	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
-	Blackboard->SetValueAsBool(FName("DetectedPlayer"), false);//Behavior tree의 Detected Player 값 변경.
-	APGBlindAIController* AIC = Cast<APGBlindAIController>(AIController);
-	AIC->ResetHuntLevel();
+	if (APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo()))
+	{
+		if (AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController()))
+		{
+			if(UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent())
+				Blackboard->SetValueAsBool(FName("DetectedPlayer"), false);//Behavior tree의 Detected Player 값 변경.
+
+			if (APGBlindAIController* AIC = Cast<APGBlindAIController>(AIController))
+			{
+				AIC->ResetHuntLevel();
+			}
+		}
+	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

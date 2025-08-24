@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Enemy/Common/AI/Controllers/PGEnemyAIControllerBase.h"
-#include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "PGBlindAIController.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogEnemy, Log, All);
+
+class APGBlindCharacter;
 /**
  * 
  */
@@ -25,15 +26,11 @@ public:
 
 	void ResetHuntLevel();
 
-
-
 protected:
 	virtual void SetupPerceptionSystem() override;
 
 	UFUNCTION()
 	virtual void OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus) override;
-
-	
 
 	virtual void OnPossess(APawn* InPawn) override;
 
@@ -42,15 +39,9 @@ private:
 
 	void CalculateNoise(float Noise, FVector SourceLocation);
 
-
 	class UAISenseConfig_Hearing* HearingConfig;
 	class UAISenseConfig_Touch* TouchConfig;
 
 	UPROPERTY()
-	APGBlindCharacter* OwnerPawn;
-
-
-
-
-
+	TObjectPtr<APGBlindCharacter> OwnerPawn;
 };

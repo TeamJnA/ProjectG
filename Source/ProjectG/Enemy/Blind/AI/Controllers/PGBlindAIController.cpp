@@ -3,8 +3,7 @@
 
 #include "Enemy/Blind/AI/Controllers/PGBlindAIController.h"
 
-#include "ProjectG/Enemy/Common/Character/PGEnemyCharacterBase.h"
-#include "Character/PGPlayerCharacter.h"
+#include "Enemy/Blind/Character/PGBlindCharacter.h"
 
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -106,7 +105,6 @@ void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Sti
 		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Hearing."));
 		CalculateNoise(Stimulus.Strength, Stimulus.StimulusLocation);
 	}
-
 	//touch로 감지된 거라면
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
 	{
@@ -114,13 +112,6 @@ void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Sti
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", Actor->GetActorLocation());
 		OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindBite::StaticClass(), true);
 	}
-
-	/*
-	if (Actor && Actor->ActorHasTag(FName("TestPlayer")))
-	{
-		//CanSeePlayer 키에 true 또는 false 값을 설정합니다. stimulus.WasSuccessfullySensed()는: 대상 방금 감지되었을 때 : true, 사라지면 false
-		GetBlackboardComponent()->SetValueAsBool("CanSeePlayer", Stimulus.WasSuccessfullySensed());
-	}*/
 }
 
 
@@ -159,9 +150,6 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 		return;
 	}
 
-
-
-	
 	//기존에 인식한 최대소리보다 지금 인식한 소리가 크면 
 	//-> 얘를 쫓아가게 바꿔줘야대
 	if (DetectedMaxNoiseMagnitude < CurNoise)
@@ -198,8 +186,6 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
 				FString::Printf(TEXT("Weak Clue")));
 			OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindInvestigate::StaticClass(), true);
-
-			
 		}
 
 		// flipsign 변수는, behavior tree의 "Detect State Change" Blackboard Decorator 에서,
@@ -207,8 +193,6 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 		// 그런데 평가 기준이 -2보다 큰지인데, 값은 -1과 1을 반복해서 바뀌므로, 무조건 통과가 된다.
 		int flipsign = (GetBlackboardComponent()->GetValueAsInt("BehaviorFlipSign")) * (-1)  ;
 		GetBlackboardComponent()->SetValueAsInt("BehaviorFlipSign",flipsign );
-
-		
 	}
 
 }

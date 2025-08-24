@@ -3,7 +3,6 @@
 
 #include "Enemy/Blind/Animation/Notifies/ANS_BlindBite.h"
 
-#include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Components/BoxComponent.h"
 
 void UANS_BlindBite::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, 
@@ -12,7 +11,7 @@ void UANS_BlindBite::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 	
 
-
+	/*
 	AActor* OwnerActor = MeshComp->GetOwner();
 	
 	if (APGBlindCharacter* Blind = Cast<APGBlindCharacter>(OwnerActor))
@@ -22,13 +21,13 @@ void UANS_BlindBite::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 			Blind->BiteCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		}
 	}
-
+	*/
 }
 
 
 void UANS_BlindBite::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-
+	/*
 	AActor* OwnerActor = MeshComp->GetOwner();
 
 	if (APGBlindCharacter* Blind = Cast<APGBlindCharacter>(OwnerActor))
@@ -38,5 +37,6 @@ void UANS_BlindBite::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 			Blind->BiteCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 	}
+	*/
 	Super::NotifyEnd(MeshComp, Animation);
 }

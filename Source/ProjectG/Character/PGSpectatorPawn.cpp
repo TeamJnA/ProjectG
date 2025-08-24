@@ -5,6 +5,13 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Character.h"
 
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputActionValue.h"
+
+#include "Character/PGPlayerCharacter.h"
+
+#include "EngineUtils.h" 
 #include "Net/UnrealNetwork.h"
 
 APGSpectatorPawn::APGSpectatorPawn()
@@ -16,12 +23,65 @@ APGSpectatorPawn::APGSpectatorPawn()
 	bReplicates = true;
 	bAlwaysRelevant = true; // 항상 클라이언트에게 관련성이 있도록 설정 (선택 사항)
 
+	// Get input actions
+	ConstructorHelpers::FObjectFinder<UInputAction> OrbitYawActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_OrbitYaw.IA_OrbitYaw"));
+	if (OrbitYawActionObj.Succeeded())
+	{
+		OrbitYawAction = OrbitYawActionObj.Object;
+	}
+
+	ConstructorHelpers::FObjectFinder<UInputAction> SpectateNextActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_SpectateNext.IA_SpectateNext"));
+	if (SpectateNextActionObj.Succeeded())
+	{
+		SpectateNextAction = SpectateNextActionObj.Object;
+	}
+
+	ConstructorHelpers::FObjectFinder<UInputAction> SpectatePrevActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_SpectatePrev.IA_SpectatePrev"));
+	if (SpectatePrevActionObj.Succeeded())
+	{
+		SpectatePrevAction = SpectatePrevActionObj.Object;
+	}
+
 	RotationSpeed = 90.0f; // 기본 회전 속도
 	TargetToOrbit = nullptr;
 
 	// 새로 추가된 부분
 	CurrentOrbitDistance = 100.0f; // 관전자와 대상 간의 초기 거리 (원하는 값으로 설정)
 	CurrentOrbitYawAngle = 0.0f; // 초기 Yaw 각도
+}
+
+bool APGSpectatorPawn::InitCachedAllPlayableCharacters(const APGPlayerCharacter* PrevPGCharacter)
+{
+	if (!PrevPGCharacter)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find PrevPGCharacter in APGPlayerController::Server_EnterSpectatorMode"));
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World) 
+		return false;
+
+	if (!IsSpectateTargetCached)
+	{
+		for (TActorIterator<APGPlayerCharacter> It(World); It; ++It)
+		{
+			APGPlayerCharacter* CurrentChar = *It;
+
+			if (CurrentChar && CurrentChar != PrevPGCharacter)
+			{
+				CachedAllPlayableCharacters.Add(CurrentChar);
+			}
+		}
+
+		IsSpectateTargetCached = true;
+	}
+
+	if (CachedAllPlayableCharacters.IsEmpty())
+	{
+		return false;
+	}
+	return true;
 }
 
 void APGSpectatorPawn::BeginPlay()
@@ -38,6 +98,86 @@ void APGSpectatorPawn::Tick(float DeltaSeconds)
 	{
 		UpdateSpectatorPositionAndRotation();
 		//UE_LOG(LogTemp, Verbose, TEXT("SpectatorPawn: Tick is firing and updating position."));
+	}
+}
+
+void APGSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		// up, down
+		EnhancedInputComponent->BindAction(SpectateNextAction, ETriggerEvent::Started, this, &APGSpectatorPawn::OnSpectateNext);
+		EnhancedInputComponent->BindAction(SpectatePrevAction, ETriggerEvent::Started, this, &APGSpectatorPawn::OnSpectatePrev);
+		// left, right
+		EnhancedInputComponent->BindAction(OrbitYawAction, ETriggerEvent::Triggered, this, &APGSpectatorPawn::OnOrbitYaw);
+	}
+}
+
+void APGSpectatorPawn::OnSpectateNext(const FInputActionValue& Value)
+{
+	if (!IsLocallyControlled()) return;
+	Server_SetSpectateTarget(true);
+	UE_LOG(LogTemp, Log, TEXT("PC::OnSpectateNext: Client requested next spectate target."));
+}
+
+void APGSpectatorPawn::OnSpectatePrev(const FInputActionValue& Value)
+{
+	if (!IsLocallyControlled()) return;
+	Server_SetSpectateTarget(false);
+	UE_LOG(LogTemp, Log, TEXT("PC::OnSpectatePrev: Client requested previous spectate target."));
+}
+
+void APGSpectatorPawn::Server_SetSpectateTarget_Implementation(bool bNext)
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// 현재 관전 대상이 있는 경우 해당 대상의 index 저장
+	int32 CurrentTargetIndex = INDEX_NONE;
+	if (IsValid(SpectateTargetCharacter))
+	{
+		CurrentTargetIndex = CachedAllPlayableCharacters.IndexOfByKey(SpectateTargetCharacter);
+	}
+
+	// 새로운 관전대상 index
+	int32 NewTargetIndex = 0;
+
+	// 현재 관전 중인 경우, 입력에 따라 관전 대상 다음 혹은 이전 캐릭터의 인덱스 저장
+	// 최초 관전을 시작하는 경우, 배열에서 관전 대상을 찾지 않고, 배열의 0번 캐릭터 관전
+	if (CurrentTargetIndex != INDEX_NONE)
+	{
+		if (bNext)
+		{
+			NewTargetIndex = (CurrentTargetIndex + 1) % CachedAllPlayableCharacters.Num();
+		}
+		else
+		{
+			NewTargetIndex = (CurrentTargetIndex - 1 + CachedAllPlayableCharacters.Num()) % CachedAllPlayableCharacters.Num();
+		}
+	}
+
+	APGPlayerCharacter* NewTargetCandidate = CachedAllPlayableCharacters[NewTargetIndex];
+
+	// 새로운 대상이 현재 대상과 실제로 다를 경우에만 업데이트
+	// 새로운 대상이 현재 대상과 같은 경우 => 관전 가능한 캐릭터가 애초에 한 명 밖에 없었을 경우 업데이트 x
+	if (NewTargetCandidate != SpectateTargetCharacter)
+	{
+		SpectateTargetCharacter = NewTargetCandidate;
+		UE_LOG(LogTemp, Log, TEXT("PC::Server_ChangeSpectateTarget_Implementation: Changed spectate target to: %s"), *GetNameSafe(SpectateTargetCharacter));
+
+		if (IsValid(SpectateTargetCharacter))
+		{
+			SetTargetActor(SpectateTargetCharacter);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PC::Server_ChangeSpectateTarget_Implementation: ControlledSpectator or SpectateTargetCharacter invalid after target change."));
+		}
+	}
+	else
+	{
+		// 이 메시지는 AllPlayableCharacters.Num() == 1 일 때만 출력 (관전 가능한 캐릭터가 애초에 한 명 밖에 없었을 경우)
+		UE_LOG(LogTemp, Warning, TEXT("PC::Server_ChangeSpectateTarget_Implementation: Spectate target remains the same (no other valid unique target)."));
 	}
 }
 
@@ -75,11 +215,17 @@ void APGSpectatorPawn::SetTargetActor(AActor* NewTarget)
 	}
 }
 
-void APGSpectatorPawn::UpdateOrbitYawInput(float DeltaYaw)
+void APGSpectatorPawn::OnOrbitYaw(const FInputActionValue& Value)
 {
+	// 클라이언트에서 입력 처리
+	if (!IsLocallyControlled()) return;
+
+	float AxisValue = Value.Get<float>();
+
+	// 현재 플레이어 컨트롤러가 APGSpectatorPawn을 Possess하고 있을 때만 처리
 	if (IsValid(TargetToOrbit))
 	{
-		CurrentOrbitYawAngle += DeltaYaw * RotationSpeed * GetWorld()->GetDeltaSeconds();
+		CurrentOrbitYawAngle += AxisValue * RotationSpeed * GetWorld()->GetDeltaSeconds();
 		CurrentOrbitYawAngle = FMath::Fmod(CurrentOrbitYawAngle, 360.0f);
 		if (CurrentOrbitYawAngle < 0.0f)
 		{

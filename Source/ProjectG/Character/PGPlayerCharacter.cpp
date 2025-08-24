@@ -2,6 +2,7 @@
 
 
 #include "Character/PGPlayerCharacter.h"
+#include "Player/PGPlayerController.h"
 
 // #include "Game/PGGameInstance.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
@@ -32,6 +33,8 @@
 
 //Interface
 #include "Interface/InteractableActorInterface.h"
+
+#include "Kismet/GameplayStatics.h"
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -125,6 +128,8 @@ void APGPlayerCharacter::NotifyControllerChanged()
 	Super::NotifyControllerChanged();
 
 	// Add Input Mapping Context
+	// [NEW] Do this on controller
+	/*
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -132,6 +137,7 @@ void APGPlayerCharacter::NotifyControllerChanged()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	*/
 }
 
 void APGPlayerCharacter::BeginPlay()
@@ -197,6 +203,93 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	}
 }
 
+bool APGPlayerCharacter::IsValidAttackableTarget() const
+{
+	// Check player is valid by checking gameplay tag.
+	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
+	{
+		return false;
+	}
+	return true;
+}
+
+void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
+{
+	// Set player dead and rotate camera to the enemy's head
+	// And camera move away slowly, activate spectating mode
+	UE_LOG(LogTemp, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
+	
+	// 1. Player.State.Dead 태그 추가 [ Server, Client ]
+	AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
+
+	// 2. 플레이어 입력 차단 [ Client ]
+	if (IsLocallyControlled())
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+		{
+			UE_LOG(LogTemp, Log, TEXT("PlayerController Test"));
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+			{
+				//Subsystem->RemoveMappingContext(DefaultMappingContext);
+			}
+			// DisableInput(PlayerController);
+		}
+	}
+
+	// 3. Remove all abilities [ Server ]
+	if (HasAuthority())
+	{
+		AbilitySystemComponent->ClearAllAbilities();
+	}
+
+	// 4 - 1. 캐릭터(카메라) 몹 쪽으로 회전 [ Client ]
+	if (IsLocallyControlled())
+	{
+		const FRotator CurrentRotation = GetActorRotation();
+		FRotator TargetRotation = (InstigatorHeadLocation - GetActorLocation()).Rotation();
+		TargetRotation.Pitch = 0.0f; // 요거도 살짝 올려보게 수정?
+		TargetRotation.Roll = 0.0f;
+
+		float DeltaTime = UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
+
+		// FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, 0.3f);
+		// SetActorRotation(TargetRotation);
+		Controller->SetControlRotation(TargetRotation);
+	}
+	//  // This need to play at client function
+
+	// 4 - 2. 카메라 몹으로부터 거리 두기. [ 나중구현 ] [ Server, Client ]
+	// FVector CurrentCameraLocation = FirstPersonCamera->GetRelativeLocation();
+	// FirstPersonCamera;
+
+
+	// 5. 플레이어 아이템들 드랍 [ Server ]
+	
+	// 적의 Attack이 끝나고.
+	// 6. 캐릭터 레그돌 하고 떨어트리기 [ 나중구현 ] ( Server )
+	// 7. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
+
+	/*
+	if (IsLocallyControlled())
+	{
+		FirstPersonCamera->Deactivate();
+
+		FollowCamera->Activate();
+	}
+	*/
+
+	// 8. 관전 버튼을 통해 관전 기능 추가. [ 다음목표 ] ( Client )
+	if ( IsLocallyControlled() )
+	{
+		APGPlayerController* PGPC = Cast<APGPlayerController>(Controller);
+		if (PGPC)
+		{
+			PGPC->StartSpectate();
+		}
+	}
+	
+}
+
 void APGPlayerCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
@@ -213,7 +306,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	}
 }
 
-//This function is called on the client When the server updates PlayerState.
+//This function is called on the [CLIENT] When the server updates PlayerState.
 void APGPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();

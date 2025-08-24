@@ -3,11 +3,18 @@
 
 #include "ProjectG/Enemy/Common/Character/PGEnemyCharacterBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
+
 #include "ProjectG/AbilitySystem/PGAbilitySystemComponent.h"
 #include "ProjectG/Enemy/Common/AbilitySystem/PGEnemyAttributeSet.h"
-#include "Components/BoxComponent.h"
+
 #include "Perception/AISense_Touch.h"
+
+#include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
+
 #include "Character/Component/PGSoundManagerComponent.h"
+
+#include "Interface/AttackableTarget.h"
 
 
 APGEnemyCharacterBase::APGEnemyCharacterBase()
@@ -60,11 +67,33 @@ void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* Ove
 	if (!OtherActor || OtherActor == this)
 		return;
 
-	// 예: 플레이어만 감지 (필요 시 다른 조건 추가)
-	if (OtherActor->ActorHasTag(FName("Player")))
+	// If the other actor can attackable.
+	if (IAttackableTarget* AttackableInterface= Cast<IAttackableTarget>(OtherActor))
 	{
-		UAISense_Touch::ReportTouchEvent(GetWorld(), this, OtherActor, OtherActor->GetActorLocation());
+		// Check if the target is valid. ( check already dead or broken ).
+		if (AttackableInterface->IsValidAttackableTarget())
+		{
+			UE_LOG(LogTemp, Log, TEXT("[%s] find attackable target."), *GetNameSafe(this));
+			UAISense_Touch::ReportTouchEvent(GetWorld(), this, OtherActor, OtherActor->GetActorLocation());
+			AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation());
+		}
 	}
+}
+
+FVector APGEnemyCharacterBase::GetCapsuleTopWorldLocation() const
+{
+	const UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(GetRootComponent());
+
+	if (!Capsule)
+	{
+		return GetActorLocation();
+	}
+
+	const FVector Center = Capsule->GetComponentLocation();
+	const FVector Up = Capsule->GetUpVector();
+	const float HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+
+	return (Center + Up * HalfHeight);
 }
 
 UBehaviorTree* APGEnemyCharacterBase::GetBehaviorTree() const

@@ -43,12 +43,6 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	
-	//bite ¿ë collider
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
-	TObjectPtr<UBoxComponent> BiteCollider;
-
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
 	TObjectPtr<UBoxComponent> DoorDetectCollider;
 
@@ -67,15 +61,6 @@ protected:
 	
 	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
-
-	UFUNCTION()
-	void OnBiteColliderOverlapBegin(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult);
 
 	// When BlindCharacter's HuntLevel is over than 0( State is Chase or Investigate ), 
 	// the door ovelaped with BlindCharacter need to be broken.

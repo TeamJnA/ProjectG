@@ -6,7 +6,9 @@
 #include "GameFramework/SpectatorPawn.h"
 #include "PGSpectatorPawn.generated.h"
 
-class ACharacter;
+class UInputAction;
+struct FInputActionValue;
+class APGPlayerCharacter;
 
 /**
  * 
@@ -25,18 +27,54 @@ public:
 	/** 현재 관전 대상 반환 */
 	AActor* GetTargetActor() const { return TargetToOrbit; }
 
-	/** 클라이언트 입력에 따라 궤도 Yaw를 업데이트하는 함수 */
-	void UpdateOrbitYawInput(float DeltaYaw); // <--- 이 함수를 추가합니다.
-
 	// SpectatorPawn이 대상을 따라다니고 회전하는 로직을 공통화한 함수 (서버에서 호출)
 	void UpdateSpectatorPositionAndRotation();
 
+	UFUNCTION(Server, Reliable)
+	void Server_SetSpectateTarget(bool bNext);
+
+	// Cached all PGPlayerCharaters to change spectate. 
+	// If there's no characters to spectate, return false.
+	bool InitCachedAllPlayableCharacters(const APGPlayerCharacter* PrevPGCharacter);
+
 protected:
 	virtual void BeginPlay() override;
+
 	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> OrbitYawAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SpectateNextAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SpectatePrevAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ShowPauseMenuAction;
+
+	void OnSpectateNext(const FInputActionValue& Value);
+	void OnSpectatePrev(const FInputActionValue& Value);
+
+	/** 클라이언트 입력에 따라 궤도 Yaw를 업데이트하는 함수 */
+	void OnOrbitYaw(const FInputActionValue& Value);
+
+	bool IsSpectateTargetCached = false;
+
+	UPROPERTY(Transient)
+	TObjectPtr<APGPlayerCharacter> SpectateTargetCharacter;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<APGPlayerCharacter>> CachedAllPlayableCharacters;
+
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue, bool bForce) override {}
+
 	virtual void AddControllerYawInput(float) override {}
 	virtual void AddControllerPitchInput(float) override {}
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
