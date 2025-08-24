@@ -4,7 +4,10 @@
 #include "PGDoor1.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+
+#include "AbilitySystemComponent.h"
 #include "Interact/Ability/GA_Interact_Door.h"
+
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -100,6 +103,28 @@ void APGDoor1::HighlightOn() const
 void APGDoor1::HighlightOff() const
 {
 	Mesh0->SetRenderCustomDepth(false);
+}
+
+FInteractionInfo APGDoor1::GetInteractionInfo() const
+{
+	const float Duration = bIsLocked ? 1.0f : 0.3f;
+	return FInteractionInfo(EInteractionType::Hold, Duration);
+}
+
+bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+{
+	if (bIsLocked)
+	{
+		if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.Key"))))
+		{
+			return true;
+		}
+		OutFailureMessage = FText::FromString(TEXT("Door is locked"));
+
+		return false;
+	}
+
+	return true;
 }
 
 // Client action after toggle door

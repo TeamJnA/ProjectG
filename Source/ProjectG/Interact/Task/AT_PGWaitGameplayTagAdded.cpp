@@ -20,7 +20,6 @@ UAT_PGWaitGameplayTagAdded* UAT_PGWaitGameplayTagAdded::WaitGameplayTagAddWithTa
 	MyObj->TargetActor = TargetActor;
 	MyObj->SetExternalTarget(InOptionalExternalTarget);
 	MyObj->OnlyTriggerOnce = OnlyTriggerOnce;
-
 	return MyObj;
 }
 

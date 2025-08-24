@@ -226,6 +226,9 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_PlayerStareAtTarget(AActor* TargetActor);
 
+	UFUNCTION(Client, Reliable)
+	void Client_DisplayInteractionFailedMessage(const FText& Message);
+
 	UPROPERTY()
 	FOnStareTargetUpdate OnStareTargetUpdate;
 
@@ -233,6 +236,9 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void Client_InitScoreBoardWidget();
+
+	UFUNCTION(Client, Reliable)
+	void Client_UpdateInteractionProgress(float Progress);
 
 protected:
 	TObjectPtr<AActor> StaringTargetActor = nullptr;

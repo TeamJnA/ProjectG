@@ -36,6 +36,11 @@ void APGItemActor::HighlightOff() const
 	StaticMesh->SetRenderCustomDepth(false);
 }
 
+FInteractionInfo APGItemActor::GetInteractionInfo() const
+{
+	return FInteractionInfo(EInteractionType::Instant);
+}
+
 void APGItemActor::InitWithData(UPGItemData* _ItemData)
 {
 	ItemDataPtr = _ItemData;

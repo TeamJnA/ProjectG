@@ -305,9 +305,38 @@ void APGPlayerCharacter::InitHUD()
 	}
 }
 
+void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(const FText& Message)
+{
+	if (Controller && Controller->IsLocalController())
+	{
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
+			{
+				UE_LOG(LogTemp, Log, TEXT("Character::Client_DisplayInteractionFailedMessage: Interaction failed because door is locked"));
+				HUD->DisplayInteractionFailedMessage(Message, 1.0f);
+			}
+		}
+	}
+}
+
 void APGPlayerCharacter::MC_SetFlashlightState(bool _bIsFlashlightOn)
 {
 	HeadlightLight->SetVisibility(_bIsFlashlightOn);
+}
+
+void APGPlayerCharacter::Client_UpdateInteractionProgress_Implementation(float Progress)
+{
+	if (Controller && Controller->IsLocalController())
+	{
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
+			{
+				HUD->UpdateInteractionProgress(Progress);
+			}
+		}
+	}
 }
 
 void APGPlayerCharacter::Client_InitScoreBoardWidget_Implementation()

@@ -24,9 +24,10 @@ public:
 
 	//IInteractableActorInterface~
 	//Return Interact Ability of actor.
-	TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
-	void HighlightOn() const override;
-	void HighlightOff() const override;
+	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
+	virtual void HighlightOn() const override;
+	virtual void HighlightOff() const override;
+	virtual FInteractionInfo GetInteractionInfo() const override;
 	//~IInteractableActorInterface end
 
 	//IItemInteractInterface~

@@ -7,6 +7,7 @@
 #include "UI/PGMessageManagerWidget.h"
 #include "UI/PGScoreBoardWidget.h"
 #include "UI/PGCrosshairWidget.h"
+#include "UI/PGInteractionProgressWidget.h"
 
 #include "Character/Component/PGInventoryComponent.h"
 
@@ -48,6 +49,8 @@ void APGHUD::Init()
 
 	CrosshairWidget = CreateWidget<UPGCrosshairWidget>(GetOwningPlayerController(), CrosshairWidgetClass);
 	CrosshairWidget->AddToViewport();
+
+	InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(GetOwningPlayerController(), InteractionProgressWidgetClass);
 }
 
 void APGHUD::InitScoreBoardWidget()
@@ -64,3 +67,37 @@ void APGHUD::InitScoreBoardWidget()
 		UE_LOG(LogTemp, Error, TEXT("APGHUD::InitScoreBoardWidget: Failed to create ScoreBoardWidget! Check ScoreBoardWidgetClass in HUD Blueprint."));
 	}
 }
+
+void APGHUD::UpdateInteractionProgress(float Progress)
+{
+	if (!InteractionProgressWidget)
+	{
+		UE_LOG(LogTemp, Error, TEXT("HUD::UpdateInteractionProgress: No valid InteractionProgressWidget"));
+		return;
+	}
+
+	if (Progress > 0.0f)
+	{
+		if (!InteractionProgressWidget->IsInViewport())
+		{
+			InteractionProgressWidget->AddToViewport();
+		}
+		InteractionProgressWidget->SetProgress(Progress);
+	}
+	else
+	{
+		if (InteractionProgressWidget->IsInViewport())
+		{
+			InteractionProgressWidget->RemoveFromParent();
+		}
+	}
+}
+
+void APGHUD::DisplayInteractionFailedMessage(const FText& Message, float Duration)
+{
+	if (MessageManagerWidget)
+	{
+		MessageManagerWidget->ShowFailureMessage(Message, Duration);
+	}
+}
+

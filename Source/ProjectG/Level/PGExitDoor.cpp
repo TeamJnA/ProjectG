@@ -2,7 +2,10 @@
 
 
 #include "Level/PGExitDoor.h"
+
+#include "AbilitySystemComponent.h"
 #include "Interact/Ability/GA_Interact_ExitDoor.h"
+
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -57,6 +60,28 @@ void APGExitDoor::HighlightOff() const
 {
 	Mesh0->SetRenderCustomDepth(false);
 	Mesh1->SetRenderCustomDepth(false);
+}
+
+FInteractionInfo APGExitDoor::GetInteractionInfo() const
+{
+	const float Duration = IsLocked() ? 3.0f : 1.0f;
+	return FInteractionInfo(EInteractionType::Hold, Duration);
+}
+
+bool APGExitDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+{	
+	// if exit door is locked
+	if (LockStack > 0)
+	{
+		if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.ExitKey"))))
+		{
+			return true;
+		}
+		OutFailureMessage = FText::FromString(TEXT("Door is locked"));
+		return false;
+	}
+
+	return true;
 }
 
 bool APGExitDoor::IsLocked() const

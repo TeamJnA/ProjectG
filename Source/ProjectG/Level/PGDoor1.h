@@ -21,8 +21,10 @@ public:
 
 	//IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
-	void HighlightOn() const override;
-	void HighlightOff() const override;
+	virtual void HighlightOn() const override;
+	virtual void HighlightOff() const override;
+	virtual FInteractionInfo GetInteractionInfo() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
 	//IInteractableActorInterface end
 	
 	void ToggleDoor();

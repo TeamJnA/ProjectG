@@ -12,6 +12,7 @@ class UPGInventoryComponent;
 class UPGMessageManagerWidget;
 class UPGScoreBoardWidget;
 class UPGCrosshairWidget;
+class UPGInteractionProgressWidget;
 
 /**
  * 
@@ -24,6 +25,8 @@ class PROJECTG_API APGHUD : public AHUD
 public:
 	void Init();
 	void InitScoreBoardWidget();
+	void UpdateInteractionProgress(float Progress);
+	void DisplayInteractionFailedMessage(const FText& Message, float Duration);
 
 	// MessageManagerWidget Getter
 	UPGMessageManagerWidget* GetMessageManagerWidget() const { return MessageManagerWidget; }
@@ -50,6 +53,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGCrosshairWidget> CrosshairWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGInteractionProgressWidget> InteractionProgressWidgetClass;
+
 private:
 	UPROPERTY()
 	TObjectPtr<UPGAttributesWidget> AttributeWidget;
@@ -65,4 +71,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGCrosshairWidget> CrosshairWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGInteractionProgressWidget> InteractionProgressWidget;
 };

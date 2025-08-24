@@ -19,13 +19,17 @@ class PROJECTG_API UPGMessageManagerWidget : public UUserWidget
 
 public:
 	void BindMessageEntry(APGPlayerCharacter* PlayerCharacter);
-
+	void ShowFailureMessage(const FText& Message, float Duration);
+	
 protected:
 	UFUNCTION()
 	void HandleOnStareTargetUpdate(AActor* TargetActor);
 		
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UPGMessageEntryWidget> MessageEntry;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UPGMessageEntryWidget> FailureMessageEntry;
 
 	TObjectPtr<APGPlayerCharacter> PlayerRef;
 };

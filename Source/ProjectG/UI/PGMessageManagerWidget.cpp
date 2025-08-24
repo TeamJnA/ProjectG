@@ -19,6 +19,14 @@ void UPGMessageManagerWidget::BindMessageEntry(APGPlayerCharacter* PlayerCharact
 	UE_LOG(LogTemp, Log, TEXT("UPGMessageManagerWidget::BindMessageEntry: Delegate bound to OnStareTargetUpdate on character: %s"), *PlayerRef->GetName()); //
 }
 
+void UPGMessageManagerWidget::ShowFailureMessage(const FText& Message, float Duration)
+{
+	if (FailureMessageEntry)
+	{
+		FailureMessageEntry->SetMessage(Message, Duration);
+	}
+}
+
 void UPGMessageManagerWidget::HandleOnStareTargetUpdate(AActor* TargetActor)
 {
 	if (TargetActor)
@@ -39,6 +47,10 @@ void UPGMessageManagerWidget::HandleOnStareTargetUpdate(AActor* TargetActor)
 		if (MessageEntry) // MessageEntry 널 체크 추가
 		{
 			MessageEntry->SetMessage(FText::GetEmpty());
+		}
+		if (FailureMessageEntry)
+		{
+			FailureMessageEntry->SetMessage(FText::GetEmpty());
 		}
 	}
 }
