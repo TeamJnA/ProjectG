@@ -37,24 +37,6 @@ APGPlayerController::APGPlayerController()
 		SpectateMappingContext = SpectateMappingContextRef.Object;
 	}
 
-	ConstructorHelpers::FObjectFinder<UInputAction> OrbitYawActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_OrbitYaw.IA_OrbitYaw"));
-	if (OrbitYawActionObj.Succeeded())
-	{
-		OrbitYawAction = OrbitYawActionObj.Object;
-	}
-
-	ConstructorHelpers::FObjectFinder<UInputAction> SpectateNextActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_SpectateNext.IA_SpectateNext"));
-	if (SpectateNextActionObj.Succeeded())
-	{
-		SpectateNextAction = SpectateNextActionObj.Object;
-	}
-
-	ConstructorHelpers::FObjectFinder<UInputAction> SpectatePrevActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_SpectatePrev.IA_SpectatePrev"));
-	if (SpectatePrevActionObj.Succeeded())
-	{
-		SpectatePrevAction = SpectatePrevActionObj.Object;
-	}
-
 	ConstructorHelpers::FObjectFinder<UInputAction> ShowPauseMenuActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_ShowPauseMenu.IA_ShowPauseMenu"));
 	if (ShowPauseMenuActionObj.Succeeded())
 	{
@@ -72,8 +54,6 @@ APGPlayerController::APGPlayerController()
 	{
 		PauseMenuWidgetClass = PauseMenuWidgetRef.Class;
 	}
-
-	OriginalPlayerCharacter = nullptr;
 }
 
 
@@ -158,13 +138,6 @@ void APGPlayerController::ReplaceInputMappingContext(const APawn* PawnType)
 			Subsystem->AddMappingContext(SpectateMappingContext, 1);
 		}
 	}
-}
-
-void APGPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(APGPlayerController, SpectateTargetCharacter);
-	DOREPLIFETIME(APGPlayerController, OriginalPlayerCharacter);
 }
 
 void APGPlayerController::Client_PostSeamlessTravel_Implementation()
@@ -278,9 +251,6 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 	{
 		// 기존 Pawn의 입력 비활성화
 		PrevPawn->DisableInput(this);
-
-		OriginalPlayerCharacter = Cast<APGPlayerCharacter>(PrevPawn);
-		UE_LOG(LogTemp, Log, TEXT("PC::Server_EnterSpectatorMode_Implementation: OriginalPlayerCharacter set to: %s"), *GetNameSafe(OriginalPlayerCharacter));
 	}
 
 	//
@@ -304,9 +274,16 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 
 	ControlledSpectator = GetWorld()->SpawnActor<APGSpectatorPawn>(APGSpectatorPawn::StaticClass(), SpawnLoc, SpawnRot, SpawnParams);
 
+	APGPlayerCharacter* PrevPlayerCharacter = Cast<APGPlayerCharacter>(PrevPawn);
+	if (!PrevPlayerCharacter)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find PrevPGCharacter in APGPlayerController::Server_EnterSpectatorMode"));
+		return;
+	}
+
 	// ControlledSpectataor에 관전 대상 캐릭터들 추가.
 	// 관전할 다른 대상이 없다면 (솔로플레이인 경우) 관전 모드 진입 방지
-	if (!ControlledSpectator->InitCachedAllPlayableCharacters(OriginalPlayerCharacter))
+	if (!ControlledSpectator->InitCachedAllPlayableCharacters(PrevPlayerCharacter))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Server: Cannot enter spectator mode. No other players to spectate."));
 		return;
@@ -317,16 +294,6 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 		Possess(ControlledSpectator);
 
 		ControlledSpectator->Server_SetSpectateTarget(true);
-
-		if (SpectateTargetCharacter)
-		{
-			// SetTarget은 Server_ChangeSpectateTarget_Implementation에서 수행
-			UE_LOG(LogTemp, Log, TEXT("PC::Server_EnterSpectatorMode: Spectator set initial target to %s."), *GetNameSafe(SpectateTargetCharacter));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("PC::Server_EnterSpectatorMode: No SpectateTargetCharacter found after initial change attempt!"));
-		}
 
 		// **서버에서 SpectatorPawn을 Possess**
 		// 이 Possess가 ControlledSpectator를 클라이언트에 동기화하고,
@@ -342,53 +309,6 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to spawn APGSpectatorPawn."));
-	}
-}
-
-void APGPlayerController::OnRep_SpectateTargetCharacter()
-{
-	if (IsLocalController() && IsValid(SpectateTargetCharacter))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Client: OnRep_SpectateTargetCharacter: Target received: %s."), *GetNameSafe(SpectateTargetCharacter));
-
-		APGSpectatorPawn* CurrentSpectator = Cast<APGSpectatorPawn>(GetPawn()); // 현재 Possess된 SpectatorPawn 가져오기
-		if (IsValid(CurrentSpectator))
-		{
-			//CurrentSpectator->SetTargetActor(SpectateTargetCharacter); // 클라이언트 측 SpectatorPawn에 대상 설정
-			//CurrentSpectator->UpdateSpectatorPositionAndRotation(); // 초기 위치 및 회전 업데이트
-			UE_LOG(LogTemp, Warning, TEXT("Client: OnRep_SpectateTargetCharacter: ControlledSpectator valid and target set."));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Client: OnRep_SpectateTargetCharacter: ControlledSpectator is not yet valid. (Possibly not Possessed by server yet)"));
-			// 이 경우 ControlledSpectator가 Possess되는 시점을 기다려야 합니다.
-			// 또는 ControlledSpectator 변수를 ReplicatedUsing으로 만들고, 해당 OnRep에서 처리할 수도 있습니다.
-			// 하지만 GetPawn()은 PlayerState의 PlayerPawn 복제에 의해 클라이언트로 동기화되므로 보통 문제 없습니다.
-		}
-	}
-	else if (IsLocalController())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Client: OnRep_SpectateTargetCharacter: SpectateTargetCharacter is nullptr or not local controller."));
-	}
-}
-
-void APGPlayerController::OnSpectateNext(const FInputActionValue& Value)
-{
-	if (!IsLocalController()) return;
-	if (Cast<APGSpectatorPawn>(GetPawn()))
-	{
-		Server_ChangeSpectateTarget(true);
-		UE_LOG(LogTemp, Log, TEXT("PC::OnSpectateNext: Client requested next spectate target."));
-	}
-}
-
-void APGPlayerController::OnSpectatePrev(const FInputActionValue& Value)
-{
-	if (!IsLocalController()) return;
-	if (Cast<APGSpectatorPawn>(GetPawn()))
-	{
-		Server_ChangeSpectateTarget(false);
-		UE_LOG(LogTemp, Log, TEXT("PC::OnSpectatePrev: Client requested previous spectate target."));
 	}
 }
 
@@ -419,77 +339,6 @@ void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("PC::OnShowPauseMenu: No PauseMenuWidget Class"));
-	}
-}
-
-void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
-{
-	if (!HasAuthority()) return;
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	// 현재 관전 대상이 있는 경우 해당 대상의 index 저장
-	int32 CurrentTargetIndex = INDEX_NONE;
-	if (IsValid(SpectateTargetCharacter))
-	{
-		CurrentTargetIndex = CachedAllPlayableCharacters.IndexOfByKey(SpectateTargetCharacter);
-	}
-
-	// 새로운 관전대상 index
-	int32 NewTargetIndex = 0;
-
-	// 현재 관전 중인 경우, 입력에 따라 관전 대상 다음 혹은 이전 캐릭터의 인덱스 저장
-	// 최초 관전을 시작하는 경우, 배열에서 관전 대상을 찾지 않고, 배열의 0번 캐릭터 관전
-	if (CurrentTargetIndex != INDEX_NONE) 
-	{
-		if (bNext)
-		{
-			NewTargetIndex = (CurrentTargetIndex + 1) % CachedAllPlayableCharacters.Num();
-		}
-		else
-		{
-			NewTargetIndex = (CurrentTargetIndex - 1 + CachedAllPlayableCharacters.Num()) % CachedAllPlayableCharacters.Num();
-		}
-	}
-
-	ACharacter* NewTargetCandidate = CachedAllPlayableCharacters[NewTargetIndex];
-	
-	// 새로운 대상이 현재 대상과 실제로 다를 경우에만 업데이트
-	// 새로운 대상이 현재 대상과 같은 경우 => 관전 가능한 캐릭터가 애초에 한 명 밖에 없었을 경우 업데이트 x
-	if (NewTargetCandidate != SpectateTargetCharacter)
-	{
-		SpectateTargetCharacter = NewTargetCandidate;
-		UE_LOG(LogTemp, Log, TEXT("PC::Server_ChangeSpectateTarget_Implementation: Changed spectate target to: %s"), *GetNameSafe(SpectateTargetCharacter));
-
-		if (IsValid(ControlledSpectator) && IsValid(SpectateTargetCharacter))
-		{
-			ControlledSpectator->SetTargetActor(SpectateTargetCharacter);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("PC::Server_ChangeSpectateTarget_Implementation: ControlledSpectator or SpectateTargetCharacter invalid after target change."));
-		}
-	}
-	else
-	{
-		// 이 메시지는 AllPlayableCharacters.Num() == 1 일 때만 출력 (관전 가능한 캐릭터가 애초에 한 명 밖에 없었을 경우)
-		UE_LOG(LogTemp, Warning, TEXT("PC::Server_ChangeSpectateTarget_Implementation: Spectate target remains the same (no other valid unique target)."));
-	}
-}
-
-// 관전자 입력에 따라 회전 처리
-void APGPlayerController::OnOrbitYaw(const FInputActionValue& Value)
-{
-	// 클라이언트에서 입력 처리
-	if (!IsLocalController()) return;
-
-	float AxisValue = Value.Get<float>();
-
-	// 현재 플레이어 컨트롤러가 APGSpectatorPawn을 Possess하고 있을 때만 처리
-	if (APGSpectatorPawn* Spectator = Cast<APGSpectatorPawn>(GetPawn()))
-	{
-		Spectator->UpdateOrbitYawInput(AxisValue);
 	}
 }
 

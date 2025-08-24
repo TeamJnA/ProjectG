@@ -230,7 +230,7 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 			UE_LOG(LogTemp, Log, TEXT("PlayerController Test"));
 			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			{
-				Subsystem->RemoveMappingContext(DefaultMappingContext);
+				//Subsystem->RemoveMappingContext(DefaultMappingContext);
 			}
 			// DisableInput(PlayerController);
 		}
