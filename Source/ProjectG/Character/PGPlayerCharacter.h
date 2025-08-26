@@ -137,7 +137,26 @@ public:
 	bool IsValidAttackableTarget() const;
 
 	void OnAttacked(FVector InstigatorHeadLocation);
+
+	void OnAttackFinished();
 	// ~IAttackableTarget
+
+	UFUNCTION(Client, Reliable)
+	void Client_OnAttacked(FVector InstigatorHeadLocation);
+
+	void OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	/// <summary>
+	/// Server-only death handling function
+	/// When the player dies, they drop their items and switch to a ragdoll state.
+	/// </summary>
+	void OnPlayerDeathAuthority();
+
+	/// <summary>
+	/// Client-only death handling function
+	/// The camera slowly pulls back from the character, enabling spectator mode.
+	/// </summary>
+	void OnPlayerDeathLocally();
 
 ///
 ///*********	Gameplay Ability System ******************

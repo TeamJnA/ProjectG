@@ -16,6 +16,7 @@
 
 #include "Interface/AttackableTarget.h"
 
+DEFINE_LOG_CATEGORY(LogEnemyCharacter);
 
 APGEnemyCharacterBase::APGEnemyCharacterBase()
 {
@@ -40,8 +41,19 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
 }
 
+void APGEnemyCharacterBase::NotifyAttackEnded()
+{
+	if (HasAuthority())
+	{
+		UE_LOG(LogEnemyCharacter, Log, TEXT("%s Attack is Finished."), *GetNameSafe(this));
+		if (IAttackableTarget* AttackableInterface = Cast<IAttackableTarget>(CachedAttackedTarget))
+		{
+			AttackableInterface->OnAttackFinished();
+		}
 
-
+		CachedAttackedTarget = nullptr;
+	}
+}
 
 void APGEnemyCharacterBase::BeginPlay()
 {
@@ -64,6 +76,12 @@ void APGEnemyCharacterBase::BeginPlay()
 
 void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// Overlap only perform on server. ( Sync issue )
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (!OtherActor || OtherActor == this)
 		return;
 
@@ -71,10 +89,15 @@ void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* Ove
 	if (IAttackableTarget* AttackableInterface= Cast<IAttackableTarget>(OtherActor))
 	{
 		// Check if the target is valid. ( check already dead or broken ).
-		if (AttackableInterface->IsValidAttackableTarget())
+		// And to prevent duplicate, check otheractor is not CachedAttackedTarget.
+		if (AttackableInterface->IsValidAttackableTarget() && OtherActor != CachedAttackedTarget)
 		{
-			UE_LOG(LogTemp, Log, TEXT("[%s] find attackable target."), *GetNameSafe(this));
+			// Caching actor to notify the target that the attack has finished.
+			CachedAttackedTarget = OtherActor;
+
+			UE_LOG(LogEnemyCharacter, Log, TEXT("[%s] find attackable target."), *GetNameSafe(this));
 			UAISense_Touch::ReportTouchEvent(GetWorld(), this, OtherActor, OtherActor->GetActorLocation());
+
 			AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation());
 		}
 	}

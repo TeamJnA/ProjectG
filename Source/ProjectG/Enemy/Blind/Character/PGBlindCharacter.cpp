@@ -119,7 +119,7 @@ void APGBlindCharacter::BeginPlay()
 void APGBlindCharacter::OnOpenDoorColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     // if other actor is door, break the door!
-    UE_LOG(LogTemp, Log, TEXT("OtherActor was detected by BlindCharacter Door Collision"));
+    UE_LOG(LogEnemyCharacter, Log, TEXT("OtherActor was detected by BlindCharacter Door Collision"));
 
     APGDoor1* OverlappedDoor = Cast<APGDoor1>(OtherActor);
     if (OverlappedDoor)

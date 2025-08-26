@@ -215,79 +215,145 @@ bool APGPlayerCharacter::IsValidAttackableTarget() const
 
 void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 {
+	// This function only performed on server.
+	//TODO : 암시적 디버깅으로 바꿔줘야 한다.
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	// 서버에서의 작업이 끝나고 client 작업 호출해야 겠다.
+
+	//					서버 클라
+	// 
+	// 입력 차단           O
+	// 어빌 제거  O
+	// 이동 차단  O
+	// 애님 중지           O
+	// 캐릭 이동           O
+	// 잡히는 모션               ???
+	// 근데 애니메이션 중지 이후에 어차피 잡히는 애니메이션 연출할거라 이건 좀 고민해야겠네.
+	// Client의 사망 관련 처리는 OnRep을 이용해서 처리하는 것이 좋다.
+	// 나 같은 경우는 Player.State.Dead의 추가를 기다리는 것이 어떨까.
+	// 이후 처리 과정
+	// 태그 추가  O      O
+	// 아이템 드랍, 레그돌 [서버] / 카메라 멀어지기 후 관전 [클라] << Player Death 함수 ?
+
 	// Set player dead and rotate camera to the enemy's head
 	// And camera move away slowly, activate spectating mode
 	UE_LOG(LogTemp, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
+
+	// 1. Remove all abilities [ Server ]
+	AbilitySystemComponent->ClearAllAbilities();
 	
-	// 1. Player.State.Dead 태그 추가 [ Server, Client ]
-	AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
-
-	// 2. 플레이어 입력 차단 [ Client ]
-	if (IsLocallyControlled())
+	// 2. 캐릭터 이동 차단
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
-		if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+		Movement->StopMovementImmediately();
+		Movement->DisableMovement();
+	}
+	
+	// Notify client to replicate server-side attack handling
+	Client_OnAttacked(InstigatorHeadLocation);
+}
+
+void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector InstigatorHeadLocation)
+{
+	// 1. 플레이어 입력 차단 [ Client ]
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		UE_LOG(LogTemp, Log, TEXT("PlayerController Test"));
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			UE_LOG(LogTemp, Log, TEXT("PlayerController Test"));
-			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-			{
-				//Subsystem->RemoveMappingContext(DefaultMappingContext);
-			}
-			// DisableInput(PlayerController);
+			// Subsystem->RemoveMappingContext(DefaultMappingContext);
 		}
+		DisableInput(PlayerController);
 	}
 
-	// 3. Remove all abilities [ Server ]
-	if (HasAuthority())
+	// 2.  애니메이션 중단
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		AbilitySystemComponent->ClearAllAbilities();
+		AnimInstance->StopAllMontages(0.1f);
 	}
 
-	// 4 - 1. 캐릭터(카메라) 몹 쪽으로 회전 [ Client ]
-	if (IsLocallyControlled())
-	{
-		const FRotator CurrentRotation = GetActorRotation();
-		FRotator TargetRotation = (InstigatorHeadLocation - GetActorLocation()).Rotation();
-		TargetRotation.Pitch = 0.0f; // 요거도 살짝 올려보게 수정?
-		TargetRotation.Roll = 0.0f;
+	// 3 - 1. 캐릭터(카메라) 몹 쪽으로 회전 [ Client ]
+	const FRotator CurrentRotation = GetActorRotation();
+	FRotator TargetRotation = (InstigatorHeadLocation - GetActorLocation()).Rotation();
+	TargetRotation.Pitch = 0.0f; // 요거도 살짝 올려보게 수정?
+	TargetRotation.Roll = 0.0f;
 
-		float DeltaTime = UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
+	float DeltaTime = UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
 
-		// FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, 0.3f);
-		// SetActorRotation(TargetRotation);
-		Controller->SetControlRotation(TargetRotation);
-	}
-	//  // This need to play at client function
+	// FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, 0.3f);
+	// SetActorRotation(TargetRotation);
+	Controller->SetControlRotation(TargetRotation);
 
-	// 4 - 2. 카메라 몹으로부터 거리 두기. [ 나중구현 ] [ Server, Client ]
+	// 3 - 2. 카메라 몹으로부터 거리 두기. [ 나중구현 ] [ Server, Client ]
 	// FVector CurrentCameraLocation = FirstPersonCamera->GetRelativeLocation();
 	// FirstPersonCamera;
 
+	// 4. 잡히는 모션 진행 [ 이건 서버냐 클라냐 그것이 문제로다... ]
 
-	// 5. 플레이어 아이템들 드랍 [ Server ]
-	
-	// 적의 Attack이 끝나고.
-	// 6. 캐릭터 레그돌 하고 떨어트리기 [ 나중구현 ] ( Server )
-	// 7. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
+}
+
+void APGPlayerCharacter::OnAttackFinished()
+{
+	// 적의 공격이 끝났을 때, 서버에서 처리되는 함수.
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnAttackFinished function is must be called on server."));
+		return;
+	}
+	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s already dead, but OnAttacked."), *GetNameSafe(this));
+		return;
+	}
+
+	// 1. Player.State.Dead 태그 추가 [ Server, Client ]
+	AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
+	AbilitySystemComponent->AddReplicatedLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
+
+	OnPlayerDeathAuthority();
+}
+
+void APGPlayerCharacter::OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	if (NewCount > 0)
+	{
+		OnPlayerDeathLocally();
+	}
+}
+
+void APGPlayerCharacter::OnPlayerDeathAuthority()
+{
+	if (!HasAuthority())
+		return;
+	// 1. 플레이어 아이템들 드랍 [ Server ]
+
+	// 2. 캐릭터 레그돌  [ 나중구현 ] ( Server )
+}
+
+// This function is called on Client when [Player.State.Dead] tag was added.
+// == When player dead.
+void APGPlayerCharacter::OnPlayerDeathLocally()
+{
+	if (!IsLocallyControlled())
+		return;
+	// 1. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
 
 	/*
-	if (IsLocallyControlled())
-	{
-		FirstPersonCamera->Deactivate();
+	FirstPersonCamera->Deactivate();
 
-		FollowCamera->Activate();
-	}
+	FollowCamera->Activate();
 	*/
 
-	// 8. 관전 버튼을 통해 관전 기능 추가. [ 다음목표 ] ( Client )
-	if ( IsLocallyControlled() )
+	// 2. 관전 버튼을 통해 관전 기능 추가.( Client )
+	APGPlayerController* PGPC = Cast<APGPlayerController>(Controller);
+	if (PGPC)
 	{
-		APGPlayerController* PGPC = Cast<APGPlayerController>(Controller);
-		if (PGPC)
-		{
-			PGPC->StartSpectate();
-		}
+		PGPC->StartSpectate();
 	}
-	
 }
 
 void APGPlayerCharacter::PossessedBy(AController* NewController)
@@ -303,6 +369,12 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
+
+		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
+		FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.Dead"));
+
+		AbilitySystemComponent->RegisterGameplayTagEvent(DeadTag, EGameplayTagEventType::NewOrRemoved)
+			.AddUObject(this, &APGPlayerCharacter::OnDeadTagChanged);
 	}
 }
 
@@ -318,6 +390,12 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
+
+		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
+		FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.Dead"));
+
+		AbilitySystemComponent->RegisterGameplayTagEvent(DeadTag, EGameplayTagEventType::NewOrRemoved)
+			.AddUObject(this, &APGPlayerCharacter::OnDeadTagChanged);
 	}
 }
 

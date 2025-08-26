@@ -9,6 +9,8 @@
 
 #include "PGEnemyCharacterBase.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogEnemyCharacter, Log, All);
+
 class UPGEnemyAttributeSet;
 class UBoxComponent;
 /**
@@ -36,6 +38,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")
 	UBoxComponent* TouchCollider;
 
+	// Notify target actor that attack is finished
+	void NotifyAttackEnded();
+
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(AllowPrivateAccess="true"))
@@ -46,7 +51,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UPGEnemyAttributeSet> EnemyAttributeSet;
 
-
+	// CachedAttackedTarget is used to notify the target that the attack has finished.
+	// Usually using AnimNotify to pass attack finish information.
+	TObjectPtr<AActor> CachedAttackedTarget;
 
 	UFUNCTION()
 	void OnTouchColliderOverlapBegin(
