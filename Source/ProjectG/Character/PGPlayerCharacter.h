@@ -91,6 +91,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MouseRightAction;
 	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 protected:
 	virtual void BeginPlay() override;
 	
@@ -157,6 +159,14 @@ public:
 	/// The camera slowly pulls back from the character, enabling spectator mode.
 	/// </summary>
 	void OnPlayerDeathLocally();
+
+	// Ragdolls 
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_IsRagdoll, VisibleAnywhere, BlueprintReadWrite, Category = Ragdoll)
+	bool bIsRagdoll = false;
+
+protected:
+	UFUNCTION()
+	void OnRep_IsRagdoll();
 
 ///
 ///*********	Gameplay Ability System ******************

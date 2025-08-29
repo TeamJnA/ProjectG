@@ -140,6 +140,13 @@ void APGPlayerCharacter::NotifyControllerChanged()
 	*/
 }
 
+void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APGPlayerCharacter, bIsRagdoll);
+}
+
 void APGPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -216,7 +223,6 @@ bool APGPlayerCharacter::IsValidAttackableTarget() const
 void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 {
 	// This function only performed on server.
-	//TODO : 암시적 디버깅으로 바꿔줘야 한다.
 	if (!HasAuthority())
 	{
 		return;
@@ -317,9 +323,9 @@ void APGPlayerCharacter::OnAttackFinished()
 	OnPlayerDeathAuthority();
 }
 
-void APGPlayerCharacter::OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount)
+void APGPlayerCharacter::OnDeadTagChanged(const FGameplayTag Tag, int32 TagCount)
 {
-	if (NewCount > 0)
+	if (TagCount > 0)
 	{
 		OnPlayerDeathLocally();
 	}
@@ -328,10 +334,19 @@ void APGPlayerCharacter::OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount
 void APGPlayerCharacter::OnPlayerDeathAuthority()
 {
 	if (!HasAuthority())
+	{
 		return;
+	}
 	// 1. 플레이어 아이템들 드랍 [ Server ]
 
 	// 2. 캐릭터 레그돌  [ 나중구현 ] ( Server )
+	bIsRagdoll = true;
+
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
+	GetCapsuleComponent()->SetSimulatePhysics(true);
+
+	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);
 }
 
 // This function is called on Client when [Player.State.Dead] tag was added.
@@ -339,7 +354,9 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 void APGPlayerCharacter::OnPlayerDeathLocally()
 {
 	if (!IsLocallyControlled())
+	{
 		return;
+	}
 	// 1. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
 
 	/*
@@ -353,6 +370,18 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 	if (PGPC)
 	{
 		PGPC->StartSpectate();
+	}
+}
+
+void APGPlayerCharacter::OnRep_IsRagdoll()
+{
+	if (bIsRagdoll)
+	{
+		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
+		GetCapsuleComponent()->SetSimulatePhysics(true);
+
+		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		GetMesh()->SetSimulatePhysics(true);
 	}
 }
 
