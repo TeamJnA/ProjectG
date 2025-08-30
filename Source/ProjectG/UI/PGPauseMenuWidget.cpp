@@ -2,7 +2,9 @@
 
 
 #include "UI/PGPauseMenuWidget.h"
+
 #include "UI/PGConfirmWidget.h"
+#include "UI/PGFriendListWidget.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
 
@@ -24,6 +26,17 @@ void UPGPauseMenuWidget::NativeConstruct()
 		ResumeButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnResumeButtonClicked);
 	}
 
+	if (InviteFriendButton)
+	{
+		InviteFriendButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnInviteFriendButtonClicked);
+
+		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+		if (GS && GS->GetCurrentGameState() != EGameState::Lobby)
+		{
+			InviteFriendButton->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+
 	if (OptionButton)
 	{
 		OptionButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnOptionButtonClicked);
@@ -39,9 +52,15 @@ void UPGPauseMenuWidget::NativeConstruct()
 		DesktopButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnDesktopButtonClicked);
 	}
 
-	if (BackButton)
+	if (BackButton_OptionMenuCanvas)
 	{
-		BackButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnBackButtonClicked);
+		BackButton_OptionMenuCanvas->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnBackButtonClicked);
+
+	}
+
+	if (BackButton_InviteMenuCanvas)
+	{
+		BackButton_InviteMenuCanvas->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnBackButtonClicked);
 	}
 }
 
@@ -56,6 +75,15 @@ void UPGPauseMenuWidget::OnResumeButtonClicked()
 		OwningPC->SetInputMode(FInputModeGameOnly());
 
 		RemoveFromParent();
+	}
+}
+
+void UPGPauseMenuWidget::OnInviteFriendButtonClicked()
+{
+	if (WidgetSwitcher && FriendListWidget)
+	{
+		FriendListWidget->RefreshFriendList();
+		WidgetSwitcher->SetActiveWidgetIndex(2);
 	}
 }
 

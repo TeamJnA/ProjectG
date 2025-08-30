@@ -2,14 +2,16 @@
 
 
 #include "UI/PGScoreBoardWidget.h"
+
 #include "UI/PGPlayerEntryWidget.h"
 #include "Components/VerticalBox.h"
 #include "Components/Button.h"
 
-#include "Character/PGPlayerCharacter.h"
+#include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
 #include "Player/PGPlayerController.h"
+#include "Character/PGPlayerCharacter.h"
 
 void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
 {
@@ -34,11 +36,10 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 	}
 
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	if (!GS)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Get GameState is null"));
-		return;
-	}
+	ensureMsgf(GS, TEXT("ScoreBoardWidget::UpdatePlayerEntry: GS is not valid"));
+
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	ensureMsgf(GI, TEXT("ScoreBoardWidget::UpdatePlayerEntry: GI is not valid"));
 
 	PlayerContainer->ClearChildren();
 
@@ -49,8 +50,8 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 			UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
 			if (NewSlot)
 			{
+				NewSlot->SetupEntry(FText::FromString(PGPS->GetPlayerName()), nullptr);
 				PlayerContainer->AddChild(NewSlot);
-				NewSlot->SetPlayerText(FText::FromString(PGPS->GetPlayerName()));
 				UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PGPS->GetPlayerName());
 			}
 		}

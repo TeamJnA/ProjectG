@@ -7,9 +7,10 @@
 #include "PGPauseMenuWidget.generated.h"
 
 class UButton;
+class UWidgetSwitcher;
 class UPGConfirmWidget;
 class UPGSettingMenuWidget;
-class UWidgetSwitcher;
+class UPGFriendListWidget;
 
 /**
  * 
@@ -27,6 +28,9 @@ protected:
 
 	UFUNCTION()
 	void OnResumeButtonClicked();
+
+	UFUNCTION()
+	void OnInviteFriendButtonClicked();
 
 	UFUNCTION()
 	void OnOptionButtonClicked();
@@ -47,6 +51,12 @@ protected:
 	TObjectPtr<UButton> ResumeButton;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> InviteFriendButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UPGFriendListWidget> FriendListWidget;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> OptionButton;
 
 	UPROPERTY(meta = (BindWidget))
@@ -56,7 +66,10 @@ protected:
 	TObjectPtr<UButton> DesktopButton;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> BackButton;
+	TObjectPtr<UButton> BackButton_OptionMenuCanvas;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> BackButton_InviteMenuCanvas;
 
 private:
 	TObjectPtr<APlayerController> OwningPC;

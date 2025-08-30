@@ -17,10 +17,13 @@ class PROJECTG_API APGLobbyGameMode : public AGameMode
 public:
 	APGLobbyGameMode();
 
-	void CheckAllPlayersReady();
 	void StartGame();
-	
+	void UpdateLobbyPlayerList();
+
 protected:
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
+
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
 

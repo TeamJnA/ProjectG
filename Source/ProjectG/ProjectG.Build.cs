@@ -14,7 +14,7 @@ public class ProjectG : ModuleRules
                                                             "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam", 
                                                             "AIModule", "NavigationSystem" });
 
-        PrivateDependencyModuleNames.AddRange(new string[] { "Networking" });
+        PrivateDependencyModuleNames.AddRange(new string[] { "Networking", "Steamworks" });
 
 		PublicIncludePaths.AddRange(new string[] { "ProjectG" });
 

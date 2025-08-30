@@ -6,6 +6,11 @@
 #include "Blueprint/UserWidget.h"
 #include "PGFriendEntryWidget.generated.h"
 
+class UImage;
+class UTextBlock;
+class UButton;
+class UPGAdvancedFriendsGameInstance;
+
 /**
  * 
  */
@@ -13,5 +18,26 @@ UCLASS()
 class PROJECTG_API UPGFriendEntryWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
+public:
+	void SetupFriendEntry(const FText& InFriendName, UTexture2D* InAvatarTexture, bool bIsOnline, TSharedPtr<const FUniqueNetId> InFriendNetId);
+
+protected:
+	virtual void NativeConstruct() override;
+
+	UFUNCTION()
+	void OnInviteButtonClicked();
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> FriendAvatar;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> FriendNameText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> InviteButton;
+
+private:
+	TSharedPtr<const FUniqueNetId> FriendNetId;
+	TObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
 };

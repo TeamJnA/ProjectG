@@ -9,11 +9,19 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
+#include "Interfaces/OnlineFriendsInterface.h"
+#include "Engine/Texture2D.h"
 
 #include "Item/PGItemData.h"
 #include "Engine/StreamableManager.h"
 
 #include "UI/PGMainMenuWidget.h"
+
+#if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
+#include "steam/steam_api.h" 
+#endif
 
 void UPGAdvancedFriendsGameInstance::Init()
 {
@@ -280,57 +288,6 @@ void UPGAdvancedFriendsGameInstance::NotifyTravelFailed()
 	PC->NotifyTravelFailed();
 }
 
-//void UPGAdvancedFriendsGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
-//{
-//	if (bWasSuccessful)
-//	{
-//		UE_LOG(LogTemp, Log, TEXT("Session created successfully"));
-//
-//		//if (GetWorld()->GetNetMode() != NM_Client)
-//		//{
-//		//	UGameplayStatics::OpenLevel(GetWorld(), "LV_Lobby", true, "listen");
-//		//}
-//	}
-//}
-//
-//void UPGAdvancedFriendsGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
-//{
-//	if (!SessionInterface.IsValid()) return;
-//
-//	FString connectString;
-//	if (SessionInterface->GetResolvedConnectString(SessionName, connectString))
-//	{
-//		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-//		if (PC)
-//		{
-//			PC->ClientTravel(connectString, ETravelType::TRAVEL_Absolute);
-//		}
-//	}
-//}
-//
-//void UPGAdvancedFriendsGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
-//{
-//	if (!bWasSuccessful || !SessionSearch.IsValid()) return;
-//
-//	APGLobbyPlayerController* pc = Cast<APGLobbyPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
-//	if (!pc) return;
-//
-//	UPGLobbyWidget* lobbyWidget = pc->GetLobbyWidget();
-//	if (!lobbyWidget) return;
-//
-//	lobbyWidget->ClearSessionList();
-//
-//	for (int32 i = 0; i < SessionSearch->SearchResults.Num(); ++i)
-//	{
-//		const FOnlineSessionSearchResult& result = SessionSearch->SearchResults[i];
-//		const FString& serverName = result.Session.OwningUserName;
-//
-//		UE_LOG(LogTemp, Log, TEXT("Session %d: %s"), i, *result.Session.OwningUserName);
-//
-//		lobbyWidget->AddSessionSlot(serverName, i);
-//	}
-//}
-
 bool UPGAdvancedFriendsGameInstance::DidRetryClientTravel() const
 {
 	return bDidRetryClientTravel;
@@ -402,8 +359,7 @@ void UPGAdvancedFriendsGameInstance::LeaveSessionAndReturnToLobby()
 	const FName CurrentSessionName = NAME_GameSession; // 또는 세션 생성 시 사용한 이름
 	if (!SessionInterfaceRef->DestroySession(CurrentSessionName))
 	{
-		// DestroySession 호출 자체가 실패한 경우 (매우 드문 경우)
-		// 델리게이트를 바로 해제하고 로비로 이동합니다.
+		// DestroySession 호출 자체가 실패한 경우 (매우 드문 경우) 델리게이트를 바로 해제하고 로비로 이동
 		UE_LOG(LogTemp, Warning, TEXT("Failed to initiate session destruction for %s. Forcing return."), *CurrentSessionName.ToString());
 		SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
 
@@ -462,48 +418,6 @@ int32 UPGAdvancedFriendsGameInstance::GetMaxInventorySize() const
 	return MaxInventorySize;
 }
 
-//void UPGAdvancedFriendsGameInstance::HostSession(FName SessionName, int32 MaxPlayers)
-//{
-//	if (!SessionInterface.IsValid()) return;
-//
-//	FOnlineSessionSettings sessionSettings;
-//	sessionSettings.NumPublicConnections = MaxPlayers;
-//
-//	sessionSettings.bIsLANMatch = false;
-//	sessionSettings.bAllowInvites = true;
-//	sessionSettings.bIsDedicated = false;
-//	sessionSettings.bUseLobbiesIfAvailable = true;
-//	sessionSettings.bUsesPresence = true;
-//	sessionSettings.bAllowJoinViaPresence = true;
-//	sessionSettings.bAllowJoinViaPresenceFriendsOnly = false;
-//	sessionSettings.bAntiCheatProtected = false;
-//	sessionSettings.bUsesStats = false;
-//	sessionSettings.bShouldAdvertise = true;
-//	sessionSettings.bUseLobbiesVoiceChatIfAvailable = false;
-//
-//	SessionInterface->CreateSession(0, SessionName, sessionSettings);
-//}
-//
-//void UPGAdvancedFriendsGameInstance::JoinSession(int32 SessionIndex)
-//{
-//	if (!SessionInterface.IsValid() || !SessionSearch.IsValid()) return;
-//	if (!SessionSearch->SearchResults.IsValidIndex(SessionIndex)) return;
-//
-//	SessionInterface->JoinSession(0, NAME_GameSession, SessionSearch->SearchResults[SessionIndex]);
-//}
-//
-//void UPGAdvancedFriendsGameInstance::FindSessions()
-//{
-//	if (!SessionInterface.IsValid()) return;
-//
-//	SessionSearch = MakeShareable(new FOnlineSessionSearch());
-//	SessionSearch->bIsLanQuery = false;
-//	SessionSearch->MaxSearchResults = 20;
-//	SessionSearch->QuerySettings.Set(FName("PRESENCESEARCH"), true, EOnlineComparisonOp::Equals);
-//
-//	SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
-//}
-
 UPGItemData* UPGAdvancedFriendsGameInstance::GetItemDataByKey(FName Key)
 {
 	if (TSoftObjectPtr<UPGItemData>* ptr = ItemDataMap.Find(Key))
@@ -544,5 +458,140 @@ void UPGAdvancedFriendsGameInstance::RequestLoadItemData(FName Key, FOnItemDataL
 	{
 		// ItemDataMap에 키가 없는경우
 		OnLoadedDelegate.Execute(nullptr);
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::ReadSteamFriends()
+{
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (OnlineSubsystem)
+	{
+		IOnlineFriendsPtr FriendsInterface = OnlineSubsystem->GetFriendsInterface();
+		if (FriendsInterface)
+		{
+			FriendsInterface->ReadFriendsList(0, EFriendsLists::ToString(EFriendsLists::Default), FOnReadFriendsListComplete::CreateUObject(this, &UPGAdvancedFriendsGameInstance::OnReadFriendsListComplete));
+		}
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::OnReadFriendsListComplete(int32 LocalUserName, bool bWasSuccessful, const FString& ListName, const FString& ErrorStr)
+{
+	if (bWasSuccessful)
+	{
+		IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+		if (OnlineSubsystem)
+		{
+			IOnlineFriendsPtr FriendsInterface = OnlineSubsystem->GetFriendsInterface();
+			if (FriendsInterface.IsValid())
+			{
+				CachedFriends.Empty();
+
+				TArray<TSharedRef<FOnlineFriend>> Friends;
+				FriendsInterface->GetFriendsList(0, ListName, Friends);
+
+				for (const TSharedRef<FOnlineFriend>& Friend : Friends)
+				{
+					FSteamFriendInfo FriendInfo;
+					FriendInfo.DisplayName = Friend->GetDisplayName();
+					FriendInfo.NetId = Friend->GetUserId();
+					FriendInfo.Avatar = GetSteamAvatarAsTexture(*Friend->GetUserId());
+
+					if (FriendInfo.NetId.IsValid())
+					{
+						uint64 SteamId64 = *(uint64*)FriendInfo.NetId->GetBytes();
+						CSteamID SteamId(SteamId64);
+
+						EPersonaState PersonaState = SteamFriends()->GetFriendPersonaState(SteamId);
+						FriendInfo.bIsOnline = (PersonaState != k_EPersonaStateOffline);
+					}
+					else
+					{
+						FriendInfo.bIsOnline = false;
+					}
+
+					UE_LOG(LogTemp, Warning, TEXT("Friend: %s, IsOnline: %s"), *FriendInfo.DisplayName, FriendInfo.bIsOnline ? TEXT("True") : TEXT("False"));
+
+					CachedFriends.Add(FriendInfo);
+				}
+
+				OnFriendListUpdated.Broadcast();
+			}
+		}
+	}
+}
+
+bool UPGAdvancedFriendsGameInstance::GetSteamAvatarAsRawData(const FUniqueNetId& InUserId, TArray<uint8>& OutRawData, int32& OutWidth, int32& OutHeight)
+{
+#if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
+	// 에디터인 경우 스팀 접근이 안돼서 에러 방지용 코드
+	ISteamFriends* SteamFriendsPtr = SteamFriends();
+	ISteamUtils* SteamUtilsPtr = SteamUtils();
+
+	if (!SteamFriendsPtr || !SteamUtilsPtr)
+	{
+		return false;
+	}
+
+	uint64 SteamId64 = *(uint64*)InUserId.GetBytes();
+	CSteamID SteamId(SteamId64);
+
+	// 중간 크기 아바타 핸들을 가져오기
+	int AvatarHandle = SteamFriendsPtr->GetMediumFriendAvatar(SteamId);
+	if (AvatarHandle == 0)
+	{
+		return false;
+	}
+
+	uint32 Width, Height;
+	if (!SteamUtilsPtr->GetImageSize(AvatarHandle, &Width, &Height))
+	{
+		return false;
+	}
+
+	OutRawData.SetNum(Width * Height * 4);
+	if (!SteamUtilsPtr->GetImageRGBA(AvatarHandle, OutRawData.GetData(), OutRawData.Num()))
+	{
+		return false;
+	}
+
+	OutWidth = Width;
+	OutHeight = Height;
+	return true;
+#else
+	return false;
+#endif
+}
+
+UTexture2D* UPGAdvancedFriendsGameInstance::GetSteamAvatarAsTexture(const FUniqueNetId& InUserId)
+{
+	TArray<uint8> AvatarRGBA;
+	int32 Width, Height;
+
+	if (GetSteamAvatarAsRawData(InUserId, AvatarRGBA, Width, Height))
+	{
+		UTexture2D* AvatarTexture = UTexture2D::CreateTransient(Width, Height, PF_R8G8B8A8);
+		if (AvatarTexture)
+		{
+			void* TextureData = AvatarTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+			FMemory::Memcpy(TextureData, AvatarRGBA.GetData(), AvatarRGBA.Num());
+			AvatarTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+			AvatarTexture->UpdateResource();
+			return AvatarTexture;
+		}
+	}
+
+	return nullptr;
+}
+
+void UPGAdvancedFriendsGameInstance::InviteFriend(const FUniqueNetId& FriendToInvite)
+{
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (OnlineSubsystem)
+	{
+		IOnlineSessionPtr SessionInterfaceRef = OnlineSubsystem->GetSessionInterface();
+		if (SessionInterfaceRef.IsValid())
+		{
+			SessionInterfaceRef->SendSessionInviteToFriend(0, NAME_GameSession, FriendToInvite);
+		}
 	}
 }

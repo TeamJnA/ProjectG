@@ -27,18 +27,6 @@ protected:
 
 	TObjectPtr<APlayerController> PCRef;
 
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UPGPlayerEntryWidget> PlayerEntry0;
-
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UPGPlayerEntryWidget> PlayerEntry1;
-
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UPGPlayerEntryWidget> PlayerEntry2;
-
-	//UPROPERTY(meta = (BindWidget))
-	//TObjectPtr<UPGPlayerEntryWidget> PlayerEntry3;
-
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UVerticalBox> PlayerContainer;
 

@@ -11,6 +11,7 @@
 #include "PGGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLobbyPlayerListUpdatedDelegate);
 
 class APGPlayerController;
 
@@ -41,33 +42,28 @@ struct FPlayerReadyState
 	{
 		return PlayerUniqueId == Other.PlayerUniqueId;
 	}
-
-	//bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
-	//{
-	//	Ar << PlayerUniqueId;
-	//	Ar << bIsReady;
-	//	bOutSuccess = true;
-	//	return true;
-	//}
-
-	//bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
-	//{
-	//	return FastArrayDeltaSerialize<FPlayerReadyState, FPlayerReadyState>(PlayerReadyStateArray, DeltaParams, *this);
-
-	//}
-	//TArray<FPlayerReadyState>& PlayerReadyStateArray = *new TArray<FPlayerReadyState>(); // 더미이지만 필요
-
 };
 
-//template<>
-//struct TStructOpsTypeTraits<FPlayerReadyState> : public TStructOpsTypeTraitsBase2<FPlayerReadyState>
-//{
-//	enum
-//	{
-//		WithNetSerializer = true,
-//		WithNetDeltaSerializer = true
-//	};
-//};
+USTRUCT(BlueprintType)
+struct FPlayerLobbyInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FString PlayerName;
+
+	UPROPERTY(BlueprintReadOnly)
+	TArray<uint8> AvatarRawData;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 AvatarWidth = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 AvatarHeight = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsHost = false;
+};
 
 UCLASS()
 class PROJECTG_API APGGameState : public AGameState
@@ -88,16 +84,30 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMapGenerationComplete OnMapGenerationComplete;
 
-// EndGame
+	// EndGame
 	void NotifyGameFinished();
 
 	void SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState, bool _bIsReady);
 
 	bool IsAllReadyToReturnLobby() const;
 
+	// ----- Lobby Player List ---------
+	UPROPERTY(BlueprintAssignable, Category = "Event")
+	FOnLobbyPlayerListUpdatedDelegate OnLobbyPlayerListUpdated;
+
+	// 클라이언트의 위젯이 접근할 복제된 플레이어 목록
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_LobbyPlayerList, Category = "Lobby")
+	TArray<FPlayerLobbyInfo> LobbyPlayerList;
+
+	// only call on server
+	void UpdateLobbyPlayerList();
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
+
+	virtual void AddPlayerState(APlayerState* PlayerState) override;
+	virtual void RemovePlayerState(APlayerState* PlayerState) override;
 
 	void Multicast_MapGenerationComplete();
 
@@ -118,4 +128,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_PlayerReadyStates();
+
+	// ----- Lobby Player List ---------
+	// LobbyPlayerList가 클라이언트에 복제될 때 호출될 함수
+	UFUNCTION()
+	void OnRep_LobbyPlayerList();
 };

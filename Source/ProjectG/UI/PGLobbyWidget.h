@@ -6,9 +6,11 @@
 #include "Blueprint/UserWidget.h"
 #include "PGLobbyWidget.generated.h"
 
-class UButton;
-class UTextBlock;
+class UVerticalBox;
+class UPGPlayerEntryWidget;
+
 class APGLobbyPlayerController;
+class UPGAdvancedFriendsGameInstance;
 
 /**
  * 
@@ -21,17 +23,20 @@ class PROJECTG_API UPGLobbyWidget : public UUserWidget
 public:
 	void Init(APGLobbyPlayerController* PC);
 
-	UFUNCTION()
-	void OnReadyClicked();
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> ReadyButton;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> ReadyText;
-
-	TObjectPtr<APGLobbyPlayerController> LocalPC;
-
 protected:
 	virtual void NativeConstruct() override;
+
+	UFUNCTION()
+	void UpdatePlayerList();
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UVerticalBox> PlayerListContainer;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UPGPlayerEntryWidget> PlayerEntryWidgetClass;
+
+private:
+	TObjectPtr<APGLobbyPlayerController> LocalPC;
+	TObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
+
 };

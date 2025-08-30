@@ -155,7 +155,7 @@ void APGLobbyPlayerController::Server_SpawnAndPossessPlayer_Implementation()
 	if (World && LobbyCharacterClass)
 	{
 		// 나중에 스폰 포인트 4개 만들어서 거기다가 스폰
-		FVector SpawnLoc = FVector(920.0f, 0.0f, 100.0f);
+		FVector SpawnLoc = FVector(0.0f, -500.0f, 300.0f);
 		FRotator SpawnRot = FRotator(0.0f, 0.0f, 0.0f);
 
 		FActorSpawnParameters SpawnParams;
@@ -173,23 +173,6 @@ void APGLobbyPlayerController::Server_SpawnAndPossessPlayer_Implementation()
 		{
 			UE_LOG(LogTemp, Error, TEXT("Failed to spawn Character"));
 
-		}
-	}
-}
-
-void APGLobbyPlayerController::SetReady()
-{
-	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
-	if (PS)
-	{
-		PS->ServerSetReady(true);
-	}
-
-	if (HasAuthority())
-	{
-		if (GetWorld()->GetAuthGameMode())
-		{
-			Cast<APGLobbyGameMode>(GetWorld()->GetAuthGameMode())->CheckAllPlayersReady();
 		}
 	}
 }
@@ -226,11 +209,10 @@ void APGLobbyPlayerController::SetupLobbyUI()
 			LobbyWidgetInstance->AddToViewport();
 			LobbyWidgetInstance->Init(this);
 
-			FInputModeGameAndUI InputMode;
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			FInputModeGameOnly InputMode;
 			SetInputMode(InputMode);
 
-			bShowMouseCursor = true;
+			bShowMouseCursor = false;
 
 			UE_LOG(LogTemp, Log, TEXT("LobbyPC::SetupLobbyUI: Lobby widget add successed"));
 		}

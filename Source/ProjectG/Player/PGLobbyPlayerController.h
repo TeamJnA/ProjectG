@@ -32,10 +32,10 @@ public:
 
 	UPGMainMenuWidget* GetMainMenuWidget() const;
 
-	void SetReady();
-
 	UFUNCTION(Client, Reliable)
 	void Client_ForceReturnToLobby();
+
+	UPGLobbyWidget* GetLobbyWidget() const { return LobbyWidgetInstance; }
 	
 protected:
 	virtual void BeginPlay() override;

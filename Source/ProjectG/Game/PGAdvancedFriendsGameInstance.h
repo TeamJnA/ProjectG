@@ -5,17 +5,39 @@
 #include "CoreMinimal.h"
 #include "AdvancedFriendsGameInstance.h"
 
-#include "Game/PGGameState.h"
-#include "OnlineSubsystem.h"
 #include "Engine/StreamableManager.h"
+
+#include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Interfaces/OnlineFriendsInterface.h"
+#include "Interfaces/OnlineIdentityInterface.h"
+#include "Game/PGGameState.h"
 
 #include "PGAdvancedFriendsGameInstance.generated.h"
 
 class UPGItemData;
+class FUniqueNetId;
+
+USTRUCT(BlueprintType)
+struct FSteamFriendInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Steam|Friends")
+	FString DisplayName;
+
+	TSharedPtr<const FUniqueNetId> NetId;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Steam|Friends")
+	TObjectPtr<UTexture2D> Avatar;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Steam|Friends")
+	bool bIsOnline = false;
+};
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionBPCompleteDelegate, bool /*bWasSuccessful*/);
 DECLARE_DELEGATE_OneParam(FOnItemDataLoaded, UPGItemData*);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFriendListUpdatedDelegate);
 
 /**
  * 
@@ -72,6 +94,21 @@ public:
 	void SaveGameStateOnTravel(EGameState StateToSave);
 	EGameState LoadGameStateOnTravel();
 
+	// -------- Steam Friend -------------
+	void ReadSteamFriends();
+
+	bool GetSteamAvatarAsRawData(const FUniqueNetId& InUserId, TArray<uint8>& OutRawData, int32& OutWidth, int32& OutHeight);
+	UTexture2D* GetSteamAvatarAsTexture(const FUniqueNetId& InUserId);
+	
+	// Invite
+	void InviteFriend(const FUniqueNetId& FriendToInvite);
+
+	FOnFriendListUpdatedDelegate OnFriendListUpdated;
+
+	TArray<FSteamFriendInfo> CachedFriends;
+	
+	// -------- Steam Friend -------------
+
 protected:
 	virtual void Init() override;
 
@@ -109,7 +146,8 @@ private:
 
 	FStreamableManager StreamableManager;
 
-	//void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-	//void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
-	//void OnFindSessionsComplete(bool bWasSuccessful);
+	// -------- Steam Friend -------------
+	void OnReadFriendsListComplete(int32 LocalUserName, bool bWasSuccessful, const FString& ListName, const FString& ErrorStr);
+	// -------- Steam Friend -------------
+
 };

@@ -471,36 +471,33 @@ void APGPlayerCharacter::Client_InitScoreBoardWidget_Implementation()
 
 void APGPlayerCharacter::Client_PlayerStareAtTarget_Implementation(AActor* TargetActor)
 {
-	if (TargetActor)
+	// 1. 바라보는 대상이 이전과 동일한 경우 -> return
+	if (TargetActor == StaringTargetActor)
 	{
-		if (TargetActor != StaringTargetActor)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("APGPlayerCharacter::Client_PlayerStareAtTarget: %s"), *TargetActor->GetName());
-			if (IInteractableActorInterface* InterfaceIneract = Cast<IInteractableActorInterface>(StaringTargetActor))
-			{
-				InterfaceIneract->HighlightOff();
-			}
+		return;
+	}
 
-			OnStareTargetUpdate.Broadcast(TargetActor);
-			if (IInteractableActorInterface* InterfaceIneract = Cast<IInteractableActorInterface>(TargetActor))
-			{
-				InterfaceIneract->HighlightOn();
-			}
-			StaringTargetActor = TargetActor;
+	// 2. 바라보는 대상이 이전과 다른 경우
+	// 2-1. 바라보는 대상이 있었고, 현재 유효하면 Highlight off
+	if (IsValid(StaringTargetActor))
+	{
+		if (IInteractableActorInterface* OldActorInterface = Cast<IInteractableActorInterface>(StaringTargetActor))
+		{
+			OldActorInterface->HighlightOff();
 		}
 	}
-	else
+	// 2-2. 새로 바라보는 대상이 있고, 유효하면 Highlight on
+	if (IsValid(TargetActor))
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("APGPlayerCharacter::Client_PlayerStareAtTarget: null"));
-
-		OnStareTargetUpdate.Broadcast(nullptr);
-		if (IInteractableActorInterface* InterfaceIneract = Cast<IInteractableActorInterface>(StaringTargetActor))
+		if (IInteractableActorInterface* NewActorInterface = Cast<IInteractableActorInterface>(TargetActor))
 		{
-			InterfaceIneract->HighlightOff();
+			NewActorInterface->HighlightOn();
 		}
-		StaringTargetActor = nullptr;
 	}
-	
+
+	// 현재 바라보는 대상 캐싱, 메시지 팝업
+	StaringTargetActor = TargetActor;
+	OnStareTargetUpdate.Broadcast(StaringTargetActor);
 }
 
 void APGPlayerCharacter::AddTagToCharacter_Implementation(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)

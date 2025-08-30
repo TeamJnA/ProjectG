@@ -21,22 +21,21 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	virtual UPGAttributeSet* GetAttributeSet() const;
-
-	UPROPERTY(ReplicatedUsing = OnRep_IsReady, BlueprintReadOnly)
-	bool bIsReady = false;
-
-	UFUNCTION(Server, Reliable)
-	void ServerSetReady(bool bReady);
+	
+	const bool IsHost() const { return bIsHost; }
+	void SetHost(bool _bIsHost) { bIsHost = _bIsHost; }
 
 protected:
-	UFUNCTION()	
-	void OnRep_IsReady();
-
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY()
 	TObjectPtr<UPGAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY()
 	TObjectPtr<UPGAttributeSet> AttributeSet;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Lobby")
+	bool bIsHost = false;
+
+private:
 };
