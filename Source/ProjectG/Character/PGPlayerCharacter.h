@@ -144,7 +144,7 @@ public:
 	// ~IAttackableTarget
 
 	UFUNCTION(Client, Reliable)
-	void Client_OnAttacked(FVector InstigatorHeadLocation);
+	void Client_OnAttacked(FVector NewLocation, FRotator NewRotation);
 
 	void OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
 

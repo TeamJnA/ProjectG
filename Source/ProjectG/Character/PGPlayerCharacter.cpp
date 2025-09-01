@@ -258,12 +258,36 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 		Movement->StopMovementImmediately();
 		Movement->DisableMovement();
 	}
-	
+
+	// 3 - 1. 캐릭터 회전 [ Server, Client ]
+	const FRotator CurrentRotation = GetActorRotation();
+	FRotator TargetRotation = (InstigatorHeadLocation - GetActorLocation()).Rotation();
+	TargetRotation.Pitch = 0.0f;
+	TargetRotation.Roll = 0.0f;
+
+	SetActorRotation(TargetRotation);
+
+	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetActorRotation OnServer"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
+
+	// 3 - 2. 캐릭터를 몹 앞으로 이동. [ Server, Client ]
+	float EnemyCharacterDistance = 150.0f;
+
+	FVector NewCharacterLocation = GetActorLocation();
+	NewCharacterLocation.Z = InstigatorHeadLocation.Z;
+
+	FVector EnemyToCharacterDirection = (NewCharacterLocation - InstigatorHeadLocation).GetSafeNormal();
+
+	NewCharacterLocation = InstigatorHeadLocation + EnemyToCharacterDirection * EnemyCharacterDistance;
+
+	SetActorLocation(NewCharacterLocation);
+
+	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetActorLocation OnServer"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
+
 	// Notify client to replicate server-side attack handling
-	Client_OnAttacked(InstigatorHeadLocation);
+	Client_OnAttacked(GetActorLocation(), GetActorRotation());
 }
 
-void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector InstigatorHeadLocation)
+void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, FRotator NewRotation)
 {
 	// 1. 플레이어 입력 차단 [ Client ]
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -282,21 +306,12 @@ void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector InstigatorHead
 		AnimInstance->StopAllMontages(0.1f);
 	}
 
-	// 3 - 1. 캐릭터(카메라) 몹 쪽으로 회전 [ Client ]
-	const FRotator CurrentRotation = GetActorRotation();
-	FRotator TargetRotation = (InstigatorHeadLocation - GetActorLocation()).Rotation();
-	TargetRotation.Pitch = 0.0f; // 요거도 살짝 올려보게 수정?
-	TargetRotation.Roll = 0.0f;
+	// 카메라 회전
+	SetActorLocation(NewLocation);
+	SetActorRotation(NewRotation);
+	Controller->SetControlRotation(NewRotation);
 
-	float DeltaTime = UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
-
-	// FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, 0.3f);
-	// SetActorRotation(TargetRotation);
-	Controller->SetControlRotation(TargetRotation);
-
-	// 3 - 2. 카메라 몹으로부터 거리 두기. [ 나중구현 ] [ Server, Client ]
-	// FVector CurrentCameraLocation = FirstPersonCamera->GetRelativeLocation();
-	// FirstPersonCamera;
+	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetControlRotation OnClient"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
 
 	// 4. 잡히는 모션 진행 [ 이건 서버냐 클라냐 그것이 문제로다... ]
 
@@ -316,7 +331,7 @@ void APGPlayerCharacter::OnAttackFinished()
 		return;
 	}
 
-	// 1. Player.State.Dead 태그 추가 [ Server, Client ]
+	// 1. Add Player.State.Dead Tag to Server and Client. It makes player state dead.
 	AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
 	AbilitySystemComponent->AddReplicatedLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
 
@@ -337,9 +352,22 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 	{
 		return;
 	}
-	// 1. 플레이어 아이템들 드랍 [ Server ]
 
-	// 2. 캐릭터 레그돌  [ 나중구현 ] ( Server )
+	// 1. Stop character movement and animation
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->StopMovementImmediately();
+		Movement->DisableMovement();
+	}
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(0.1f);
+	}
+
+	// 2. 플레이어 아이템들 드랍 [ Server ]
+
+	// 3. Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
 	bIsRagdoll = true;
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -373,6 +401,7 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 	}
 }
 
+// Make client character ragdoll.
 void APGPlayerCharacter::OnRep_IsRagdoll()
 {
 	if (bIsRagdoll)
