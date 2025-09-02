@@ -24,6 +24,11 @@ void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
 
 	PCRef = _PC;
 
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		GS->OnPlayerListUpdated.AddDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
+	}
+
 	UpdatePlayerEntry();
 }
 
@@ -43,19 +48,22 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 
 	PlayerContainer->ClearChildren();
 
-	for (APlayerState* PS : GS->PlayerArray)
+	for (const FPlayerInfo& PlayerInfo : GS->PlayerList)
 	{
-		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+		UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+		if (NewSlot)
 		{
-			UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
-			if (NewSlot)
+			UTexture2D* AvatarTexture = nullptr;
+			if (PlayerInfo.PlayerNetId.IsValid())
 			{
-				NewSlot->SetupEntry(FText::FromString(PGPS->GetPlayerName()), nullptr);
-				PlayerContainer->AddChild(NewSlot);
-				UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PGPS->GetPlayerName());
+				AvatarTexture = GI->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
 			}
+
+			NewSlot->SetupEntry(FText::FromString(PlayerInfo.PlayerName), AvatarTexture);
+			PlayerContainer->AddChild(NewSlot);
+			UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PlayerInfo.PlayerName);
 		}
-	}	
+	}
 }
 
 void UPGScoreBoardWidget::NativeConstruct()

@@ -6,12 +6,12 @@
 #include "GameFramework/GameState.h"
 
 #include "Net/UnrealNetwork.h"
-#include "Net/Serialization/FastArraySerializer.h"
+#include "Type/CharacterTypes.h"
 
 #include "PGGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLobbyPlayerListUpdatedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerListUpdatedDelegate);
 
 class APGPlayerController;
 
@@ -44,27 +44,6 @@ struct FPlayerReadyState
 	}
 };
 
-USTRUCT(BlueprintType)
-struct FPlayerLobbyInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly)
-	FString PlayerName;
-
-	UPROPERTY(BlueprintReadOnly)
-	TArray<uint8> AvatarRawData;
-
-	UPROPERTY(BlueprintReadOnly)
-	int32 AvatarWidth = 0;
-
-	UPROPERTY(BlueprintReadOnly)
-	int32 AvatarHeight = 0;
-
-	UPROPERTY(BlueprintReadOnly)
-	bool bIsHost = false;
-};
-
 UCLASS()
 class PROJECTG_API APGGameState : public AGameState
 {
@@ -91,16 +70,16 @@ public:
 
 	bool IsAllReadyToReturnLobby() const;
 
-	// ----- Lobby Player List ---------
+	// ----- Player List ---------
 	UPROPERTY(BlueprintAssignable, Category = "Event")
-	FOnLobbyPlayerListUpdatedDelegate OnLobbyPlayerListUpdated;
+	FOnPlayerListUpdatedDelegate OnPlayerListUpdated;
 
 	// 클라이언트의 위젯이 접근할 복제된 플레이어 목록
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_LobbyPlayerList, Category = "Lobby")
-	TArray<FPlayerLobbyInfo> LobbyPlayerList;
-
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_PlayerList, Category = "Lobby")
+	TArray<FPlayerInfo> PlayerList;
+	
 	// only call on server
-	void UpdateLobbyPlayerList();
+	void UpdatePlayerList();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -132,5 +111,5 @@ protected:
 	// ----- Lobby Player List ---------
 	// LobbyPlayerList가 클라이언트에 복제될 때 호출될 함수
 	UFUNCTION()
-	void OnRep_LobbyPlayerList();
+	void OnRep_PlayerList();
 };

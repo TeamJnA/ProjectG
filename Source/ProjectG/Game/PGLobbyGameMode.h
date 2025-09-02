@@ -18,7 +18,6 @@ public:
 	APGLobbyGameMode();
 
 	void StartGame();
-	void UpdateLobbyPlayerList();
 
 protected:
 	virtual void PostLogin(APlayerController* NewPlayer) override;

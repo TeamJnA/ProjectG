@@ -30,7 +30,7 @@ void UPGLobbyWidget::NativeConstruct()
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
 		UE_LOG(LogTemp, Log, TEXT("LobbyWidget::NativeConstruct: lobby widget construct"));
-		GS->OnLobbyPlayerListUpdated.AddDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
+		GS->OnPlayerListUpdated.AddDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
 	}
 }
 
@@ -42,31 +42,23 @@ void UPGLobbyWidget::UpdatePlayerList()
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::UpdatePlayerList: Refreshing UI with %d player(s)."), GS->LobbyPlayerList.Num());
+	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::UpdatePlayerList: Refreshing UI with %d player(s)."), GS->PlayerList.Num());
 
 	PlayerListContainer->ClearChildren();
 
-	// GameState에 복제된 최신 목록을 정렬합니다.
-	TArray<FPlayerLobbyInfo> SortedInfos = GS->LobbyPlayerList;
-	SortedInfos.Sort([](const FPlayerLobbyInfo& A, const FPlayerLobbyInfo& B) 
+	// GameState에 저장된 PlayerList를 Host가 가장 위로 오도록 정렬
+	TArray<FPlayerInfo> SortedInfos = GS->PlayerList;
+	SortedInfos.Sort([](const FPlayerInfo& A, const FPlayerInfo& B)
 	{
 		return A.bIsHost > B.bIsHost;
 	});
 
-	for (const FPlayerLobbyInfo& Info : SortedInfos)
+	for (const FPlayerInfo& Info : SortedInfos)
 	{
 		UTexture2D* AvatarTexture = nullptr;
-		if (Info.AvatarRawData.Num() > 0)
+		if (Info.PlayerNetId.IsValid())
 		{
-			// 받은 데이터로 텍스처를 생성합니다.
-			AvatarTexture = UTexture2D::CreateTransient(Info.AvatarWidth, Info.AvatarHeight, PF_R8G8B8A8);
-			if (AvatarTexture)
-			{
-				void* TextureData = AvatarTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-				FMemory::Memcpy(TextureData, Info.AvatarRawData.GetData(), Info.AvatarRawData.Num());
-				AvatarTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
-				AvatarTexture->UpdateResource();
-			}
+			AvatarTexture = GIRef->GetSteamAvatarAsTexture(*Info.PlayerNetId.GetUniqueNetId());
 		}
 
 		UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);

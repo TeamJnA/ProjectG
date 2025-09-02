@@ -8,7 +8,10 @@
 
 #include "Player/PGPlayerState.h"
 
-// 1. 완전한 버전의 함수 구현
+/*
+* 완전한 버전의 SetupEntry
+* host 여부 포함
+*/
 void UPGPlayerEntryWidget::SetupEntry(const FText& InPlayerName, UTexture2D* InAvatarTexture, bool bIsHostPlayer)
 {
 	if (PlayerNameText) { PlayerNameText->SetText(InPlayerName); }
@@ -32,7 +35,10 @@ void UPGPlayerEntryWidget::SetupEntry(const FText& InPlayerName, UTexture2D* InA
 	}
 }
 
-// 2. 스코어보드용 오버로딩 함수 구현
+/*
+* 스코어보드용 오버로드 함수 구현
+* host 여부 미포함 (false로 호출)
+*/
 void UPGPlayerEntryWidget::SetupEntry(const FText& InPlayerName, UTexture2D* InAvatarTexture)
 {
 	// 완전한 버전의 함수를 호출하되, bIsHostPlayer는 기본값인 false로 전달합니다.

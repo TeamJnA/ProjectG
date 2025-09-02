@@ -39,7 +39,6 @@ void APGLobbyGameMode::StartGame()
 
 		UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel check logic [%s]"), *GS->GetName());
 		GS->NotifyStartTravel();
-
 	}
 
 	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
@@ -47,39 +46,6 @@ void APGLobbyGameMode::StartGame()
 		UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel"));
 		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 	}));
-}
-
-void APGLobbyGameMode::UpdateLobbyPlayerList()
-{
-	APGGameState* GS = GetGameState<APGGameState>();
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GS || !GI) return;
-
-	// 기존 목록을 비우고 새로 채웁니다.
-	GS->LobbyPlayerList.Empty();
-
-	for (APlayerState* PS : GS->PlayerArray)
-	{
-		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
-		{
-			FPlayerLobbyInfo Info;
-			Info.PlayerName = PGPS->GetPlayerName();
-			Info.bIsHost = PGPS->IsHost();
-
-			const FUniqueNetIdRepl& UniqueIdRepl = PGPS->GetUniqueId();
-			if (UniqueIdRepl.IsValid())
-			{
-				// 서버에서 직접 아바타 데이터를 가져옵니다.
-				GI->GetSteamAvatarAsRawData(*UniqueIdRepl.GetUniqueNetId(), Info.AvatarRawData, Info.AvatarWidth, Info.AvatarHeight);
-			}
-
-			GS->LobbyPlayerList.Add(Info);
-		}
-	}
-
-	// 서버의 UI도 업데이트가 필요하다면, OnRep 함수를 수동으로 호출해줍니다.
-	// OnRep은 원래 클라이언트에서만 자동 호출되지만, 서버에서 수동 호출하는 것은 일반적인 패턴입니다.
-	GS->OnLobbyPlayerListUpdated.Broadcast();
 }
 
 void APGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
@@ -97,12 +63,11 @@ void APGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 			}
 		}
 	}
-	
-	// GameState가 이미 AddPlayerState를 통해 목록을 갱신했지만,
-	// 만약을 대비한 안전장치로 GameMode에서도 한 번 더 갱신을 요청합니다.
+		
+	// PostLogin에서 PlayerList 업데이트
 	if (APGGameState* GS = GetGameState<APGGameState>())
 	{
-		GS->UpdateLobbyPlayerList();
+		GS->UpdatePlayerList();
 		UE_LOG(LogTemp, Log, TEXT("LobbyGM::PostLogin: Failsafe update requested."));
 	}
 
@@ -112,11 +77,10 @@ void APGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 
 void APGLobbyGameMode::Logout(AController* Exiting)
 {
-	// GameState가 이미 RemovePlayerState를 통해 목록을 갱신하지만,
-	// 타이밍 이슈를 완벽히 회피하고 추가적인 보장을 위해 다음 틱에 갱신을 한 번 더 요청합니다.
+	// Logout 상황에서 PlayerList 업데이트
 	if (APGGameState* GS = GetGameState<APGGameState>())
 	{
-		GS->UpdateLobbyPlayerList();
+		GS->UpdatePlayerList();
 		UE_LOG(LogTemp, Log, TEXT("LobbyGM::Logout: Failsafe (next tick) update requested."));
 	}
 	UE_LOG(LogTemp, Log, TEXT("LobbyGM::Logout: Player [%s] has logout."), *Exiting->GetName());

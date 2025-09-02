@@ -15,7 +15,10 @@
 
 void APGGameState::SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState, bool _bIsReady)
 {
-	if (!HasAuthority()) return;
+	if (!HasAuthority()) 
+	{
+		return;
+	}
 
 	if (_PlayerState)
 	{
@@ -39,6 +42,7 @@ void APGGameState::SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState,
 			PlayerReadyStates.Add(FPlayerReadyState(PlayerId, _bIsReady));
 		}
 
+		// for debug
 		// for server
 		OnRep_PlayerReadyStates();
 	}
@@ -56,7 +60,10 @@ void APGGameState::OnRep_PlayerReadyStates()
 
 bool APGGameState::IsAllReadyToReturnLobby() const
 {
-	if (!HasAuthority()) return false;
+	if (!HasAuthority())
+	{
+		return false;
+	}
 
 	for (APlayerState* PS : PlayerArray)
 	{
@@ -90,7 +97,7 @@ void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(APGGameState, CurrentGameState);
 	DOREPLIFETIME(APGGameState, FinishedPlayersCount);
 	DOREPLIFETIME(APGGameState, PlayerReadyStates);
-	DOREPLIFETIME(APGGameState, LobbyPlayerList);
+	DOREPLIFETIME(APGGameState, PlayerList);
 }
 
 void APGGameState::BeginPlay()
@@ -114,8 +121,8 @@ void APGGameState::AddPlayerState(APlayerState* PlayerState)
 	Super::AddPlayerState(PlayerState);
 
 	UE_LOG(LogTemp, Log, TEXT("GS::AddPlayerState: Player added"));
-	// PlayerArray가 변경되었으므로, 복제할 목록을 갱신합니다.
-	UpdateLobbyPlayerList();
+	// PlayerArray가 변경되었으므로, 복제할 목록을 갱신
+	UpdatePlayerList();
 }
 
 void APGGameState::RemovePlayerState(APlayerState* PlayerState)
@@ -123,46 +130,52 @@ void APGGameState::RemovePlayerState(APlayerState* PlayerState)
 	Super::RemovePlayerState(PlayerState);
 
 	UE_LOG(LogTemp, Log, TEXT("GS::RemovePlayerState: Player removed"));
-	// PlayerArray가 변경되었으므로, 복제할 목록을 갱신합니다.
-	UpdateLobbyPlayerList();
+	// PlayerArray가 변경되었으므로, 복제할 목록을 갱신
+	UpdatePlayerList();
 }
 
-void APGGameState::UpdateLobbyPlayerList()
+void APGGameState::UpdatePlayerList()
 {
-	// 서버에서만 실행되어야 합니다.
-	if (!HasAuthority()) return;
+	// 서버에서만 PlayerList 업데이트 (PlayerList는 replicated라 자동으로 업데이트)
+	if (!HasAuthority()) 
+	{
+		return;
+	}
 
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GI) return;
+	if (!GI)
+	{
+		return;
+	}
 
-	LobbyPlayerList.Empty();
+	PlayerList.Empty();
 
 	for (APlayerState* PS : PlayerArray)
 	{
 		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			FPlayerLobbyInfo Info;
+			FPlayerInfo Info;
 			Info.PlayerName = PGPS->GetPlayerName();
 			Info.bIsHost = PGPS->IsHost();
 
 			const FUniqueNetIdRepl& UniqueIdRepl = PGPS->GetUniqueId();
 			if (UniqueIdRepl.IsValid())
 			{
-				GI->GetSteamAvatarAsRawData(*UniqueIdRepl.GetUniqueNetId(), Info.AvatarRawData, Info.AvatarWidth, Info.AvatarHeight);
+				Info.PlayerNetId = UniqueIdRepl;
 			}
 
-			LobbyPlayerList.Add(Info);
+			PlayerList.Add(Info);
 		}
 	}
 
-	// 서버의 UI도 즉시 업데이트가 필요할 수 있으므로 OnRep 함수를 수동으로 호출합니다.
-	OnRep_LobbyPlayerList();
+	// update server UI
+	OnRep_PlayerList();
 }
 
-void APGGameState::OnRep_LobbyPlayerList()
+void APGGameState::OnRep_PlayerList()
 {
-	// 데이터가 성공적으로 복제되었으므로, UI를 업데이트하라고 알립니다.
-	OnLobbyPlayerListUpdated.Broadcast();
+	// update client UI
+	OnPlayerListUpdated.Broadcast();
 	UE_LOG(LogTemp, Log, TEXT("GS::OnRep_LobbyPlayerList: New player list replicated to client. Broadcasting update."));
 }
 
