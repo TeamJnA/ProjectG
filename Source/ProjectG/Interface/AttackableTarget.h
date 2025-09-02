@@ -26,4 +26,6 @@ public:
 
 	// Need instigator's(Enemy's) head location to player camera look the instigator.
 	virtual void OnAttacked(FVector InstigatorHeadLocation) = 0;
+
+	virtual void OnAttackFinished() = 0;
 };

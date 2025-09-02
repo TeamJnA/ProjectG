@@ -3,7 +3,11 @@
 
 #include "Enemy/Blind/Animation/Notifies/ANS_BlindBite.h"
 
+#include "Enemy/Blind/Character/PGBlindCharacter.h"
+
 #include "Components/BoxComponent.h"
+
+DEFINE_LOG_CATEGORY(LogEnemyANS);
 
 void UANS_BlindBite::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, 
 	float TotalDuration, const FAnimNotifyEventReference& EventReference)
@@ -27,16 +31,13 @@ void UANS_BlindBite::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 
 void UANS_BlindBite::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	/*
 	AActor* OwnerActor = MeshComp->GetOwner();
 
 	if (APGBlindCharacter* Blind = Cast<APGBlindCharacter>(OwnerActor))
 	{
-		if (Blind->BiteCollider)
-		{
-			Blind->BiteCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		}
+		UE_LOG(LogEnemyANS, Log, TEXT("BlineBite Notify Ended"));
+		Blind->NotifyAttackEnded();
 	}
-	*/
+
 	Super::NotifyEnd(MeshComp, Animation);
 }

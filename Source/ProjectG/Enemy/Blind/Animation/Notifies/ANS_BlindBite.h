@@ -6,6 +6,7 @@
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "ANS_BlindBite.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogEnemyANS, Log, All);
 
 //이 노티파이는 bite collider 를 animation에 맞춰서 enable/disable 하는 거.
 /**
