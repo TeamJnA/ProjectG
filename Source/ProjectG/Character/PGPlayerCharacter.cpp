@@ -313,6 +313,9 @@ void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, F
 
 	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetControlRotation OnClient"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
 
+	// 3. 본인이 안보이도록
+	GetMesh()->SetOwnerNoSee(true);
+
 	// 4. 잡히는 모션 진행 [ 이건 서버냐 클라냐 그것이 문제로다... ]
 
 }
@@ -385,6 +388,9 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 	{
 		return;
 	}
+	// 본인이 보이도록 
+	GetMesh()->SetOwnerNoSee(false);
+
 	// 1. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
 
 	/*
