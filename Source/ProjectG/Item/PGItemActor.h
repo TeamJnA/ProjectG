@@ -51,13 +51,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
 
-
 	// replicate용 약한참조
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"), Replicatedusing = OnRep_ItemData)
 	TSoftObjectPtr<UPGItemData> ItemDataPath;
 
 	// ItemData를 메모리에 유지시키기 위해 사용
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemData", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGItemData> LoadedItemData;
 
 	UFUNCTION()
