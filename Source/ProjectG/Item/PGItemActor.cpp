@@ -41,36 +41,43 @@ FInteractionInfo APGItemActor::GetInteractionInfo() const
 	return FInteractionInfo(EInteractionType::Instant);
 }
 
+/*
+* Only call on server
+* when spawn item
+*/
 void APGItemActor::InitWithData(UPGItemData* _ItemData)
 {
-	ItemDataPtr = _ItemData;
-
-	StaticMesh->SetStaticMesh(_ItemData->ItemMesh);
-
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		UE_LOG(LogTemp, Log, TEXT("[SERVER] ItemActor::InitWithData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), _ItemData ? *_ItemData->GetName() : TEXT("nullptr"));
+		return;
 	}
+
+	LoadedItemData = _ItemData;
+	ItemDataPath = _ItemData;
+
+	if (_ItemData)
+	{
+		StaticMesh->SetStaticMesh(_ItemData->ItemMesh);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[SERVER] ItemActor::InitWithData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), _ItemData ? *_ItemData->GetName() : TEXT("nullptr"));
 }
 
 void APGItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(APGItemActor, ItemDataPtr);
+	DOREPLIFETIME(APGItemActor, ItemDataPath);
 }
 
 void APGItemActor::OnRep_ItemData()
 {
-	UPGItemData* LoadedItemData = ItemDataPtr.LoadSynchronous();
-	if (LoadedItemData)
+	UPGItemData* ItemData = ItemDataPath.LoadSynchronous();
+	if (ItemData)
 	{
-		StaticMesh->SetStaticMesh(LoadedItemData->ItemMesh);
-
-		if (!HasAuthority())
-		{
-			UE_LOG(LogTemp, Log, TEXT("[CLIENT] ItemActor::OnRep_ItemData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), *LoadedItemData->GetName());
-		}
+		LoadedItemData = ItemData;
+		StaticMesh->SetStaticMesh(ItemData->ItemMesh);
+		UE_LOG(LogTemp, Log, TEXT("[CLIENT] ItemActor::OnRep_ItemData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), *LoadedItemData->GetName());
 	}
 	else
 	{
@@ -80,7 +87,7 @@ void APGItemActor::OnRep_ItemData()
 
 UPGItemData* APGItemActor::GetItemData()
 {
-	return ItemDataPtr.Get();
+	return LoadedItemData;
 }
 
 void APGItemActor::DropItemSpawned()

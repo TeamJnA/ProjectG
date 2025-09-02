@@ -259,11 +259,11 @@ void UPGInventoryComponent::DropCurrentItem(const FVector& DropLocation)
 
 		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, FRotator::ZeroRotator, SpawnParams);
 		
-		UE_LOG(LogTemp, Log, TEXT("DropItem is %s /  DropItemMesh : %s"), *DropItem->GetName(), *DropItem->GetItemData()->ItemMesh.GetFName().ToString());
 		if (DropItem)
 		{
 			UE_LOG(LogTemp, Log, TEXT("Item mesh is %s "), *InventoryItems[CurrentInventoryIndex].ItemData->ItemMesh.GetFName().ToString());
 			DropItem->InitWithData(InventoryItems[CurrentInventoryIndex].ItemData);
+			UE_LOG(LogTemp, Log, TEXT("DropItem is %s /  DropItemMesh : %s"), *DropItem->GetName(), *DropItem->GetItemData()->ItemMesh.GetFName().ToString());
 			DropItem->DropItemSpawned();
 		}
 	}

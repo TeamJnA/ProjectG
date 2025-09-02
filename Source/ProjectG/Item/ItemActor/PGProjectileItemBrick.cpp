@@ -25,7 +25,8 @@ APGProjectileItemBrick::APGProjectileItemBrick()
 	{
 		UPGItemData* ItemData = ItemDataRef.Object;
 
-		ItemDataPtr = ItemData;
+		ItemDataPath = ItemData;
+		LoadedItemData = ItemData;
 	}
 
 	StaticMesh->OnComponentHit.AddDynamic(this, &APGProjectileItemBrick::OnHit);
