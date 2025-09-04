@@ -14,7 +14,7 @@ APGSoundManager::APGSoundManager()
 	bReplicates = true;
 	bAlwaysRelevant = true;
 
-	bDebugSoundRange = true;
+	bDebugSoundRange = false;
 
 	static ConstructorHelpers::FObjectFinder<USoundAttenuation> SoundAttenuationRef(TEXT("/Game/ProjectG/Sound/BaseSoundAttenuation.BaseSoundAttenuation"));
 	if (SoundAttenuationRef.Object)
@@ -131,6 +131,7 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector
     );
 
 	// Draw debug sphere of makenoise range
+#if WITH_EDITOR
 	if (bDebugSoundRange)
 	{
 		if (bIntensedSound)
@@ -144,7 +145,7 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector
 			DrawDebugSphere(GetWorld(), SoundLocation, SoundRange, 8, FColor::Yellow, false, 3.0f, 0U, 3.0f);
 		}
 	}
-	
+#endif
 }
 
 void APGSoundManager::PlaySoundMulticast_Implementation(USoundBase* SoundAsset, float SoundStartTime, FVector SoundLocation, uint8 SoundPowerLevel)
