@@ -11,18 +11,10 @@
 // Sets default values for this component's properties
 APGSoundManager::APGSoundManager()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	//PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
-
-	// SetReplicates(true);
 	bReplicates = true;
-
 	bAlwaysRelevant = true;
 
-	bDebugSoundRange = true;
+	bDebugSoundRange = false;
 
 	static ConstructorHelpers::FObjectFinder<USoundAttenuation> SoundAttenuationRef(TEXT("/Game/ProjectG/Sound/BaseSoundAttenuation.BaseSoundAttenuation"));
 	if (SoundAttenuationRef.Object)
@@ -30,6 +22,7 @@ APGSoundManager::APGSoundManager()
 		BaseSoundAttenuation = SoundAttenuationRef.Object;
 	}
 
+	
 	// Load SoundDatas from DataTable 
 	static ConstructorHelpers::FObjectFinder<UDataTable> SoundDataTableRef(TEXT("/Game/ProjectG/Sound/PGSoundDataTable.PGSoundDataTable"));
 	if (SoundDataTableRef.Object)
@@ -45,13 +38,13 @@ APGSoundManager::APGSoundManager()
 		{
 			FName RowName = DataTableRow.Key;
 
-			// Cast the row data from pointer(uint8*) to our custom struct type
+			// Cast the data from pointer(uint8*) to PGSoundPlayData
 			FPGSoundPlayData* RowData = reinterpret_cast<FPGSoundPlayData*>(DataTableRow.Value);
 
 			if (RowData && RowData->SoundAsset)
 			{
 				UE_LOG(LogTemp, Log, TEXT("Add SoundData to SoundDataMap : %s"), *RowName.ToString());
-				SoundDataMap.Add(RowName, FPGSoundPlayData(RowData->SoundAsset, RowData->SoundStartTime));
+				SoundDataMap.Add(RowName, FPGSoundPlayData(RowData->SoundAsset, RowData->SoundLevel, RowData->SoundStartTime));
 			}
 			else
 			{
@@ -59,17 +52,15 @@ APGSoundManager::APGSoundManager()
 			}
 		}
 	}
+	
 }
 
-
-// Called when the game starts
 void APGSoundManager::BeginPlay()
 {
 	Super::BeginPlay();
-	// ...
 }
 
-void APGSoundManager::PlaySoundForSelf(FName SoundName, uint8 SoundVolumeLevel)
+void APGSoundManager::PlaySoundForSelf(FName SoundName)
 {
 	FPGSoundPlayData* SoundData = SoundDataMap.Find(SoundName);
 	if (!SoundData)
@@ -82,7 +73,7 @@ void APGSoundManager::PlaySoundForSelf(FName SoundName, uint8 SoundVolumeLevel)
 	UGameplayStatics::PlaySound2D(GetWorld(), SoundData->SoundAsset, 1.0f, 1.0f, SoundData->SoundStartTime);
 }
 
-void APGSoundManager::PlaySoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel)
+void APGSoundManager::PlaySoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation)
 {
 	FPGSoundPlayData* SoundData = SoundDataMap.Find(SoundName);
 	if (!SoundData)
@@ -94,10 +85,10 @@ void APGSoundManager::PlaySoundForAllPlayers_Implementation(FName SoundName, FVe
 	// Play sound for all players by execute PlaySoundMulticast.
 	UE_LOG(LogTemp, Log, TEXT("Play sound for all players %s in PlaySoundForAllPlayers"), *SoundName.ToString());
 
-	PlaySoundMulticast(SoundData->SoundAsset, SoundData->SoundStartTime, SoundLocation, SoundPowerLevel);
+	PlaySoundMulticast(SoundData->SoundAsset, SoundData->SoundStartTime, SoundLocation, SoundData->SoundLevel);
 }
 
-void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound)
+void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector SoundLocation, bool bIntensedSound)
 {
 	FPGSoundPlayData* SoundData = SoundDataMap.Find(SoundName);
 	if (!SoundData)
@@ -108,16 +99,28 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector
 
 	UE_LOG(LogTemp, Log, TEXT("Start sound multicast %s in PlaySoundWithNoise"), *SoundName.ToString());
 	// Play sound for all players by execute PlaySoundMulticast.
-	PlaySoundMulticast(SoundData->SoundAsset, SoundData->SoundStartTime, SoundLocation, SoundPowerLevel);
+	PlaySoundMulticast(SoundData->SoundAsset, SoundData->SoundStartTime, SoundLocation, SoundData->SoundLevel);
+
+
+	// 만약 sound의 Level이 0일  경우, 아래 작업은 진행할 필요가 없음.
+	if (SoundData->SoundLevel == 0)
+	{
+		return;
+	}
 
 	// Make noise for enemy AI chase sound.
-	float SoundRange = 200 * SoundPowerLevel * SoundPowerLevel;
+	int SoundPowerLevel = SoundData->SoundLevel;
+
+	const int SoundRange = 200 * SoundPowerLevel * SoundPowerLevel;
 
 	// When bIntensedSound is true, the sound power increases but the range remains the same.
 	if (bIntensedSound)
+	{
 		SoundPowerLevel++;
+	}
 
-	UE_LOG(LogTemp, Log, TEXT("Make Noise Level %d. [ Location : %s ], [ Range : %f ]"), SoundPowerLevel, *SoundLocation.ToString(), SoundRange);
+	UE_LOG(LogTemp, Log, TEXT("Make Noise Level %d. [ Location : %s ], [ Range : %d ]"), SoundPowerLevel, *SoundLocation.ToString(), SoundRange);
+
 	UAISense_Hearing::ReportNoiseEvent(
         GetWorld(),    
 		SoundLocation,
@@ -128,6 +131,7 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector
     );
 
 	// Draw debug sphere of makenoise range
+#if WITH_EDITOR
 	if (bDebugSoundRange)
 	{
 		if (bIntensedSound)
@@ -141,7 +145,7 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector
 			DrawDebugSphere(GetWorld(), SoundLocation, SoundRange, 8, FColor::Yellow, false, 3.0f, 0U, 3.0f);
 		}
 	}
-	
+#endif
 }
 
 void APGSoundManager::PlaySoundMulticast_Implementation(USoundBase* SoundAsset, float SoundStartTime, FVector SoundLocation, uint8 SoundPowerLevel)

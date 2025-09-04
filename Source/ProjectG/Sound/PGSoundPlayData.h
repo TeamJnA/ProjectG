@@ -13,16 +13,21 @@ struct PROJECTG_API FPGSoundPlayData : public FTableRowBase
 	TObjectPtr<USoundBase> SoundAsset;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 SoundLevel;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SoundStartTime;
 
 	FPGSoundPlayData()
 		: SoundAsset(nullptr)
+		, SoundLevel(1)
 		, SoundStartTime(0.f)
 	{
 	}
 
-	FPGSoundPlayData(USoundBase* InSoundAsset, float InStartTime)
+	FPGSoundPlayData(USoundBase* InSoundAsset, int32 InSoundLevel ,float InStartTime)
 		: SoundAsset(InSoundAsset)
+		, SoundLevel(InSoundLevel)
 		, SoundStartTime(InStartTime)
 	{
 	}

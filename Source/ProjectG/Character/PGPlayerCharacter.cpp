@@ -150,7 +150,7 @@ void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 void APGPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	//if (Controller->IsLocalController())
 	//{
 	//	UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::BeginPlay: Init HUD [%s] | HasAuthority %d"), *GetNameSafe(this), HasAuthority());
@@ -177,6 +177,10 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		//Sprinting
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartInputActionByTag, SprintTag);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopInputActionByTag, SprintTag);
+
+		//Crouching
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartInputActionByTag, CrouchTag);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopInputActionByTag, CrouchTag);
 		
 		//Interacting
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, InteractTag);
@@ -313,6 +317,9 @@ void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, F
 
 	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetControlRotation OnClient"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
 
+	// 3. 본인이 안보이도록
+	GetMesh()->SetOwnerNoSee(true);
+
 	// 4. 잡히는 모션 진행 [ 이건 서버냐 클라냐 그것이 문제로다... ]
 
 }
@@ -385,6 +392,9 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 	{
 		return;
 	}
+	// 본인이 보이도록 
+	GetMesh()->SetOwnerNoSee(false);
+
 	// 1. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
 
 	/*
@@ -443,7 +453,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	
 	InitAbilitySystemComponent();
 	InitDefaultAttributes();
-
+	
 	if (Controller && Controller->IsLocalController())
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //

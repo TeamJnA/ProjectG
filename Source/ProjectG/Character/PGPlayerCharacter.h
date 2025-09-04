@@ -80,6 +80,9 @@ public:
 	TObjectPtr<UInputAction> SprintAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> CrouchAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> InteractAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -187,6 +190,9 @@ protected:
 	//Gameplay ability tags
 	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
 	FGameplayTagContainer SprintTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
+	FGameplayTagContainer CrouchTag;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
 	FGameplayTagContainer InteractTag;

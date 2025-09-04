@@ -43,7 +43,7 @@ protected:
 	float InitialSpeed;
 
 	UFUNCTION(Server, Reliable)
-	virtual void PlaySound(const FVector& HitLocation, uint8 HitImpact);
+	virtual void PlaySound(const FVector& HitLocation);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USoundBase> HitSound;

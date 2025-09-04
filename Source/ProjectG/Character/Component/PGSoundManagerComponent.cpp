@@ -20,34 +20,34 @@ void UPGSoundManagerComponent::SetSoundManager(APGSoundManager* InSoundManager)
 	SoundManager = InSoundManager;
 }
 
-void UPGSoundManagerComponent::TriggerSoundForSelf(FName InSoundName, uint8 SoundVolumeLevel)
+void UPGSoundManagerComponent::TriggerSoundForSelf(FName InSoundName)
 {
 	if (!SoundManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *InSoundName.ToString());
 		return;
 	}
-	SoundManager->PlaySoundForSelf(InSoundName, SoundVolumeLevel);
+	SoundManager->PlaySoundForSelf(InSoundName);
 }
 
-void UPGSoundManagerComponent::TriggerSoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel)
+void UPGSoundManagerComponent::TriggerSoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation)
 {
 	if (!SoundManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *SoundName.ToString());
 		return;
 	}
-	SoundManager->PlaySoundForAllPlayers(SoundName, SoundLocation, SoundPowerLevel);
+	SoundManager->PlaySoundForAllPlayers(SoundName, SoundLocation);
 }
 
-void UPGSoundManagerComponent::TriggerSoundWithNoise_Implementation(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound)
+void UPGSoundManagerComponent::TriggerSoundWithNoise_Implementation(FName SoundName, FVector SoundLocation, bool bIntensedSound)
 {
 	if (!SoundManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *SoundName.ToString());
 		return;
 	}
-	SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, SoundPowerLevel, bIntensedSound);
+	SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, bIntensedSound);
 }
 
 void UPGSoundManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
