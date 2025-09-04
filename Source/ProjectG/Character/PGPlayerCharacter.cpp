@@ -150,7 +150,7 @@ void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 void APGPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	//if (Controller->IsLocalController())
 	//{
 	//	UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::BeginPlay: Init HUD [%s] | HasAuthority %d"), *GetNameSafe(this), HasAuthority());
@@ -177,6 +177,10 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		//Sprinting
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartInputActionByTag, SprintTag);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopInputActionByTag, SprintTag);
+
+		//Crouching
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartInputActionByTag, CrouchTag);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopInputActionByTag, CrouchTag);
 		
 		//Interacting
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, InteractTag);
@@ -449,7 +453,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	
 	InitAbilitySystemComponent();
 	InitDefaultAttributes();
-
+	
 	if (Controller && Controller->IsLocalController())
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
