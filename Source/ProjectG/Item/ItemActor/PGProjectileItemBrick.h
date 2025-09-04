@@ -42,7 +42,7 @@ public:
 protected:
 	TArray<TObjectPtr<AActor>> HitActors;
 
-	virtual void PlaySound_Implementation(const FVector& HitLocation, uint8 HitImpact) override;
+	virtual void PlaySound_Implementation(const FVector& HitLocation) override;
 
 	bool bAlreadyHit;
 };

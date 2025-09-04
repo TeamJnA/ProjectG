@@ -36,26 +36,24 @@ protected:
 public:	
 
 	// Play sound for a only client who called this function. 
-	void 	PlaySoundForSelf(FName SoundName, uint8 SoundVolumeLevel);
+	void 	PlaySoundForSelf(FName SoundName);
 
 	// Play sound for all players.
 	UFUNCTION(Server, Reliable)
-	void PlaySoundForAllPlayers(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel);
+	void PlaySoundForAllPlayers(FName SoundName, FVector SoundLocation);
 
 	//  Play sound for all players and make noise. All players and enemy AI can hear sound.
 	UFUNCTION(Server, Reliable)
-	void 	PlaySoundWithNoise(FName SoundName, FVector SoundLocation, uint8 SoundPowerLevel, bool bIntensedSound = false);
+	void 	PlaySoundWithNoise(FName SoundName, FVector SoundLocation, bool bIntensedSound = false);
 
 private:
-	//UFUNCTION(Client, Reliable)
-	//void PlaySoundClient(USoundBase* SoundAsset, uint8 SoundVolumeLevel);
-
 	UFUNCTION(NetMulticast, Reliable)
 	void PlaySoundMulticast(USoundBase* SoundAsset, float SoundStartTime, FVector SoundLocation, uint8 SoundVolumeLevel);
 
 	UPROPERTY()
 	TObjectPtr<USoundAttenuation> BaseSoundAttenuation;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", meta = (AllowPrivateAccess = true))
 	bool bDebugSoundRange;
 };
 

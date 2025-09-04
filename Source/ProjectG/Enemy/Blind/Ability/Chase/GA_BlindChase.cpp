@@ -57,7 +57,7 @@ void UGA_BlindChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	UPGSoundManagerComponent* SoundManager = GetAvatarActorFromActorInfo()->FindComponentByClass<UPGSoundManagerComponent>();
 	if (SoundManager)
 	{
-		SoundManager->TriggerSoundForAllPlayers(TEXT("ENEMY_Roar"), OwnerPawn->GetActorLocation(), 5);
+		SoundManager->TriggerSoundForAllPlayers(TEXT("ENEMY_Roar"), OwnerPawn->GetActorLocation());
 	}		
 	else{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager from AvatarActor in UGA_BlindChase"));

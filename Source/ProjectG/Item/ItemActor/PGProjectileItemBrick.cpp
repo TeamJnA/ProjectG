@@ -57,10 +57,7 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 	// Play sound at hit location.
 	if (HasAuthority())
 	{
-		if (bAlreadyHit)
-			PlaySound(Hit.Location, 2);
-		else
-			PlaySound(Hit.Location, 3);
+		PlaySound(Hit.Location);
 	}
 
 	// Check if the impact normal's Z component indicates a floor (upward-facing surface).
@@ -77,7 +74,7 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 	UE_LOG(LogTemp, Log, TEXT("Brick hit with actor %s"), *OtherActor->GetName());
 }
 
-void APGProjectileItemBrick::PlaySound_Implementation(const FVector& HitLocation, uint8 HitImpact)
+void APGProjectileItemBrick::PlaySound_Implementation(const FVector& HitLocation)
 {
 	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
 	{
@@ -86,7 +83,7 @@ void APGProjectileItemBrick::PlaySound_Implementation(const FVector& HitLocation
 		{
 			UE_LOG(LogTemp, Log, TEXT("Call Soundmanager in Brick"));
 
-			SoundManager->PlaySoundWithNoise(ItemHitSound, HitLocation, HitImpact, false);
+			SoundManager->PlaySoundWithNoise(ItemHitSound, HitLocation, false);
 		}
 	}
 }
