@@ -4,6 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+
+#include "OnlineSessionSettings.h"
+#include "Interfaces/OnlineSessionInterface.h"
+
 #include "PGMainMenuWidget.generated.h"
 
 class UScrollBox;
@@ -13,6 +17,8 @@ class UPGSessionSlotWidget;
 class UPGConfirmWidget;
 class UPGSettingMenuWidget;
 class UWidgetSwitcher;
+
+class FOnlineSessionSearchResult;
 
 /**
  * 
@@ -29,14 +35,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ClearSessionList();
 
-	//UFUNCTION(BlueprintCallable)
-	//void OnRefreshClicked();
-
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UScrollBox> SessionListContainer;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> RefreshButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> HostButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> JoinButton;
 
 	UPROPERTY()
 	TObjectPtr<APlayerController> CachedPC;
@@ -63,7 +72,10 @@ public:
 	TObjectPtr<UButton> ExitButton;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> BackButton;
+	TObjectPtr<UButton> OptionMenuCanvas_BackButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> SessionListCanvas_BackButton;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
@@ -72,11 +84,22 @@ protected:
 	virtual void NativeConstruct() override;
 
 	UFUNCTION()
+	void OnHostButtonClicked();
+
+	UFUNCTION()
+	void OnJoinButtonClicked();
+
+	UFUNCTION()
 	void OnExitButtonClicked();
 
 	UFUNCTION()
 	void OnOptionButtonClicked();
 
 	UFUNCTION()
+	void OnRefreshButtonClicked();
+
+	UFUNCTION()
 	void OnBackButtonClicked();
+
+	void OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SessionResults);
 };

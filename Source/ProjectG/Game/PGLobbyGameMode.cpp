@@ -52,17 +52,17 @@ void APGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	if (NewPlayer)
-	{
-		APGPlayerState* PS = NewPlayer->GetPlayerState<APGPlayerState>();
-		if (PS)
-		{
-			if (GameState && GameState->PlayerArray.Num() == 1)
-			{
-				PS->SetHost(true);
-			}
-		}
-	}
+	//if (NewPlayer)
+	//{
+	//	APGPlayerState* PS = NewPlayer->GetPlayerState<APGPlayerState>();
+	//	if (PS)
+	//	{
+	//		if (GameState && GameState->PlayerArray.Num() == 1)
+	//		{
+	//			PS->SetHost(true);
+	//		}
+	//	}
+	//}
 		
 	// PostLogin에서 PlayerList 업데이트
 	if (APGGameState* GS = GetGameState<APGGameState>())
@@ -86,4 +86,32 @@ void APGLobbyGameMode::Logout(AController* Exiting)
 	UE_LOG(LogTemp, Log, TEXT("LobbyGM::Logout: Player [%s] has logout."), *Exiting->GetName());
 
 	Super::Logout(Exiting);
+}
+
+void APGLobbyGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+
+	if (NewPlayer)
+	{
+		if (APGPlayerState* NewPlayerState = NewPlayer->GetPlayerState<APGPlayerState>())
+		{
+			// Listen Server 환경이라 호스트만 true
+			if (NewPlayer->IsLocalController())
+			{
+				NewPlayerState->SetHost(true);
+				UE_LOG(LogTemp, Log, TEXT("LobbyGM::HandleStartingNewPlayer: '%s' is the host (Local Controller)."), *NewPlayerState->GetPlayerName());
+			}
+			else
+			{
+				NewPlayerState->SetHost(false);
+			}
+		}
+	}
+
+	// 플레이어 상태가 갱신되어 모든 클라이언트 UI 업데이트
+	if (APGGameState* GS = GetGameState<APGGameState>())
+	{
+		GS->UpdatePlayerList();
+	}
 }

@@ -7,16 +7,18 @@
 
 #include "Engine/StreamableManager.h"
 
-#include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Interfaces/OnlineFriendsInterface.h"
 #include "Interfaces/OnlineIdentityInterface.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSessionSettings.h"
 #include "Game/PGGameState.h"
 
 #include "PGAdvancedFriendsGameInstance.generated.h"
 
 class UPGItemData;
 class FUniqueNetId;
+class FOnlineSessionSearchResult;
 
 USTRUCT(BlueprintType)
 struct FSteamFriendInfo
@@ -35,8 +37,8 @@ struct FSteamFriendInfo
 	bool bIsOnline = false;
 };
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionBPCompleteDelegate, bool /*bWasSuccessful*/);
 DECLARE_DELEGATE_OneParam(FOnItemDataLoaded, UPGItemData*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSessionsFoundDelegate, const TArray<FOnlineSessionSearchResult>&);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFriendListUpdatedDelegate);
 
 /**
@@ -50,7 +52,6 @@ class PROJECTG_API UPGAdvancedFriendsGameInstance : public UAdvancedFriendsGameI
 public:
 	bool DidRetryClientTravel() const;
 	void LeaveSessionAndReturnToLobby();
-	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
 
 	int32 GetExpectedPlayerCount();
 	void SetExpectedPlayerCount(int32 PlayerCount);
@@ -64,14 +65,18 @@ public:
 
 	bool IsHost() { return bIsHost; }
 
-	//UFUNCTION(BlueprintCallable)
-	//void HostSession(FName SessionName = FName("GameSession"), int32 MaxPlayers = 4);
+	// --------- Session ---------
+	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
+	void HostSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate);
 
-	//UFUNCTION(BlueprintCallable)
-	//void JoinSession(int32 SessionIndex);
+	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
+	void FindSessions();
 
-	//UFUNCTION(BlueprintCallable)
-	//void FindSessions();
+	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
+	void JoinFoundSession(int32 SessionIndex);
+
+	FOnSessionsFoundDelegate OnSessionsFound;
+	// --------- Session ---------
 
 	UPGItemData* GetItemDataByKey(FName Key);
 
@@ -79,16 +84,6 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	FString Playername;
-
-	FOnJoinSessionBPCompleteDelegate OnJoinSessionBPComplete;
-	
-	FDelegateHandle DestroySessionCompleteDelegateHandle;
-
-	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
-	void HandleOnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-
-	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
-	void HandleOnJoinSessionComplete(bool bWasSuccessful);
 
 	// GameState
 	void SaveGameStateOnTravel(EGameState StateToSave);
@@ -112,9 +107,6 @@ public:
 protected:
 	virtual void Init() override;
 
-	UFUNCTION(BlueprintCallable)
-	void SetPlayerName(const FString& NewName);
-
 	// void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
 	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString);
 	void OnTravelTimeout();
@@ -130,11 +122,34 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameState", meta = (AllowPrivateAccess = "true"))
 	EGameState CurrentSavedGameState;
 
-private:
+private:	
+	// ------- Session --------
+	// 세션 생성 완료 시 호출
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	// 세션 서칭 완료 시 호출
+	void OnFindSessionsComplete(bool bWasSuccessful);
+	// 세션 참가 완료 시 호출
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	// 세션 파괴 완료 시 호출
+	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+	// 세션 초대 수락 시 호출
+	void OnSessionUserInviteAccepted(bool bWasSuccessful, int32 ControllerId, TSharedPtr<const FUniqueNetId> UserId, const FOnlineSessionSearchResult& InviteResult);
+
+	void CreateNewSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate);
+
 	IOnlineSessionPtr SessionInterface;
-	TSharedPtr<FOnlineSessionSearch> SessionSearch;
-	TSharedPtr<const FUniqueNetId> UserID;
-	
+	TSharedPtr<FOnlineSessionSearch> LatestSessionSearch;
+	//TSharedPtr<FOnlineSessionSettings> LatestSessionSettings;
+	// 초대 정보 임시 저장
+	TSharedPtr<FOnlineSessionSearchResult> AcceptedInviteInfo;
+
+	bool bIsHostingAfterDestroy;
+
+	FName PendingSessionName;
+	int32 PendingMaxPlayers;
+	bool bIsPendingSessionPrivate;
+	// ------- Session --------
+
 	int32 ExpectedPlayerCount = 0;
 	int32 TravelRetryCount = 0;
 	FTimerHandle TravelTimerHandle;

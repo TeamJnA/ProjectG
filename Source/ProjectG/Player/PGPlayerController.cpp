@@ -117,6 +117,11 @@ void APGPlayerController::OnPossess(APawn* NewPawn)
 
 void APGPlayerController::ReplaceInputMappingContext(const APawn* PawnType)
 {
+	if (!PawnType)
+	{
+		return;
+	}
+
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 	{
 		// [NOT COMPLETE]

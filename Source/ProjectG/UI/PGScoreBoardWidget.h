@@ -20,6 +20,8 @@ class PROJECTG_API UPGScoreBoardWidget : public UUserWidget
 	GENERATED_BODY()
 public:
 	void BindPlayerEntry(APlayerController* _PC);
+
+	UFUNCTION()
 	void UpdatePlayerEntry();
 
 protected:

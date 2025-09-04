@@ -21,6 +21,8 @@ class PROJECTG_API UPGFinalScoreBoardWidget : public UUserWidget
 
 public:
 	void BindPlayerEntry(APlayerController* _PC);
+
+	UFUNCTION()
 	void UpdatePlayerEntry();
 
 protected:

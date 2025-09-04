@@ -27,8 +27,8 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UButton* JoinButton;
 
-	//UFUNCTION()
-	//void OnJoinClicked();
+	UFUNCTION()
+	void OnJoinClicked();
 
 private:
 	int32 Index;

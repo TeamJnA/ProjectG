@@ -7,16 +7,19 @@
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerController.h"
 
-#include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "OnlineSessionSettings.h"
+#include "Online/OnlineSessionNames.h"
 #include "Interfaces/OnlineFriendsInterface.h"
+#include "Interfaces/OnlineIdentityInterface.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Engine/StreamableManager.h"
 #include "Engine/Texture2D.h"
 
 #include "Item/PGItemData.h"
-#include "Engine/StreamableManager.h"
-
 #include "UI/PGMainMenuWidget.h"
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
@@ -32,25 +35,18 @@ void UPGAdvancedFriendsGameInstance::Init()
 		GEngine->OnTravelFailure().AddUObject(this, &UPGAdvancedFriendsGameInstance::HandleTravelFailure);
 	}
 
-	IOnlineSubsystem* subsystem = IOnlineSubsystem::Get();
-	if (subsystem)
+	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
+	if (Subsystem)
 	{
-		SessionInterface = subsystem->GetSessionInterface();
-
-	//	if (SessionInterface.IsValid())
-	//	{
-	//		SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnCreateSessionComplete);
-	//		SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnFindSessionsComplete);
-	//		SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnJoinSessionComplete);
-	//	}
-	//	else
-	//	{
-	//		UE_LOG(LogTemp, Error, TEXT("SessionInterface invalid"));
-	//	}
-	//}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Error, TEXT("OnlineSubsystem is NULL"));
+		SessionInterface = Subsystem->GetSessionInterface();
+		if (SessionInterface.IsValid())
+		{
+			SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnCreateSessionComplete);
+			SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnFindSessionsComplete);
+			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnJoinSessionComplete);
+			SessionInterface->OnSessionUserInviteAcceptedDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnSessionUserInviteAccepted);
+			SessionInterface->OnDestroySessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnDestroySessionComplete);
+		}
 	}
 	
 	// gamestate initiate
@@ -64,19 +60,294 @@ void UPGAdvancedFriendsGameInstance::Init()
 	ItemDataMap.Add("ExitKey", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/ExitKey/DA_Consumable_ExitKey.DA_Consumable_ExitKey")));
 }
 
-void UPGAdvancedFriendsGameInstance::HandleOnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+// ---------- Session ---------
+void UPGAdvancedFriendsGameInstance::HostSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate)
 {
-	UE_LOG(LogTemp, Log, TEXT("GI::HandleOnCreateSessionComplete: C++ HandleOnlineCreateSessionComplete called."));
+	if (!SessionInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::HostSession: HostSession failed. SessionInterface is not valid"));
+		return;
+	}
 
-	CurrentSavedGameState = EGameState::Lobby;
-	bIsHost = true;
+	auto ExistingSession = SessionInterface->GetNamedSession(SessionName);
+	if (ExistingSession != nullptr)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Found an existing session '%s'. Destroying it first."), *SessionName.ToString());
+
+		// 1. 파괴 후 세션을 다시 만들어야 한다고 플래그를 설정하고, 파라미터를 저장
+		bIsHostingAfterDestroy = true;
+		PendingSessionName = SessionName;
+		PendingMaxPlayers = MaxPlayers;
+		bIsPendingSessionPrivate = bIsPrivate;
+
+		// 2. 세션 파괴를 요청
+		// 완료되면 OnDestroySessionComplete가 CreateNewSession 호출
+		SessionInterface->DestroySession(SessionName);
+	}
+	else
+	{
+		// 3. 기존 세션이 없으면 바로 생성
+		CreateNewSession(SessionName, MaxPlayers, bIsPrivate);
+	}
 }
 
-void UPGAdvancedFriendsGameInstance::HandleOnJoinSessionComplete(bool bWasSuccessful)
+void UPGAdvancedFriendsGameInstance::CreateNewSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate)
 {
-	UE_LOG(LogTemp, Log, TEXT("GI::HandleOnJoinSessionComplete: C++ HandleOnJoinSessionComplete called."));
-	OnJoinSessionBPComplete.Broadcast(bWasSuccessful);
+	TSharedPtr<const FUniqueNetId> UserId = GetFirstGamePlayer()->GetPreferredUniqueNetId().GetUniqueNetId();
+	if (!UserId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateNewSession failed, Cannot get a valid user ID."));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("GI::CreateNewSession: Storing PendingHostId: %s"), *UserId->ToString());
+
+	FOnlineSessionSettings SessionSettings;
+	SessionSettings.NumPublicConnections = MaxPlayers;
+	SessionSettings.NumPrivateConnections = bIsPrivate ? 1 : 0;
+	SessionSettings.bIsLANMatch = false;
+	SessionSettings.bShouldAdvertise = true;
+	SessionSettings.bUsesPresence = true;
+	SessionSettings.bAllowJoinViaPresence = true;
+	SessionSettings.bUseLobbiesIfAvailable = true;
+	SessionSettings.bAllowJoinInProgress = true;
+	SessionSettings.bAllowInvites = true;
+
+	SessionSettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineDataAdvertisementType::ViaOnlineService);
+
+	SessionInterface->CreateSession(0, SessionName, SessionSettings);
 }
+
+void UPGAdvancedFriendsGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Log, TEXT("GI::OnCreateSessionComplete: Session [%s] created succesfully"), *SessionName.ToString());
+		bIsHost = true;
+		CurrentSavedGameState = EGameState::Lobby;
+		UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true, "listen");
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::OnCreateSessionComplete: Failed create session"));
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::FindSessions()
+{
+	ULocalPlayer* LocalPlayer = GetFirstGamePlayer();
+	if (!LocalPlayer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::FindSessions: no valid local player"));
+		OnSessionsFound.Broadcast(TArray<FOnlineSessionSearchResult>());
+		return;
+	}
+	TSharedPtr<const FUniqueNetId> UserId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
+
+	if (!SessionInterface.IsValid() || !UserId.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::FindSessions: no valid session interface"));
+		OnSessionsFound.Broadcast(TArray<FOnlineSessionSearchResult>());
+		return;
+	}
+
+	LatestSessionSearch = MakeShareable(new FOnlineSessionSearch());
+	LatestSessionSearch->bIsLanQuery = false;
+	LatestSessionSearch->MaxSearchResults = 20;
+	LatestSessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
+	LatestSessionSearch->QuerySettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineComparisonOp::Equals);
+
+	UE_LOG(LogTemp, Log, TEXT("GI::FindSessions: Finding sessions as User: [%s]"), *UserId->ToString());
+	SessionInterface->FindSessions(0, LatestSessionSearch.ToSharedRef());
+}
+
+void UPGAdvancedFriendsGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
+{
+	if (bWasSuccessful && LatestSessionSearch.IsValid())
+	{
+		UE_LOG(LogTemp, Log, TEXT("GI::OnFindSessionsComplete: Found %d sessions."), LatestSessionSearch->SearchResults.Num());
+		OnSessionsFound.Broadcast(LatestSessionSearch->SearchResults);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::OnFindSessionsComplete: FindSessions call failed. bWasSuccessful: %s"), bWasSuccessful ? TEXT("true") : TEXT("false"));
+		OnSessionsFound.Broadcast(TArray<FOnlineSessionSearchResult>());
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
+{
+	if (!SessionInterface.IsValid() || !LatestSessionSearch.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::JoinFoundSession: no valid session interface or session search"));
+		return;
+	}
+
+	if (LatestSessionSearch->SearchResults.IsValidIndex(SessionIndex))
+	{
+		UE_LOG(LogTemp, Log, TEXT("GI::JoinFoundSession: Joining session at index [%d]"), SessionIndex);
+		UE_LOG(LogTemp, Log, TEXT("GI::JoinFoundSession: Joining session at [%s]"), *LatestSessionSearch->SearchResults[SessionIndex].GetSessionIdStr());
+		UE_LOG(LogTemp, Log, TEXT("GI::JoinFoundSession: Joining session bUseLobbiesIfAvailable [%d]"), LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUseLobbiesIfAvailable);
+		UE_LOG(LogTemp, Log, TEXT("GI::JoinFoundSession: Joining session bUsesPresence [%d]"), LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUsesPresence);
+		
+		LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUseLobbiesIfAvailable = true;
+		LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUsesPresence = true;
+
+		UE_LOG(LogTemp, Log, TEXT("GI::JoinFoundSession: Joining session bUseLobbiesIfAvailable [%d]"), LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUseLobbiesIfAvailable);
+		UE_LOG(LogTemp, Log, TEXT("GI::JoinFoundSession: Joining session bUsesPresence [%d]"), LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUsesPresence);
+
+		SessionInterface->JoinSession(0, NAME_GameSession, LatestSessionSearch->SearchResults[SessionIndex]);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::JoinFoundSession: Invalid session index [%d]"), SessionIndex);
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	if (Result == EOnJoinSessionCompleteResult::Success && SessionInterface.IsValid())
+	{
+		FString ConnectString;
+		if (SessionInterface->GetResolvedConnectString(SessionName, ConnectString))
+		{
+			UE_LOG(LogTemp, Log, TEXT("GI::OnJoinSessionComplete: Join session success. Traveling to %s"), *ConnectString);
+			APlayerController* PC = GetFirstLocalPlayerController();
+			if (PC)
+			{
+				PC->ClientTravel(ConnectString, ETravelType::TRAVEL_Absolute);
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::OnJoinSessionComplete: Failed to join session"));
+		if (!Result == EOnJoinSessionCompleteResult::Success)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GI::OnJoinSessionComplete: Failed"));
+		}
+		if (!SessionInterface.IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GI::OnJoinSessionComplete: session interface Failed"));
+
+		}
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::OnSessionUserInviteAccepted(bool bWasSuccessful, int32 ControllerId, TSharedPtr<const FUniqueNetId> UserId, const FOnlineSessionSearchResult& InviteResult)
+{
+	if (!bWasSuccessful || !SessionInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::OnSessionUserInviteAccepted: Failed to accept session invite"));
+		return;
+	}
+	UE_LOG(LogTemp, Log, TEXT("GI::OnSessionUserInviteAccepted: Invite accepted."));
+
+	// 초대 정보 저장
+	AcceptedInviteInfo = MakeShared<FOnlineSessionSearchResult>(InviteResult);
+	// 현재 세션 나가기
+	LeaveSessionAndReturnToLobby();
+}
+
+void UPGAdvancedFriendsGameInstance::LeaveSessionAndReturnToLobby()
+{
+	UE_LOG(LogTemp, Log, TEXT("GI::LeaveSessionAndReturnToLobby: Attempting to leave current game session."));
+
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (!OnlineSubsystem)
+	{
+		// 온라인 서브시스템을 찾을 수 없으면 즉시 로비로 이동
+		UE_LOG(LogTemp, Warning, TEXT("GI::LeaveSessionAndReturnToLobby: Online Subsystem not found. Forcing return to main menu."));
+		UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+		return;
+	}
+
+	// 호스트가 세션을 나가는 경우, 나머지 클라이언트들 세션에서 내보내기
+	if (bIsHost)
+	{
+		UE_LOG(LogTemp, Log, TEXT("GI::LeaveSessionAndReturnToLobby: Host is leaving session. Notifying all clients"));
+
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+			{
+				APlayerController* PC = It->Get();
+				// PC가 유효하고 본인(호스트)의 PC가 아닌 경우 -> 클라이언트 PC인 경우
+				if (PC && !PC->IsLocalController())
+				{
+					if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+					{
+						LobbyPC->Client_ForceReturnToLobby();
+					}
+
+					if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+					{
+						PGPC->Client_ForceReturnToLobby();
+					}
+				}
+			}
+		}
+	}
+
+	if (SessionInterface.IsValid())
+	{
+		SessionInterface->DestroySession(NAME_GameSession);
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		// "파괴 후 호스팅" 플래그가 켜져 있는지 확인
+		if (bIsHostingAfterDestroy)
+		{
+			// 플래그를 리셋하고, 저장해둔 파라미터로 새로운 세션 생성
+			bIsHostingAfterDestroy = false;
+			UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Previous session destroyed. Creating new session now."));
+			CreateNewSession(PendingSessionName, PendingMaxPlayers, bIsPendingSessionPrivate);
+			return; // 여기서 함수를 종료하여 아래의 로비 복귀 로직을 타지 않도록
+		}
+
+		// 초대 정보가 있는 경우 (초대가 되어 OnDestroySessionComplete가 호출된 경우)
+		if (AcceptedInviteInfo.IsValid() && SessionInterface.IsValid())
+		{
+			UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: DestroySession successful. Now joining the invited session [%s]"), *AcceptedInviteInfo->GetSessionIdStr());
+			UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: invited session bUseLobbiesIfAvailable [%d]"), AcceptedInviteInfo.Get()->Session.SessionSettings.bUseLobbiesIfAvailable);
+			UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: invited session bUsesPresence [%d]"), AcceptedInviteInfo.Get()->Session.SessionSettings.bUsesPresence);
+
+			SessionInterface->JoinSession(0, NAME_GameSession, *AcceptedInviteInfo.Get());
+
+			// 사용된 초대 정보 초기화
+			AcceptedInviteInfo.Reset();
+			// 로비로 돌아가지 않고 종료
+			return;
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::OnDestroySessionComplete: Failed to destroy session %s"), *SessionName.ToString());
+		// 실패한 경우도 초대 정보 초기화
+		// 대기 중인 호스팅 작업 취소
+		bIsHostingAfterDestroy = false;
+		AcceptedInviteInfo.Reset();
+	}
+
+	// 초대를 통해 DestroySession이 호출된 것이 아닌 경우 (실제 세션을 나가는 상황)
+	UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Session destroy complete, back to lobby"));
+
+	bDidRetryClientTravel = false;
+	bTimeoutProcessInProgress = false;
+	bOnTravelFailureDetected = false;
+	TravelRetryCount = 0;
+
+	CurrentSavedGameState = EGameState::MainMenu;
+	bIsHost = false;
+
+	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+}
+// ---------- Session ---------
 
 void UPGAdvancedFriendsGameInstance::SaveGameStateOnTravel(EGameState StateToSave)
 {
@@ -88,17 +359,6 @@ EGameState UPGAdvancedFriendsGameInstance::LoadGameStateOnTravel()
 {
 	//UE_LOG(LogTemp, Log, TEXT("GI::LoadGameStateOnTravel: CurrentSavedGameState: %s"), *UEnum::GetValueAsString(TEXT("EGameState"), CurrentSavedGameState));
 	return CurrentSavedGameState;
-}
-
-void UPGAdvancedFriendsGameInstance::SetPlayerName(const FString& NewName)
-{
-	Playername = NewName;
-
-	APlayerController* pc = GetFirstLocalPlayerController();
-	if (pc && pc->PlayerState)
-	{
-		pc->PlayerState->SetPlayerName(NewName);
-	}
 }
 
 /*
@@ -291,116 +551,6 @@ void UPGAdvancedFriendsGameInstance::NotifyTravelFailed()
 bool UPGAdvancedFriendsGameInstance::DidRetryClientTravel() const
 {
 	return bDidRetryClientTravel;
-}
-
-void UPGAdvancedFriendsGameInstance::LeaveSessionAndReturnToLobby()
-{
-	UE_LOG(LogTemp, Log, TEXT("GI::LeaveSessionAndReturnToLobby: Attempting to leave current game session."));
-
-	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
-	if (!OnlineSubsystem)
-	{
-		// 온라인 서브시스템을 찾을 수 없으면 즉시 로비로 이동
-		UE_LOG(LogTemp, Warning, TEXT("GI::LeaveSessionAndReturnToLobby: Online Subsystem not found. Forcing return to main menu."));
-		UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
-		return;
-	}
-
-	// 호스트가 세션을 나가는 경우, 나머지 클라이언트들 세션에서 내보내기
-	if (bIsHost)
-	{
-		UE_LOG(LogTemp, Log, TEXT("GI::LeaveSessionAndReturnToLobby: Host is leaving session. Notifying all clients"));
-
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
-			{
-				APlayerController* PC = It->Get();
-				// PC가 유효하고 본인(호스트)의 PC가 아닌 경우 -> 클라이언트 PC인 경우
-				if (PC && !PC->IsLocalController())
-				{
-					if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
-					{
-						LobbyPC->Client_ForceReturnToLobby();
-					}
-
-					if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
-					{
-						PGPC->Client_ForceReturnToLobby();
-					}
-				}
-			}
-		}
-	}
-
-	IOnlineSessionPtr SessionInterfaceRef = OnlineSubsystem->GetSessionInterface();
-	if (!SessionInterfaceRef.IsValid())
-	{
-		// 세션 인터페이스를 제공하지 않으면 즉시 로비로 이동
-		UE_LOG(LogTemp, Warning, TEXT("GI::LeaveSessionAndReturnToLobby: Online Session Interface not valid. Forcing return to main menu."));
-		UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
-		return;
-	}
-
-	// 세션 파괴 후 호출될 델리게이트 바인딩
-	// 기존 핸들이 있다면 제거(중복방지)		
-	if (DestroySessionCompleteDelegateHandle.IsValid())
-	{
-		SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
-	}
-	DestroySessionCompleteDelegateHandle = SessionInterfaceRef->AddOnDestroySessionCompleteDelegate_Handle(
-		FOnDestroySessionCompleteDelegate::CreateUObject(this, &UPGAdvancedFriendsGameInstance::OnDestroySessionComplete)
-	);
-
-	// 호스트든 클라이언트든 현재 세션에 있다면 DestroySession을 호출
-	// 호스트 -> 세션 전체를 파괴
-	// 클라이언트 -> 해당 세션에서 '나감' 처리
-	const FName CurrentSessionName = NAME_GameSession; // 또는 세션 생성 시 사용한 이름
-	if (!SessionInterfaceRef->DestroySession(CurrentSessionName))
-	{
-		// DestroySession 호출 자체가 실패한 경우 (매우 드문 경우) 델리게이트를 바로 해제하고 로비로 이동
-		UE_LOG(LogTemp, Warning, TEXT("Failed to initiate session destruction for %s. Forcing return."), *CurrentSessionName.ToString());
-		SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
-
-		// 이 경우에도 OnDestroySessionComplete를 수동으로 호출하여 상태를 정리하고 이동하는 것이 더 안전
-		OnDestroySessionComplete(CurrentSessionName, false);
-	}
-	// 성공적으로 DestroySession 호출이 시작되었다면, OnDestroySessionComplete 콜백이 올 때까지 대기
-}
-
-void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
-{
-	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
-	if (OnlineSubsystem)
-	{
-		IOnlineSessionPtr SessionInterfaceRef = OnlineSubsystem->GetSessionInterface();
-		if (SessionInterfaceRef.IsValid())
-		{
-			SessionInterfaceRef->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
-		}
-	}
-
-	if (bWasSuccessful)
-	{
-		UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Session %s destroyed successfully"), *SessionName.ToString());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GI::OnDestroySessionComplete: Failed to destroy session %s"), *SessionName.ToString());
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Session destroy complete, back to lobby"));
-
-	bDidRetryClientTravel = false;
-	bTimeoutProcessInProgress = false;
-	bOnTravelFailureDetected = false;
-	TravelRetryCount = 0;
-
-	CurrentSavedGameState = EGameState::MainMenu;
-	bIsHost = false;
-
-	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
 }
 
 int32 UPGAdvancedFriendsGameInstance::GetExpectedPlayerCount()
