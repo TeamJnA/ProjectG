@@ -14,4 +14,15 @@ class PROJECTG_API UAN_PlayerFootStep : public UAnimNotify
 {
 	GENERATED_BODY()
 	
+public:
+	UAN_PlayerFootStep();
+
+	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	uint8 bIsPlayer : 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName FootStepName;
 };

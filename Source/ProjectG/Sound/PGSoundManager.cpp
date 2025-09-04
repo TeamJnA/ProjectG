@@ -101,6 +101,13 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(FName SoundName, FVector
 	// Play sound for all players by execute PlaySoundMulticast.
 	PlaySoundMulticast(SoundData->SoundAsset, SoundData->SoundStartTime, SoundLocation, SoundData->SoundLevel);
 
+
+	// 만약 sound의 Level이 0일  경우, 아래 작업은 진행할 필요가 없음.
+	if (SoundData->SoundLevel == 0)
+	{
+		return;
+	}
+
 	// Make noise for enemy AI chase sound.
 	int SoundPowerLevel = SoundData->SoundLevel;
 

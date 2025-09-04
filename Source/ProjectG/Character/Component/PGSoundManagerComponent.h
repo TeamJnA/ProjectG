@@ -26,7 +26,7 @@ public:
 	void TriggerSoundForAllPlayers(FName InSoundName, FVector SoundLocation);
 
 	UFUNCTION(BlueprintCallable, Server, Reliable)
-	void TriggerSoundWithNoise(FName InSoundName, FVector SoundLocation, bool bIntensedSound);
+	void TriggerSoundWithNoise(FName InSoundName, FVector SoundLocation, bool bIntensedSound = false);
 
 protected:
 	// Called when the game starts
