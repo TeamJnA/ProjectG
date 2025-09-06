@@ -26,7 +26,8 @@ class PROJECTG_API APGGameMode : public AGameMode, public ISoundManagerInterface
 public:
 	APGGameMode();
 
-	void SetIsTravelFailedExist();
+	void PlayerTravelSuccess(APlayerController* Player);
+
 	void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
 
 	// ISoundManagerInterface~
@@ -36,13 +37,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	// virtual void PostLogin(APlayerController* NewPlayer) override;
-	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
-	virtual void Logout(AController* Exiting) override;
+	// virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
+	// virtual void Logout(AController* Exiting) override;
+
+	void CheckAllPlayersArrived();
 
 	UFUNCTION()
 	void HandleMapGenerationComplete();
-
-	void PostTravel();
 
 	void SpawnAllPlayers();
 	void SpawnLevelGenerator();
@@ -52,17 +53,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
 
+	TSet<TObjectPtr<APlayerState>> ExpectedPlayers;
+	TSet<TObjectPtr<APlayerState>> ArrivedPlayers;
+	FTimerHandle TravelCheckTimer;
+
 	bool bLevelGeneratorSpawned = false;
 	bool bManagerSpawned = false;
 
 	bool bGamemodeReady = false;
-	int32 ConnectedPlayerCount = 0;
 	float SpawnOffset = 0.0f;
-
-	int32 ExpectedPlayerCount = 0;
-	TSet<APlayerController*> ClientTravelCompletedPlayersSet;
-	bool bIsTravelFailedExist = false;
-	FTimerHandle TravelCheckTimer;
 
 	void InitSoundManagerToPlayers();
 

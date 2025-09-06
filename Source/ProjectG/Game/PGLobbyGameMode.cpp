@@ -35,10 +35,9 @@ void APGLobbyGameMode::StartGame()
 	{
 		GS->SetCurrentGameState(EGameState::InGame);
 		GI->SaveGameStateOnTravel(GS->GetCurrentGameState());
-		GI->SetExpectedPlayerCount(GameState->PlayerArray.Num());
+		GI->SetExpectedPlayersForTravel(GS->PlayerArray);
 
 		UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel check logic [%s]"), *GS->GetName());
-		GS->NotifyStartTravel();
 	}
 
 	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()

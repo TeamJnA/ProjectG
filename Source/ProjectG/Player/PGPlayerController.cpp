@@ -83,17 +83,6 @@ void APGPlayerController::BeginPlay()
 		*GetName(), IsLocalController(), *UEnum::GetValueAsString(GetLocalRole()));
 }
 
-void APGPlayerController::PostSeamlessTravel()
-{
-	Super::PostSeamlessTravel();
-	
-	if (!HasAuthority()) return;
-
-	// On travel first try success
-	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::PostSeamlessTravel: [%s] travel success"), *GetNameSafe(this));
-	Client_PostSeamlessTravel();
-}
-
 void APGPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -145,21 +134,30 @@ void APGPlayerController::ReplaceInputMappingContext(const APawn* PawnType)
 	}
 }
 
+void APGPlayerController::PostSeamlessTravel()
+{
+	Super::PostSeamlessTravel();
+
+	// On travel first try success
+	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::PostSeamlessTravel: [%s] travel success"), *GetNameSafe(this));
+	Client_PostSeamlessTravel();
+}
+
 void APGPlayerController::Client_PostSeamlessTravel_Implementation()
 {
-	if (!IsLocalController()) return;
-
-	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
+	if (!IsLocalController()) 
 	{
-		if (GI->CheckIsTimerActive())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::Client_PostSeamlessTravel: [%s] stop travel timer"), *GetNameSafe(this));
-			GI->NotifyTravelSuccess();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::Client_PostSeamlessTravel: [%s] travel success but already timeout"), *GetNameSafe(this));
-		}
+		return;
+	}
+
+	Server_ReportTravelSuccess();
+}
+
+void APGPlayerController::Server_ReportTravelSuccess_Implementation()
+{
+	if (APGGameMode* GM = GetWorld()->GetAuthGameMode<APGGameMode>())
+	{
+		GM->PlayerTravelSuccess(this);
 	}
 }
 
@@ -212,16 +210,6 @@ void APGPlayerController::InitFinalScoreBoardWidget()
 	}
 }
 
-void APGPlayerController::NotifyReadyToReturnLobby()
-{
-	if (!IsLocalController())
-	{
-		UE_LOG(LogTemp, Error, TEXT("PC::NotifyReturnToLobby: PC is not local"));
-		return;
-	}
-
-	Server_SetReadyToReturnLobby();
-}
 
 void APGPlayerController::Client_ForceReturnToLobby_Implementation()
 {
@@ -231,6 +219,17 @@ void APGPlayerController::Client_ForceReturnToLobby_Implementation()
 	{
 		GI->LeaveSessionAndReturnToLobby();
 	}
+}
+
+void APGPlayerController::NotifyReadyToReturnLobby()
+{
+	if (!IsLocalController())
+	{
+		UE_LOG(LogTemp, Error, TEXT("PC::NotifyReturnToLobby: PC is not local"));
+		return;
+	}
+
+	Server_SetReadyToReturnLobby();
 }
 
 void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
@@ -336,28 +335,4 @@ void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 	{
 		UE_LOG(LogTemp, Error, TEXT("PC::OnShowPauseMenu: No PauseMenuWidget Class"));
 	}
-}
-
-/*
-* On host or client server travel failed
-* call server RPC to redo server travel
-* server PC Set travel failed flag on GM
-*/
-void APGPlayerController::NotifyTravelFailed()
-{
-	if (!IsLocalController()) return;
-
-	UE_LOG(LogTemp, Warning, TEXT("PGPC::NotifyTravelFailed: [%s] Report travel failed to server."), *GetNameSafe(this));
-	Server_ReportTravelFailed();
-}
-
-void APGPlayerController::Server_ReportTravelFailed_Implementation()
-{
-	if (!HasAuthority()) return;
-
-	APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode());
-	if (!GM) return;
-
-	UE_LOG(LogTemp, Warning, TEXT("PGPC::Server_ReportTravelFailed: Report travel failed to GM."));
-	GM->SetIsTravelFailedExist();
 }

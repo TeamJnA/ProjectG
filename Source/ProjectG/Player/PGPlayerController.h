@@ -29,7 +29,6 @@ class PROJECTG_API APGPlayerController : public APlayerController
 public:
 	APGPlayerController();
 
-	void NotifyTravelFailed();
 	void StartSpectate();
 	void InitFinalScoreBoardWidget();
 
@@ -44,15 +43,14 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void OnPossess(APawn* NewPawn) override;
-	void ReplaceInputMappingContext(const APawn* PawnType);
-
 	virtual void PostSeamlessTravel() override;
+	void ReplaceInputMappingContext(const APawn* PawnType);
 
 	UFUNCTION(Client, Reliable)
 	void Client_PostSeamlessTravel();
 
 	UFUNCTION(Server, Reliable)
-	void Server_ReportTravelFailed();	
+	void Server_ReportTravelSuccess();
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetReadyToReturnLobby();

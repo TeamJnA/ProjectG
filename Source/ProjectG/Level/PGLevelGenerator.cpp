@@ -585,14 +585,6 @@ void APGLevelGenerator::CheckForDungeonComplete()
 
 		UE_LOG(LogTemp, Warning, TEXT("Reboot Level"));
 
-		/*
-		* On level generate failed
-		* Initiate travel timer(GS->NotifyServerTravel) & ServerTravel
-		*/
-		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-		if (!GS) return;
-		GS->NotifyStartTravel();
-
 		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
 		{
 			GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);

@@ -67,8 +67,16 @@ void APGGameMode::BeginPlay()
 		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance());
 		if (GI)
 		{
-			ExpectedPlayerCount = GI->GetExpectedPlayerCount();
-			UE_LOG(LogTemp, Warning, TEXT("GameMode::BeginPlay: Set ExpectedPlayerCount = %d"), ExpectedPlayerCount);
+			for (const auto& PlayerState : GI->GetExpectedPlayersForTravel())
+			{
+				if (PlayerState)
+				{
+					ExpectedPlayers.Add(PlayerState.Get());
+				}
+			}
+
+			GI->ClearExpectedPlayersForTravel();
+			UE_LOG(LogTemp, Log, TEXT("PGGM::BeginPlay: Expecting %d players to arrive."), ExpectedPlayers.Num());
 		}
 
 		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
@@ -83,7 +91,7 @@ void APGGameMode::BeginPlay()
 			GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
 		}
 
-		// Spawn sound manager on the lever.
+		// Spawn sound manager on the level.
 		SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
 		if (SoundManager) {
 			UE_LOG(LogTemp, Log, TEXT("Sound manager spawn complete."));
@@ -95,55 +103,62 @@ void APGGameMode::BeginPlay()
 		/*
 		* Waiting for all players' travel success information
 		*/
-		GetWorld()->GetTimerManager().SetTimer(TravelCheckTimer, this, &APGGameMode::PostTravel, 4.0f, false);
+		GetWorld()->GetTimerManager().SetTimer(TravelCheckTimer, this, &APGGameMode::CheckAllPlayersArrived, 5.0f, false);
 	}
 
 }
 
-void APGGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+void APGGameMode::PlayerTravelSuccess(APlayerController* Player)
 {
-	// if NewPlayer already in set
-	if (ClientTravelCompletedPlayersSet.Contains(NewPlayer))
+	if (Player && Player->PlayerState)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GameMode::HandleStartingNewPlayer: [%s] already registered."), *NewPlayer->GetName());
-		return;
-	}	
-	ClientTravelCompletedPlayersSet.Add(NewPlayer);
-	ConnectedPlayerCount++;
-	UE_LOG(LogTemp, Warning, TEXT("GameMode::HandleStartingNewPlayer: [%s] coneected. ConnectedPlayer = %d"), *NewPlayer->GetName(), ClientTravelCompletedPlayersSet.Num());
+		UE_LOG(LogTemp, Log, TEXT("PGGM::PlayerTravelSuccess: Player %s has checked in"), *Player->PlayerState->GetPlayerName());
+		ArrivedPlayers.Add(Player->PlayerState);
+	}
 }
 
-void APGGameMode::Logout(AController* Exiting)
+void APGGameMode::CheckAllPlayersArrived()
 {
-	Super::Logout(Exiting);
-
-	// if game did not start (some players not in game level -> ExpectedPlayerCount > ConnectedPlayerCount)
-	if (!bLevelGeneratorSpawned)
+	TArray<TObjectPtr<APlayerState>> FailedPlayers;
+	for (const auto& ExpectedPlayer : ExpectedPlayers)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(TravelCheckTimer);
-
-		ExpectedPlayerCount--;
-		if (APlayerController* OutPC = Cast<APlayerController>(Exiting))
+		if (ExpectedPlayer && !ArrivedPlayers.Contains(ExpectedPlayer))
 		{
-			if (ClientTravelCompletedPlayersSet.Contains(OutPC))
+			FailedPlayers.Add(ExpectedPlayer);
+		}
+	}
+
+	if (!FailedPlayers.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("PGGM::CheckAllPlayersArrived: %d player(s) failed to arrive. Kicking them."), FailedPlayers.Num());
+
+		UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+		if (GI)
+		{
+			for (const auto& FailedPlayerState : FailedPlayers)
 			{
-				ClientTravelCompletedPlayersSet.Remove(OutPC);
-				ConnectedPlayerCount--;
+				const FUniqueNetIdRepl& PlayerIdToKick = FailedPlayerState->GetUniqueId();
+				if (PlayerIdToKick.IsValid())
+				{
+					GI->KickPlayerFromSession(*PlayerIdToKick.GetUniqueNetId());
+				}
 			}
 		}
+	}
 
-		if (ConnectedPlayerCount >= ExpectedPlayerCount)
+	if (!ArrivedPlayers.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("PGGM::CheckAllPlayersArrived: Starting game with %d arrived players."), ArrivedPlayers.Num());
+		SpawnLevelGenerator();
+		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 		{
-			UE_LOG(LogTemp, Log, TEXT("GameMode::Logout: ExpectedPlayerCount: %d"), ExpectedPlayerCount);
-			UE_LOG(LogTemp, Log, TEXT("GameMode::Logout: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
-			UE_LOG(LogTemp, Log, TEXT("GameMode::Logout: bLevelGeneratorSpawned: %d"), bLevelGeneratorSpawned);
-			SpawnLevelGenerator();
+			GI->CloseSession();
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GameMode::Logout: Not enough players yet."));
-			// what to do after failure?
-		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("PGGM::CheckAllPlayersArrived: No players arrived. Shutting down session."));
+		// TODO: 세션 종료 로직
 	}
 }
 
@@ -152,11 +167,6 @@ void APGGameMode::HandleMapGenerationComplete()
 	UE_LOG(LogTemp, Log, TEXT("GameMode: Recieved OnMapGenerationComplete"));
 
 	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
-}
-
-void APGGameMode::SetIsTravelFailedExist()
-{
-	bIsTravelFailedExist = true;
 }
 
 void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
@@ -203,62 +213,6 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 		UE_LOG(LogTemp, Error, TEXT("GM::SetPlayerReadyToReturnLobby: Failed to get GS or passed PlayerState"));
 	}
 }
-
-/*
-* if there is travel failed client
-* retry server travel
-* else
-* spawn check can start game and spawn level generator
-*/
-void APGGameMode::PostTravel()
-{
-	if (bIsTravelFailedExist)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: Travel failed player detected."));
-
-		UWorld* world = GetWorld();
-		if (world)
-		{
-			if (APGGameState* GS = Cast<APGGameState>(GameState))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: Start travel check logic [%s]"), *GS->GetName());
-				GS->NotifyStartTravel();
-			}
-
-			world->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
-			{
-				UE_LOG(LogTemp, Warning, TEXT("PGGM::Server_RequestServerTravel: Start travel"));
-				GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
-			}));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: All players travel success."));
-
-		UE_LOG(LogTemp, Log, TEXT("PGGM::PostTravel: ExpectedPlayerCount: %d"), ExpectedPlayerCount);
-		UE_LOG(LogTemp, Log, TEXT("PGGM::PostTravel: ConnectedPlayerCount: %d"), ConnectedPlayerCount);
-		UE_LOG(LogTemp, Log, TEXT("PGGM::PostTravel: bLevelGeneratorSpawned: %d"), bLevelGeneratorSpawned);
-
-		if (!bLevelGeneratorSpawned)
-		{
-			if (ConnectedPlayerCount >= ExpectedPlayerCount)
-			{
-				SpawnLevelGenerator();
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: Not enough players yet."));
-				// what to do after failure?
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PGGM::PostTravel: Already level generator spawned."));
-		}
-	}
-}
-
 
 void APGGameMode::SpawnAllPlayers()
 {

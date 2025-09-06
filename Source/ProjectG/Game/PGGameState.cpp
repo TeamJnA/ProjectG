@@ -200,25 +200,9 @@ void APGGameState::MC_InitFinalScoreBoardWidget_Implementation()
 	}
 }
 
-void APGGameState::MC_InitiateTravelTimer_Implementation()
-{
-	UE_LOG(LogTemp, Warning, TEXT("APGGameState::MC_InitiateTravelTimer: called [%s] | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
-	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance()))
-	{
-		GI->InitiateTravelTimer();
-	}	
-}
-
 void APGGameState::NotifyMapGenerationComplete()
 {
 	Multicast_MapGenerationComplete();
-}
-
-void APGGameState::NotifyStartTravel()
-{
-	if (!HasAuthority()) return;
-	UE_LOG(LogTemp, Warning, TEXT("APGGameState::NotifyStartTravel: called [%s] | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
-	MC_InitiateTravelTimer();
 }
 
 void APGGameState::NotifyGameFinished()

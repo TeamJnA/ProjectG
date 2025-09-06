@@ -33,6 +33,7 @@ void UPGAdvancedFriendsGameInstance::Init()
 	if (GEngine)
 	{
 		GEngine->OnTravelFailure().AddUObject(this, &UPGAdvancedFriendsGameInstance::HandleTravelFailure);
+		GEngine->OnNetworkFailure().AddUObject(this, &UPGAdvancedFriendsGameInstance::HandleNetworkFailure);
 	}
 
 	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
@@ -44,8 +45,9 @@ void UPGAdvancedFriendsGameInstance::Init()
 			SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnCreateSessionComplete);
 			SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnFindSessionsComplete);
 			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnJoinSessionComplete);
-			SessionInterface->OnSessionUserInviteAcceptedDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnSessionUserInviteAccepted);
 			SessionInterface->OnDestroySessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnDestroySessionComplete);
+			SessionInterface->OnUpdateSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnUpdateSessionComplete);
+			SessionInterface->OnSessionUserInviteAcceptedDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnSessionUserInviteAccepted);
 		}
 	}
 	
@@ -337,15 +339,84 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 	// 초대를 통해 DestroySession이 호출된 것이 아닌 경우 (실제 세션을 나가는 상황)
 	UE_LOG(LogTemp, Log, TEXT("GI::OnDestroySessionComplete: Session destroy complete, back to lobby"));
 
-	bDidRetryClientTravel = false;
-	bTimeoutProcessInProgress = false;
-	bOnTravelFailureDetected = false;
-	TravelRetryCount = 0;
-
 	CurrentSavedGameState = EGameState::MainMenu;
 	bIsHost = false;
 
 	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
+}
+void UPGAdvancedFriendsGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)
+{
+	ReturnToMainMenu(FString::Printf(TEXT("Travel Failure: %s"), *ErrorString));
+}
+
+void UPGAdvancedFriendsGameInstance::HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString)
+{
+	ReturnToMainMenu(FString::Printf(TEXT("Network Failure: %s"), *ErrorString));
+}
+
+void UPGAdvancedFriendsGameInstance::ReturnToMainMenu(const FString& Reason)
+{
+	UE_LOG(LogTemp, Error, TEXT("Return to main menu. Reason: [%s]"), *Reason);
+
+	AcceptedInviteInfo.Reset();
+	LeaveSessionAndReturnToLobby();
+	// LeaveSessionAndReturnToLobby -> OnDestroySessionComplete 에서 GI 초기화
+}
+
+void UPGAdvancedFriendsGameInstance::CloseSession()
+{
+	if (!SessionInterface.IsValid())
+	{
+		return;
+	}
+
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(NAME_GameSession);
+	if (Session)
+	{
+		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
+		UpdatedSettings.bShouldAdvertise = false;
+		SessionInterface->UpdateSession(NAME_GameSession, UpdatedSettings);
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Log, TEXT("GI::OnUpdateSessionComplete: Session '%s' update completed. Success: %d. bShouldAdvertise: %d"), 
+		*SessionName.ToString(), bWasSuccessful, SessionInterface->GetNamedSession(NAME_GameSession)->SessionSettings.bShouldAdvertise);
+}
+
+const TArray<TObjectPtr<APlayerState>>& UPGAdvancedFriendsGameInstance::GetExpectedPlayersForTravel() const
+{
+	return ExpectedPlayersForTravel;
+}
+
+void UPGAdvancedFriendsGameInstance::SetExpectedPlayersForTravel(const TArray<TObjectPtr<APlayerState>>& PlayerArray)
+{
+	ExpectedPlayersForTravel.Empty();
+	for (APlayerState* PS : PlayerArray)
+	{
+		if (PS)
+		{
+			ExpectedPlayersForTravel.Add(PS);
+		}
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::ClearExpectedPlayersForTravel()
+{
+	ExpectedPlayersForTravel.Empty();
+}
+
+void UPGAdvancedFriendsGameInstance::KickPlayerFromSession(const FUniqueNetId& PlayerToKickId)
+{
+	if (!SessionInterface.IsValid())
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("GI::KickPlayerFromSession: Kicking player with ID '%s' from the session."), *PlayerToKickId.ToString());
+
+	SessionInterface->UnregisterPlayer(NAME_GameSession, PlayerToKickId);
 }
 // ---------- Session ---------
 
@@ -359,208 +430,6 @@ EGameState UPGAdvancedFriendsGameInstance::LoadGameStateOnTravel()
 {
 	//UE_LOG(LogTemp, Log, TEXT("GI::LoadGameStateOnTravel: CurrentSavedGameState: %s"), *UEnum::GetValueAsString(TEXT("EGameState"), CurrentSavedGameState));
 	return CurrentSavedGameState;
-}
-
-/*
-* on notified travel failure
-* -> retry travel (Max retry count == 2)
-*/
-void UPGAdvancedFriendsGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)
-{
-	if (bTimeoutProcessInProgress) return;
-	bOnTravelFailureDetected = true;
-	GetWorld()->GetTimerManager().ClearTimer(TravelTimerHandle);
-
-	if (TravelRetryCount <= 2)
-	{
-		if (!GetWorld())
-		{
-			bDidRetryClientTravel = false;
-			bTimeoutProcessInProgress = false;
-			bOnTravelFailureDetected = false;
-			TravelRetryCount = 0;
-			LeaveSessionAndReturnToLobby();
-			return;
-		}
-		UE_LOG(LogTemp, Error, TEXT("GameInstance::HandleTravelFailure: Travel Failed: %s"), *ErrorString);
-		NotifyTravelFailed();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GameInstance::HandleTravelFailure: Travel retry failed. LeaveSession"));
-		bDidRetryClientTravel = false;
-		bTimeoutProcessInProgress = false;
-		bOnTravelFailureDetected = false;
-		TravelRetryCount = 0;
-		LeaveSessionAndReturnToLobby();
-	}
-}
-
-/*
-* on non-notified travel failure
-* should check manually by timer
-*/
-void UPGAdvancedFriendsGameInstance::InitiateTravelTimer()
-{
-	if (TravelRetryCount <= 2)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GameInstance::InitiateTravelTimer: Start check client travel timeout. TravelRetryCount: %d"), TravelRetryCount);
-		if (!GetWorld())
-		{
-			bDidRetryClientTravel = false;
-			bTimeoutProcessInProgress = false;
-			bOnTravelFailureDetected = false;
-			TravelRetryCount = 0;
-			LeaveSessionAndReturnToLobby();
-			return;
-		}
-		// for retry test
-		//GetWorld()->GetTimerManager().SetTimer(TravelTimerHandle, this, &UPGAdvancedFriendsGameInstance::OnTravelTimeout, 0.1f, false);
-		GetWorld()->GetTimerManager().SetTimer(TravelTimerHandle, this, &UPGAdvancedFriendsGameInstance::OnTravelTimeout, 2.0f, false);
-
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GameInstance::InitiateTravelTimer: Travel retry failed. LeaveSession"));
-		bDidRetryClientTravel = false;
-		bTimeoutProcessInProgress = false;
-		bOnTravelFailureDetected = false;
-		TravelRetryCount = 0;
-		LeaveSessionAndReturnToLobby();
-	}
-}
-
-/*
-* call on travel sueccess
-*/
-void UPGAdvancedFriendsGameInstance::NotifyTravelSuccess()
-{
-	if (!GetWorld()->GetTimerManager().IsTimerActive(TravelTimerHandle))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GameInstance::NotifyTravelSuccess: Already travel timeout"));
-		return;
-	}
-	if (!GetWorld())
-	{
-		bDidRetryClientTravel = false;
-		bTimeoutProcessInProgress = false;
-		bOnTravelFailureDetected = false;
-		TravelRetryCount = 0;
-		LeaveSessionAndReturnToLobby();
-		return;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("GameInstance::NotifyTravelSuccess: Check client travel success"));
-	GetWorld()->GetTimerManager().ClearTimer(TravelTimerHandle);
-	bDidRetryClientTravel = false;
-	bTimeoutProcessInProgress = false;
-	bOnTravelFailureDetected = false;
-	TravelRetryCount = 0;
-}
-
-/*
-* Check timer is active (debug)
-* if timer is active -> travel success
-* if timer is not active -> travel timeout
-*/
-bool UPGAdvancedFriendsGameInstance::CheckIsTimerActive()
-{
-	if (GetWorld()->GetTimerManager().IsTimerActive(TravelTimerHandle))
-	{
-		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		ensure(PC);
-
-		float remainTime = GetTimerManager().GetTimerRemaining(TravelTimerHandle);
-		UE_LOG(LogTemp, Warning, TEXT("GI::CheckIsTimerActive: [%s] [%s] Timer is active. Remain %.2f s."), *PC->GetName(), *GetNameSafe(this), remainTime);
-		return true;
-	}
-	else
-	{
-		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		ensure(PC);
-
-		UE_LOG(LogTemp, Warning, TEXT("GI::CheckIsTimerActive: [%s] [%s] Timer is not active"), *PC->GetName(), *GetNameSafe(this));
-		return false;
-	}
-}
-
-void UPGAdvancedFriendsGameInstance::OnTravelTimeout()
-{
-	if (bOnTravelFailureDetected) return;
-	bTimeoutProcessInProgress = true;
-	GetWorld()->GetTimerManager().ClearTimer(TravelTimerHandle);
-
-	UE_LOG(LogTemp, Error, TEXT("GameInstance::OnTravelTimeout: client travel timeout"));
-	UWorld* world = GetWorld();
-	if (!world)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GameInstance::OnTravelTimeout: no world"));
-		bDidRetryClientTravel = false;
-		bTimeoutProcessInProgress = false;
-		bOnTravelFailureDetected = false;
-		TravelRetryCount = 0;
-		LeaveSessionAndReturnToLobby();
-		return;
-	}
-
-	APlayerController* PC = UGameplayStatics::GetPlayerController(world, 0);
-	if (!PC)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GameInstance::OnTravelTimeout: no PC"));
-		bDidRetryClientTravel = false;
-		bTimeoutProcessInProgress = false;
-		bOnTravelFailureDetected = false;
-		TravelRetryCount = 0;
-		LeaveSessionAndReturnToLobby();
-		return;
-	}
-
-	// prevent RetryTravel double call
-	if (bOnTravelFailureDetected) return;
-	UE_LOG(LogTemp, Error, TEXT("GameInstance::OnTravelTimeout: [%s] travel timeout!"), *PC->GetName());
-	NotifyTravelFailed();
-}
-
-/*
-* retry ServerTravel
-* if retry count >= Max retry count(2) -> leave session
-*/
-void UPGAdvancedFriendsGameInstance::NotifyTravelFailed()
-{
-	UWorld* world = GetWorld();
-	if (!world)
-	{
-		LeaveSessionAndReturnToLobby();
-		return;
-	}
-	APGPlayerController* PC = Cast<APGPlayerController>(world->GetFirstPlayerController());
-	if (!PC)
-	{
-		LeaveSessionAndReturnToLobby();
-		return;
-	}
-	
-	UE_LOG(LogTemp, Error, TEXT("GameInstnace::RetryTravel: Retry travel to main level [%s]"), *PC->GetName());
-	bDidRetryClientTravel = true;
-	TravelRetryCount++;
-	bOnTravelFailureDetected = false;
-	bTimeoutProcessInProgress = false;
-	PC->NotifyTravelFailed();
-}
-
-bool UPGAdvancedFriendsGameInstance::DidRetryClientTravel() const
-{
-	return bDidRetryClientTravel;
-}
-
-int32 UPGAdvancedFriendsGameInstance::GetExpectedPlayerCount()
-{
-	return ExpectedPlayerCount;
-}
-
-void UPGAdvancedFriendsGameInstance::SetExpectedPlayerCount(int32 PlayerCount)
-{
-	ExpectedPlayerCount = PlayerCount;
 }
 
 int32 UPGAdvancedFriendsGameInstance::GetMaxInventorySize() const

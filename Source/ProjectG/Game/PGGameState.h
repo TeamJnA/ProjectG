@@ -51,7 +51,6 @@ class PROJECTG_API APGGameState : public AGameState
 	
 public:
 	void NotifyMapGenerationComplete();
-	void NotifyStartTravel();
 
 	EGameState GetCurrentGameState() { return CurrentGameState; }
 	void SetCurrentGameState(EGameState NewGameState) { CurrentGameState = NewGameState; }
@@ -89,9 +88,6 @@ protected:
 	virtual void RemovePlayerState(APlayerState* PlayerState) override;
 
 	void Multicast_MapGenerationComplete();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MC_InitiateTravelTimer();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MC_InitFinalScoreBoardWidget();

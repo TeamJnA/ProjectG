@@ -50,20 +50,11 @@ class PROJECTG_API UPGAdvancedFriendsGameInstance : public UAdvancedFriendsGameI
 	GENERATED_BODY()
 
 public:
-	bool DidRetryClientTravel() const;
-	void LeaveSessionAndReturnToLobby();
-
-	int32 GetExpectedPlayerCount();
-	void SetExpectedPlayerCount(int32 PlayerCount);
-
-	void InitiateTravelTimer();
-	void NotifyTravelSuccess();
-	bool CheckIsTimerActive();
-
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
 
 	bool IsHost() { return bIsHost; }
+
 
 	// --------- Session ---------
 	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
@@ -75,21 +66,35 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
 	void JoinFoundSession(int32 SessionIndex);
 
+	void LeaveSessionAndReturnToLobby();
+
+	// 게임 시작 후 GM에서 세션에 더이상 참가하지 못하도록 세팅
+	void CloseSession();
+
+	const TArray<TObjectPtr<APlayerState>>& GetExpectedPlayersForTravel() const;
+	void SetExpectedPlayersForTravel(const TArray<TObjectPtr<APlayerState>>& PlayerArray);
+	void ClearExpectedPlayersForTravel();
+
+	void KickPlayerFromSession(const FUniqueNetId& PlayerToKickId);
+
 	FOnSessionsFoundDelegate OnSessionsFound;
 	// --------- Session ---------
 
+
+	// -------- Item --------
 	UPGItemData* GetItemDataByKey(FName Key);
 
 	void RequestLoadItemData(FName Key, FOnItemDataLoaded OnLoadedDelegate);
+	// -------- Item --------
 
-	UPROPERTY(BlueprintReadOnly)
-	FString Playername;
 
-	// GameState
+	// -------- Save current game state --------
 	void SaveGameStateOnTravel(EGameState StateToSave);
 	EGameState LoadGameStateOnTravel();
+	// -------- Save current game state --------
 
-	// -------- Steam Friend -------------
+
+	// -------- Steam Friend --------
 	void ReadSteamFriends();
 
 	bool GetSteamAvatarAsRawData(const FUniqueNetId& InUserId, TArray<uint8>& OutRawData, int32& OutWidth, int32& OutHeight);
@@ -100,18 +105,19 @@ public:
 
 	FOnFriendListUpdatedDelegate OnFriendListUpdated;
 
-	TArray<FSteamFriendInfo> CachedFriends;
-	
-	// -------- Steam Friend -------------
+	TArray<FSteamFriendInfo> CachedFriends;	
+	// -------- Steam Friend --------
 
 protected:
 	virtual void Init() override;
 
+	// -------- Handl Failure --------
 	// void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
 	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString);
-	void OnTravelTimeout();
+	void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
+	void ReturnToMainMenu(const FString& Reason);
+	// -------- Handl Failure --------
 
-	void NotifyTravelFailed();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 	int32 MaxInventorySize = 5;
@@ -134,6 +140,8 @@ private:
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
 	// 세션 초대 수락 시 호출
 	void OnSessionUserInviteAccepted(bool bWasSuccessful, int32 ControllerId, TSharedPtr<const FUniqueNetId> UserId, const FOnlineSessionSearchResult& InviteResult);
+	// 세션 세팅 업데이트 시 호출
+	void OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful);
 
 	void CreateNewSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate);
 
@@ -148,14 +156,9 @@ private:
 	FName PendingSessionName;
 	int32 PendingMaxPlayers;
 	bool bIsPendingSessionPrivate;
-	// ------- Session --------
 
-	int32 ExpectedPlayerCount = 0;
-	int32 TravelRetryCount = 0;
-	FTimerHandle TravelTimerHandle;
-	bool bDidRetryClientTravel = false;
-	bool bTimeoutProcessInProgress = false;
-	bool bOnTravelFailureDetected = false;
+	TArray<TObjectPtr<APlayerState>> ExpectedPlayersForTravel;
+	// ------- Session --------
 
 	bool bIsHost = false;
 
