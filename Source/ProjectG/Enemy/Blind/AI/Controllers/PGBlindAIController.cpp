@@ -141,8 +141,7 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	if (CurNoise > NoiseMaxThreshold && OwnerPawn->GetHuntLevel()==2)
 	{
 		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoise);
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
-			FString::Printf(TEXT("MaxThreshold")));
+		//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("MaxThreshold")));
 
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", SourceLocation);
 
@@ -164,8 +163,7 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoise);
 		
 		
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
-			FString::Printf(TEXT("cur noise : %.1f"), CurNoise));
+		//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("cur noise : %.1f"), CurNoise));
 
 		//targetlocation도 블랙보드에서 관리. 바꿔줌.
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", SourceLocation);
@@ -175,16 +173,14 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 		if (OwnerPawn->GetNoiseLevelThreshold() < CurNoise)
 		{
 			//강한 단서
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
-				FString::Printf(TEXT("Strong Clue")));
+			//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Strong Clue")));
 			//강한단서니깐, chase ability를 실행시킨다
 			OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindChase::StaticClass(), true);
 		}
 		//이건 약한단서 
 		else if(OwnerPawn->GetNoiseLevelThreshold() >= CurNoise)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
-				FString::Printf(TEXT("Weak Clue")));
+			//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Weak Clue")));
 			OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindInvestigate::StaticClass(), true);
 		}
 

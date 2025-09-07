@@ -52,12 +52,13 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 	FHitResult HitResult;
 	FVector TraceEndLocation = TraceStartLocation + TraceStartDirection * InteractableTraceRange;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, TraceParams);
-	if (ShowDebug) {
-		DrawDebugLine(GetWorld(), TraceStartLocation, TraceEndLocation, FColor::Green, false, 0.5f);
-	}
+	//if (ShowDebug) 
+	//{
+	//	DrawDebugLine(GetWorld(), TraceStartLocation, TraceEndLocation, FColor::Green, false, 0.5f);
+	//}
 
 	// Broadcast trace result to interact ability.
-	if(bHit && HitResult.GetActor())
+	if (bHit && HitResult.GetActor())
 	{
 		// Check if the actor implements IInteractableActorInterface that allows interaction.
 		IInteractableActorInterface* InteractInterface = Cast<IInteractableActorInterface>(HitResult.GetActor());

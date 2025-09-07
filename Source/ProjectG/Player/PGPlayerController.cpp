@@ -42,18 +42,6 @@ APGPlayerController::APGPlayerController()
 	{
 		ShowPauseMenuAction = ShowPauseMenuActionObj.Object;
 	}
-
-	static ConstructorHelpers::FClassFinder<UUserWidget> FinalScoreBoardWidgetRef(TEXT("/Game/ProjectG/UI/WBP_PGFinalScoreBoardWidget.WBP_PGFinalScoreBoardWidget_C"));
-	if (FinalScoreBoardWidgetRef.Class != nullptr)
-	{
-		FinalScoreBoardWidgetClass = FinalScoreBoardWidgetRef.Class;
-	}
-
-	ConstructorHelpers::FClassFinder<UUserWidget> PauseMenuWidgetRef(TEXT("/Game/ProjectG/UI/WBP_PGPauseMenuWidget.WBP_PGPauseMenuWidget_C"));
-	if (PauseMenuWidgetRef.Class != nullptr)
-	{
-		PauseMenuWidgetClass = PauseMenuWidgetRef.Class;
-	}
 }
 
 
@@ -178,39 +166,6 @@ void APGPlayerController::StartSpectate()
 	UE_LOG(LogTemp, Warning, TEXT("PC::StartSpectate: Client requested EnterSpectatorMode."));
 }
 
-void APGPlayerController::InitFinalScoreBoardWidget()
-{
-	if (IsLocalController() && FinalScoreBoardWidgetClass)
-	{
-		// clear current viewport
-		if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
-		{
-			ViewPort->RemoveAllViewportWidgets();
-		}
-
-		//APGHUD* HUD = Cast<APGHUD>(GetHUD());
-		//HUD->InitFinalScoreBoardWidget()
-
-		FinalScoreBoardWidgetInstance = CreateWidget<UPGFinalScoreBoardWidget>(this, FinalScoreBoardWidgetClass);
-		if (FinalScoreBoardWidgetInstance)
-		{
-			bShowMouseCursor = true;
-			SetInputMode(FInputModeUIOnly());
-
-			UE_LOG(LogTemp, Log, TEXT("PC::InitFinalScoreBoardWidget: FinalScoreBoardWidget created successfully."));
-			FinalScoreBoardWidgetInstance->AddToViewport();
-			UE_LOG(LogTemp, Log, TEXT("PC::InitFinalScoreBoardWidget: FinalScoreBoardWidget added to viewport."));
-
-			FinalScoreBoardWidgetInstance->BindPlayerEntry(this);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("PC::InitFinalScoreBoardWidget: Failed to create FinalScoreBoardWidget"));
-		}
-	}
-}
-
-
 void APGPlayerController::Client_ForceReturnToLobby_Implementation()
 {
 	UE_LOG(LogTemp, Log, TEXT("PGPC::Client_ForceReturnToLobby: Received command from host to leave session"));
@@ -307,32 +262,28 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 	}
 }
 
+void APGPlayerController::InitFinalScoreBoardWidget()
+{
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
+	{
+		HUD->InitFinalScoreBoardWidget();
+	}
+}
+
 void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 {
-	if (!IsLocalController()) return;
-
-	if (FinalScoreBoardWidgetInstance && FinalScoreBoardWidgetInstance->IsInViewport()) return;
-
-	if (PauseMenuWidgetClass)
+	if (!IsLocalController()) 
 	{
-		PauseMenuWidgetInstance = CreateWidget<UPGPauseMenuWidget>(this, PauseMenuWidgetClass);
-		if (PauseMenuWidgetInstance)
-		{
-			UE_LOG(LogTemp, Log, TEXT("PC::OnShowPauseMenu: PauseMenuWidget created successfully"));
-
-			bShowMouseCursor = true;
-			SetInputMode(FInputModeUIOnly());
-
-			PauseMenuWidgetInstance->AddToViewport();
-			PauseMenuWidgetInstance->Init(this);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("PC::OnShowPauseMenu: Failed to create PauseMenuWidget"))
-		}
+		return;
 	}
-	else
+
+	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
 	{
-		UE_LOG(LogTemp, Error, TEXT("PC::OnShowPauseMenu: No PauseMenuWidget Class"));
+		HUD->InitPauseMenuWidget();
 	}
 }

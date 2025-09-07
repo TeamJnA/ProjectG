@@ -6,6 +6,8 @@
 #include "UI/PGInventoryWidget.h"
 #include "UI/PGMessageManagerWidget.h"
 #include "UI/PGScoreBoardWidget.h"
+#include "UI/PGFinalScoreBoardWidget.h"
+#include "UI/PGPauseMenuWidget.h"
 #include "UI/PGCrosshairWidget.h"
 #include "UI/PGInteractionProgressWidget.h"
 
@@ -55,16 +57,69 @@ void APGHUD::Init()
 
 void APGHUD::InitScoreBoardWidget()
 {
-	ScoreBoardWidget = CreateWidget<UPGScoreBoardWidget>(GetOwningPlayerController(), ScoreBoardWidgetClass);
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC || !ScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (ScoreBoardWidget && ScoreBoardWidget->IsInViewport()))
+	{
+		return;
+	}
+
+	PC->bShowMouseCursor = true;
+	PC->SetInputMode(FInputModeUIOnly());
+
+	ScoreBoardWidget = CreateWidget<UPGScoreBoardWidget>(PC, ScoreBoardWidgetClass);
 	if (ScoreBoardWidget)
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::InitScoreBoardWidget: ScoreBoardWidget created successfully."));
 		ScoreBoardWidget->AddToViewport();
+		ScoreBoardWidget->BindPlayerEntry(PC);
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::InitScoreBoardWidget: ScoreBoardWidget added to viewport."));
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("APGHUD::InitScoreBoardWidget: Failed to create ScoreBoardWidget! Check ScoreBoardWidgetClass in HUD Blueprint."));
+	}
+}
+
+void APGHUD::InitFinalScoreBoardWidget()
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC || !FinalScoreBoardWidgetClass)
+	{
+		return;
+	}
+
+	if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
+	{
+		ViewPort->RemoveAllViewportWidgets();
+	}
+
+	FinalScoreBoardWidget = CreateWidget<UPGFinalScoreBoardWidget>(PC, FinalScoreBoardWidgetClass);
+	if (FinalScoreBoardWidget)
+	{
+		PC->bShowMouseCursor = true;
+		PC->SetInputMode(FInputModeUIOnly());
+
+		FinalScoreBoardWidget->AddToViewport();
+		FinalScoreBoardWidget->BindPlayerEntry(PC);
+	}
+}
+
+void APGHUD::InitPauseMenuWidget()
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC || !PauseMenuWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (PauseMenuWidget && PauseMenuWidget->IsInViewport()))
+	{
+		return;
+	}
+
+	PauseMenuWidget = CreateWidget<UPGPauseMenuWidget>(PC, PauseMenuWidgetClass);
+	if (PauseMenuWidget)
+	{
+		PC->bShowMouseCursor = true;
+		PC->SetInputMode(FInputModeUIOnly());
+
+		PauseMenuWidget->AddToViewport();
+		PauseMenuWidget->Init(PC);
 	}
 }
 

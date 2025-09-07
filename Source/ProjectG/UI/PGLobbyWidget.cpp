@@ -53,18 +53,18 @@ void UPGLobbyWidget::UpdatePlayerList()
 		return A.bIsHost > B.bIsHost;
 	});
 
-	for (const FPlayerInfo& Info : SortedInfos)
+	for (const FPlayerInfo& PlayerInfo : SortedInfos)
 	{
 		UTexture2D* AvatarTexture = nullptr;
-		if (Info.PlayerNetId.IsValid())
+		if (PlayerInfo.PlayerNetId.IsValid())
 		{
-			AvatarTexture = GIRef->GetSteamAvatarAsTexture(*Info.PlayerNetId.GetUniqueNetId());
+			AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
 		}
 
 		UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
 		if (NewPlayerEntry)
 		{
-			NewPlayerEntry->SetupEntry(FText::FromString(Info.PlayerName), AvatarTexture, Info.bIsHost);
+			NewPlayerEntry->SetupEntry(PlayerInfo, AvatarTexture);
 			PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
 		}
 	}

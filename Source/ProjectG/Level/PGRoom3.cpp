@@ -13,31 +13,31 @@ APGRoom3::APGRoom3()
 
 	SpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint0"));
 	SpawnPoint0->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint0->SetRelativeLocation(FVector(458.0f, 294.0f, 100.0f));
+	SpawnPoint0->SetRelativeLocation(FVector(138.0f, 544.0f, 111.0f));
 	SpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	SpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	SpawnPoint0->bHiddenInGame = false;
+	SpawnPoint0->bHiddenInGame = true;
 
 	SpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint1"));
 	SpawnPoint1->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint1->SetRelativeLocation(FVector(908.0f, 294.0f, 100.0f));
+	SpawnPoint1->SetRelativeLocation(FVector(138.0f, 618.0f, 111.0f));
 	SpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	SpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	SpawnPoint1->bHiddenInGame = false;
+	SpawnPoint1->bHiddenInGame = true;
 
 	SpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint2"));
 	SpawnPoint2->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint2->SetRelativeLocation(FVector(1038.0f, 294.0f, 100.0f));
+	SpawnPoint2->SetRelativeLocation(FVector(1178.0f, 730.0f, 111.0f));
 	SpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	SpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	SpawnPoint2->bHiddenInGame = false;
+	SpawnPoint2->bHiddenInGame = true;
 
 	SpawnPoint3 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint3"));
 	SpawnPoint3->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint3->SetRelativeLocation(FVector(608.0f, 294.0f, 100.0f));
+	SpawnPoint3->SetRelativeLocation(FVector(1178.0f, 824.0f, 111.0f));
 	SpawnPoint3->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	SpawnPoint3->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	SpawnPoint3->bHiddenInGame = false;
+	SpawnPoint3->bHiddenInGame = true;
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(670.0f, 840.0f, 250.0f));
 

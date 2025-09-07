@@ -70,6 +70,8 @@ public:
 
 	// 게임 시작 후 GM에서 세션에 더이상 참가하지 못하도록 세팅
 	void CloseSession();
+	// 로비로 돌아온 경우 세션에 다시 참가할 수 있도록 세팅
+	void OpenSession();
 
 	const TArray<TObjectPtr<APlayerState>>& GetExpectedPlayersForTravel() const;
 	void SetExpectedPlayersForTravel(const TArray<TObjectPtr<APlayerState>>& PlayerArray);

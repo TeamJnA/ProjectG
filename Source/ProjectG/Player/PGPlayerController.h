@@ -15,8 +15,6 @@ class UInputAction;
 struct FInputActionValue;
 class ACharacter;
 class APGPlayerCharacter;
-class UPGFinalScoreBoardWidget;
-class UPGPauseMenuWidget;
 
 /**
  * 
@@ -73,16 +71,4 @@ protected:
 	TObjectPtr<APGSpectatorPawn> ControlledSpectator;
 
 	void OnShowPauseMenu(const FInputActionValue& Value);
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UPGFinalScoreBoardWidget> FinalScoreBoardWidgetClass;
-
-	UPROPERTY()
-	TObjectPtr<UPGFinalScoreBoardWidget> FinalScoreBoardWidgetInstance;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UPGPauseMenuWidget> PauseMenuWidgetClass;
-
-	UPROPERTY()
-	TObjectPtr<UPGPauseMenuWidget> PauseMenuWidgetInstance;
 };

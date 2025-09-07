@@ -373,8 +373,26 @@ void UPGAdvancedFriendsGameInstance::CloseSession()
 	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(NAME_GameSession);
 	if (Session)
 	{
+		UE_LOG(LogTemp, Log, TEXT("GI::CloseSession: Close session for new players."));
 		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
 		UpdatedSettings.bShouldAdvertise = false;
+		SessionInterface->UpdateSession(NAME_GameSession, UpdatedSettings);
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::OpenSession()
+{
+	if (!SessionInterface.IsValid())
+	{
+		return;
+	}
+
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(NAME_GameSession);
+	if (Session)
+	{
+		UE_LOG(LogTemp, Log, TEXT("GI::OpenSession: Re-opening session for new players."));
+		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
+		UpdatedSettings.bShouldAdvertise = true;
 		SessionInterface->UpdateSession(NAME_GameSession, UpdatedSettings);
 	}
 }

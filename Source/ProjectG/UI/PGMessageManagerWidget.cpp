@@ -2,8 +2,11 @@
 
 
 #include "UI/PGMessageManagerWidget.h"
+
 #include "UI/PGMessageEntryWidget.h"
+
 #include "Character/PGPlayerCharacter.h"
+#include "Interface/InteractableActorInterface.h"
 
 void UPGMessageManagerWidget::BindMessageEntry(APGPlayerCharacter* PlayerCharacter)
 {
@@ -31,14 +34,24 @@ void UPGMessageManagerWidget::HandleOnStareTargetUpdate(AActor* TargetActor)
 {
 	if (TargetActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UPGMessageManagerWidget::HandleOnStareTargetUpdate: TargetActor Update"));
-		if (MessageEntry)
+		if (IInteractableActorInterface* Interactable = Cast<IInteractableActorInterface>(TargetActor))
 		{
-			MessageEntry->SetMessage(FText::FromString(TargetActor->GetName()));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("UPGMessageManagerWidget::HandleOnStareTargetUpdate: MessageEntry is NULL!"));
+			const FInteractionInfo Info = Interactable->GetInteractionInfo();
+			FText MessageToShow;
+
+			if (Info.InteractionType == EInteractionType::Hold)
+			{
+				MessageToShow = FText::FromString(TEXT("Hold F to Interact"));
+			}
+			else
+			{
+				MessageToShow = FText::FromString(TEXT("Press F to Interact"));
+			}
+
+			if (MessageEntry)
+			{
+				MessageEntry->SetMessage(MessageToShow);
+			}
 		}
 	}
 	else

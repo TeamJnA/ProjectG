@@ -24,11 +24,20 @@ struct FPlayerInfo
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	FString PlayerName;
-
-	UPROPERTY(BlueprintReadOnly)
 	FUniqueNetIdRepl PlayerNetId;
 
 	UPROPERTY(BlueprintReadOnly)
+	FString PlayerName;
+
+	UPROPERTY(BlueprintReadOnly)
 	bool bIsHost = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bHasFinishedGame = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsReadyToReturnLobby = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsDead = false;
 };

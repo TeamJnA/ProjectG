@@ -27,11 +27,6 @@ void UPGFinalScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
 
 	PCRef = _PC;
 
-	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
-	{
-		GS->OnPlayerListUpdated.AddDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
-	}
-
 	UpdatePlayerEntry();
 }
 
@@ -42,12 +37,18 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 		UE_LOG(LogTemp, Error, TEXT("UPGFinalScoreBoardWidget::UpdatePlayerEntry: Get world is null"));
 		return;
 	}
-
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	ensureMsgf(GS, TEXT("FinalScoreBoardWidget::UpdatePlayerEntry: GS is null"));
-
+	if (!GS)
+	{
+		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::UpdatePlayerEntry: GameState is null"));
+		return;
+	}
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	ensureMsgf(GI, TEXT("FinalScoreBoardWidget::UpdatePlayerEntry: GI is null"));
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::UpdatePlayerEntry: GameInstance is null, aborting update."));
+		return;
+	}
 
 	PlayerContainer->ClearChildren();
 
@@ -62,7 +63,7 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 				AvatarTexture = GI->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
 			}
 
-			NewSlot->SetupEntry(FText::FromString(PlayerInfo.PlayerName), AvatarTexture);
+			NewSlot->SetupEntry(PlayerInfo, AvatarTexture);
 			PlayerContainer->AddChild(NewSlot);
 			UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PlayerInfo.PlayerName);
 		}

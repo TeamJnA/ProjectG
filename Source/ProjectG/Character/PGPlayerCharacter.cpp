@@ -360,6 +360,28 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 		return;
 	}
 
+	// set player info to game finished
+	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	APlayerState* PS = GetPlayerState();
+	if (GS && PS)
+	{
+		// PlayerInfo의 bHasFinishedGame을 true로 설정
+		GS->MarkPlayerAsFinished(PS); 
+		GS->MarkPlayerAsDead(PS);
+
+		// 모든 플레이어가 종료했는지 확인하고, 그렇다면 게임을 종료 상태로 변경
+		if (GS->IsGameFinished())
+		{
+			GS->SetCurrentGameState(EGameState::EndGame);
+			GS->NotifyGameFinished();
+		}
+		else
+		{
+			FTimerHandle ScoreBoardTimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(ScoreBoardTimerHandle, this, &APGPlayerCharacter::Client_InitScoreBoardWidget, 2.0f, false);
+		}
+	}
+
 	// 1. Stop character movement and animation
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
@@ -397,18 +419,17 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 
 	// 1. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
 
-	/*
 	FirstPersonCamera->Deactivate();
 
 	FollowCamera->Activate();
-	*/
+	
 
 	// 2. 관전 버튼을 통해 관전 기능 추가.( Client )
-	APGPlayerController* PGPC = Cast<APGPlayerController>(Controller);
-	if (PGPC)
-	{
-		PGPC->StartSpectate();
-	}
+	//APGPlayerController* PGPC = Cast<APGPlayerController>(Controller);
+	//if (PGPC)
+	//{
+	//	PGPC->StartSpectate();
+	//}
 }
 
 // Make client character ragdoll.
@@ -433,7 +454,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
 
-	if (NewController && NewController->IsLocalController()) //
+	if (IsLocallyControlled()) //
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
@@ -454,7 +475,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	InitAbilitySystemComponent();
 	InitDefaultAttributes();
 	
-	if (Controller && Controller->IsLocalController())
+	if (IsLocallyControlled())
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
@@ -514,6 +535,7 @@ void APGPlayerCharacter::InitHUD()
 			if (MessageManager)
 			{
 				// 현재 캐릭터(this)를 직접 전달하여 바인딩
+				// 이론상 Possess 이후에 
 				MessageManager->BindMessageEntry(this);
 				UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::InitHUD: MessageManagerWidget Bound to character.")); //
 			}
@@ -546,7 +568,7 @@ void APGPlayerCharacter::InitHUD()
 
 void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(const FText& Message)
 {
-	if (Controller && Controller->IsLocalController())
+	if (IsLocallyControlled())
 	{
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
 		{
@@ -566,7 +588,7 @@ void APGPlayerCharacter::MC_SetFlashlightState(bool _bIsFlashlightOn)
 
 void APGPlayerCharacter::Client_UpdateInteractionProgress_Implementation(float Progress)
 {
-	if (Controller && Controller->IsLocalController())
+	if (IsLocallyControlled())
 	{
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
 		{
@@ -580,37 +602,15 @@ void APGPlayerCharacter::Client_UpdateInteractionProgress_Implementation(float P
 
 void APGPlayerCharacter::Client_InitScoreBoardWidget_Implementation()
 {
-	if (Controller && Controller->IsLocalController())
+	if (IsLocallyControlled())
 	{
 		APlayerController* PC = Cast<APlayerController>(Controller);
 		if (PC)
 		{
-			PC->bShowMouseCursor = true;
-			PC->SetInputMode(FInputModeUIOnly());
-
 			if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
 			{
 				HUD->InitScoreBoardWidget();
-
-				UPGScoreBoardWidget* ScoreBoardWidget = HUD->GetScoreBoardWidget();
-				if (ScoreBoardWidget)
-				{
-					ScoreBoardWidget->BindPlayerEntry(PC);
-					UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::Client_InitScoreBoardWidget: ScoreBoardWidget Bound to character.")); //
-				}
-				else
-				{
-					UE_LOG(LogTemp, Error, TEXT("APGPlayerCharacter::Client_InitScoreBoardWidget: ScoreBoardWidget is NULL in HUD!")); //
-				}
 			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::Client_InitScoreBoardWidget: Get HUD failed | HasAuthority = %d"), HasAuthority());
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::Client_InitScoreBoardWidget: Get player controller failed | HasAuthority = %d"), HasAuthority());
 		}
 	}
 }

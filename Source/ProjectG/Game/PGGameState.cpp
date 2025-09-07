@@ -13,90 +13,10 @@
 #include "Net/UnrealNetwork.h"
 #include "Net/NetPushModelHelpers.h"
 
-void APGGameState::SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState, bool _bIsReady)
-{
-	if (!HasAuthority()) 
-	{
-		return;
-	}
-
-	if (_PlayerState)
-	{
-		FString PlayerId = _PlayerState->GetPlayerName();
-		bool bFound = false;
-		for (FPlayerReadyState& State : PlayerReadyStates)
-		{
-			if (State.PlayerUniqueId == PlayerId)
-			{
-				if (State.bIsReady != _bIsReady)
-				{
-					State.bIsReady = _bIsReady;
-				}
-				bFound = true;
-				break;
-			}
-		}
-
-		if (!bFound)
-		{
-			PlayerReadyStates.Add(FPlayerReadyState(PlayerId, _bIsReady));
-		}
-
-		// for debug
-		// for server
-		OnRep_PlayerReadyStates();
-	}
-
-}
-
-void APGGameState::OnRep_PlayerReadyStates()
-{
-	UE_LOG(LogTemp, Log, TEXT("GS::OnRep_PlayerReadyStates: PlayerReadyStates replicated. Current states:"));
-	for (const FPlayerReadyState& State : PlayerReadyStates)
-	{
-		UE_LOG(LogTemp, Log, TEXT(" Players: %s, ReadyToLobby: %s"), *State.PlayerUniqueId, State.bIsReady ? TEXT("True") : TEXT("False"));
-	}
-}
-
-bool APGGameState::IsAllReadyToReturnLobby() const
-{
-	if (!HasAuthority())
-	{
-		return false;
-	}
-
-	for (APlayerState* PS : PlayerArray)
-	{
-		bool bPlayerFoundAndReady = false;
-		FString PlayerID = PS->GetPlayerName();
-
-		for (const FPlayerReadyState& State : PlayerReadyStates)
-		{
-			if (State.PlayerUniqueId == PlayerID)
-			{
-				if (State.bIsReady)
-				{
-					bPlayerFoundAndReady = true;
-				}
-				break;
-			}
-		}
-
-		if (!bPlayerFoundAndReady)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
 void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGGameState, CurrentGameState);
-	DOREPLIFETIME(APGGameState, FinishedPlayersCount);
-	DOREPLIFETIME(APGGameState, PlayerReadyStates);
 	DOREPLIFETIME(APGGameState, PlayerList);
 }
 
@@ -213,16 +133,110 @@ void APGGameState::NotifyGameFinished()
 	MC_InitFinalScoreBoardWidget();
 }
 
-void APGGameState::IncreaseFinishedPlayersCount()
+void APGGameState::MarkPlayerAsFinished(APlayerState* PlayerState)
 {
-	FinishedPlayersCount++;
-	UE_LOG(LogTemp, Warning, TEXT("APGGameState::IncreaseFinishedPlayersCount: called [%s], FinishedPlayerCount: %d | HasAuthority = %d"), *GetNameSafe(this), FinishedPlayersCount, HasAuthority());
+	if (!HasAuthority() || !PlayerState)
+	{
+		return;
+	}
 
+	const FUniqueNetIdRepl& FinishedPlayerId = PlayerState->GetUniqueId();
+
+	for (FPlayerInfo& PlayerInfo : PlayerList)
+	{
+		if (PlayerInfo.PlayerNetId == FinishedPlayerId)
+		{
+			PlayerInfo.bHasFinishedGame = true;
+			UE_LOG(LogTemp, Log, TEXT("GameState: Marked player %s as finished."), *PlayerInfo.PlayerName);
+			break;
+		}
+	}
+
+	OnRep_PlayerList();
+}
+
+void APGGameState::MarkPlayerAsDead(APlayerState* PlayerState)
+{
+	if (!HasAuthority() || !PlayerState)
+	{
+		return;
+	}
+
+	const FUniqueNetIdRepl& DeadPlayerId = PlayerState->GetUniqueId();
+
+	for (FPlayerInfo& PlayerInfo : PlayerList)
+	{
+		if (PlayerInfo.PlayerNetId == DeadPlayerId)
+		{
+			PlayerInfo.bIsDead = true;
+			UE_LOG(LogTemp, Log, TEXT("GameState: Marked player %s as Dead."), *PlayerInfo.PlayerName);
+			break;
+		}
+	}
+
+	OnRep_PlayerList();
 }
 
 bool APGGameState::IsGameFinished()
 {
-	UE_LOG(LogTemp, Warning, TEXT("APGGameState::IsGameFinished: called [%s], FinishedPlayerCount: %d, PlayerCount: %d | HasAuthority = %d"), *GetNameSafe(this), FinishedPlayersCount, PlayerArray.Num(), HasAuthority());
+	if (PlayerList.IsEmpty())
+	{
+		return false;
+	}
 
-	return FinishedPlayersCount >= PlayerArray.Num();
+	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	{
+		if (!PlayerInfo.bHasFinishedGame)
+		{
+			return false;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("APGGameState::IsGameFinished: All players have finished the game."));
+	return true;
+}
+
+void APGGameState::SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState, bool _bIsReady)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (_PlayerState)
+	{
+		const FUniqueNetIdRepl& TargetPlayerId = _PlayerState->GetUniqueId();
+		for (FPlayerInfo& PlayerInfo : PlayerList)
+		{
+			if (PlayerInfo.PlayerNetId == TargetPlayerId)
+			{
+				PlayerInfo.bIsReadyToReturnLobby = _bIsReady;
+				UE_LOG(LogTemp, Log, TEXT("GameState: Set player %s ready for lobby return: %s"), *PlayerInfo.PlayerName, _bIsReady ? TEXT("true") : TEXT("false"));
+				break;
+			}
+		}
+	}
+}
+
+bool APGGameState::IsAllReadyToReturnLobby() const
+{
+	if (!HasAuthority())
+	{
+		return false;
+	}
+
+	if (PlayerList.IsEmpty())
+	{
+		return false;
+	}
+
+	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	{
+		if (!PlayerInfo.bIsReadyToReturnLobby)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

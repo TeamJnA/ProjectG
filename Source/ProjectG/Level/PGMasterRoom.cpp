@@ -57,7 +57,7 @@ APGMasterRoom::APGMasterRoom()
 	EnemySpawnPoint->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	EnemySpawnPoint->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	EnemySpawnPoint->SetRelativeScale3D(FVector(2.0f, 2.0f, 2.0f));
-	EnemySpawnPoint->bHiddenInGame = false;
+	EnemySpawnPoint->bHiddenInGame = true;
 }
 
 USceneComponent* APGMasterRoom::GetExitsFolder()

@@ -47,21 +47,19 @@ void APGLobbyGameMode::StartGame()
 	}));
 }
 
+void APGLobbyGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		GI->OpenSession();
+	}
+}
+
 void APGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-
-	//if (NewPlayer)
-	//{
-	//	APGPlayerState* PS = NewPlayer->GetPlayerState<APGPlayerState>();
-	//	if (PS)
-	//	{
-	//		if (GameState && GameState->PlayerArray.Num() == 1)
-	//		{
-	//			PS->SetHost(true);
-	//		}
-	//	}
-	//}
 		
 	// PostLogin에서 PlayerList 업데이트
 	if (APGGameState* GS = GetGameState<APGGameState>())

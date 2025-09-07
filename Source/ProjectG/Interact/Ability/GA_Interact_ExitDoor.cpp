@@ -62,40 +62,21 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
     PG_CHECK_VALID_INTERACT(ExitDoor);
     
     /*
-    * if exit door is already opened
-    * just end ability
+    * if exit door is already opened (not a first escape player)
+    * process player finish
     */
     if (ExitDoor->IsOpened())
     {
-        UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit door already opened"));
-
-        APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-        if (GS)
-        {
-            GS->IncreaseFinishedPlayersCount();
-
-            if (GS->IsGameFinished())
-            {
-                UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Game Finished"));
-
-                GS->SetCurrentGameState(EGameState::EndGame);
-                GS->NotifyGameFinished();
-            }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("UGA_Interact_ExitDoor::ActivateAbility: No GS"));
-        }
-
-        EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-        return;
+        HandlePlayerFinished(PGCharacter);
     }
-
-    if (ExitDoor->IsLocked())
+    /*
+    * if exit door is locked
+    * player should find 3 exit key and use each one to unlock the exit door
+    */
+    else if (ExitDoor->IsLocked())
     {
         /*
         * if exit door is locked
-        * player should find 3 exit key and use each one to unlock the exit door
         */
         UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit Door is locked."));
 
@@ -111,56 +92,51 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
             // play hand action(unlock motion)
             PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
-
             // remove exit key item after use
-            if (HasAuthority(&CurrentActivationInfo))
-            {
-                PGCharacter->RemoveItemFromInventory();
-            }
-
+            PGCharacter->RemoveItemFromInventory();
             ExitDoor->SubtractLockStack();
-
-            EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
         }
         else
         {
             UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Player doesnt have exit key."));
-            EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
         }
     }
+    /*
+    * if door is unlocked but not opened (first escape player)
+    * open door and process player finish
+    */
     else
     {
         UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit door is unlocked. Open exit door"));
         ExitDoor->ToggleDoor();
-        /*
-        * if exit door is unlocked
-        * end game
-        * show score board, enter spectator mode
-        */
-        // PGCharacter->InitScoreboard
-        // InitScoreboard->SpectateButton bind to enter spectate mode
+        HandlePlayerFinished(PGCharacter);
+    }
 
-        PGCharacter->Client_InitScoreBoardWidget();
-        
-        APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-        if (GS)
+    EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+}
+
+void UGA_Interact_ExitDoor::HandlePlayerFinished(APGPlayerCharacter* PGCharacter)
+{
+    if (!PGCharacter)
+    {
+        return;
+    }
+
+    APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+    APlayerState* PS = PGCharacter->GetPlayerState();
+    if (GS && PS)
+    {
+        GS->MarkPlayerAsFinished(PS);
+
+        if (GS->IsGameFinished())
         {
-            GS->IncreaseFinishedPlayersCount();
-
-            if (GS->IsGameFinished())
-            {
-                UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Game Finished"));
-
-                GS->SetCurrentGameState(EGameState::EndGame);
-                GS->NotifyGameFinished();
-            }
+            GS->SetCurrentGameState(EGameState::EndGame);
+            GS->NotifyGameFinished();
         }
         else
         {
-            UE_LOG(LogTemp, Error, TEXT("UGA_Interact_ExitDoor::ActivateAbility: No GS"));
+            PGCharacter->Client_InitScoreBoardWidget();
         }
-
-        EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }
 }
 

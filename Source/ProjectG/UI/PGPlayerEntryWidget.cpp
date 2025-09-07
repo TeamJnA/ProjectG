@@ -6,15 +6,14 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 
-#include "Player/PGPlayerState.h"
+#include "Type/CharacterTypes.h"
 
-/*
-* 완전한 버전의 SetupEntry
-* host 여부 포함
-*/
-void UPGPlayerEntryWidget::SetupEntry(const FText& InPlayerName, UTexture2D* InAvatarTexture, bool bIsHostPlayer)
+void UPGPlayerEntryWidget::SetupEntry(const FPlayerInfo& InPlayerInfo, UTexture2D* InAvatarTexture)
 {
-	if (PlayerNameText) { PlayerNameText->SetText(InPlayerName); }
+	if (PlayerNameText) 
+	{ 
+		PlayerNameText->SetText(FText::FromString(InPlayerInfo.PlayerName));
+	}
 
 	if (PlayerAvatar)
 	{
@@ -29,18 +28,52 @@ void UPGPlayerEntryWidget::SetupEntry(const FText& InPlayerName, UTexture2D* InA
 		}
 	}
 
-	if (HostStatusText)
+	if (StatusText)
 	{
-		HostStatusText->SetVisibility(bIsHostPlayer ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
-}
+		FText StatusMessage;
+		FLinearColor StatusColor = FLinearColor::White;
+		FSlateFontInfo StatusFontInfo = StatusText->GetFont();
+		FSlateFontInfo PlayerNameFontInfo = PlayerNameText->GetFont();
 
-/*
-* 스코어보드용 오버로드 함수 구현
-* host 여부 미포함 (false로 호출)
-*/
-void UPGPlayerEntryWidget::SetupEntry(const FText& InPlayerName, UTexture2D* InAvatarTexture)
-{
-	// 완전한 버전의 함수를 호출하되, bIsHostPlayer는 기본값인 false로 전달합니다.
-	SetupEntry(InPlayerName, InAvatarTexture, false);
+		bool bShowStatus = true;
+
+		// scoreboard or finalscoreboard
+		if (InPlayerInfo.bIsDead)
+		{
+			StatusMessage = FText::FromString(TEXT("DEAD"));
+			StatusColor = FLinearColor::Red;
+			StatusFontInfo.Size = 16;
+			PlayerNameFontInfo.Size = 32;
+		}
+		// scoreboard or finalscoreboard
+		else if (InPlayerInfo.bHasFinishedGame)
+		{
+			StatusMessage = FText::FromString(TEXT("ESCAPED"));
+			StatusColor = FLinearColor::Green;
+			StatusFontInfo.Size = 16;
+			PlayerNameFontInfo.Size = 32;
+		}
+		// lobby widget host
+		else if (InPlayerInfo.bIsHost)
+		{
+			StatusMessage = FText::FromString(TEXT("HOST"));
+			StatusColor = FLinearColor::Green;
+			StatusFontInfo.Size = 8;
+			PlayerNameFontInfo.Size = 16;
+		}
+		// lobby widget client
+		else
+		{
+			bShowStatus = false;
+			StatusFontInfo.Size = 8;
+			PlayerNameFontInfo.Size = 16;
+		}
+
+		StatusText->SetText(StatusMessage);
+		StatusText->SetColorAndOpacity(StatusColor);
+		StatusText->SetFont(StatusFontInfo);
+		StatusText->SetVisibility(bShowStatus ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+		PlayerNameText->SetFont(PlayerNameFontInfo);
+	}
 }

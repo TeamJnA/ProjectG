@@ -41,27 +41,32 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 	}
 
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	ensureMsgf(GS, TEXT("ScoreBoardWidget::UpdatePlayerEntry: GS is not valid"));
-
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	ensureMsgf(GI, TEXT("ScoreBoardWidget::UpdatePlayerEntry: GI is not valid"));
+	if (!GS || !GI)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::UpdatePlayerEntry: GS or GI is null"));
+		return;
+	}
 
 	PlayerContainer->ClearChildren();
 
 	for (const FPlayerInfo& PlayerInfo : GS->PlayerList)
 	{
-		UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
-		if (NewSlot)
+		if (PlayerInfo.bHasFinishedGame)
 		{
-			UTexture2D* AvatarTexture = nullptr;
-			if (PlayerInfo.PlayerNetId.IsValid())
+			UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+			if (NewSlot)
 			{
-				AvatarTexture = GI->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
-			}
+				UTexture2D* AvatarTexture = nullptr;
+				if (PlayerInfo.PlayerNetId.IsValid())
+				{
+					AvatarTexture = GI->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
+				}
 
-			NewSlot->SetupEntry(FText::FromString(PlayerInfo.PlayerName), AvatarTexture);
-			PlayerContainer->AddChild(NewSlot);
-			UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PlayerInfo.PlayerName);
+				NewSlot->SetupEntry(PlayerInfo, AvatarTexture);
+				PlayerContainer->AddChild(NewSlot);
+				UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PlayerInfo.PlayerName);
+			}
 		}
 	}
 }

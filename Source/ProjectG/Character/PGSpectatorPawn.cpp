@@ -46,7 +46,7 @@ APGSpectatorPawn::APGSpectatorPawn()
 	TargetToOrbit = nullptr;
 
 	// 새로 추가된 부분
-	CurrentOrbitDistance = 100.0f; // 관전자와 대상 간의 초기 거리 (원하는 값으로 설정)
+	CurrentOrbitDistance = 150.0f; // 관전자와 대상 간의 초기 거리 (원하는 값으로 설정)
 	CurrentOrbitYawAngle = 0.0f; // 초기 Yaw 각도
 }
 
@@ -92,8 +92,7 @@ void APGSpectatorPawn::BeginPlay()
 void APGSpectatorPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	// 클라이언트에서 Possess된 경우, Tick마다 위치/회전을 업데이트합니다.
-	// 이것이 부드러운 관전 움직임을 위한 핵심입니다.
+	// 클라이언트에서 Possess된 경우, Tick마다 위치/회전을 업데이트
 	if (IsLocallyControlled() && IsValid(TargetToOrbit))
 	{
 		UpdateSpectatorPositionAndRotation();
@@ -248,14 +247,14 @@ void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 
 	FVector TargetLocation = TargetToOrbit->GetActorLocation() + FVector(0.0f, 0.0f, 40.0f);
 
-	// CurrentOrbitYawAngle과 CurrentOrbitDistance를 사용하여 NewLocation 계산 (기존과 동일)
+	// CurrentOrbitYawAngle과 CurrentOrbitDistance를 사용하여 NewLocation 계산
 	FVector RelativeVector = FRotator(0.0f, CurrentOrbitYawAngle, 0.0f).Vector() * CurrentOrbitDistance;
-	FVector NewLocation = TargetLocation + RelativeVector + FVector(0.0f, 0.0f, 80.0f);
+	FVector NewLocation = TargetLocation + RelativeVector + FVector(0.0f, 0.0f, 60.0f);
 
-	// SpectatorPawn의 위치는 직접 업데이트합니다. (기존과 동일)
+	// SpectatorPawn의 위치는 직접 업데이트
 	SetActorLocation(NewLocation);
 
-	// NewLocation에서 TargetLocation을 바라보는 벡터를 구하여 회전을 계산합니다. (기존과 동일)
+	// NewLocation에서 TargetLocation을 바라보는 벡터를 구하여 회전을 계산
 	FVector LookAtVector = TargetLocation - NewLocation;
 	FRotator NewRotation = LookAtVector.Rotation();
 
@@ -272,13 +271,6 @@ void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 		// 또는 GetController()가 null을 반환한다면, 기존처럼 ActorRotation을 직접 설정하는 Fallback 로직입니다.
 		// 하지만 클라이언트에서 플레이어가 SpectatorPawn을 Possess하는 상황이라면 이 else 블록은 실행되지 않을 것입니다.
 		SetActorRotation(NewRotation);
-	}
-
-	if (GetWorld())
-	{
-		DrawDebugLine(GetWorld(), NewLocation, TargetLocation, FColor::Red, false, -1.f, 0, 5.f);
-		DrawDebugDirectionalArrow(GetWorld(), NewLocation, NewLocation + GetActorForwardVector() * 100.f, 30.f, FColor::Green, false, -1.f, 0, 5.f);
-		DrawDebugSphere(GetWorld(), TargetLocation, 20.f, 12, FColor::Blue, false, -1.f, 0, 5.f);
 	}
 }
 
@@ -305,16 +297,3 @@ void APGSpectatorPawn::OnRep_TargetToOrbit()
 
 	}
 }
-
-//void APGSpectatorPawn::OnTargetCharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity)
-//{
-//	// 이 함수는 ACharacter의 OnCharacterMovementUpdated 델리게이트가 호출될 때 실행됩니다.
-//	// 클라이언트에서 시뮬레이트된 프록시의 움직임 업데이트에 반응하여 SpectatorPawn의 위치를 동기화합니다.
-//	// Tick에서 이미 업데이트하고 있으므로, 이 델리게이트는 초기 동기화 또는 간헐적인 보정용으로 사용될 수 있습니다.
-//	UE_LOG(LogTemp, Log, TEXT("SpectatorPawn: OnTargetCharacterMovementUpdated called. Target: %s. IsLocalControlled: %d"), *GetNameSafe(TargetToOrbit), IsLocallyControlled());
-//	if (IsLocallyControlled())
-//	{
-//		UpdateSpectatorPositionAndRotation();
-//	}
-//
-//}

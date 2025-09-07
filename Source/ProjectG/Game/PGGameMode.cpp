@@ -171,7 +171,10 @@ void APGGameMode::HandleMapGenerationComplete()
 
 void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 {
-	if (!HasAuthority()) return;
+	if (!HasAuthority()) 
+	{
+		return;
+	}
 
 	APGGameState* GS = GetGameState<APGGameState>();
 	if (GS && PlayerState)

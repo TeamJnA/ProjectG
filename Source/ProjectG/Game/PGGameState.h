@@ -24,26 +24,6 @@ enum class EGameState : uint8
 	EndGame
 };
 
-USTRUCT()
-struct FPlayerReadyState
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	FString PlayerUniqueId;
-
-	UPROPERTY()
-	bool bIsReady;
-
-	FPlayerReadyState() : bIsReady(false) {}
-	FPlayerReadyState(FString _PlayerId, bool _IsReady) : PlayerUniqueId(_PlayerId), bIsReady(_IsReady) {}
-
-	bool operator==(const FPlayerReadyState& Other) const
-	{
-		return PlayerUniqueId == Other.PlayerUniqueId;
-	}
-};
-
 UCLASS()
 class PROJECTG_API APGGameState : public AGameState
 {
@@ -55,14 +35,12 @@ public:
 	EGameState GetCurrentGameState() { return CurrentGameState; }
 	void SetCurrentGameState(EGameState NewGameState) { CurrentGameState = NewGameState; }
 
-	int32 GetFinishedPlayersCount() { return FinishedPlayersCount; }
-	void IncreaseFinishedPlayersCount();
-	bool IsGameFinished();
-
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMapGenerationComplete OnMapGenerationComplete;
 
 	// EndGame
+	bool IsGameFinished();
+
 	void NotifyGameFinished();
 
 	void SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState, bool _bIsReady);
@@ -80,12 +58,18 @@ public:
 	// only call on server
 	void UpdatePlayerList();
 
+	void MarkPlayerAsFinished(APlayerState* PlayerState);
+	void MarkPlayerAsDead(APlayerState* PlayerState);
+	// ----- Player List ---------
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 
+	// ----- Player List ---------
 	virtual void AddPlayerState(APlayerState* PlayerState) override;
 	virtual void RemovePlayerState(APlayerState* PlayerState) override;
+	// ----- Player List ---------
 
 	void Multicast_MapGenerationComplete();
 
@@ -94,15 +78,6 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "GameState")
 	EGameState CurrentGameState;
-
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "GameState")
-	int32 FinishedPlayersCount;
-
-	UPROPERTY(ReplicatedUsing = OnRep_PlayerReadyStates)
-	TArray<FPlayerReadyState> PlayerReadyStates;
-
-	UFUNCTION()
-	void OnRep_PlayerReadyStates();
 
 	// ----- Lobby Player List ---------
 	// LobbyPlayerList가 클라이언트에 복제될 때 호출될 함수
