@@ -21,79 +21,40 @@ class PROJECTG_API APGSpectatorPawn : public ASpectatorPawn
 public:
 	APGSpectatorPawn();
 
-	/** 대상 Actor 설정 */
-	void SetTargetActor(AActor* NewTarget);
-
-	/** 현재 관전 대상 반환 */
-	AActor* GetTargetActor() const { return TargetToOrbit; }
-
-	// SpectatorPawn이 대상을 따라다니고 회전하는 로직을 공통화한 함수 (서버에서 호출)
-	void UpdateSpectatorPositionAndRotation();
-
-	UFUNCTION(Server, Reliable)
-	void Server_SetSpectateTarget(bool bNext);
-
-	// Cached all PGPlayerCharaters to change spectate. 
-	// If there's no characters to spectate, return false.
-	bool InitCachedAllPlayableCharacters(const APGPlayerCharacter* PrevPGCharacter);
+	// 관전 대상 트래킹, 회전
+	void UpdateSpectatorPositionAndRotation();	
+	// 관전 대상 지정
+	void SetSpectateTarget(AActor* NewTarget);
 
 protected:
-	virtual void BeginPlay() override;
-
 	virtual void Tick(float DeltaSeconds) override;
-
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue, bool bForce) override {}
+	virtual void AddControllerYawInput(float) override {}
+	virtual void AddControllerPitchInput(float) override {}
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> OrbitYawAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> SpectateNextAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> SpectatePrevAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ShowPauseMenuAction;
 
-	void OnSpectateNext(const FInputActionValue& Value);
-	void OnSpectatePrev(const FInputActionValue& Value);
-
-	/** 클라이언트 입력에 따라 궤도 Yaw를 업데이트하는 함수 */
+	// 클라이언트 입력에 따라 궤도 Yaw 업데이트
 	void OnOrbitYaw(const FInputActionValue& Value);
-
-	bool IsSpectateTargetCached = false;
-
-	UPROPERTY(Transient)
-	TObjectPtr<APGPlayerCharacter> SpectateTargetCharacter;
-
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<APGPlayerCharacter>> CachedAllPlayableCharacters;
-
-	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue, bool bForce) override {}
-
-	virtual void AddControllerYawInput(float) override {}
-	virtual void AddControllerPitchInput(float) override {}
-
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 	// 관전 대상 Actor (서버에서 설정하고 클라이언트로 복제)
-	UPROPERTY(Transient, ReplicatedUsing = OnRep_TargetToOrbit) // <-- ReplicatedUsing 추가
+	UPROPERTY(ReplicatedUsing = OnRep_TargetToOrbit)
 	AActor* TargetToOrbit;
 
 	UFUNCTION()
 	void OnRep_TargetToOrbit();
 
-	// ACharacter의 OnCharacterMovementUpdated 델리게이트에 바인딩될 함수
-	//UFUNCTION()
-	//void OnTargetCharacterMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity);
-
-	float RotationSpeed = 90.0f; // 초당 90도 회전
-
-	// 대상으로부터의 현재 상대적인 거리
+	// 초당 회전
+	float RotationSpeed;
+	// 대상으로부터의 거리
 	float CurrentOrbitDistance;
-
 	// 대상 주위를 공전하는 현재 Yaw 각도
 	float CurrentOrbitYawAngle;
 };
