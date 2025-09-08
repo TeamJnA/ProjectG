@@ -274,10 +274,10 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetActorRotation OnServer"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
 
 	// 3 - 2. 캐릭터를 몹 앞으로 이동. [ Server, Client ]
-	float EnemyCharacterDistance = 150.0f;
+	float EnemyCharacterDistance = 180.0f;
 
 	FVector NewCharacterLocation = GetActorLocation();
-	NewCharacterLocation.Z = InstigatorHeadLocation.Z;
+	NewCharacterLocation.Z = InstigatorHeadLocation.Z - 50;
 
 	FVector EnemyToCharacterDirection = (NewCharacterLocation - InstigatorHeadLocation).GetSafeNormal();
 
