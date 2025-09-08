@@ -42,8 +42,19 @@ APGPlayerController::APGPlayerController()
 	{
 		ShowPauseMenuAction = ShowPauseMenuActionObj.Object;
 	}
-}
 
+	ConstructorHelpers::FObjectFinder<UInputAction> SpectateNextActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_SpectateNext.IA_SpectateNext"));
+	if (SpectateNextActionObj.Succeeded())
+	{
+		SpectateNextAction = SpectateNextActionObj.Object;
+	}
+
+	ConstructorHelpers::FObjectFinder<UInputAction> SpectatePrevActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_SpectatePrev.IA_SpectatePrev"));
+	if (SpectatePrevActionObj.Succeeded())
+	{
+		SpectatePrevAction = SpectatePrevActionObj.Object;
+	}
+}
 
 // when Client possess pawn, 
 void APGPlayerController::OnRep_Pawn()
@@ -79,6 +90,9 @@ void APGPlayerController::SetupInputComponent()
 	{
 		// ESC
 		EnhancedInputComponent->BindAction(ShowPauseMenuAction, ETriggerEvent::Started, this, &APGPlayerController::OnShowPauseMenu);
+
+		EnhancedInputComponent->BindAction(SpectateNextAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectateNext);
+		EnhancedInputComponent->BindAction(SpectatePrevAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectatePrev);
 	}
 }
 
@@ -149,23 +163,6 @@ void APGPlayerController::Server_ReportTravelSuccess_Implementation()
 	}
 }
 
-void APGPlayerController::StartSpectate()
-{
-	if (!IsLocalController()) return;
-
-	if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
-	{
-		ViewPort->RemoveAllViewportWidgets();
-	}
-
-	bShowMouseCursor = false;
-	SetInputMode(FInputModeGameOnly());
-
-	Server_EnterSpectatorMode();
-
-	UE_LOG(LogTemp, Warning, TEXT("PC::StartSpectate: Client requested EnterSpectatorMode."));
-}
-
 void APGPlayerController::Client_ForceReturnToLobby_Implementation()
 {
 	UE_LOG(LogTemp, Log, TEXT("PGPC::Client_ForceReturnToLobby: Received command from host to leave session"));
@@ -196,9 +193,29 @@ void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 	}
 }
 
+void APGPlayerController::StartSpectate()
+{
+	if (!IsLocalController()) 
+	{
+		return;
+	}
+
+	if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
+	{
+		ViewPort->RemoveAllViewportWidgets();
+	}
+
+	bShowMouseCursor = false;
+	SetInputMode(FInputModeGameOnly());
+
+	Server_EnterSpectatorMode();
+
+	UE_LOG(LogTemp, Warning, TEXT("PC::StartSpectate: Client requested EnterSpectatorMode."));
+}
+
 void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 {
-	// 이미 관전 모드에 진입해 있다면 (APGSpectatorPawn을 빙의하고 있다면) 차단
+	// 이미 관전 모드에 진입해 있다면(APGSpectatorPawn을 빙의하고 있다면) 차단
 	if (Cast<APGSpectatorPawn>(GetPawn()))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PC::Server_EnterSpectatorMode_Implementation: Already in spectator mode. Ignoring request."));
@@ -212,54 +229,79 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 		PrevPawn->DisableInput(this);
 	}
 
-	//
-	// ---------- Spawn SpectatorPawn -----------------
-	//
+	SpectateTargetList.Empty();
+	CurrentSpectateIndex = -1;
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		for (TActorIterator<APGPlayerCharacter> It(World); It; ++It)
+		{
+			APGPlayerCharacter* CurrentCharacter = *It;
+			if (CurrentCharacter && CurrentCharacter != PrevPawn)
+			{
+				SpectateTargetList.Add(CurrentCharacter);
+			}
+		}
+	}
+
+	// ---------- Spawn SpectatorPawn ----------
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.bNoFail = true; // 스폰 실패 시 크래시 방지
+	SpawnParams.bNoFail = true; 
 
-	// 기존 Pawn의 위치에서 SpectatorPawn 스폰
-	FVector SpawnLoc = PrevPawn ? PrevPawn->GetActorLocation() : FVector::ZeroVector;
-	FRotator SpawnRot = PrevPawn ? PrevPawn->GetActorRotation() : FRotator::ZeroRotator;
-
-	// 스폰 전에 기존 SpectatorPawn이 있다면 파괴
-	if (ControlledSpectator)
+	APGSpectatorPawn* Spectator = GetWorld()->SpawnActor<APGSpectatorPawn>(APGSpectatorPawn::StaticClass(), PrevPawn->GetActorTransform(), SpawnParams);
+	if (Spectator)
 	{
-		ControlledSpectator->Destroy();
-		ControlledSpectator = nullptr;
+		Possess(Spectator);
+		Server_ChangeSpectateTarget(true);
 	}
+}
 
-	ControlledSpectator = GetWorld()->SpawnActor<APGSpectatorPawn>(APGSpectatorPawn::StaticClass(), SpawnLoc, SpawnRot, SpawnParams);
-
-	APGPlayerCharacter* PrevPlayerCharacter = Cast<APGPlayerCharacter>(PrevPawn);
-	if (!PrevPlayerCharacter)
+void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
+{
+	if (SpectateTargetList.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot find PrevPGCharacter in APGPlayerController::Server_EnterSpectatorMode"));
 		return;
 	}
 
-	// ControlledSpectataor에 관전 대상 캐릭터들 추가.
-	// 관전할 다른 대상이 없다면 (솔로플레이인 경우) 관전 모드 진입 방지
-	if (!ControlledSpectator->InitCachedAllPlayableCharacters(PrevPlayerCharacter))
+	if (bNext)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Server: Cannot enter spectator mode. No other players to spectate."));
-		return;
-	}
-
-	if (ControlledSpectator)
-	{
-		Possess(ControlledSpectator);
-
-		ControlledSpectator->Server_SetSpectateTarget(true);
-
-		UE_LOG(LogTemp, Log, TEXT("PC::Server_EnterSpectatorMode: Spectator mode entered and possessed APGSpectatorPawn for %s."), *GetNameSafe(this));
+		CurrentSpectateIndex = (CurrentSpectateIndex + 1) % SpectateTargetList.Num();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to spawn APGSpectatorPawn."));
+		CurrentSpectateIndex = (CurrentSpectateIndex - 1 + SpectateTargetList.Num()) % SpectateTargetList.Num();
 	}
+
+	if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
+	{
+		if (SpectateTargetList.IsValidIndex(CurrentSpectateIndex))
+		{
+			APGPlayerCharacter* NewTarget = SpectateTargetList[CurrentSpectateIndex];
+			Spectator->SetSpectateTarget(NewTarget);
+		}
+	}
+}
+
+void APGPlayerController::OnSpectateNext(const FInputActionValue& Value)
+{
+	if (!IsLocalController()) 
+	{
+		return;
+	}
+	Server_ChangeSpectateTarget(true);
+	UE_LOG(LogTemp, Log, TEXT("PC::OnSpectateNext: Client requested next spectate target."));
+}
+
+void APGPlayerController::OnSpectatePrev(const FInputActionValue& Value)
+{
+	if (!IsLocalController()) 
+	{	
+		return;
+	}
+	Server_ChangeSpectateTarget(false);
+	UE_LOG(LogTemp, Log, TEXT("PC::OnSpectatePrev: Client requested previous spectate target."));
 }
 
 void APGPlayerController::InitFinalScoreBoardWidget()

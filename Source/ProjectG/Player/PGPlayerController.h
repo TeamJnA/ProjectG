@@ -42,6 +42,7 @@ protected:
 	virtual void SetupInputComponent() override;
 	virtual void OnPossess(APawn* NewPawn) override;
 	virtual void PostSeamlessTravel() override;
+
 	void ReplaceInputMappingContext(const APawn* PawnType);
 
 	UFUNCTION(Client, Reliable)
@@ -56,6 +57,9 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_EnterSpectatorMode();
 
+	UFUNCTION(Server, Reliable)
+	void Server_ChangeSpectateTarget(bool bNext);
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultGameplayMappingContext;
@@ -66,9 +70,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ShowPauseMenuAction;
 
-	/** 현재 SpectatorPawn 캐시 */
-	UPROPERTY(Transient) // 이 변수는 PlayerController가 Pawn을 Possess하면 자연스럽게 클라이언트에 동기화됩니다.
-	TObjectPtr<APGSpectatorPawn> ControlledSpectator;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SpectateNextAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SpectatePrevAction;
+
+	// spectate
+	TArray<TObjectPtr<APGPlayerCharacter>> SpectateTargetList;
+
+	int32 CurrentSpectateIndex = -1;
+
+	void OnSpectateNext(const FInputActionValue& Value);
+	void OnSpectatePrev(const FInputActionValue& Value);
 	void OnShowPauseMenu(const FInputActionValue& Value);
 };
