@@ -8,14 +8,16 @@
 #include "Interact/Task/AT_WaitForHoldInput.h"
 
 #include "Character/PGPlayerCharacter.h"
-#include "Camera/CameraComponent.h"
 #include "AbilitySystemComponent.h"
+#include "Character/Component/PGInventoryComponent.h"
+#include "Camera/CameraComponent.h"
+
 #include "Interface/InteractableActorInterface.h"
 
 #include "Item/PGItemActor.h"
 #include "Level/PGDoor1.h"
 #include "Level/PGExitDoor.h"
-#include "Character/Component/PGInventoryComponent.h"
+
 
 void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 	const FGameplayAbilityActorInfo* ActorInfo, 

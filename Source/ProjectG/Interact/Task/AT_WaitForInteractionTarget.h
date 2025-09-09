@@ -23,7 +23,7 @@ public:
 	FInteractionTargetDelegate InteractionTarget;
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Task", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UAT_WaitForInteractionTarget* WaitForInteractionTarget(UGameplayAbility* OwningAbility, UCameraComponent* CameraComponent, bool ShowDebug
+	static UAT_WaitForInteractionTarget* WaitForInteractionTarget(UGameplayAbility* OwningAbility, UCameraComponent* CameraComponent, bool ShowDebug = false
 																	,float TraceRate = 0.1f, float TraceRange = 1000.0);
 
 	virtual void Activate() override;
@@ -31,12 +31,12 @@ public:
 protected:
 	void TraceToFindInteractable();
 
-	float InteractableTraceRate = 0.1f;
-	float InteractableTraceRange = 1000.0;
+	bool ShowDebug;
+
+	float InteractTraceRate;
+	float InteractTraceRange;
 
 	TObjectPtr<UCameraComponent> CameraComponent;
-
-	bool ShowDebug = false;
 
 	FTimerHandle TimerHandle;
 

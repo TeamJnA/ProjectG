@@ -12,8 +12,8 @@ UAT_WaitForInteractionTarget* UAT_WaitForInteractionTarget::WaitForInteractionTa
 {
 	UAT_WaitForInteractionTarget* MyObj = NewAbilityTask<UAT_WaitForInteractionTarget>(OwningAbility);
 	MyObj->CameraComponent = ActorCameraComponent;
-	MyObj->InteractableTraceRate = TraceRate;
-	MyObj->InteractableTraceRange = TraceRange;
+	MyObj->InteractTraceRate = TraceRate;
+	MyObj->InteractTraceRange = TraceRange;
 	MyObj->ShowDebug = ShowDebug;
 
 	return MyObj;
@@ -21,7 +21,7 @@ UAT_WaitForInteractionTarget* UAT_WaitForInteractionTarget::WaitForInteractionTa
 
 void UAT_WaitForInteractionTarget::Activate()
 {
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::TraceToFindInteractable, InteractableTraceRate, true);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::TraceToFindInteractable, InteractTraceRate, true);
 }
 
 void UAT_WaitForInteractionTarget::TraceToFindInteractable()
@@ -33,7 +33,9 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 		return;
 	}
 
-	// Do Linetrace and find interactable actor
+	/*
+	*  Do Linetrace and find interactable actor
+	*/
 
 	// Add avatar actor not to trace
 	AActor* AvatarActor = Ability->GetCurrentActorInfo()->AvatarActor.Get();
@@ -50,7 +52,7 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 
 	//Do linetrace and show debug
 	FHitResult HitResult;
-	FVector TraceEndLocation = TraceStartLocation + TraceStartDirection * InteractableTraceRange;
+	FVector TraceEndLocation = TraceStartLocation + TraceStartDirection * InteractTraceRange;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, TraceParams);
 	//if (ShowDebug) 
 	//{
