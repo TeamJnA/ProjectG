@@ -27,6 +27,15 @@ void UPGFinalScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
 
 	PCRef = _PC;
 
+	if (UWorld* World = GetWorld())
+	{
+		if (APGGameState* GS = World->GetGameState<APGGameState>())
+		{
+			GSRef = GS;
+			GS->OnPlayerListUpdated.AddDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
+		}
+	}
+
 	UpdatePlayerEntry();
 }
 
@@ -83,6 +92,17 @@ void UPGFinalScoreBoardWidget::NativeConstruct()
 	{
 		ReturnToLobbyButton->OnClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked);
 	}
+}
+
+void UPGFinalScoreBoardWidget::NativeDestruct()
+{
+	if (GSRef.IsValid())
+	{
+		GSRef->OnPlayerListUpdated.RemoveDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
+		UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget: OnPlayerListUpdated delegate unbound."));
+	}
+
+	Super::NativeDestruct();
 }
 
 void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()

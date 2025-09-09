@@ -10,9 +10,6 @@
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerState.h"
 
-#include "Character/PGPlayerCharacter.h"
-
-
 APGLobbyGameMode::APGLobbyGameMode()
 {
 	PlayerStateClass = APGPlayerState::StaticClass();
@@ -24,27 +21,58 @@ APGLobbyGameMode::APGLobbyGameMode()
 void APGLobbyGameMode::StartGame()
 {
 	UWorld* World = GetWorld();
-	ensure(World);
-
-	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(World->GetGameInstance());
-	ensureMsgf(GI, TEXT("GI is not valid"));
-	APGGameState* GS = Cast<APGGameState>(GameState);
-	ensureMsgf(GS, TEXT("GS is not valid"));
-
-	if (GI && GS)
+	if (!World)
 	{
-		GS->SetCurrentGameState(EGameState::InGame);
-		GI->SaveGameStateOnTravel(GS->GetCurrentGameState());
-		GI->SetExpectedPlayersForTravel(GS->PlayerArray);
-
-		UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel check logic [%s]"), *GS->GetName());
+		return;
 	}
+	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(World->GetGameInstance());
+	APGGameState* GS = Cast<APGGameState>(GameState);
+	if (!GS || !GS)
+	{
+		return;
+	}
+
+	GS->SetCurrentGameState(EGameState::InGame);
+	GI->SaveGameStateOnTravel(GS->GetCurrentGameState());
+	GI->SetExpectedPlayersForTravel(GS->PlayerArray);
+
+	UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel check logic [%s]"), *GS->GetName());
 
 	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel"));
 		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 	}));
+}
+
+void APGLobbyGameMode::SpawnAndPossessPlayer(APlayerController* NewPlayer)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	if (!NewPlayer || !PlayerPawnClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("LobbyGM::SpawnAndPossessPlayer: Invalid NewPlayer or DefaultPawnClass"));
+		return;
+	}
+
+	FVector SpawnLoc = FVector(0.0f, -500.0f, 300.0f);
+	FRotator SpawnRot = FRotator::ZeroRotator;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	APawn* LobbyCharacter = World->SpawnActor<APawn>(PlayerPawnClass, SpawnLoc, SpawnRot, SpawnParams);
+	if (LobbyCharacter)
+	{
+		NewPlayer->Possess(LobbyCharacter);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("LobbyGM::SpawnAndPossessPlayer: Failed to spawn lobby character."));
+	}
 }
 
 void APGLobbyGameMode::BeginPlay()

@@ -9,7 +9,6 @@
 class UVerticalBox;
 class UPGPlayerEntryWidget;
 
-class APGLobbyPlayerController;
 class UPGAdvancedFriendsGameInstance;
 
 /**
@@ -21,7 +20,7 @@ class PROJECTG_API UPGLobbyWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void Init(APGLobbyPlayerController* PC);
+	void Init();
 
 protected:
 	virtual void NativeConstruct() override;
@@ -36,7 +35,6 @@ protected:
 	TSubclassOf<UPGPlayerEntryWidget> PlayerEntryWidgetClass;
 
 private:
-	TObjectPtr<APGLobbyPlayerController> LocalPC;
 	TObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
 
 };

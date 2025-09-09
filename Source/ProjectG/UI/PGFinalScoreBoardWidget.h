@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "PGFinalScoreBoardWidget.generated.h"
 
+class APGGameState;
 class UPGPlayerEntryWidget;
 class APGPlayerCharacter;
 class UVerticalBox;
@@ -27,6 +28,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	UFUNCTION()
 	void OnReturnToMainMenuButtonClicked();
@@ -47,4 +49,7 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> ReturnToLobbyButton;
+
+private:
+	TWeakObjectPtr<APGGameState> GSRef;
 };

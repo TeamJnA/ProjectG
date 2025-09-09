@@ -2,6 +2,8 @@
 
 
 #include "UI/PGHUD.h"
+#include "UI/PGMainMenuWidget.h"
+#include "UI/PGLobbyWidget.h"
 #include "UI/PGAttributesWidget.h"
 #include "UI/PGInventoryWidget.h"
 #include "UI/PGMessageManagerWidget.h"
@@ -55,10 +57,68 @@ void APGHUD::Init()
 	InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(GetOwningPlayerController(), InteractionProgressWidgetClass);
 }
 
+void APGHUD::InitMainMenuWidget()
+{
+	if (!MainMenuWidgetClass || (MainMenuWidget && MainMenuWidget->IsInViewport()))
+	{
+		return;
+	}
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC)
+	{
+		return;
+	}
+
+	MainMenuWidget = CreateWidget<UPGMainMenuWidget>(PC, MainMenuWidgetClass);
+	if (MainMenuWidget)
+	{
+		MainMenuWidget->AddToViewport();
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(MainMenuWidget->TakeWidget());
+		PC->SetInputMode(InputMode);
+		PC->bShowMouseCursor = true;
+	}
+}
+
+void APGHUD::InitLobbyWidget()
+{
+	if (!LobbyWidgetClass || (LobbyWidget && LobbyWidget->IsInViewport()))
+	{
+		return;
+	}
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC)
+	{
+		return;
+	}
+
+	if (MainMenuWidget && MainMenuWidget->IsInViewport())
+	{
+		MainMenuWidget->RemoveFromParent();
+		MainMenuWidget = nullptr;
+	}
+
+	LobbyWidget = CreateWidget<UPGLobbyWidget>(PC, LobbyWidgetClass);
+	if (LobbyWidget)
+	{
+		LobbyWidget->AddToViewport();
+		LobbyWidget->Init();
+
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->bShowMouseCursor = false;
+	}
+}
+
 void APGHUD::InitScoreBoardWidget()
 {
+	if (!ScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (ScoreBoardWidget && ScoreBoardWidget->IsInViewport()))
+	{
+		return;
+	}
 	APlayerController* PC = GetOwningPlayerController();
-	if (!PC || !ScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (ScoreBoardWidget && ScoreBoardWidget->IsInViewport()))
+	if (!PC)
 	{
 		return;
 	}
@@ -82,8 +142,12 @@ void APGHUD::InitScoreBoardWidget()
 
 void APGHUD::InitFinalScoreBoardWidget()
 {
+	if (!FinalScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()))
+	{
+		return;
+	}
 	APlayerController* PC = GetOwningPlayerController();
-	if (!PC || !FinalScoreBoardWidgetClass)
+	if (!PC)
 	{
 		return;
 	}
@@ -106,8 +170,12 @@ void APGHUD::InitFinalScoreBoardWidget()
 
 void APGHUD::InitPauseMenuWidget()
 {
+	if (!PauseMenuWidgetClass || (MainMenuWidget && MainMenuWidget->IsInViewport()) || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (PauseMenuWidget && PauseMenuWidget->IsInViewport()))
+	{
+		return;
+	}
 	APlayerController* PC = GetOwningPlayerController();
-	if (!PC || !PauseMenuWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (PauseMenuWidget && PauseMenuWidget->IsInViewport()))
+	if (!PC)
 	{
 		return;
 	}

@@ -18,6 +18,7 @@ public:
 	APGLobbyGameMode();
 
 	void StartGame();
+	void SpawnAndPossessPlayer(APlayerController* NewPlayer);
 
 protected:
 	virtual void BeginPlay() override;
@@ -28,5 +29,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
-
 };

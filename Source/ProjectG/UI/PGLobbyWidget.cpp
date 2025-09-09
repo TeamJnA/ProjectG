@@ -11,12 +11,10 @@
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
-#include "Player/PGLobbyPlayerController.h"
 
-void UPGLobbyWidget::Init(APGLobbyPlayerController* PC)
+void UPGLobbyWidget::Init()
 {
 	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::Init: lobby widget init"));
-	LocalPC = PC;
 
 	UpdatePlayerList();
 }

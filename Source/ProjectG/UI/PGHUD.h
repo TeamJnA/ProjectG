@@ -15,6 +15,8 @@ class UPGFinalScoreBoardWidget;
 class UPGPauseMenuWidget;
 class UPGCrosshairWidget;
 class UPGInteractionProgressWidget;
+class UPGMainMenuWidget;
+class UPGLobbyWidget;
 
 /**
  * 
@@ -26,6 +28,8 @@ class PROJECTG_API APGHUD : public AHUD
 
 public:
 	void Init();
+	void InitMainMenuWidget();
+	void InitLobbyWidget();
 	void InitScoreBoardWidget();
 	void InitFinalScoreBoardWidget();
 	void InitPauseMenuWidget();
@@ -41,6 +45,12 @@ public:
 
 protected:
 	APGHUD();
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGMainMenuWidget> MainMenuWidgetClass;
+	
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGLobbyWidget> LobbyWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGAttributesWidget> AttributeWidgetClass;
@@ -67,6 +77,12 @@ protected:
 	TSubclassOf<UPGInteractionProgressWidget> InteractionProgressWidgetClass;
 
 private:
+	UPROPERTY()
+	TObjectPtr<UPGMainMenuWidget> MainMenuWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGLobbyWidget> LobbyWidget;
+
 	UPROPERTY()
 	TObjectPtr<UPGAttributesWidget> AttributeWidget;
 

@@ -47,26 +47,12 @@ APGLevelGenerator::APGLevelGenerator()
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
-
-	Root->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	Root->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-	Root->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	
 	RoomsList = {
-		APGRoom2::StaticClass(), APGRoom2::StaticClass(),
+		APGRoom2::StaticClass(),
 		APGRoom3::StaticClass(),
 		APGStairRoom1::StaticClass()
 	};
-		
-	//SpecialRoomsList = {
-	//	APGStairRoom1::StaticClass()
-	//};
-
-	//BaseRoomsList = {
-	//	APGRoom1::StaticClass(), APGRoom1::StaticClass(),
-	//	APGRoom2::StaticClass(), APGRoom2::StaticClass(),
-	//	APGRoom3::StaticClass(),
-	//};
 
 	// max room spawn amount
 	RoomAmount = 20;
@@ -79,17 +65,33 @@ APGLevelGenerator::APGLevelGenerator()
 	// max item spawn amount
 	ItemAmount = 20;
 
-	bIsGenerationDone = false;
-
 	// reload level if (elpased time > max generation time)
 	MaxGenerateTime = 8.0f;
 
 	// TEST TO REMOVE
-	BlindCharacterToSpawnTEST;
+	BlindCharacter;
 	static ConstructorHelpers::FClassFinder<AActor> BlindCharacterRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/BP_BlindCharacter.BP_BlindCharacter_C"));
 	if (BlindCharacterRef.Class)
 	{
-		BlindCharacterToSpawnTEST = BlindCharacterRef.Class;
+		BlindCharacter = BlindCharacterRef.Class;
+	}
+}
+
+// Called when the game starts or when spawned
+// Spawn everything at only server
+void APGLevelGenerator::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		SetSeed();
+		SpawnStartRoom();
+
+		GenerationStartTime = GetWorld()->GetTimeSeconds();
+		StartDungeonTimer();
+
+		SpawnNextRoom();
 	}
 }
 
@@ -99,147 +101,116 @@ APGLevelGenerator::APGLevelGenerator()
 // If a specific value is specified, set that value as seed.
 void APGLevelGenerator::SetSeed()
 {
-	if (HasAuthority())
+	if (SeedValue == -1)
 	{
-		if (SeedValue == -1)
-		{
-			Seed.Initialize(FDateTime::Now().GetTicks());
-			//UKismetMathLibrary::SeedRandomStream(Seed);
-		}
-		else
-		{
-			Seed.Initialize(SeedValue);
-			//UKismetMathLibrary::SetRandomStreamSeed(Seed, SeedValue);
-		}
+		Seed.Initialize(FDateTime::Now().GetTicks());
+	}
+	else
+	{
+		Seed.Initialize(SeedValue);
 	}
 }
 
 // Create the base room, PGStartRoom
 void APGLevelGenerator::SpawnStartRoom()
 {
-	UWorld* world = GetWorld();
-	if (world)
+	UWorld* World = GetWorld();
+	if (!World)
 	{
-		// spawn setting
-		FTransform spawnTransform = Root->GetComponentTransform();
-		FActorSpawnParameters spawnParams;
-		spawnParams.Owner = this;
-		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		APGStartRoom* newRoom = world->SpawnActor<APGStartRoom>(APGStartRoom::StaticClass(), spawnTransform, spawnParams);
-
-		// add new room to room graph
-		if (newRoom)
-		{
-			AllSpawnedRooms.Add(newRoom);
-			RoomGraph.Add(newRoom);
-		}
-
-		// spawn default key item
-		// get game instance for use PGItemData instances
-		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance());
-
-		APGItemActor* DefaultKey1 = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnParams);
-		if (UPGItemData* ItemData1 = GI->GetItemDataByKey("Key"))
-		{
-			DefaultKey1->InitWithData(ItemData1);
-		}
-		DefaultKey1->SetActorRelativeLocation(FVector(538.0f, 271.0f, 90.0f));
-
-		APGItemActor* DeafultKey2 = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnParams);
-		if (UPGItemData* ItemData2 = GI->GetItemDataByKey("Key"))
-		{
-			DeafultKey2->InitWithData(ItemData2);
-		}
-		DeafultKey2->SetActorRelativeLocation(FVector(538.0f, 356.0f, 90.0f));
-
-		APGExitDoor* ExitDoor = world->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), spawnParams);
-		ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
-		ExitDoor->SetActorRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
-
-		// Add the Points(exitpoints) where the next Room can be created to the ExitsList.
-		TArray<USceneComponent*> exitsItem;
-		newRoom->GetExitsFolder()->GetChildrenComponents(false, exitsItem);
-		ExitsList.Append(exitsItem);
+		return;
 	}
+
+	// spawn setting
+	const FTransform SpawnTransform = Root->GetComponentTransform();
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	APGStartRoom* NewRoom = World->SpawnActor<APGStartRoom>(APGStartRoom::StaticClass(), SpawnTransform, SpawnParams);
+	if (!NewRoom)
+	{
+		return;
+	}
+	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(World->GetGameInstance());
+	if (!GI)
+	{
+		return;
+	}
+
+	// Add to RoomGraph
+	StartRoom = NewRoom;
+	RoomGraph.Add(NewRoom);
+	// Add the Points(exitpoints) where the next Room can be created to the ExitsList.
+	TArray<USceneComponent*> ExitPoints;
+	NewRoom->GetExitsFolder()->GetChildrenComponents(false, ExitPoints);
+	ExitsList.Append(ExitPoints);
+
+	// spawn default items & exit door
+	APGItemActor* DefaultKey1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData1 = GI->GetItemDataByKey("Key"))
+	{
+		DefaultKey1->InitWithData(ItemData1);
+	}
+	DefaultKey1->SetActorRelativeLocation(FVector(538.0f, 271.0f, 90.0f));
+
+	APGItemActor* DeafultKey2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData2 = GI->GetItemDataByKey("Key"))
+	{
+		DeafultKey2->InitWithData(ItemData2);
+	}
+	DeafultKey2->SetActorRelativeLocation(FVector(538.0f, 356.0f, 90.0f));
+
+	APGExitDoor* ExitDoor = World->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), SpawnParams);
+	ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
+	ExitDoor->SetActorRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 }
 
 // Create Rooms repeatedly a fixed number of times(RoomAmount)
 void APGLevelGenerator::SpawnNextRoom()
 {
-	UWorld* world = GetWorld();
-	if (world)
+	UWorld* World = GetWorld();
+	if (!World || ExitsList.IsEmpty())
 	{
-		// get random room spawn point from ExitsList by stream(seed)
-		SelectedExitPoint = ExitsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, ExitsList.Num())];
-		// get random class of room type from RoomsList by stream(seed)
-
-		// spawn setting
-		FVector spawnLocation = SelectedExitPoint->GetComponentLocation();
-		FRotator spawnRotation = SelectedExitPoint->GetComponentRotation();
-		FTransform spawnTransform(spawnRotation, spawnLocation, FVector(1.0f, 1.0f, 1.0f));
-		FActorSpawnParameters spawnParams;
-		spawnParams.Owner = this;
-		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		APGMasterRoom* newRoom = nullptr;
-
-		if (RoomAmount > 14)
-		{
-			newRoom = world->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), spawnTransform, spawnParams);
-		}
-		else
-		{
-			TSubclassOf<APGMasterRoom> newRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
-			newRoom = world->SpawnActor<APGMasterRoom>(newRoomClass, spawnTransform, spawnParams);
-		}
-
-		// set spawned room as LatestRoom
-		LatestRoom = newRoom;
-
-		// Check if the created room does not overlap with another room
-		// Check if the created room exceeds the room amount
-		// CheckOverlap();
-
-		// Delay before spawn next room
-		GetWorld()->GetTimerManager().SetTimer(
-			DelayTimerHandler,
-			this,
-			&APGLevelGenerator::CheckOverlap,
-			0.1f,
-			false
-		);
+		return;
 	}
-}
 
-// Check if there is another room overlapping the OverlapBox of LatestRoom(most recently spawned room)
-void APGLevelGenerator::AddOverlappingRoomsToList()
-{
-	TArray<USceneComponent*> overlapItems;
-	// OverlapItems == OverlapBoxes of LatestRoom
-	LatestRoom->GetOverlapBoxFolder()->GetChildrenComponents(false, overlapItems);
-	for (auto arrayItem : overlapItems)
+	// get random room spawn point from ExitsList by stream(seed)
+	const TObjectPtr<USceneComponent> SelectedExitPoint = ExitsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, ExitsList.Num())];
+	// spawn setting
+	const FVector spawnLocation = SelectedExitPoint->GetComponentLocation();
+	const FRotator spawnRotation = SelectedExitPoint->GetComponentRotation();
+	const FTransform spawnTransform(spawnRotation, spawnLocation, FVector(1.0f, 1.0f, 1.0f));
+	FActorSpawnParameters spawnParams;
+	spawnParams.Owner = this;
+	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	APGMasterRoom* NewRoom = nullptr;
+	if (RoomAmount > 14)
 	{
-		// use cast USceneComponent(arrayItem) -> UBoxComponent(overlapItem) because UBoxComponent can't use GetChildrenComponents()
-		UBoxComponent* overlapItem = Cast<UBoxComponent>(arrayItem);
-		TArray<UPrimitiveComponent*> temp;
-		// get overlapping components of overlapItem and append them to temp array
-		// use UPrimitiveComponent because GetOverlappingComponents(TArray<UPrimitiveComponent*> arr)
-		// after add all overlapping components to temp then move them to OverlappedList
-		overlapItem->GetOverlappingComponents(temp);
-		OverlappedList.Append(temp);
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), spawnTransform, spawnParams);
 	}
-}
+	else
+	{
+		const TSubclassOf<APGMasterRoom> NewRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
+		NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, spawnTransform, spawnParams);
+	}
+	// set spawned room as LatestRoom
+	LatestRoom = NewRoom;
 
-// Add item spawn points of LatestRoom(most recently spawned room) to FloorSpawnPointsList
-void APGLevelGenerator::AddFloorSpawnPointsToList()
-{
-	TArray<USceneComponent*> floorSpawnPoints;
-	LatestRoom->GetFloorSpawnPointsFolder()->GetChildrenComponents(false, floorSpawnPoints);
-	FloorSpawnPointsList.Append(floorSpawnPoints);
+	// Check if the created room does not overlap with another room
+	// Check if the created room exceeds the room amount
+	// Delay before spawn next room
+	FTimerHandle TempTimerHandle;
+	World->GetTimerManager().SetTimer(
+		TempTimerHandle,
+		FTimerDelegate::CreateUObject(this, &APGLevelGenerator::CheckOverlap, SelectedExitPoint),
+		0.1f,
+		false
+	);
 }
 
 // 1) Check if there is another room overlapping the OverlapBox of LatestRoom(most recently spawned room)
 // 2) Check can generate next room
-void APGLevelGenerator::CheckOverlap()
+void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitPoint)
 {
 	AddOverlappingRoomsToList();
 	
@@ -255,16 +226,12 @@ void APGLevelGenerator::CheckOverlap()
 	// if there is no overlapped room (= success to create new room)
 	else
 	{
-		// empty OverlappedList for next spawn room
-		// remove SelectedExitPoint(LatestRoom's spawn point) from exits list and add to door points list
-		OverlappedList.Empty();
-		ExitsList.Remove(SelectedExitPoint);
-		DoorPointsList.Add(SelectedExitPoint);
+		ExitsList.Remove(InSelectedExitPoint);
+		DoorPointsList.Add(InSelectedExitPoint);
 
-		// add new room to array and graph
-		AllSpawnedRooms.Add(LatestRoom);
+		// add new room to graph
 		// find connected room(prior or parent room) and add to graph
-		APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(SelectedExitPoint->GetOwner());
+		APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(InSelectedExitPoint->GetOwner());
 		if (ParentRoom)
 		{
 			// add new room to neighbors list of parent room
@@ -282,9 +249,9 @@ void APGLevelGenerator::CheckOverlap()
 		RoomAmount--;
 
 		// add LatestRoom's exitpoints(where the next Room can be spawned) to the ExitsList
-		TArray<USceneComponent*> latestRoomExitPoints;
-		LatestRoom->GetExitsFolder()->GetChildrenComponents(false, latestRoomExitPoints);
-		ExitsList.Append(latestRoomExitPoints);
+		TArray<USceneComponent*> LatestRoomExitPoints;
+		LatestRoom->GetExitsFolder()->GetChildrenComponents(false, LatestRoomExitPoints);
+		ExitsList.Append(LatestRoomExitPoints);
 		AddFloorSpawnPointsToList();
 
 		// 2) Check can generate next room
@@ -304,14 +271,12 @@ void APGLevelGenerator::CheckOverlap()
 
 void APGLevelGenerator::SetupLevelEnvironment()
 {
-	GetWorld()->GetTimerManager().ClearTimer(TimerHandler);
-	GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandler);
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Generate Rooms Completely"));
 
 	CloseHoles();
 	SpawnDoors();
 	SpawnItems();
-	bIsGenerationDone = true;
 
 	// spawn enemy
 	//APGMasterRoom* EnemySpawnRoom = FindFarthestRoom();
@@ -325,18 +290,18 @@ void APGLevelGenerator::SetupLevelEnvironment()
 			if (!GM)
 			{
 				UE_LOG(LogTemp, Error, TEXT("LG::SetupLevelEnvironment: No valid GM"));
+				return;
 			}
 
 			// spawn enemy at center of fartherst room
-			FVector SpawnLocation = EnemySpawnRoom->GetEnemySpawnLocation();
-			FRotator SpawnRotation = FRotator::ZeroRotator;
+			const FVector SpawnLocation = EnemySpawnRoom->GetEnemySpawnLocation();
+			const FRotator SpawnRotation = FRotator::ZeroRotator;
 
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = this;
 			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-			APGBlindCharacter* SpawnedBlindCharacter;
-			SpawnedBlindCharacter = World->SpawnActor<APGBlindCharacter>(BlindCharacterToSpawnTEST, SpawnLocation, SpawnRotation, SpawnParams);
+			APGBlindCharacter* SpawnedBlindCharacter = World->SpawnActor<APGBlindCharacter>(BlindCharacter, SpawnLocation, SpawnRotation, SpawnParams);
 			if (SpawnedBlindCharacter)
 			{
 				SpawnedBlindCharacter->InitSoundManager(GM->GetSoundManager());
@@ -346,82 +311,124 @@ void APGLevelGenerator::SetupLevelEnvironment()
 		}
 	}
 
-	// Called GameState and inside GS, trigger a delegate to notify GameMode to spawn the player.
-	if (GetWorld())
+	// trigger a GS' delegate to notify GameMode to spawn the player.
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
-		if (APGGameState* gs = GetWorld()->GetGameState<APGGameState>())
+		UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Notify map generation complete to GameState"));
+		GS->NotifyMapGenerationComplete();
+	}
+
+	// 모든 생성 작업이 완료되었으므로, 더 이상 필요 없는 임시 목록들 정리
+	UE_LOG(LogTemp, Log, TEXT("LG::SetupLevelEnvironment: Clearing temporary generation data to free memory."));
+	ExitsList.Empty();
+	DoorPointsList.Empty();
+	FloorSpawnPointsList.Empty();
+	OverlappedList.Empty();
+	RoomsList.Empty();
+	RoomGraph.Empty();
+	LatestRoom = nullptr;
+}
+
+// Check if there is another room overlapping the OverlapBox of LatestRoom(most recently spawned room)
+void APGLevelGenerator::AddOverlappingRoomsToList()
+{
+	OverlappedList.Empty();
+	if (!LatestRoom)
+	{
+		return;
+	}
+
+	TArray<USceneComponent*> OverlapItems;
+	LatestRoom->GetOverlapBoxFolder()->GetChildrenComponents(false, OverlapItems);
+	for (USceneComponent* SceneComp : OverlapItems)
+	{
+		if (UBoxComponent* BoxComp = Cast<UBoxComponent>(SceneComp))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("LevelGenerator: Notify map generation complete to GameState"));
-			gs->NotifyMapGenerationComplete();
+			TArray<UPrimitiveComponent*> TempOverlaps;
+			BoxComp->GetOverlappingComponents(TempOverlaps);
+			OverlappedList.Append(TempOverlaps);
 		}
 	}
+}
+
+// Add item spawn points of LatestRoom(most recently spawned room) to FloorSpawnPointsList
+void APGLevelGenerator::AddFloorSpawnPointsToList()
+{
+	if (!LatestRoom)
+	{
+		return;
+	}
+
+	TArray<USceneComponent*> FloorSpawnPoints;
+	LatestRoom->GetFloorSpawnPointsFolder()->GetChildrenComponents(false, FloorSpawnPoints);
+	FloorSpawnPointsList.Append(FloorSpawnPoints);
 }
 
 // spawn walls(created between room and outside)
 void APGLevelGenerator::CloseHoles()
 {
-	UWorld* world = GetWorld();
-	if (world)
+	UWorld* World = GetWorld();
+	if (!World)
 	{
-		// get all exit point from ExitsList then spawn wall actor
-		for (auto exitPoint : ExitsList)
-		{
-			// spawn setting
-			FVector spawnLocation = exitPoint->GetComponentLocation();
-			FRotator spawnRotation = exitPoint->GetComponentRotation();
-			spawnRotation.Yaw += 90.0f;
-			FTransform spawnTransform(spawnRotation, spawnLocation, FVector(1.0f, 1.0f, 1.0f));
-			FActorSpawnParameters spawnParams;
-			spawnParams.Owner = this;
-			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			world->SpawnActor<APGWall>(APGWall::StaticClass(), spawnTransform, spawnParams);
-		}
+		return;
+	}
+
+	// get all exit point from ExitsList then spawn wall actor
+	for (const auto& ExitPoint : ExitsList)
+	{
+		// spawn setting
+		const FVector SpawnLocation = ExitPoint->GetComponentLocation();
+		FRotator SpawnRotation = ExitPoint->GetComponentRotation();
+		SpawnRotation.Yaw += 90.0f;
+		const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		World->SpawnActor<APGWall>(APGWall::StaticClass(), SpawnTransform, SpawnParams);
 	}
 }
 
 // spawn doors(created between rooms) by a certain number(DoorAmount)
 void APGLevelGenerator::SpawnDoors()
 {
-	UWorld* world = GetWorld();
-	if (world)
+	UWorld* World = GetWorld();
+	if (!World)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[%s] DoorPointsList Contents:"), HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
-		for (auto Point : DoorPointsList)
+		return;
+	}
+
+	DoorAmount = DoorPointsList.Num() * 0.8f;
+	LockedDoorAmount = DoorAmount * 0.3f;
+
+	while (DoorAmount > 0 && !DoorPointsList.IsEmpty())
+	{
+		// get random door spawn point from DoorPointsList by stream(seed)
+		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, DoorPointsList.Num());
+		const TObjectPtr<USceneComponent> SelectedDoorPoint = DoorPointsList[RandomIndex];
+		if (!SelectedDoorPoint)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Point: %s"), *Point->GetComponentLocation().ToString());
+			continue;
 		}
+		DoorPointsList.RemoveAt(RandomIndex);
 
-		DoorAmount = DoorPointsList.Num() * 0.8f;
-		LockedDoorAmount = DoorAmount * 0.3f;
+		// spawn setting
+		const FVector SpawnLocation = SelectedDoorPoint->GetComponentLocation();
+		const FRotator SpawnRotation = SelectedDoorPoint->GetComponentRotation();
+		const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.bNoFail = true;
 
-		while (DoorAmount > 0)
+		const bool bShouldBeLocked = (LockedDoorAmount > 0);
+		APGDoor1::SpawnDoor(World, SpawnTransform, SpawnParams, bShouldBeLocked);
+
+		// after spawn, remove used door point from door points list
+		if (bShouldBeLocked)
 		{
-			// get random door spawn point from DoorPointsList by stream(seed)
-			SelectedDoorPoint = DoorPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, DoorPointsList.Num())];
-
-			// spawn setting
-			FVector SpawnLocation = SelectedDoorPoint->GetComponentLocation();
-			FRotator SpawnRotation = SelectedDoorPoint->GetComponentRotation();
-			FTransform SpawnTransform(SpawnRotation, SpawnLocation, FVector(1.0f, 1.0f, 1.0f));
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = this;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			SpawnParams.bNoFail = true;
-
-			if (LockedDoorAmount > 0)
-			{
-				APGDoor1::SpawnDoor(world, SpawnTransform, SpawnParams, /*bIsLocked*/ true);
-				LockedDoorAmount--;
-			}
-			else
-			{
-				APGDoor1::SpawnDoor(world, SpawnTransform, SpawnParams, /*bIsLocked*/ false);
-			}
-
-			// after spawn door, remove used spawn point from DoorPointsList and DoorAmount--
-			DoorPointsList.Remove(SelectedDoorPoint);
-			DoorAmount--;
+			LockedDoorAmount--;
 		}
+		DoorAmount--;
 	}
 }
 
@@ -429,66 +436,13 @@ void APGLevelGenerator::SpawnDoors()
 void APGLevelGenerator::SpawnItems()
 {
 	SpawnSingleItem_Async();
-
-	//UWorld* world = GetWorld();
-	//if (world)
-	//{
-	//	while (ItemAmount > 0)
-	//	{
-	//		// get random item spawn point from FloorSpawnPointsList by stream(seed)
-	//		SelectedFloorSpawnPoint = FloorSpawnPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, FloorSpawnPointsList.Num())];
-	//		
-	//		// spawn setting
-	//		FVector spawnLocation = SelectedFloorSpawnPoint->GetComponentLocation();
-	//		FTransform spawnTransform(FRotator(0.0f, 0.0f, 0.0f), spawnLocation, FVector(1.0f, 1.0f, 1.0f));
-	//		FActorSpawnParameters spawnParams;
-	//		spawnParams.Owner = this;
-	//		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	//		// get game instance for use PGItemData instances
-	//		UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(world->GetGameInstance());
-	//		
-	//		APGItemActor* newItem = world->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), spawnTransform, spawnParams);
-
-	//		//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED Item: Name=%s, Location=%s, NetGUID=%s"), *newItem->GetFName().ToString(), *newItem->GetActorLocation().ToString(), *newItem->GetActorGuid().ToString()); //
-
-	//		// spawn items that must be spawned(Item_Escape) (ItemAmount == 10, 9, 8)
-	//		// other items spawn randomly
-	//		// InitWithData => spawn item actor's class(PGItemActor) then attach actual data(PGItemData) for item
-	//		if (ItemAmount >= 18)
-	//		{
-	//			if (UPGItemData* itemData = GI->GetItemDataByKey("ExitKey"))
-	//			{
-	//				newItem->InitWithData(itemData);
-	//			}
-	//		}
-	//		else if (ItemAmount >= 10)
-	//		{
-	//			if (UPGItemData* itemData = GI->GetItemDataByKey("Brick"))
-	//			{
-	//				newItem->InitWithData(itemData);
-	//			}
-	//		}
-	//		else
-	//		{
-	//			if (UPGItemData* itemData = GI->GetItemDataByKey("Key"))
-	//			{
-	//				newItem->InitWithData(itemData);
-	//			}
-	//		}
-
-	//		// after spawn item, remove used spawn point from FloorSpawnPointsList and ItemAmount--
-	//		FloorSpawnPointsList.Remove(SelectedFloorSpawnPoint);
-	//		ItemAmount--;
-	//	}
-	//}
 }
 
 void APGLevelGenerator::SpawnSingleItem_Async()
 {
 	UWorld* World = GetWorld();
 	// 아이템을 모두 스폰했거나, 스폰 위치가 더이상 없거나, world가 없으면 중단
-	if (!World || ItemAmount <= 0 || FloorSpawnPointsList.Num() <= 0)
+	if (!World || ItemAmount <= 0 || FloorSpawnPointsList.IsEmpty())
 	{
 		UE_LOG(LogTemp, Log, TEXT("LG::SpawnSingleItem_Async: Item spawning process finished or stopped"));
 		return;
@@ -498,11 +452,17 @@ void APGLevelGenerator::SpawnSingleItem_Async()
 	if (!GI)
 	{
 		UE_LOG(LogTemp, Error, TEXT("LG::SpawnSingleItem_Async: GI is not valid"));
+		return;
 	}
 
 	// 1) 스폰 위치 선정 (Seed 기반)
-	int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, FloorSpawnPointsList.Num());
-	SelectedFloorSpawnPoint = FloorSpawnPointsList[RandomIndex];
+	const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, FloorSpawnPointsList.Num());
+	const TObjectPtr<USceneComponent> SelectedFloorSpawnPoint = FloorSpawnPointsList[RandomIndex];
+	if (!SelectedFloorSpawnPoint)
+	{
+		SpawnSingleItem_Async(); // Try next one
+		return;
+	}
 	FloorSpawnPointsList.RemoveAt(RandomIndex);
 
 	// 2) 스폰 아이템 키(key) 결정
@@ -524,8 +484,8 @@ void APGLevelGenerator::SpawnSingleItem_Async()
 	ItemAmount--;
 
 	// 4) 스폰 위치, 파라미터 준비
-	FVector SpawnLocation = SelectedFloorSpawnPoint->GetComponentLocation();
-	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation, FVector::OneVector);
+	const FVector SpawnLocation = SelectedFloorSpawnPoint->GetComponentLocation();
+	const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -573,38 +533,27 @@ void APGLevelGenerator::StartDungeonTimer()
 
 void APGLevelGenerator::CheckForDungeonComplete()
 {
-	float elapsedTime = GetWorld()->GetTimeSeconds() - GenerationStartTime;
-
-	if (elapsedTime >= MaxGenerateTime)
+	const float ElapsedTime = GetWorld()->GetTimeSeconds() - GenerationStartTime;
+	if (ElapsedTime >= MaxGenerateTime)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Time Over"));
+		UE_LOG(LogTemp, Error, TEXT("LG::CheckForDungeonComplete: Level generation timed out after %.2f seconds. Reloading level."), ElapsedTime);
+		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 
-		GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandler);
-		GetWorld()->GetTimerManager().ClearTimer(TimerHandler);
-		UE_LOG(LogTemp, Warning, TEXT("Stop Map Generating"));
-
-		UE_LOG(LogTemp, Warning, TEXT("Reboot Level"));
-
-		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
-		{
-			GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
-		}));
+		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%.2f seconds elapsed"), elapsedTime);
+		UE_LOG(LogTemp, Warning, TEXT("%.2f seconds elapsed"), ElapsedTime);
 	}
 }
 
 APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 {
 	// if no room is created or no starting room, return nullptr
-	if (AllSpawnedRooms.IsEmpty() || !RoomGraph.Contains(AllSpawnedRooms[0]))
+	if (!StartRoom || !RoomGraph.Contains(StartRoom))
 	{
 		return nullptr;
 	}
-
-	TObjectPtr<APGMasterRoom> StartRoom = AllSpawnedRooms[0];
 
 	// queue to store rooms to visit
 	TQueue<TObjectPtr<APGMasterRoom>> RoomsToVisit;
@@ -618,15 +567,16 @@ APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 	// search
 	while (!RoomsToVisit.IsEmpty())
 	{
-		TObjectPtr<APGMasterRoom> CurrentRoom = nullptr;
+		TObjectPtr<APGMasterRoom> CurrentRoom;
 		RoomsToVisit.Dequeue(CurrentRoom);
 
-		int32 CurrentDistance = Distances[CurrentRoom];
+		// finding max distance
+		const int32 CurrentDistance = Distances[CurrentRoom];
 
 		// search neighbor rooms connected to the current room
 		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
 		{
-			for (TObjectPtr<APGMasterRoom> Neighbor : *Neighbors)
+			for (const TObjectPtr<APGMasterRoom>& Neighbor : *Neighbors)
 			{
 				// if not visited room
 				if (Neighbor && !Distances.Contains(Neighbor))
@@ -642,8 +592,7 @@ APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 	// after search, find farthest room	
 	TArray<TObjectPtr<APGMasterRoom>> FarthestRooms;
 	int32 MaxDistance = -1;
-
-	for (const TTuple<TObjectPtr<APGMasterRoom>, int32>& Elem : Distances)
+	for (const auto& Elem : Distances)
 	{
 		// if current room distance is greater than maximum recorded distance
 		if (Elem.Value > MaxDistance)
@@ -678,27 +627,28 @@ APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 {
 	// if no room is created or no starting room, return nullptr
-	if (AllSpawnedRooms.IsEmpty() || !RoomGraph.Contains(AllSpawnedRooms[0]))
+	if (!StartRoom || !RoomGraph.Contains(StartRoom))
 	{
 		return nullptr;
 	}
 
-	TObjectPtr<APGMasterRoom> StartRoom = AllSpawnedRooms[0];
 	TQueue<TObjectPtr<APGMasterRoom>> RoomsToVisit;
 	TMap<TObjectPtr<APGMasterRoom>, int32> Distances;
 
 	RoomsToVisit.Enqueue(StartRoom);
 	Distances.Add(StartRoom, 0);
+	int32 MaxDistance = 0;
 
 	while (!RoomsToVisit.IsEmpty())
 	{
-		TObjectPtr<APGMasterRoom> CurrentRoom = nullptr;
+		TObjectPtr<APGMasterRoom> CurrentRoom;
 		RoomsToVisit.Dequeue(CurrentRoom);
-		int32 CurrentDistance = Distances[CurrentRoom];
+		const int32 CurrentDistance = Distances[CurrentRoom];
+		MaxDistance = FMath::Max(MaxDistance, CurrentDistance);
 
 		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
 		{
-			for (TObjectPtr<APGMasterRoom> Neighbor : *Neighbors)
+			for (const TObjectPtr<APGMasterRoom> &Neighbor : *Neighbors)
 			{
 				if (Neighbor && !Distances.Contains(Neighbor))
 				{
@@ -709,27 +659,9 @@ APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 		}
 	}
 
-	// find max distance
-	int32 MaxDistance = -1;
-	for (const auto& Elem : Distances)
-	{
-		if (Elem.Value > MaxDistance)
-		{
-			MaxDistance = Elem.Value;
-		}
-	}
-
 	// find middle distance room
 	const int32 TargetDistance = MaxDistance / 2;
-	// if middle distance is too short -> just return nullptr (error)
-	if (TargetDistance <= 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("LG::FindMiddleDistanceRoom: fail to find middle distance room"));
-		return nullptr;
-	}
-
 	TArray<TObjectPtr<APGMasterRoom>> MiddleDistanceRooms;
-
 	for (const auto& Elem : Distances)
 	{
 		if (Elem.Value == TargetDistance)
@@ -738,26 +670,9 @@ APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 		}
 	}
 
-	//for (const auto& Elem : Distances)
-	//{
-	//	int32 Difference = FMath::Abs(Elem.Value - TargetDistance);
-	//	if (Difference < MinDifference)
-	//	{
-	//		MinDifference = Difference;
-	//	}
-	//}
-
-	//for (const auto& Elem : Distances)
-	//{
-	//	if (FMath::Abs(Elem.Value - TargetDistance) == MinDifference)
-	//	{
-	//		CandidateRooms.Add(Elem.Key);
-	//	}
-	//}
-
 	if (!MiddleDistanceRooms.IsEmpty())
 	{
-		int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, MiddleDistanceRooms.Num());
+		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, MiddleDistanceRooms.Num());
 		UE_LOG(LogTemp, Log, TEXT("LG::FindMiddleDistanceRoom: Middle distance %d rooms, choose '%s' (middle distance: %d, max distance: %d)"), 
 			MiddleDistanceRooms.Num(), *MiddleDistanceRooms[RandomIndex]->GetName(), Distances[MiddleDistanceRooms[RandomIndex]], MaxDistance);
 
@@ -765,22 +680,4 @@ APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 	}
 
 	return nullptr;
-}
-
-// Called when the game starts or when spawned
-// Spawn everything at only server
-void APGLevelGenerator::BeginPlay()
-{
-	Super::BeginPlay();
-
-	if (HasAuthority())
-	{
-		SetSeed();
-		SpawnStartRoom();
-		
-		GenerationStartTime = GetWorld()->GetTimeSeconds();
-		StartDungeonTimer();
-		
-		SpawnNextRoom();
-	}
 }

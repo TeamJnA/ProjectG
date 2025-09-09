@@ -11,7 +11,6 @@
 #include "UI/PGSessionSlotWidget.h"
 #include "UI/PGConfirmWidget.h"
 #include "UI/PGSettingMenuWidget.h"
-#include "UI/PGPauseMenuWidget.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "OnlineSubsystem.h"
