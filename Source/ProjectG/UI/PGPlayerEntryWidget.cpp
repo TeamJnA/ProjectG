@@ -8,6 +8,11 @@
 
 #include "Type/CharacterTypes.h"
 
+/*
+* 받은 데이터를 바탕으로 플레이어 이미지, 이름, 상태 디스플레이
+* 탈출/사망 상태 -> ScoreBoardWidget, FinalScoreBoardWidget
+* 호스트 여부 -> LobbyWidget
+*/
 void UPGPlayerEntryWidget::SetupEntry(const FPlayerInfo& InPlayerInfo, UTexture2D* InAvatarTexture)
 {
 	if (PlayerNameText) 
@@ -17,63 +22,65 @@ void UPGPlayerEntryWidget::SetupEntry(const FPlayerInfo& InPlayerInfo, UTexture2
 
 	if (PlayerAvatar)
 	{
-		if (InAvatarTexture)
+		const bool bHasAvatar = (InAvatarTexture != nullptr);
+		if (bHasAvatar)
 		{
 			PlayerAvatar->SetBrushFromTexture(InAvatarTexture);
-			PlayerAvatar->SetVisibility(ESlateVisibility::Visible);
 		}
-		else
-		{
-			PlayerAvatar->SetVisibility(ESlateVisibility::Collapsed);
-		}
+		PlayerAvatar->SetVisibility(bHasAvatar ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 
 	if (StatusText)
 	{
+		int32 PlayerNameFontSize;
+
+		int32 StatusFontSize;
 		FText StatusMessage;
 		FLinearColor StatusColor = FLinearColor::White;
-		FSlateFontInfo StatusFontInfo = StatusText->GetFont();
-		FSlateFontInfo PlayerNameFontInfo = PlayerNameText->GetFont();
 
 		bool bShowStatus = true;
 
-		// scoreboard or finalscoreboard
 		if (InPlayerInfo.bIsDead)
 		{
+			PlayerNameFontSize = 32;
+
+			StatusFontSize = 16;
 			StatusMessage = FText::FromString(TEXT("DEAD"));
 			StatusColor = FLinearColor::Red;
-			StatusFontInfo.Size = 16;
-			PlayerNameFontInfo.Size = 32;
 		}
-		// scoreboard or finalscoreboard
 		else if (InPlayerInfo.bHasFinishedGame)
 		{
+			PlayerNameFontSize = 32;
+
+			StatusFontSize = 16;
 			StatusMessage = FText::FromString(TEXT("ESCAPED"));
 			StatusColor = FLinearColor::Green;
-			StatusFontInfo.Size = 16;
-			PlayerNameFontInfo.Size = 32;
 		}
-		// lobby widget host
 		else if (InPlayerInfo.bIsHost)
 		{
+			PlayerNameFontSize = 16;
+
+			StatusFontSize = 8;
 			StatusMessage = FText::FromString(TEXT("HOST"));
 			StatusColor = FLinearColor::Green;
-			StatusFontInfo.Size = 8;
-			PlayerNameFontInfo.Size = 16;
 		}
-		// lobby widget client
 		else
 		{
+			PlayerNameFontSize = 16;
+
+			StatusFontSize = 8;
 			bShowStatus = false;
-			StatusFontInfo.Size = 8;
-			PlayerNameFontInfo.Size = 16;
 		}
 
+		FSlateFontInfo PlayerNameFontInfo = PlayerNameText->GetFont();
+		PlayerNameFontInfo.Size = PlayerNameFontSize;
+		PlayerNameText->SetFont(PlayerNameFontInfo);
+
+		FSlateFontInfo StatusFontInfo = StatusText->GetFont();
+		StatusFontInfo.Size = StatusFontSize;
+		StatusText->SetFont(StatusFontInfo);
 		StatusText->SetText(StatusMessage);
 		StatusText->SetColorAndOpacity(StatusColor);
-		StatusText->SetFont(StatusFontInfo);
 		StatusText->SetVisibility(bShowStatus ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-
-		PlayerNameText->SetFont(PlayerNameFontInfo);
 	}
 }

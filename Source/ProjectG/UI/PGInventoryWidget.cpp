@@ -20,14 +20,11 @@ void UPGInventoryWidget::NativeConstruct()
 	InventorySlot0->HighlightSlot();
 }
 
+/*
+* 플레이어 InventoryComponent 바인드
+*/
 void UPGInventoryWidget::BindInventorySlots(APGPlayerCharacter* PlayerCharacter)
 {	
-	//APlayerController* Controller = GetOwningPlayer();
-	//if (!Controller) return;
-
-	//APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(Controller->GetPawn());
-	//if (!PGCharacter) return;
-
 	if (!PlayerCharacter)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPGInventoryWidget::BindInventorySlots: InPlayerCharacter is NULL!"));
@@ -37,14 +34,6 @@ void UPGInventoryWidget::BindInventorySlots(APGPlayerCharacter* PlayerCharacter)
 	InventoryRef = PlayerCharacter->GetInventoryComponent();
 	if (InventoryRef)
 	{
-		/*
-		* for debug
-		*/
-		ACharacter* Char = Cast<ACharacter>(InventoryRef->GetOwner());
-		if (Char)
-		{
-			UE_LOG(LogTemp, Log, TEXT("UPGInventoryWidget::BindInventorySlots: %s | IsLocal : %d | HasAuthority : %d"), *Char->Controller->GetName(), Char->Controller->IsLocalController(), Char->Controller->HasAuthority());
-		}
 		InventoryRef->OnInventoryItemUpdate.AddDynamic(this, &UPGInventoryWidget::HandleOnInventoryUpdate);
 		InventoryRef->OnCurrentSlotIndexChanged.AddDynamic(this, &UPGInventoryWidget::HandleOnCurrentSlotIndexChanged);
 
@@ -54,7 +43,6 @@ void UPGInventoryWidget::BindInventorySlots(APGPlayerCharacter* PlayerCharacter)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPGInventoryWidget::BindInventorySlots: Failed to get inventory component"));
 	}
-
 }
 
 /*

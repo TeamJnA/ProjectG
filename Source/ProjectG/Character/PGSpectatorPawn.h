@@ -46,15 +46,15 @@ protected:
 private:
 	// 관전 대상 Actor (서버에서 설정하고 클라이언트로 복제)
 	UPROPERTY(ReplicatedUsing = OnRep_TargetToOrbit)
-	AActor* TargetToOrbit;
+	AActor* TargetToOrbit = nullptr;
 
 	UFUNCTION()
 	void OnRep_TargetToOrbit();
 
 	// 초당 회전
-	float RotationSpeed;
+	float RotationSpeed = 90.0f;
 	// 대상으로부터의 거리
-	float CurrentOrbitDistance;
+	float CurrentOrbitDistance = 150.0f;
 	// 대상 주위를 공전하는 현재 Yaw 각도
-	float CurrentOrbitYawAngle;
+	float CurrentOrbitYawAngle = 0.0f;
 };

@@ -53,7 +53,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetMaxInventorySize() const;
 
-	bool IsHost() { return bIsHost; }
+	bool IsHost() const { return bIsHost; }
 
 
 	// --------- Session ---------
@@ -66,7 +66,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
 	void JoinFoundSession(int32 SessionIndex);
 
-	void LeaveSessionAndReturnToLobby();
+	void LeaveSessionAndReturnToMainMenu();
 
 	// 게임 시작 후 GM에서 세션에 더이상 참가하지 못하도록 세팅
 	void CloseSession();
@@ -99,7 +99,6 @@ public:
 	// -------- Steam Friend --------
 	void ReadSteamFriends();
 
-	bool GetSteamAvatarAsRawData(const FUniqueNetId& InUserId, TArray<uint8>& OutRawData, int32& OutWidth, int32& OutHeight);
 	UTexture2D* GetSteamAvatarAsTexture(const FUniqueNetId& InUserId);
 	
 	// Invite
@@ -117,9 +116,7 @@ protected:
 	// void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
 	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString);
 	void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
-	void ReturnToMainMenu(const FString& Reason);
 	// -------- Handl Failure --------
-
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 	int32 MaxInventorySize = 5;
@@ -146,6 +143,7 @@ private:
 	void OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful);
 
 	void CreateNewSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate);
+	void ForceReturnToMainMenu();
 
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSearch> LatestSessionSearch;

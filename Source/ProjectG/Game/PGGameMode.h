@@ -28,7 +28,7 @@ public:
 
 	void PlayerTravelSuccess(APlayerController* Player);
 
-	void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
+	void SetPlayerReadyToReturnLobby(const APlayerState* PlayerState);
 
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;
@@ -40,7 +40,7 @@ protected:
 	// virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
 	// virtual void Logout(AController* Exiting) override;
 
-	void CheckAllPlayersArrived();
+	void CheckAllPlayersArrived(const TSet<TObjectPtr<APlayerState>>& InExpectedPlayers);
 
 	UFUNCTION()
 	void HandleMapGenerationComplete();
@@ -48,27 +48,17 @@ protected:
 	void SpawnAllPlayers();
 	void SpawnLevelGenerator();
 	void SpawnGlobalLightManager();
-	void SpawnEnemy();
+
+	TSet<TObjectPtr<APlayerState>> ArrivedPlayers;
+
+	UPROPERTY()
+	TObjectPtr<APGSoundManager> SoundManager;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
-
-	TSet<TObjectPtr<APlayerState>> ExpectedPlayers;
-	TSet<TObjectPtr<APlayerState>> ArrivedPlayers;
-	FTimerHandle TravelCheckTimer;
-
-	bool bLevelGeneratorSpawned = false;
-	bool bManagerSpawned = false;
 
 	bool bGamemodeReady = false;
 	float SpawnOffset = 0.0f;
 
 	void InitSoundManagerToPlayers();
-
-	UPROPERTY()
-	TObjectPtr<APGSoundManager> SoundManager;
-
-	//TEST TO REMOVE
-	UPROPERTY(EditAnywhere, Category = "Enemy")
-	TSubclassOf<APGBlindCharacter> BlindCharacterToSpawnTEST;
 };

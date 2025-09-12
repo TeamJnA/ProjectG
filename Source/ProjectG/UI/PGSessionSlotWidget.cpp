@@ -6,6 +6,9 @@
 #include "Components/Button.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
+/*
+* 세션 슬롯 Setup 구현부
+*/
 void UPGSessionSlotWidget::Setup(const FString& SessionName, int32 SessionIndex, UPGAdvancedFriendsGameInstance* GI)
 {
 	Index = SessionIndex;
@@ -22,6 +25,9 @@ void UPGSessionSlotWidget::Setup(const FString& SessionName, int32 SessionIndex,
 	}
 }
 
+/*
+* 선택한 세션에 참가 요청
+*/
 void UPGSessionSlotWidget::OnJoinClicked()
 {
 	if (GameInstanceRef)

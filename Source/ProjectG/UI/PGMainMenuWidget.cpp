@@ -19,21 +19,31 @@
 #include "Player/PGLobbyPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
+/*
+* 세션 슬롯 생성부
+* 세션 생성/Setup
+*/
 void UPGMainMenuWidget::AddSessionSlot(const FString& ServerName, int32 Index)
 {
-	if (!SessionListContainer || !SessionSlotWidgetClass) return;
+	if (!SessionListContainer || !SessionSlotWidgetClass)
+	{
+		return;
+	}
 
-	UPGSessionSlotWidget* slot = CreateWidget<UPGSessionSlotWidget>(this, SessionSlotWidgetClass);
-	if (slot)
+	UPGSessionSlotWidget* SessionSlot = CreateWidget<UPGSessionSlotWidget>(this, SessionSlotWidgetClass);
+	if (SessionSlot)
 	{
 		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 		{
-			slot->Setup(ServerName, Index, GI);
+			SessionSlot->Setup(ServerName, Index, GI);
 		}
-		SessionListContainer->AddChild(slot);
+		SessionListContainer->AddChild(SessionSlot);
 	}
 }
 
+/*
+* 세션 슬롯 컨테이너 초기화
+*/
 void UPGMainMenuWidget::ClearSessionList()
 {
 	if (SessionListContainer)
@@ -163,6 +173,9 @@ void UPGMainMenuWidget::OnBackButtonClicked()
 	}
 }
 
+/*
+* GameInstance로부터 검색된 세션 목록을 전달받아 세션 슬롯 생성
+*/
 void UPGMainMenuWidget::OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SessionResults)
 {
 	ClearSessionList();
@@ -176,10 +189,7 @@ void UPGMainMenuWidget::OnSessionsFound(const TArray<FOnlineSessionSearchResult>
 	for (int32 i = 0; i < SessionResults.Num(); ++i)
 	{
 		const FOnlineSessionSearchResult& Result = SessionResults[i];
-
-		FString ServerName = Result.Session.OwningUserName;
-		FString CustomServerName;
-		CustomServerName = FString::Printf(TEXT("%s Session"), *ServerName);
+		FString CustomServerName = FString::Printf(TEXT("%s Session"), *Result.Session.OwningUserName);
 
 		AddSessionSlot(CustomServerName, i);
 	}

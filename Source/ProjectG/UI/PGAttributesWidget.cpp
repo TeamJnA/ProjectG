@@ -5,12 +5,16 @@
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Player/PGPlayerState.h"
 
+/*
+* 플레이어 스태미나 바인드
+*/
 void UPGAttributesWidget::BindToAttributes()
 {
 	const APGPlayerState* PS = Cast<APGPlayerState>(GetOwningPlayerState());
-	if (!PS) return;
-
-	UE_LOG(LogTemp, Log, TEXT("%s PlayerState bind"), *PS->GetName());
+	if (!PS) 
+	{
+		return;
+	}
 
 	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
 	const UPGAttributeSet* AS = PS->GetAttributeSet();

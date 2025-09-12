@@ -108,7 +108,7 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(UGameplayStatics::GetGameInstance(this));
 	if (GI)
 	{
-		GI->LeaveSessionAndReturnToLobby();
+		GI->LeaveSessionAndReturnToMainMenu();
 	}
 	else
 	{
@@ -127,7 +127,7 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(UGameplayStatics::GetGameInstance(this));
 	if (GI)
 	{
-		GI->LeaveSessionAndReturnToLobby();
+		GI->LeaveSessionAndReturnToMainMenu();
 	}
 	else
 	{

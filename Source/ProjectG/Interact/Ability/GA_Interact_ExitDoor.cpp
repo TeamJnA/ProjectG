@@ -31,9 +31,17 @@ UGA_Interact_ExitDoor::UGA_Interact_ExitDoor()
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
+/*
+* 탈출구 상호작용 처리
+* ExitDoor가 이미 열린 상태(첫 탈출자가 아닌 경우) -> 플레이어 게임 종료 처리
+* ExitDoor가 닫혀있고 잠긴 상태
+*   플레이어가 ExitKey를 들고 있는 경우 -> ExitKey 소모 후 ExitDoor의 LockStack--
+* ExitDoor가 닫혀있고 잠김이 풀린 상태(첫 탈출자) -> ExitDoor을 열고 플레이어 게임 종료 처리
+*/
 void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+    // --- check valid ---
+	const UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	PG_CHECK_VALID_INTERACT(ASC);
 
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
@@ -60,51 +68,29 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
 
     APGExitDoor* ExitDoor = Cast<APGExitDoor>(TargetActor);
     PG_CHECK_VALID_INTERACT(ExitDoor);
-    
-    /*
-    * if exit door is already opened (not a first escape player)
-    * process player finish
-    */
+    // --- check valid ---
+
     if (ExitDoor->IsOpened())
     {
         HandlePlayerFinished(PGCharacter);
     }
-    /*
-    * if exit door is locked
-    * player should find 3 exit key and use each one to unlock the exit door
-    */
     else if (ExitDoor->IsLocked())
     {
-        /*
-        * if exit door is locked
-        */
         UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit Door is locked."));
 
-        // check player has exit key in hand
         if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.ExitKey"))))
         {
-            // block entry when hand action is in progress
             if (ASC->HasMatchingGameplayTag(HandActionLockTag))
             {
                 UE_LOG(LogTemp, Log, TEXT("Cannot do %s during hand action."), *GetName());
                 return;
             }
 
-            // play hand action(unlock motion)
             PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
-            // remove exit key item after use
             PGCharacter->RemoveItemFromInventory();
             ExitDoor->SubtractLockStack();
         }
-        else
-        {
-            UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Player doesnt have exit key."));
-        }
     }
-    /*
-    * if door is unlocked but not opened (first escape player)
-    * open door and process player finish
-    */
     else
     {
         UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit door is unlocked. Open exit door"));
@@ -115,6 +101,13 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
     EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
+/*
+* 플레이어 종료 처리 구현부
+* 플레이어를 종료 상태로 설정 (!사망 && 종료 -> 탈출 상태)
+* 플레이어 탈출 후 모든 플레이어가 종료 상태인지 확인
+* 종료 상태인 경우 게임을 종료 상태로 변경
+* 아직 플레이 중인 플레이어가 있는 경우 종료 상태인 플레이어들의 상태를 디스플레이하는 ScoreBoardWidget Init
+*/
 void UGA_Interact_ExitDoor::HandlePlayerFinished(APGPlayerCharacter* PGCharacter)
 {
     if (!PGCharacter)

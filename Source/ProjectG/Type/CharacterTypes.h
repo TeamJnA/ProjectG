@@ -36,8 +36,8 @@ struct FPlayerInfo
 	bool bHasFinishedGame = false;
 
 	UPROPERTY(BlueprintReadOnly)
-	bool bIsReadyToReturnLobby = false;
+	bool bIsDead = false;
 
 	UPROPERTY(BlueprintReadOnly)
-	bool bIsDead = false;
+	bool bIsReadyToReturnLobby = false;
 };

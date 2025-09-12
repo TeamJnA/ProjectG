@@ -13,16 +13,20 @@
 #include "Player/PGPlayerController.h"
 #include "Character/PGPlayerCharacter.h"
 
-void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
+/*
+* 로컬 플레이어에 ScoreBoardWidget 생성 이후 플레이어 목록 업데이트
+* GameState의 PlayerList 업데이트 시 전달되는 OnPlayerListUpdated 델리게이트에 업데이트 함수 바인드
+*/
+void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
 {
-	if (!_PC)
+	if (!InPC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPGScoreBoardWidget::BindPlayerEntry: InPlayerCharacter is NULL! Cannot bind delegate."));
 		return;
 	}
 	UE_LOG(LogTemp, Log, TEXT("UPGScoreBoardWidget::BindPlayerEntry: InPlayerCharacter is valid. Binding delegate."));
 
-	PCRef = _PC;
+	PCRef = InPC;
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
@@ -32,11 +36,14 @@ void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
 	UpdatePlayerEntry();
 }
 
+/*
+* 플레이어 목록 업데이트 구현부
+* 현재 종료 상태인 플레이어들의 Steam 프로필 이미지, 이름, 종료 상태 디스플레이
+*/
 void UPGScoreBoardWidget::UpdatePlayerEntry()
 {
 	if (!GetWorld())
 	{
-		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Get world is null"));
 		return;
 	}
 
@@ -44,13 +51,13 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (!GS || !GI)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::UpdatePlayerEntry: GS or GI is null"));
 		return;
 	}
 
 	PlayerContainer->ClearChildren();
 
-	for (const FPlayerInfo& PlayerInfo : GS->PlayerList)
+	const TArray<FPlayerInfo>& PlayerList = GS->GetPlayerList();
+	for (const FPlayerInfo& PlayerInfo : PlayerList)
 	{
 		if (PlayerInfo.bHasFinishedGame)
 		{
@@ -81,29 +88,21 @@ void UPGScoreBoardWidget::NativeConstruct()
 	}
 }
 
+/*
+* 관전 버튼 클릭 시 관전 모드 진입
+*/
 void UPGScoreBoardWidget::OnSpectateButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: Spectate button clicked"), *PCRef->GetName());
-
-	if (!PCRef)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: PCRef is null"));
-		return;
-	}
-
+	
 	APGPlayerController* PGPC = Cast<APGPlayerController>(PCRef);
 	if (!PGPC)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: PC is not PG class"));
 		return;
 	}
 
 	if (PGPC->IsLocalController())
 	{
 		PGPC->StartSpectate();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: PC is not Local"));
 	}
 }

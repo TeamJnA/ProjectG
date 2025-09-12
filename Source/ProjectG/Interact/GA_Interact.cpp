@@ -17,6 +17,9 @@
 #include "Level/PGExitDoor.h"
 #include "Character/Component/PGInventoryComponent.h"
 
+/*
+* 라인 트레이스 태스크를 활성화하여 플레이어 캐릭터 카메라 정면 탐지
+*/
 void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle, 
 	const FGameplayAbilityActorInfo* ActorInfo, 
 	const FGameplayAbilityActivationInfo ActivationInfo, 
@@ -45,7 +48,6 @@ void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, true);
 	WaitForInteractionTarget->InteractionTarget.AddDynamic(this, &UGA_Interact::WaitInteractionInput);
 	WaitForInteractionTarget->ReadyForActivation();
-
 }
 
 void UGA_Interact::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
@@ -70,6 +72,9 @@ void UGA_Interact::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const
 	ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
 }
 
+/*
+* 보고 있는 대상에 대한 처리
+*/
 void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 {
 	APGPlayerCharacter* OwnerCharacter = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo());
@@ -79,19 +84,17 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 		return;
 	}
 
-	// UI(하이라이트, 메시지)는 항상 업데이트
 	OwnerCharacter->Client_PlayerStareAtTarget(TargetActor);
 
-	// HandAction이 진행 중이라면 상호작용 중단
 	UAbilitySystemComponent* ASC = OwnerCharacter->GetAbilitySystemComponent();
 	if (!ASC)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Interact::WaitInteractionInput: No valide ASC"));
+		UE_LOG(LogTemp, Error, TEXT("GA_Interact::WaitInteractionInput: No valid ASC"));
 		return;
 	}
+	// 플레이어 애니메이션 실행 중인 경우 입력 차단/정리
 	if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked"))))
 	{
-		// 진행 중일 수 있는 모든 Task 정리
 		if (WaitForHoldInputTask)
 		{
 			WaitForHoldInputTask->EndTask();
@@ -104,7 +107,6 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 		}
 		return;
 	}
-
 	// 현재 보고 있는 타겟이 이전과 다른 경우 -> 이전 타겟에 대한 모든 Task 정리
 	if (TargetActor != CachedTargetActor.Get())
 	{
@@ -119,8 +121,6 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 			WaitForInteractTag = nullptr;
 		}
 
-		// 이론상 필요없는데 나중에 버그 생기면 주석 제거
-		//OwnerCharacter->Client_UpdateInteractionProgress(0.0f);
 		CachedTargetActor = TargetActor;
 	}
 
@@ -128,18 +128,23 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 	// 타겟이 없거나, 이미 어떤 상호작용 Task가 실행 중이면 새로운 Tasks 생성/제거 x
 	if (!TargetActor || WaitForHoldInputTask || WaitForInteractTag)
 	{
-		// for debug
-		//UE_LOG(LogTemp, Warning, TEXT("GA_Interact::WaitInteractionInput: Task is already running"))
 		return;
 	}
 
-	// 타겟에 따라 상호작용 Task 분기, 진행
+	/*
+	* 타겟에 따라 상호작용 Task 분기/진행
+	* 타겟이 상호작용 가능한 경우
+	*	타겟의 상호작용 타입이 Instant인 경우(입력 즉시 상호작용) 
+	*	-> WaitGameplayTagAddWithTarget 대기, 상호작용 시도 즉시 상호작용 진행
+	*	타겟의 상호작용 타입이 Hold인 경우(입력 홀드를 통한 상호작용) 
+	*	-> WaitForHoldInput 대기, 상호작용 시도 시 홀딩 진행률 업데이트, 홀딩 완료 시 상호작용 진행
+	* 타겟이 상호작용 불가능한 경우(대상이 문이고 잠긴 상태인데 열쇠를 들고있지 않음) 
+	* -> WaitGameplayTagAddWithTarget 대기, 상호작용 시도 즉시 실패 메시지 디스플레이
+	*/
 	if (IInteractableActorInterface* InteractableInterface = Cast<IInteractableActorInterface>(TargetActor))
 	{
-		// 상호작용 불가능한 경우 종료(문이 잠겨있고, 캐릭터가 열쇠를 들지 않은 경우)
 		FText FailureMesage;
 		const bool bCanStartInteraction = InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailureMesage);
-
 		if (bCanStartInteraction)
 		{
 			const FInteractionInfo Info = InteractableInterface->GetInteractionInfo();
@@ -167,7 +172,6 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 				}
 			}
 		}
-		// 상호작용이 불가능한 경우(문이 잠겼는데, 열쇠를 들고있지 않음)
 		else
 		{
 			FGameplayTagContainer InteractTagContainer = OwnerCharacter->GetInteractTag();
@@ -186,7 +190,6 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 	UE_LOG(LogTemp, Log, TEXT("GA_Interact::InteractWithTarget: Entered InteractWithTarget with TargetActor."));
 
 	// 이전 Task pointer가 남아있는 경우를 대비해 nullptr로 보장
-	// Gemini피셜) Task의 경우 게임플레이 로직이 단일 스레드 진행이라 100% 종료되어있는 상태 -> 이 상황에서 EndTask 직접 호출은 오히려 위험하다고함
 	if (WaitForInteractTag) WaitForInteractTag = nullptr;
 	if (WaitForHoldInputTask) WaitForHoldInputTask = nullptr;
 
@@ -260,6 +263,9 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 	}
 }
 
+/*
+* 실패 메시지 디스플레이
+*/
 void UGA_Interact::HandleFailedInteractionAttempt(AActor* TargetActor)
 {
 	if (WaitForInteractTag)
@@ -267,7 +273,7 @@ void UGA_Interact::HandleFailedInteractionAttempt(AActor* TargetActor)
 		WaitForInteractTag = nullptr;
 	}
 
-	// ----------- 유효성 검사 ------------
+	// ---- valid check ----
 	if (!TargetActor)
 	{
 		UE_LOG(LogTemp, Error, TEXT("GA_Interact::HandleFailedInteractionAttempt: no valid target"));
@@ -291,7 +297,7 @@ void UGA_Interact::HandleFailedInteractionAttempt(AActor* TargetActor)
 		UE_LOG(LogTemp, Error, TEXT("GA_Interact::HandleFailedInteractionAttempt: no valid ASC"));
 		return;
 	}
-	// ----------- 유효성 검사 ------------
+	// ---- valid check ----
 
 	// 현재 시점에서 HandAction 중이면 return
 	if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked"))))
@@ -304,6 +310,10 @@ void UGA_Interact::HandleFailedInteractionAttempt(AActor* TargetActor)
 	OwnerCharacter->Client_DisplayInteractionFailedMessage(FailureMessage);
 }
 
+/*
+* 홀딩 진행률 업데이트
+* 홀딩 진행률 디스플레이 위젯 업데이트
+*/
 void UGA_Interact::UpdateInteractionUI(float Progress)
 {
 	APGPlayerCharacter* OwnerCharacter = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo());
@@ -314,11 +324,17 @@ void UGA_Interact::UpdateInteractionUI(float Progress)
 	}
 }
 
+/*
+* 홀드 완료 시 상호작용 실행
+*/
 void UGA_Interact::OnHoldInputCompleted()
 {
 	InteractWithTarget(CachedTargetActor.Get());
 }
 
+/*
+* 홀드 중단 시 초기화
+*/
 void UGA_Interact::OnHoldInputCancelled()
 {
 	WaitForHoldInputTask = nullptr;

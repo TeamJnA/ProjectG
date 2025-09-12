@@ -18,6 +18,11 @@ APGLobbyGameMode::APGLobbyGameMode()
 	bUseSeamlessTravel = true;
 }
 
+/*
+* 메인 레벨로 이동
+* 레벨 이동 후 비교를 위해 현재 세션 내 플레이어 목록을 GameInstance에 저장
+* 게임 상태를 EGameState::InGame으로 설정
+*/
 void APGLobbyGameMode::StartGame()
 {
 	UWorld* World = GetWorld();
@@ -25,53 +30,43 @@ void APGLobbyGameMode::StartGame()
 	{
 		return;
 	}
-	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(World->GetGameInstance());
-	APGGameState* GS = Cast<APGGameState>(GameState);
+
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	APGGameState* GS = GetGameState<APGGameState>();
 	if (!GS || !GS)
 	{
 		return;
 	}
 
-	GS->SetCurrentGameState(EGameState::InGame);
-	GI->SaveGameStateOnTravel(GS->GetCurrentGameState());
+	GI->SaveGameStateOnTravel(EGameState::InGame);
 	GI->SetExpectedPlayersForTravel(GS->PlayerArray);
-
-	UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel check logic [%s]"), *GS->GetName());
 
 	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: Start travel"));
 		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 	}));
 }
 
+/*
+* Lobby 플레이어 캐릭터 스폰 및 받은 컨트롤러에 Possess
+*/
 void APGLobbyGameMode::SpawnAndPossessPlayer(APlayerController* NewPlayer)
 {
 	UWorld* World = GetWorld();
-	if (!World)
+	if (!World || !NewPlayer || !PlayerPawnClass)
 	{
-		return;
-	}
-	if (!NewPlayer || !PlayerPawnClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("LobbyGM::SpawnAndPossessPlayer: Invalid NewPlayer or DefaultPawnClass"));
 		return;
 	}
 
-	FVector SpawnLoc = FVector(0.0f, -500.0f, 300.0f);
-	FRotator SpawnRot = FRotator::ZeroRotator;
+	const FTransform SpawnTransform(FRotator::ZeroRotator, FVector(0.0f, -500.0f, 300.0f));
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	APawn* LobbyCharacter = World->SpawnActor<APawn>(PlayerPawnClass, SpawnLoc, SpawnRot, SpawnParams);
+	APawn* LobbyCharacter = World->SpawnActor<APawn>(PlayerPawnClass, SpawnTransform, SpawnParams);
 	if (LobbyCharacter)
 	{
 		NewPlayer->Possess(LobbyCharacter);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("LobbyGM::SpawnAndPossessPlayer: Failed to spawn lobby character."));
 	}
 }
 
@@ -121,11 +116,9 @@ void APGLobbyGameMode::HandleStartingNewPlayer_Implementation(APlayerController*
 	{
 		if (APGPlayerState* NewPlayerState = NewPlayer->GetPlayerState<APGPlayerState>())
 		{
-			// Listen Server 환경이라 호스트만 true
 			if (NewPlayer->IsLocalController())
 			{
 				NewPlayerState->SetHost(true);
-				UE_LOG(LogTemp, Log, TEXT("LobbyGM::HandleStartingNewPlayer: '%s' is the host (Local Controller)."), *NewPlayerState->GetPlayerName());
 			}
 			else
 			{

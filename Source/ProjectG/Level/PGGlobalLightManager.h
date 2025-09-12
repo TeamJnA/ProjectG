@@ -18,45 +18,28 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	TArray<ULightComponent*> ManagedLights;
-	TArray<float> InitialIntensities;
-	TArray<TArray<UMaterialInstanceDynamic*>> EmissiveMIDs;
-	TArray<TArray<FName>> EmissiveParamNames;
-	TArray<TArray<float>> EmissiveInitialValues;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
-	float MaxTime = 30.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
-	float LightFadeUpdateInterval = 0.2f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
-	float BlinkInterval = 0.1f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LightControl")
-	float BlinkCycleInterval = 10.0f;
-
-	float ElapsedTime = 0.0f;
-
-	FTimerHandle LightFadeTimerHandle;
-	FTimerHandle BlinkTimerHandle;
-	FTimerHandle BlinkCycleTimerHandle;
-
-	void UpdateLightIntensity();
-	void StartBlinkCycle();
 	void Blink();
+	void StartBlinkCycle();
 	void InitializeEmissiveMIDs();
-
-	int32 BlinkCount;
-	int32 MaxBlinksPerCycle = 2;
-
-	bool bEmissiveOn = true;
-	float EmissiveOnValue = 5.0f;
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ToggleLight();
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_UpdateLightIntensity(float Alpha);
+private:
+	UPROPERTY()
+	TArray<ULightComponent*> ManagedLights;
+	TArray<TArray<UMaterialInstanceDynamic*>> EmissiveMIDs;
+	TArray<TArray<FName>> EmissiveParamNames;
+	TArray<TArray<float>> EmissiveInitialValues;
+		
+	FTimerHandle BlinkTimerHandle;
+
+	float BlinkInterval = 0.1f;	
+	float BlinkCycleInterval = 10.0f;
+
+	int32 BlinkCount = 0;
+	int32 MaxBlinksPerCycle = 2;
+	bool bEmissiveOn = true;
 };

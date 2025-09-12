@@ -14,6 +14,9 @@ UAT_WaitForHoldInput* UAT_WaitForHoldInput::WaitForHoldInput(UGameplayAbility* O
 	return MyObj;
 }
 
+/*
+* 
+*/
 void UAT_WaitForHoldInput::Activate()
 {
 	TimeHeld = 0.0f;
@@ -26,6 +29,11 @@ void UAT_WaitForHoldInput::Activate()
 	}
 }
 
+/*
+* 홀딩 시간 업데이트
+* 홀딩 시간에 따른 진행률 업데이트
+* 홀딩 완료시 완료 알림
+*/
 void UAT_WaitForHoldInput::TickTask(float DeltaTime)
 {
 	Super::TickTask(DeltaTime);
@@ -53,6 +61,11 @@ void UAT_WaitForHoldInput::TickTask(float DeltaTime)
 	}
 }
 
+/*
+* 홀딩 진행중 혹은 완료 시점에서 홀딩 중단에 의한 Task 제거
+* 홀딩을 중단한 시점에서 홀딩이 완료된 경우 -> 완료 알림
+* 진행률 초기화
+*/
 void UAT_WaitForHoldInput::OnDestroy(bool AbilityIsEnding)
 {
 	if (ShouldBroadcastAbilityTaskDelegates())
@@ -73,6 +86,9 @@ void UAT_WaitForHoldInput::OnDestroy(bool AbilityIsEnding)
 	Super::OnDestroy(AbilityIsEnding);
 }
 
+/*
+* 입력 처리
+*/
 void UAT_WaitForHoldInput::OnInteractInputChanged(const FGameplayTag GameplayTag, int32 NewCount)
 {
 	if (GameplayTag == InteractInputTag)

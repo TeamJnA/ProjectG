@@ -30,11 +30,11 @@ APGMasterRoom::APGMasterRoom()
 	OverlapBox = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox"));
 	OverlapBox->SetupAttachment(OverlapBoxFolder);
 
-	ExitsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ExitsFolder"));
-	ExitsFolder->SetupAttachment(RootComponent);
+	ExitPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ExitsFolder"));
+	ExitPointsFolder->SetupAttachment(RootComponent);
 
-	FloorSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("FloorSpawnPointsFolder"));
-	FloorSpawnPointsFolder->SetupAttachment(RootComponent);
+	ItemSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSpawnPointsFolder"));
+	ItemSpawnPointsFolder->SetupAttachment(RootComponent);
 
 	Root->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	Root->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
@@ -58,24 +58,4 @@ APGMasterRoom::APGMasterRoom()
 	EnemySpawnPoint->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	EnemySpawnPoint->SetRelativeScale3D(FVector(2.0f, 2.0f, 2.0f));
 	EnemySpawnPoint->bHiddenInGame = true;
-}
-
-USceneComponent* APGMasterRoom::GetExitsFolder()
-{
-	return ExitsFolder;
-}
-
-USceneComponent* APGMasterRoom::GetOverlapBoxFolder()
-{
-	return OverlapBoxFolder;
-}
-
-USceneComponent* APGMasterRoom::GetFloorSpawnPointsFolder()
-{
-	return FloorSpawnPointsFolder;
-}
-
-FVector APGMasterRoom::GetEnemySpawnLocation()
-{
-	return EnemySpawnPoint->GetComponentLocation();
 }

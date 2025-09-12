@@ -11,10 +11,8 @@
 
 #include "Game/PGLobbyGameMode.h"
 #include "Player/PGPlayerState.h"
-#include "Character/PGPlayerCharacter.h"
 
 #include "Level/PGLobbyDoor.h"
-
 
 UGA_Interact_LobbyDoor::UGA_Interact_LobbyDoor()
 {
@@ -35,38 +33,21 @@ UGA_Interact_LobbyDoor::UGA_Interact_LobbyDoor()
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
+/*
+* 상호작용을 시도한 플레이어가 호스트인 경우 StartGame 
+*/
 void UGA_Interact_LobbyDoor::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-    AActor* AvatarActor = ActorInfo->AvatarActor.Get();
-    ensureMsgf(AvatarActor, TEXT("GA_Interact_LobbyDoor::ActivateAbility: Avatar actor is not valid"));
-    APawn* AvatarPawn = Cast<APawn>(AvatarActor);
-    ensureMsgf(AvatarPawn, TEXT("GA_Interact_LobbyDoor::ActivateAbility: Avatar pawn is not valid"));
-    APGPlayerState* PS = AvatarPawn->GetPlayerState<APGPlayerState>();
-    ensureMsgf(PS, TEXT("GA_Interact_LobbyDoor::ActivateAbility: PS is not valid"));
-
-    if (PS->IsHost())
+    const APGPlayerState* PS = Cast<APGPlayerState>(ActorInfo->OwnerActor.Get());
+    // PlayerState .h
+    // bool IsHost() const { return bIsHost; }
+    if (PS && PS->IsHost())
     {
-        UWorld* World = GetWorld();
-        ensure(World);
-        AGameModeBase* GM = UGameplayStatics::GetGameMode(World);
-        ensure(GM);
-        APGLobbyGameMode* LobbyGM = Cast<APGLobbyGameMode>(GM);
-        ensure(LobbyGM);
-
-        LobbyGM->StartGame();        
+        if (APGLobbyGameMode* LobbyGM = Cast<APGLobbyGameMode>(GetWorld()->GetAuthGameMode()))
+        {
+            LobbyGM->StartGame();
+        }
     }
-
-    //if (ActorInfo->IsNetAuthority())
-    //{
-    //    UWorld* World = GetWorld();
-    //    ensure(World);
-    //    AGameModeBase* GM = UGameplayStatics::GetGameMode(World);
-    //    ensure(GM);
-    //    APGLobbyGameMode* LobbyGM = Cast<APGLobbyGameMode>(GM);
-    //    ensure(LobbyGM);
-
-    //    LobbyGM->StartGame();
-    //}
 
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

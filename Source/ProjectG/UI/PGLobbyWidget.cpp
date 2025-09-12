@@ -12,6 +12,9 @@
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
 
+/*
+* 로컬 플레이어에게 완전히 LobbyWidget이 생성된 이후 플레이어 목록 업데이트
+*/
 void UPGLobbyWidget::Init()
 {
 	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::Init: lobby widget init"));
@@ -27,11 +30,16 @@ void UPGLobbyWidget::NativeConstruct()
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
-		UE_LOG(LogTemp, Log, TEXT("LobbyWidget::NativeConstruct: lobby widget construct"));
 		GS->OnPlayerListUpdated.AddDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
 	}
 }
 
+/*
+* 세션에 플레이어 추가/제거 시 델리게이트를 통해 호출
+* 현재 세션의 플레이어 목록 업데이트
+* Host가 가장 위로 오도록 정렬
+* 플레이어의 Steam 프로필 이미지, 이름, Host 여부 디스플레이
+*/
 void UPGLobbyWidget::UpdatePlayerList()
 {
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
@@ -40,30 +48,44 @@ void UPGLobbyWidget::UpdatePlayerList()
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::UpdatePlayerList: Refreshing UI with %d player(s)."), GS->PlayerList.Num());
-
 	PlayerListContainer->ClearChildren();
 
-	// GameState에 저장된 PlayerList를 Host가 가장 위로 오도록 정렬
-	TArray<FPlayerInfo> SortedInfos = GS->PlayerList;
-	SortedInfos.Sort([](const FPlayerInfo& A, const FPlayerInfo& B)
+	// GameState .h
+	// const TArray<FPlayerInfo>& GetPlayerList() const { return PlayerList; }
+	const TArray<FPlayerInfo>& PlayerList = GS->GetPlayerList();
+	for (const FPlayerInfo& PlayerInfo : PlayerList)
 	{
-		return A.bIsHost > B.bIsHost;
-	});
-
-	for (const FPlayerInfo& PlayerInfo : SortedInfos)
-	{
-		UTexture2D* AvatarTexture = nullptr;
-		if (PlayerInfo.PlayerNetId.IsValid())
+		if (PlayerInfo.bIsHost)
 		{
-			AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
+			UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+			if (NewPlayerEntry)
+			{
+				UTexture2D* AvatarTexture = nullptr;
+				if (PlayerInfo.PlayerNetId.IsValid())
+				{
+					AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
+				}
+				NewPlayerEntry->SetupEntry(PlayerInfo, AvatarTexture);
+				PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
+			}
 		}
+	}
 
-		UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
-		if (NewPlayerEntry)
+	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	{
+		if (!PlayerInfo.bIsHost)
 		{
-			NewPlayerEntry->SetupEntry(PlayerInfo, AvatarTexture);
-			PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
+			UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+			if (NewPlayerEntry)
+			{
+				UTexture2D* AvatarTexture = nullptr;
+				if (PlayerInfo.PlayerNetId.IsValid())
+				{
+					AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
+				}
+				NewPlayerEntry->SetupEntry(PlayerInfo, AvatarTexture);
+				PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
+			}
 		}
 	}
 }

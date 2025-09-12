@@ -12,32 +12,32 @@ APGStairRoom1::APGStairRoom1()
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_MansionBigRoom.LI_MansionBigRoom_C'"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
-	ExitDir0->SetupAttachment(ExitsFolder);
+	ExitDir0->SetupAttachment(ExitPointsFolder);
 	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
 	ExitDir0->SetRelativeLocation(FVector(1888.0f, -1214.0f, 414.0f));
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->bHiddenInGame = true;
 
-	SpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint0"));
-	SpawnPoint0->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint0->SetRelativeLocation(FVector(816.0f, 224.0f, 486.0f));
-	SpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	SpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	SpawnPoint0->bHiddenInGame = true;
+	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
+	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
+	ItemSpawnPoint0->SetRelativeLocation(FVector(816.0f, 224.0f, 486.0f));
+	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	ItemSpawnPoint0->bHiddenInGame = true;
 
-	SpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint1"));
-	SpawnPoint1->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint1->SetRelativeLocation(FVector(1191.0f, 59.0f, 519.0f));
-	SpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	SpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	SpawnPoint1->bHiddenInGame = true;
+	ItemSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint1"));
+	ItemSpawnPoint1->SetupAttachment(ItemSpawnPointsFolder);
+	ItemSpawnPoint1->SetRelativeLocation(FVector(1191.0f, 59.0f, 519.0f));
+	ItemSpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	ItemSpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	ItemSpawnPoint1->bHiddenInGame = true;
 
-	SpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint2"));
-	SpawnPoint2->SetupAttachment(FloorSpawnPointsFolder);
-	SpawnPoint2->SetRelativeLocation(FVector(1341.0f, -656.0f, 526.0f));
-	SpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	SpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	SpawnPoint2->bHiddenInGame = true;
+	ItemSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint2"));
+	ItemSpawnPoint2->SetupAttachment(ItemSpawnPointsFolder);
+	ItemSpawnPoint2->SetRelativeLocation(FVector(1341.0f, -656.0f, 526.0f));
+	ItemSpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	ItemSpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	ItemSpawnPoint2->bHiddenInGame = true;
 
 	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 480.0f));
 	OverlapBox->SetRelativeScale3D(FVector(19.5f, 19.5f, 14.75f));

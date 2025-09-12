@@ -22,7 +22,7 @@ public:
 
 	virtual UPGAttributeSet* GetAttributeSet() const;
 	
-	const bool IsHost() const { return bIsHost; }
+	bool IsHost() const { return bIsHost; }
 	void SetHost(bool _bIsHost) { bIsHost = _bIsHost; }
 
 protected:
@@ -34,7 +34,7 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UPGAttributeSet> AttributeSet;
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Lobby")
+	UPROPERTY(Replicated, BlueprintReadOnly)
 	bool bIsHost = false;
 
 private:

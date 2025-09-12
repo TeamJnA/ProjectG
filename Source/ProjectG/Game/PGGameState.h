@@ -32,8 +32,9 @@ class PROJECTG_API APGGameState : public AGameState
 public:
 	void NotifyMapGenerationComplete();
 
-	EGameState GetCurrentGameState() { return CurrentGameState; }
+	EGameState GetCurrentGameState() const { return CurrentGameState; }
 	void SetCurrentGameState(EGameState NewGameState) { CurrentGameState = NewGameState; }
+	const TArray<FPlayerInfo>& GetPlayerList() const { return PlayerList; }
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMapGenerationComplete OnMapGenerationComplete;
@@ -43,17 +44,13 @@ public:
 
 	void NotifyGameFinished();
 
-	void SetPlayerReadyStateForReturnLobby(APlayerState* _PlayerState, bool _bIsReady);
+	void SetPlayerReadyStateForReturnLobby(const APlayerState* InPlayerState);
 
 	bool IsAllReadyToReturnLobby() const;
 
 	// ----- Player List ---------
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnPlayerListUpdatedDelegate OnPlayerListUpdated;
-
-	// 클라이언트의 위젯이 접근할 복제된 플레이어 목록
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_PlayerList, Category = "Lobby")
-	TArray<FPlayerInfo> PlayerList;
 	
 	// only call on server
 	void UpdatePlayerList();
@@ -74,7 +71,11 @@ protected:
 	void Multicast_MapGenerationComplete();
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MC_InitFinalScoreBoardWidget();
+	void Multicast_InitFinalScoreBoardWidget();
+
+	// 클라이언트의 위젯이 접근할 복제된 플레이어 목록
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_PlayerList, Category = "Lobby")
+	TArray<FPlayerInfo> PlayerList;
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "GameState")
 	EGameState CurrentGameState;

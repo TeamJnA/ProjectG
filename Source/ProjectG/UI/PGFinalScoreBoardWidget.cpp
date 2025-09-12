@@ -15,17 +15,20 @@
 #include "Player/PGPlayerController.h"
 #include "Character/PGPlayerCharacter.h"
 
-
-void UPGFinalScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
+/*
+* 로컬 플레이어에 FinalScoreBoardWidget 생성 이후 플레이어 목록 업데이트
+* GameState의 PlayerList 업데이트 시 전달되는 OnPlayerListUpdated 델리게이트에 업데이트 함수 바인드
+*/
+void UPGFinalScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
 {
-	if (!_PC)
+	if (!InPC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPGFinalScoreBoardWidget::BindPlayerEntry: InPC is NULL! Cannot bind delegate."));
 		return;
 	}
 	UE_LOG(LogTemp, Log, TEXT("UPGFinalScoreBoardWidget::BindPlayerEntry: InPC is valid. Binding delegate."));
 
-	PCRef = _PC;
+	PCRef = InPC;
 
 	if (UWorld* World = GetWorld())
 	{
@@ -39,29 +42,28 @@ void UPGFinalScoreBoardWidget::BindPlayerEntry(APlayerController* _PC)
 	UpdatePlayerEntry();
 }
 
+/*
+* 플레이어 목록 업데이트 구현부
+* 모든 플레이어들의 Steam 프로필 이미지, 이름, 종료 상태 디스플레이
+*/
 void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 {
 	if (!GetWorld())
 	{
-		UE_LOG(LogTemp, Error, TEXT("UPGFinalScoreBoardWidget::UpdatePlayerEntry: Get world is null"));
 		return;
 	}
+
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	if (!GS)
-	{
-		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::UpdatePlayerEntry: GameState is null"));
-		return;
-	}
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GI)
+	if (!GS || !GI)
 	{
-		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::UpdatePlayerEntry: GameInstance is null, aborting update."));
 		return;
 	}
 
 	PlayerContainer->ClearChildren();
 
-	for (const FPlayerInfo& PlayerInfo : GS->PlayerList)
+	const TArray<FPlayerInfo>& PlayerList = GS->GetPlayerList();
+	for (const FPlayerInfo& PlayerInfo : PlayerList)
 	{
 		UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
 		if (NewSlot)
@@ -105,25 +107,30 @@ void UPGFinalScoreBoardWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+/*
+* 메인 메뉴 버튼 -> 세션 종료 후 메인 메뉴로 이동
+*/
 void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToMainMenuButtonClicked: Clicked"));
-
-	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(UGameplayStatics::GetGameInstance(this));
-	if (GI)
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
-		GI->LeaveSessionAndReturnToLobby();
+		GI->LeaveSessionAndReturnToMainMenu();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToMainMenuButtonClicked: Failed to get GI"));
+		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::OnReturnToMainMenuButtonClicked: No valid GI"));
 	}
 }
 
+/*
+* 로비로 나가기 버튼 -> 세션을 유지한 채 로비로 이동
+* 다른 플레이어들의 선택을 기다린 후 
+* 로비로 나가기 버튼을 클릭한 플레이어들에 대해 세션을 유지한 채 로비로 이동
+*/
 void UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: Clicked"));
-
 	if (PCRef)
 	{
 		if (APGPlayerController* PC = Cast<APGPlayerController>(PCRef))

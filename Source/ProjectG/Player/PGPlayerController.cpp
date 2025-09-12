@@ -90,7 +90,7 @@ void APGPlayerController::SetupInputComponent()
 	{
 		// ESC
 		EnhancedInputComponent->BindAction(ShowPauseMenuAction, ETriggerEvent::Started, this, &APGPlayerController::OnShowPauseMenu);
-
+		// up/down
 		EnhancedInputComponent->BindAction(SpectateNextAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectateNext);
 		EnhancedInputComponent->BindAction(SpectatePrevAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectatePrev);
 	}
@@ -169,10 +169,13 @@ void APGPlayerController::Client_ForceReturnToLobby_Implementation()
 
 	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
-		GI->LeaveSessionAndReturnToLobby();
+		GI->LeaveSessionAndReturnToMainMenu();
 	}
 }
 
+/*
+* 로비로 나가기 버튼을 누른 경우 로컬 플레이어의 선택을 ServerRPC로 GameMode에 전달
+*/
 void APGPlayerController::NotifyReadyToReturnLobby()
 {
 	if (!IsLocalController())
@@ -184,6 +187,9 @@ void APGPlayerController::NotifyReadyToReturnLobby()
 	Server_SetReadyToReturnLobby();
 }
 
+/*
+* 
+*/
 void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 {
 	APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode());
@@ -193,6 +199,10 @@ void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 	}
 }
 
+/*
+* 관전 시작 환경 구성
+* ServerRPC를 통해 서버에 관전용 pawn, 관전 대상 설정 요청
+*/
 void APGPlayerController::StartSpectate()
 {
 	if (!IsLocalController()) 
@@ -213,19 +223,19 @@ void APGPlayerController::StartSpectate()
 	UE_LOG(LogTemp, Warning, TEXT("PC::StartSpectate: Client requested EnterSpectatorMode."));
 }
 
+/*
+* 관전용 pawn 스폰, 관전 대상 탐색/저장
+*/
 void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 {
-	// 이미 관전 모드에 진입해 있다면(APGSpectatorPawn을 빙의하고 있다면) 차단
 	if (Cast<APGSpectatorPawn>(GetPawn()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PC::Server_EnterSpectatorMode_Implementation: Already in spectator mode. Ignoring request."));
 		return;
 	}
 
 	APawn* PrevPawn = GetPawn();
 	if (PrevPawn)
 	{
-		// 기존 Pawn의 입력 비활성화
 		PrevPawn->DisableInput(this);
 	}
 
@@ -244,7 +254,6 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 		}
 	}
 
-	// ---------- Spawn SpectatorPawn ----------
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -258,6 +267,11 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 	}
 }
 
+/*
+* 관전 대상 변경
+* bNext == true -> 다음 대상
+* bNext == false -> 이전 대상
+*/
 void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 {
 	if (SpectateTargetList.IsEmpty())
@@ -284,6 +298,9 @@ void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 	}
 }
 
+/*
+* up -> 관전 대상을 다음 대상으로 변경
+*/
 void APGPlayerController::OnSpectateNext(const FInputActionValue& Value)
 {
 	if (!IsLocalController()) 
@@ -294,6 +311,9 @@ void APGPlayerController::OnSpectateNext(const FInputActionValue& Value)
 	UE_LOG(LogTemp, Log, TEXT("PC::OnSpectateNext: Client requested next spectate target."));
 }
 
+/*
+* down -> 관전 대상을 이전 대상으로 변경
+*/
 void APGPlayerController::OnSpectatePrev(const FInputActionValue& Value)
 {
 	if (!IsLocalController()) 
@@ -304,6 +324,9 @@ void APGPlayerController::OnSpectatePrev(const FInputActionValue& Value)
 	UE_LOG(LogTemp, Log, TEXT("PC::OnSpectatePrev: Client requested previous spectate target."));
 }
 
+/*
+* HUD에 FinalScoreBoardWidget 생성 요청
+*/
 void APGPlayerController::InitFinalScoreBoardWidget()
 {
 	if (!IsLocalController())

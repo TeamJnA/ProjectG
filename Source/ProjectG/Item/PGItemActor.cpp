@@ -26,41 +26,50 @@ TSubclassOf<UGameplayAbility> APGItemActor::GetAbilityToInteract() const
 	return InteractAbility;
 }
 
+/*
+* 
+*/
 void APGItemActor::HighlightOn() const
 {
 	StaticMesh->SetRenderCustomDepth(true);
 }
 
+/*
+* 
+*/
 void APGItemActor::HighlightOff() const
 {
 	StaticMesh->SetRenderCustomDepth(false);
 }
 
+/*
+* Item Actor의 InteractionInfo 반환
+* Instant Input
+*/
 FInteractionInfo APGItemActor::GetInteractionInfo() const
 {
 	return FInteractionInfo(EInteractionType::Instant);
 }
 
 /*
-* Only call on server
-* when spawn item
+* 로드한 아이템 데이터로 생성한 아이템 세팅
 */
-void APGItemActor::InitWithData(UPGItemData* _ItemData)
+void APGItemActor::InitWithData(UPGItemData* InItemData)
 {
 	if (!HasAuthority())
 	{
 		return;
 	}
 
-	LoadedItemData = _ItemData;
-	ItemDataPath = _ItemData;
+	LoadedItemData = InItemData;
+	ItemDataPath = InItemData;
 
-	if (_ItemData)
+	if (InItemData)
 	{
-		StaticMesh->SetStaticMesh(_ItemData->ItemMesh);
+		StaticMesh->SetStaticMesh(InItemData->ItemMesh);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[SERVER] ItemActor::InitWithData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), _ItemData ? *_ItemData->GetName() : TEXT("nullptr"));
+	UE_LOG(LogTemp, Log, TEXT("[SERVER] ItemActor::InitWithData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), InItemData ? *InItemData->GetName() : TEXT("nullptr"));
 }
 
 void APGItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -70,6 +79,9 @@ void APGItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(APGItemActor, ItemDataPath);
 }
 
+/*
+* 아이템 데이터 경로 레플리케이션 후 클라이언트 호출
+*/
 void APGItemActor::OnRep_ItemData()
 {
 	UPGItemData* ItemData = ItemDataPath.LoadSynchronous();
@@ -77,11 +89,6 @@ void APGItemActor::OnRep_ItemData()
 	{
 		LoadedItemData = ItemData;
 		StaticMesh->SetStaticMesh(ItemData->ItemMesh);
-		UE_LOG(LogTemp, Log, TEXT("[CLIENT] ItemActor::OnRep_ItemData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), *LoadedItemData->GetName());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("[CLIENT] ItemActor::OnRep_ItemData %s, ItemData: nullptr"), *GetName());
 	}
 }
 

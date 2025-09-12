@@ -353,6 +353,13 @@ void APGPlayerCharacter::OnDeadTagChanged(const FGameplayTag Tag, int32 TagCount
 	}
 }
 
+/*
+* 플레이어 사망시 서버 처리
+* PlayerList의 플레이어 상태를 사망 상태, 게임 종료 상태로 설정
+* 플레이어 사망 후 모든 플레이어가 종료 상태인지 확인
+* 종료상태인 경우 게임을 종료 상태로 변경
+* 아직 플레이 중인 플레이어가 있는 경우 종료 상태인 플레이어들의 상태를 디스플레이하는 ScoreBoardWidget Init
+*/
 void APGPlayerCharacter::OnPlayerDeathAuthority()
 {
 	if (!HasAuthority())
@@ -360,16 +367,13 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 		return;
 	}
 
-	// set player info to game finished
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
 	APlayerState* PS = GetPlayerState();
 	if (GS && PS)
 	{
-		// PlayerInfo의 bHasFinishedGame을 true로 설정
 		GS->MarkPlayerAsFinished(PS); 
 		GS->MarkPlayerAsDead(PS);
 
-		// 모든 플레이어가 종료했는지 확인하고, 그렇다면 게임을 종료 상태로 변경
 		if (GS->IsGameFinished())
 		{
 			GS->SetCurrentGameState(EGameState::EndGame);
@@ -522,6 +526,10 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
 }
 
+/*
+* Possess 이후 HUD에서 PC 접근 시 유효하지 않은 경우 발생
+* -> HUD에서 위젯 생성 후 직접 자신의 정보 바인드
+*/
 void APGPlayerCharacter::InitHUD()
 {
 	const APlayerController* PC = Cast<APlayerController>(Controller);
@@ -534,10 +542,7 @@ void APGPlayerCharacter::InitHUD()
 			UPGMessageManagerWidget* MessageManager = HUD->GetMessageManagerWidget();
 			if (MessageManager)
 			{
-				// 현재 캐릭터(this)를 직접 전달하여 바인딩
-				// 이론상 Possess 이후에 
 				MessageManager->BindMessageEntry(this);
-				UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::InitHUD: MessageManagerWidget Bound to character.")); //
 			}
 			else
 			{
@@ -548,24 +553,18 @@ void APGPlayerCharacter::InitHUD()
 			if (InventoryWidget)
 			{
 				InventoryWidget->BindInventorySlots(this);
-				UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::InitHUD: InventoryWidget Bound to character.")); //
 			}
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("APGPlayerCharacter::InitHUD: InventoryWidget is NULL in HUD!")); //
 			}
 		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::InitHUD: Get HUD failed | HasAuthority = %d"), HasAuthority());
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("PlayerCharacter::InitHUD: Get player controller failed | HasAuthority = %d"), HasAuthority());
 	}
 }
 
+/*
+* 실패 메시지 디스플레이
+*/
 void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(const FText& Message)
 {
 	if (IsLocallyControlled())
@@ -574,7 +573,6 @@ void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(c
 		{
 			if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
 			{
-				UE_LOG(LogTemp, Log, TEXT("Character::Client_DisplayInteractionFailedMessage: Interaction failed because door is locked"));
 				HUD->DisplayInteractionFailedMessage(Message, 1.0f);
 			}
 		}
@@ -586,6 +584,9 @@ void APGPlayerCharacter::MC_SetFlashlightState(bool _bIsFlashlightOn)
 	HeadlightLight->SetVisibility(_bIsFlashlightOn);
 }
 
+/*
+* 홀딩 진행률 디스플레이 위젯 업데이트
+*/
 void APGPlayerCharacter::Client_UpdateInteractionProgress_Implementation(float Progress)
 {
 	if (IsLocallyControlled())
@@ -600,6 +601,9 @@ void APGPlayerCharacter::Client_UpdateInteractionProgress_Implementation(float P
 	}
 }
 
+/*
+* HUD에 ScoreBoardWidget 생성 요청
+*/
 void APGPlayerCharacter::Client_InitScoreBoardWidget_Implementation()
 {
 	if (IsLocallyControlled())
@@ -615,6 +619,9 @@ void APGPlayerCharacter::Client_InitScoreBoardWidget_Implementation()
 	}
 }
 
+/*
+* 플레이어가 바라보는 대상, 대상의 변화에 따른 대상 Highlight 처리, 메시지 위젯 처리
+*/
 void APGPlayerCharacter::Client_PlayerStareAtTarget_Implementation(AActor* TargetActor)
 {
 	// 1. 바라보는 대상이 이전과 동일한 경우 -> return

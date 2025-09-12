@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
+#include "Components/ArrowComponent.h"
+
 #include "PGMasterRoom.generated.h"
 
-class UArrowComponent;
 class UBoxComponent;
 
 UCLASS()
@@ -17,6 +19,11 @@ class PROJECTG_API APGMasterRoom : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APGMasterRoom();
+
+	virtual const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
+	virtual const USceneComponent* GetOverlapBoxFolder() const { return OverlapBoxFolder; }
+	virtual const USceneComponent* GetItemSpawnPointsFolder() const { return ItemSpawnPointsFolder; }
+	virtual FVector GetEnemySpawnLocation() const { return EnemySpawnPoint->GetComponentLocation(); }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
@@ -35,18 +42,11 @@ protected:
 	TObjectPtr<UBoxComponent> OverlapBox;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
-	TObjectPtr<USceneComponent> ExitsFolder;
+	TObjectPtr<USceneComponent> ExitPointsFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
-	TObjectPtr<USceneComponent> FloorSpawnPointsFolder;
+	TObjectPtr<USceneComponent> ItemSpawnPointsFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "EnemySpawnPoint")
 	TObjectPtr<UArrowComponent> EnemySpawnPoint;
-
-public:
-	virtual USceneComponent* GetExitsFolder();
-	virtual USceneComponent* GetOverlapBoxFolder();
-	virtual USceneComponent* GetFloorSpawnPointsFolder();
-	virtual FVector GetEnemySpawnLocation();
-
 };

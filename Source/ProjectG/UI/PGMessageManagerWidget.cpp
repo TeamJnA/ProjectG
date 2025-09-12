@@ -8,18 +8,20 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Interface/InteractableActorInterface.h"
 
+/*
+* 플레이어 메시지 위젯 바인드
+* 바라보는 대상에 따른 메시지 디스플레이
+*/
 void UPGMessageManagerWidget::BindMessageEntry(APGPlayerCharacter* PlayerCharacter)
 {
 	if (!PlayerCharacter)
 	{
-		UE_LOG(LogTemp, Error, TEXT("UPGMessageManagerWidget::BindMessageEntry: InPlayerCharacter is NULL! Cannot bind delegate."));
 		return;
 	}
 	UE_LOG(LogTemp, Log, TEXT("UPGMessageManagerWidget::BindMessageEntry: InPlayerCharacter is valid. Binding delegate."));
 
 	PlayerRef = PlayerCharacter;
 	PlayerRef->OnStareTargetUpdate.AddDynamic(this, &UPGMessageManagerWidget::HandleOnStareTargetUpdate);
-	UE_LOG(LogTemp, Log, TEXT("UPGMessageManagerWidget::BindMessageEntry: Delegate bound to OnStareTargetUpdate on character: %s"), *PlayerRef->GetName()); //
 }
 
 void UPGMessageManagerWidget::ShowFailureMessage(const FText& Message, float Duration)
@@ -57,7 +59,7 @@ void UPGMessageManagerWidget::HandleOnStareTargetUpdate(AActor* TargetActor)
 	else
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("UPGMessageManagerWidget::HandleOnStareTargetUpdate: TargetActor is NULL, clearing message."));
-		if (MessageEntry) // MessageEntry 널 체크 추가
+		if (MessageEntry)
 		{
 			MessageEntry->SetMessage(FText::GetEmpty());
 		}

@@ -24,22 +24,21 @@ protected:
 	void SetSeed();
 	void SpawnStartRoom();
 	void SpawnNextRoom();
-	void CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitPoint);
+	void CheckOverlap(const TObjectPtr<USceneComponent>& InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck);
+	bool IsLatestRoomOverlapping(const APGMasterRoom* RoomToCheck) const;
 	void SetupLevelEnvironment();
-
-	void AddOverlappingRoomsToList();
-	void AddFloorSpawnPointsToList();
 
 	void CloseHoles();
 	void SpawnDoors();
 	void SpawnItems();
-	void SpawnSingleItem_Async();
+	void SpawnEnemy();
+	void SpawnSingleItem_Async(int32 ItemAmount);
 
-	void StartDungeonTimer();
-	void CheckForDungeonComplete();
+	void StartLevelGenerateTimer() const;
+	void CheckLevelGenerateTimeOut() const;
 
-	APGMasterRoom* FindFarthestRoom() const;
-	APGMasterRoom* FindMiddleDistanceRoom() const;
+	const APGMasterRoom* FindFarthestRoom() const;
+	const APGMasterRoom* FindMiddleDistanceRoom() const;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -48,13 +47,11 @@ private:
 	TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>> RoomGraph;
 
 	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> ExitsList;
+	TArray<TObjectPtr<USceneComponent>> ExitPointsList;
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> DoorPointsList;
 	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> FloorSpawnPointsList;
-	UPROPERTY()
-	TArray<TObjectPtr<UPrimitiveComponent>> OverlappedList;
+	TArray<TObjectPtr<USceneComponent>> ItemSpawnPointsList;	
 	UPROPERTY()
 	TArray<TSubclassOf<class APGMasterRoom>> RoomsList;
 
@@ -66,19 +63,12 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<APGMasterRoom> StartRoom;
-	UPROPERTY()
-	TObjectPtr<APGMasterRoom> LatestRoom;
 
 	UPROPERTY()
 	FRandomStream Seed;
-
-	FTimerHandle TimerHandler;
 
 	float GenerationStartTime;
 	float MaxGenerateTime;
 	int32 SeedValue = -1;
 	int32 RoomAmount;
-	int32 DoorAmount;
-	int32 LockedDoorAmount;
-	int32 ItemAmount;
 };

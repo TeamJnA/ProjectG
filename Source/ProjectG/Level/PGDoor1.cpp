@@ -47,14 +47,12 @@ APGDoor1::APGDoor1()
 	InteractAbility = UGA_Interact_Door::StaticClass();
 }
 
-void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool _bIsLocked)
+void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool InbIsLocked)
 {
 	APGDoor1* NewDoor = World->SpawnActor<APGDoor1>(StaticClass(), Transform, SpawnParams);
 	if (NewDoor)
 	{
-		NewDoor->bIsLocked = _bIsLocked;
-		//NewDoor->OnRep_LockState();
-		//UE_LOG(LogTemp, Warning, TEXT("SERVER SPAWNED DOOR: Name=%s, Location=%s, NetGUID=%s"), *NewDoor->GetFName().ToString(), *NewDoor->GetActorLocation().ToString(), *NewDoor->GetActorGuid().ToString());
+		NewDoor->bIsLocked = InbIsLocked;
 	}
 }
 
@@ -68,23 +66,11 @@ void APGDoor1::ToggleDoor()
 	SetDoorState(!bIsOpen);
 }
 
-void APGDoor1::SetDoorState(bool _bIsOpen)
+void APGDoor1::SetDoorState(bool InbIsOpen)
 {
-	if (HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("APGDoor1::SetDoorState - Server changing state for %s to %s. (Current: %s)"),
-			*GetName(), _bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
+	bIsOpen = InbIsOpen;
 
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("APGDoor1::SetDoorState - Client attempting to change state for %s (SHOULD NOT HAPPEN)."), *GetName());
-
-	}
-
-	bIsOpen = _bIsOpen;
-
-	FRotator NewRot = _bIsOpen ? FRotator(0.0f, 180.0f, 0.0f) : FRotator(0.0f, 90.0f, 0.0f);
+	FRotator NewRot = InbIsOpen ? FRotator(0.0f, 180.0f, 0.0f) : FRotator(0.0f, 90.0f, 0.0f);
 	Mesh0->SetRelativeRotation(NewRot);
 }
 
@@ -95,22 +81,41 @@ void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(APGDoor1, bIsLocked);
 }
 
+/*
+*
+*/
 void APGDoor1::HighlightOn() const
 {
 	Mesh0->SetRenderCustomDepth(true);
 }
 
+/*
+* 
+*/
 void APGDoor1::HighlightOff() const
 {
 	Mesh0->SetRenderCustomDepth(false);
 }
 
+/*
+* 일반 Door의 InteractionInfo 반환
+* HoldInput
+* 잠김 -> 1초 홀드
+* 잠김 x -> 0.3초 홀드
+*/
 FInteractionInfo APGDoor1::GetInteractionInfo() const
 {
 	const float Duration = bIsLocked ? 1.0f : 0.3f;
 	return FInteractionInfo(EInteractionType::Hold, Duration);
 }
 
+/*
+* 잠긴 문인 경우
+*	상호작용 시도 플레이어가 Key를 들고 있으면 상호작용 가능
+*	상호작용 시도 플레이어가 Key를 들고 있지 않으면 상호작용 불가능, 실패 메시지 return
+* 잠기지 않은 문인 경우
+*	상호작용 가능
+*/
 bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
 {
 	if (bIsLocked)

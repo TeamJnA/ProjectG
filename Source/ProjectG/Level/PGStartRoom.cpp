@@ -12,7 +12,7 @@ APGStartRoom::APGStartRoom()
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_MansionMainRoom.LI_MansionMainRoom_C'"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
-	ExitDir0->SetupAttachment(ExitsFolder);
+	ExitDir0->SetupAttachment(ExitPointsFolder);
 	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
 	ExitDir0->SetRelativeLocation(FVector(945.35f, -1209.3f, 414.0f));
 	ExitDir0->SetRelativeRotation(FRotator(0.0f, 270.0f, 0.0f));
@@ -20,14 +20,14 @@ APGStartRoom::APGStartRoom()
 	ExitDir0->bHiddenInGame = true;
 
 	ExitDir1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection1"));
-	ExitDir1->SetupAttachment(ExitsFolder);
+	ExitDir1->SetupAttachment(ExitPointsFolder);
 	ExitDir1->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
 	ExitDir1->SetRelativeLocation(FVector(1874.4f, 319.8f, 414.0f));
 	ExitDir1->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir1->bHiddenInGame = true;
 
 	ExitDir2 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection2"));
-	ExitDir2->SetupAttachment(ExitsFolder);
+	ExitDir2->SetupAttachment(ExitPointsFolder);
 	ExitDir2->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
 	ExitDir2->SetRelativeLocation(FVector(1535.3f, 1218.7f, 4.0f));
 	ExitDir2->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
@@ -35,7 +35,7 @@ APGStartRoom::APGStartRoom()
 	ExitDir2->bHiddenInGame = true;
 
 	ExitDir3 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection3"));
-	ExitDir3->SetupAttachment(ExitsFolder);
+	ExitDir3->SetupAttachment(ExitPointsFolder);
 	ExitDir3->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
 	ExitDir3->SetRelativeLocation(FVector(335.3f, 1218.7f, 4.0f));
 	ExitDir3->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));

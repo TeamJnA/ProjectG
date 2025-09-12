@@ -20,7 +20,7 @@ public:
 	// Sets default values for this actor's properties
 	APGItemActor();
 
-	void InitWithData(UPGItemData* InData);
+	void InitWithData(UPGItemData* InItemData);
 
 	//IInteractableActorInterface~
 	//Return Interact Ability of actor.

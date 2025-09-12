@@ -50,24 +50,43 @@ TSubclassOf<UGameplayAbility> APGExitDoor::GetAbilityToInteract() const
 	return InteractAbility;
 }
 
+/*
+* 
+*/
 void APGExitDoor::HighlightOn() const
 {
 	Mesh0->SetRenderCustomDepth(true);
 	Mesh1->SetRenderCustomDepth(true);
 }
 
+/*
+* 
+*/
 void APGExitDoor::HighlightOff() const
 {
 	Mesh0->SetRenderCustomDepth(false);
 	Mesh1->SetRenderCustomDepth(false);
 }
 
+/*
+* Exit Door의 InteractionInfo 반환
+* Hold Input
+* 잠김 -> 3초 홀드
+* 잠김 x -> 1초 홀드
+*/
 FInteractionInfo APGExitDoor::GetInteractionInfo() const
 {
-	const float Duration = IsLocked() ? 3.0f : 1.0f;
+	const float Duration = (LockStack > 0) ? 3.0f : 1.0f;
 	return FInteractionInfo(EInteractionType::Hold, Duration);
 }
 
+/*
+* 잠김
+*	상호작용 시도 플레이어가 ExitKey를 들고 있으면 상호작용 가능
+*	상호작용 시도 플레이어가 ExitKey를 들고 있지	않으면 상호작용 불가능, 실패 메시지 return
+* 잠김 x
+*	상호작용 가능
+*/
 bool APGExitDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
 {	
 	// if exit door is locked

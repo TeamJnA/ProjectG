@@ -19,6 +19,9 @@ APGHUD::APGHUD()
 {
 }
 
+/*
+* 인게임 HUD 구성
+*/
 void APGHUD::Init()
 {
 	AttributeWidget = CreateWidget<UPGAttributesWidget>(GetOwningPlayerController(), AttributeWidgetClass);
@@ -29,7 +32,6 @@ void APGHUD::Init()
 	if (InventoryWidget)
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: InventoryWidget created successfully."));
-		// InventoryWidget->BindMessageEntry();
 		InventoryWidget->AddToViewport();
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: InventoryWidget added to viewport."));
 	}
@@ -42,7 +44,6 @@ void APGHUD::Init()
 	if (MessageManagerWidget)
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: MessageManagerWidget created successfully."));
-		// MessageManagerWidget->BindMessageEntry();
 		MessageManagerWidget->AddToViewport();
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: MessageManagerWidget added to viewport."));
 	}
@@ -57,12 +58,16 @@ void APGHUD::Init()
 	InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(GetOwningPlayerController(), InteractionProgressWidgetClass);
 }
 
+/*
+* MainMenuWidget 생성
+*/
 void APGHUD::InitMainMenuWidget()
 {
 	if (!MainMenuWidgetClass || (MainMenuWidget && MainMenuWidget->IsInViewport()))
 	{
 		return;
 	}
+
 	APlayerController* PC = GetOwningPlayerController();
 	if (!PC)
 	{
@@ -74,19 +79,22 @@ void APGHUD::InitMainMenuWidget()
 	{
 		MainMenuWidget->AddToViewport();
 
-		FInputModeGameAndUI InputMode;
-		InputMode.SetWidgetToFocus(MainMenuWidget->TakeWidget());
+		FInputModeUIOnly InputMode;
 		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = true;
 	}
 }
 
+/*
+* LobbyWidget 생성
+*/
 void APGHUD::InitLobbyWidget()
 {
 	if (!LobbyWidgetClass || (LobbyWidget && LobbyWidget->IsInViewport()))
 	{
 		return;
 	}
+
 	APlayerController* PC = GetOwningPlayerController();
 	if (!PC)
 	{
@@ -111,12 +119,16 @@ void APGHUD::InitLobbyWidget()
 	}
 }
 
+/*
+* ScoreBoardWidget 생성
+*/
 void APGHUD::InitScoreBoardWidget()
 {
 	if (!ScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (ScoreBoardWidget && ScoreBoardWidget->IsInViewport()))
 	{
 		return;
 	}
+
 	APlayerController* PC = GetOwningPlayerController();
 	if (!PC)
 	{
@@ -129,17 +141,14 @@ void APGHUD::InitScoreBoardWidget()
 	ScoreBoardWidget = CreateWidget<UPGScoreBoardWidget>(PC, ScoreBoardWidgetClass);
 	if (ScoreBoardWidget)
 	{
-		UE_LOG(LogTemp, Log, TEXT("APGHUD::InitScoreBoardWidget: ScoreBoardWidget created successfully."));
 		ScoreBoardWidget->AddToViewport();
 		ScoreBoardWidget->BindPlayerEntry(PC);
-		UE_LOG(LogTemp, Log, TEXT("APGHUD::InitScoreBoardWidget: ScoreBoardWidget added to viewport."));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("APGHUD::InitScoreBoardWidget: Failed to create ScoreBoardWidget! Check ScoreBoardWidgetClass in HUD Blueprint."));
 	}
 }
 
+/*
+* FinalScoreBoardWidget 생성
+*/
 void APGHUD::InitFinalScoreBoardWidget()
 {
 	if (!FinalScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()))
@@ -191,6 +200,9 @@ void APGHUD::InitPauseMenuWidget()
 	}
 }
 
+/*
+* 홀딩 진행률 디스플레이 위젯 업데이트
+*/
 void APGHUD::UpdateInteractionProgress(float Progress)
 {
 	if (!InteractionProgressWidget)
@@ -216,6 +228,9 @@ void APGHUD::UpdateInteractionProgress(float Progress)
 	}
 }
 
+/*
+* 실패 메시지 디스플레이
+*/
 void APGHUD::DisplayInteractionFailedMessage(const FText& Message, float Duration)
 {
 	if (MessageManagerWidget)

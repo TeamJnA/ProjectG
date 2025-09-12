@@ -26,6 +26,18 @@ APGLobbyPlayerController::APGLobbyPlayerController()
 
 }
 
+/*
+* LobbyLevel 진입 시 로컬 플레이어의 상태 게임의 상태에 따라 분기
+* 1. 로컬 플레이어가 호스트인 경우
+*	 세션을 생성하며 GameInstance의 bIsHost변수를 true로 설정 -> bIsHost = true 인 경우는 세션을 생성한 상태
+*    bIsHost는 세션을 종료할 때까지 유지되어 호스트는 항상 LobbyLevel에서 Lobby 환경 구축
+* 2. 로컬 플레이어가 호스트가 아니고 현재 게임 상태가 EGameState::MainMenu인 경우
+*	 세션이 없는 상태
+*	 MainMenu 환경 구축
+* 3. 로컬 플레이어가 호스트가 아니고 현재 게임 상태가 EGameState::Lobby인 경우
+*	 세션에 참가한 클라이언트인 상태
+*    Lobby 환경 구축
+*/
 void APGLobbyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -35,29 +47,30 @@ void APGLobbyPlayerController::BeginPlay()
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("LobbyPC::BeginPlay: %s"), *GetNameSafe(this));
-
-	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 	{
-		Subsystem->AddMappingContext(DefaultMappingContext, 1);
+		InputSubsystem->AddMappingContext(DefaultMappingContext, 1);
 	}
 
-	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
-	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	const UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
+	const APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
 	if (!GI || !GS)
 	{
 		UE_LOG(LogTemp, Error, TEXT("LobbyPC::BeginPlay: GI or GS not valid"));
 		return;
 	}
 
+	// GameInstance .h
+	// bool IsHost() const { return bIsHost; }
 	if (GI->IsHost())
 	{
 		Server_SpawnAndPossessPlayer();
 		SetupLobbyUI();
-		GS->SetCurrentGameState(EGameState::Lobby);
 	}
 	else
 	{
+		// GameState .h
+		// EGameState GetCurrentGameState() const { return CurrentGameState; }		
 		switch (GS->GetCurrentGameState())
 		{
 		case EGameState::MainMenu:
@@ -88,8 +101,8 @@ void APGLobbyPlayerController::SetupInputComponent()
 }
 
 /*
-* on server
-* spawn lobby character and possess it to requested PC
+* Lobby 플레이어 캐릭터 생성 및 요청한 컨트롤러에 Poseess
+* GameMode에 요청하기 위해 ServerRPC 사용
 */
 void APGLobbyPlayerController::Server_SpawnAndPossessPlayer_Implementation()
 {
@@ -106,13 +119,13 @@ void APGLobbyPlayerController::Client_ForceReturnToLobby_Implementation()
 
 	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
-		GI->LeaveSessionAndReturnToLobby();
+		GI->LeaveSessionAndReturnToMainMenu();
 	}
 }
 
 /*
-* On each client
-* setup own lobby ui
+* Lobby 위젯 생성
+* HUD에 위젯 생성 요청
 */
 void APGLobbyPlayerController::SetupLobbyUI()
 {
@@ -127,6 +140,10 @@ void APGLobbyPlayerController::SetupLobbyUI()
 	}
 }
 
+/*
+* MainMenu 위젯 생성
+* HUD에 위젯 생성 요청
+*/
 void APGLobbyPlayerController::SetupMainMenuUI()
 {
 	if (!IsLocalController())
@@ -141,28 +158,24 @@ void APGLobbyPlayerController::SetupMainMenuUI()
 
 }
 
+/*
+* MainMenu 배경 디스플레이
+* 레벨에 배치해둔 카메라 시야 사용
+*/
 void APGLobbyPlayerController::SetupMainMenuView()
 {
 	if (LobbyCameraClass)
 	{
-		TArray<AActor*> FoundActors;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), LobbyCameraClass, FoundActors);
-
-		ACameraActor* TargetCamera = nullptr;
-		if (FoundActors.Num() > 0)
-		{
-			TargetCamera = Cast<ACameraActor>(FoundActors[0]);
-			UE_LOG(LogTemp, Warning, TEXT("LobbyPC::BeginPlay: %s ACameraActor %s found"), *GetName(), *TargetCamera->GetName());
-		}
-
-		if (TargetCamera)
+		if (ACameraActor* TargetCamera = Cast<ACameraActor>(UGameplayStatics::GetActorOfClass(GetWorld(), LobbyCameraClass)))
 		{
 			SetViewTarget(TargetCamera);
-			UE_LOG(LogTemp, Warning, TEXT("LobbyPC::BeginPlay: %s set view target %s"), *GetName(), *TargetCamera->GetName());
 		}
 	}
 }
 
+/*
+* 
+*/
 void APGLobbyPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 {
 	if (!IsLocalController())

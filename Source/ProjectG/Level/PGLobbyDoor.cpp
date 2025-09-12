@@ -41,18 +41,28 @@ TSubclassOf<UGameplayAbility> APGLobbyDoor::GetAbilityToInteract() const
 	return InteractAbility;
 }
 
+/*
+* 
+*/
 void APGLobbyDoor::HighlightOn() const
 {
 	Mesh0->SetRenderCustomDepth(true);
 	Mesh1->SetRenderCustomDepth(true);
 }
 
+/*
+* 
+*/
 void APGLobbyDoor::HighlightOff() const
 {
 	Mesh0->SetRenderCustomDepth(false);
 	Mesh1->SetRenderCustomDepth(false);
 }
 
+/*
+* Lobby Door의 InteractionInfo 반환
+* 항상 3초 Hold Input
+*/
 FInteractionInfo APGLobbyDoor::GetInteractionInfo() const
 {
 	return FInteractionInfo(EInteractionType::Hold, 3.0f);
