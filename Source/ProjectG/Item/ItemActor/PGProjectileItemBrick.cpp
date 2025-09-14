@@ -9,9 +9,8 @@
 #include "Interface/SoundManagerInterface.h"
 #include "Sound/PGSoundManager.h"
 #include "GameFramework/GameModeBase.h"
-
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/ProjectileMovementComponent.h"
+#include "PGLogChannels.h"
 
 
 APGProjectileItemBrick::APGProjectileItemBrick()
@@ -19,7 +18,6 @@ APGProjectileItemBrick::APGProjectileItemBrick()
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 	CollisionComponent->SetupAttachment(RootComponent);
 
-	//ItemData
 	static ConstructorHelpers::FObjectFinder<UPGItemData> ItemDataRef(TEXT("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick"));
 	if (ItemDataRef.Object)
 	{
@@ -40,18 +38,15 @@ APGProjectileItemBrick::APGProjectileItemBrick()
 	bAlreadyHit = false;
 }
 
-void APGProjectileItemBrick::ThrowInDirection(const FVector& ShootDirection)
-{
-	StaticMesh->SetPhysicsLinearVelocity(ShootDirection * InitialSpeed);
-}
-
 void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	bAlreadyHit = true;
 
-	// This process executed once per actor.
+	// Brick hits once per actor.
 	if (HitActors.Contains(OtherActor))
+	{
 		return;
+	}
 	HitActors.Add(OtherActor);
 
 	// Play sound at hit location.
@@ -61,7 +56,7 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 	}
 
 	// Check if the impact normal's Z component indicates a floor (upward-facing surface).
-	// If true, disable physics and set the object as an item.
+	// If true, disable physics and set the object as an item to pick and re-use.
 	ECollisionChannel ObjectType = OtherComponent->GetCollisionObjectType();
 	
 	if ((ObjectType == ECC_WorldDynamic || ObjectType == ECC_WorldStatic) && Hit.ImpactNormal.Z > 0.6)
@@ -71,19 +66,24 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 		CollisionComponent->SetCollisionProfileName(TEXT("Item"));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Brick hit with actor %s"), *OtherActor->GetName());
+	UE_LOG(LogItem, Log, TEXT("Brick hit with actor %s"), *OtherActor->GetName());
 }
 
 void APGProjectileItemBrick::PlaySound_Implementation(const FVector& HitLocation)
 {
 	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
 	{
-		APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager();
-		if (SoundManager)
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
 		{
-			UE_LOG(LogTemp, Log, TEXT("Call Soundmanager in Brick"));
-
-			SoundManager->PlaySoundWithNoise(ItemHitSound, HitLocation, false);
+			if (bAlreadyHit)
+			{
+				// TODO :: Apply ItemHitSound ITEM_Brick -> ITEM_Brick_Hit
+				SoundManager->PlaySoundWithNoise(ItemHitSound, HitLocation, false);
+			}
+			else
+			{
+				SoundManager->PlaySoundWithNoise(ItemHitSound, HitLocation, false);
+			}
 		}
 	}
 }

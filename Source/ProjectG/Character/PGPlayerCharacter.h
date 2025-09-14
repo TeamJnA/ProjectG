@@ -7,7 +7,6 @@
 
 #include "GameplayTagContainer.h"
 #include "Type/CharacterTypes.h"
-
 #include "Interface/AttackableTarget.h"
 
 #include "PGPlayerCharacter.generated.h"
@@ -117,9 +116,6 @@ protected:
 	void ChangingItemSlot(const FInputActionValue& Value, int32 NumofSlot);
 
 protected:
-
-	virtual void NotifyControllerChanged() override;
-
 	// Controller가 OnPossess할 때, Pawn의 PawnClientRestart를 호출하고 거기서 SetupPlayerInputComponent 호출
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -180,7 +176,7 @@ public:
 
 	FORCEINLINE FGameplayTagContainer GetInteractTag() const { return InteractTag; }
 
-	void ActivateAbilityByTag(FGameplayTagContainer Tag);
+	void ActivateAbilityByTag(const FGameplayTagContainer Tag);
 
 private:
 	void InitAbilitySystemComponent();

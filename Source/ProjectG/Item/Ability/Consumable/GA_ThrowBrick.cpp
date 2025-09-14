@@ -5,6 +5,7 @@
 #include "GA_ThrowBrick.h"
 #include "Item/ItemActor/PGProjectileItemBrick.h"
 #include "Character/PGPlayerCharacter.h"
+#include "PGLogChannels.h"
 
 
 UGA_ThrowBrick::UGA_ThrowBrick()
@@ -14,20 +15,16 @@ UGA_ThrowBrick::UGA_ThrowBrick()
    {
        ProjectileItem = ProjectileItemRef.Class;
    }
-   else
-   {
-       UE_LOG(LogAbility, Warning, TEXT("Cannot found ProjectileItemRef in %s"), *GetName());
-   }
 }
 
 void UGA_ThrowBrick::SpawnProjectileActor()
 {
-	UE_LOG(LogAbility, Log, TEXT("SpawnActor in %s"), *GetName());
     if (!ProjectileItem)
     {
         UE_LOG(LogAbility, Warning, TEXT("Cannot found spawn item in %s"), *GetName());
         return;
     }
+    UE_LOG(LogAbility, Log, TEXT("SpawnActor in %s"), *GetName());
     
     AActor* AvatarActor = GetAvatarActorFromActorInfo();
     APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(AvatarActor);
@@ -42,20 +39,22 @@ void UGA_ThrowBrick::SpawnProjectileActor()
 
     PGPC->GetActorEyesViewPoint(ThrowStartLocation, ThrowStartRotation);
     
-    // Check if the character is moving forward; if true, spawn the object slightly farther ahead.
+    // Check if the character is moving forward; 
+    // If true, spawn the object slightly farther ahead.
     float ForwardMovementAmount = FVector::DotProduct(PGPC->GetVelocity().GetSafeNormal(), PGPC->GetActorForwardVector());
     if (ForwardMovementAmount < 0)
+    {
         ForwardMovementAmount = 0;
+    }
 
-    FVector ForwardSpawnOffset = PGPC->GetActorForwardVector() * (40 + ForwardMovementAmount * 20);
+    const FVector ForwardSpawnOffset = PGPC->GetActorForwardVector() * (40 + ForwardMovementAmount * 20);
 
-    ThrowStartLocation = ThrowStartLocation + (PGPC->GetActorRightVector() * 25) + ForwardSpawnOffset;
+    ThrowStartLocation += ForwardSpawnOffset + (PGPC->GetActorRightVector() * 25);
     ThrowStartRotation.Pitch += 10.0f;
 
     UWorld* World = GetWorld();
     if (World)
     {
-        
         FActorSpawnParameters SpawnParams;
         SpawnParams.Owner = GetOwningActorFromActorInfo();
         SpawnParams.Instigator = Cast<APawn>(GetAvatarActorFromActorInfo());
@@ -68,21 +67,6 @@ void UGA_ThrowBrick::SpawnProjectileActor()
         if (Projectile)
         {
             Projectile->ThrowInDirection(ThrowStartRotation.Vector());
-
-            /*
-            // Delay the throw to ensure the mesh's physics initialized.
-            // ThrowInDirection(SetPhysicsLinearVelocity) could be ignored if the physics system isn't ready yet.
-            FTimerHandle TimerHandle;
-            World->GetTimerManager().SetTimer(TimerHandle, [Projectile, ThrowStartRotation]()
-                {
-                    if (Projectile && Projectile->IsValidLowLevel())
-                    {
-                        Projectile->ThrowInDirection(ThrowStartRotation.Vector());
-                    }
-
-                }, 0.01f, false);
-             */
         }
     }
-
 }

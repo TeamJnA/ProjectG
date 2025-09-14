@@ -17,7 +17,6 @@ class PROJECTG_API APGSoundManager : public AActor
 public:	
 	APGSoundManager();
 
-public:	
 	// Play sound for a only client who called this function. 
 	void 	PlaySoundForSelf(const FName& SoundName);
 
@@ -25,7 +24,7 @@ public:
 	UFUNCTION(Server, Reliable)
 	void PlaySoundForAllPlayers(const FName& SoundName, const FVector& SoundLocation);
 
-	//  Play sound for all players and make noise. All players and enemy AI can hear sound.
+	// Play sound for all players and make noise. All players and enemy AI can hear sound.
 	UFUNCTION(Server, Reliable)
 	void 	PlaySoundWithNoise(const FName& SoundName, const FVector& SoundLocation, const bool bIntensedSound = false);
 
