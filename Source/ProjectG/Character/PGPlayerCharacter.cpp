@@ -4,10 +4,9 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerController.h"
 
-// #include "Game/PGGameInstance.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
-//Essential Character Components
+// Essential Character Components
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -17,12 +16,12 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 
-//Gameplay Ability System Components
+// Gameplay Ability System Components
 #include "AbilitySystem/PGAbilitySystemComponent.h"
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Player/PGPlayerState.h"
 
-//UI and Components
+// UI and Components
 #include "Component/PGInventoryComponent.h"
 #include "Component/PGSoundManagerComponent.h"
 #include "UI/PGHUD.h"
@@ -31,7 +30,7 @@
 #include "UI/PGScoreBoardWidget.h"
 #include "Components/SpotLightComponent.h"
 
-//Interface
+// Interface
 #include "Interface/InteractableActorInterface.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -92,16 +91,12 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeadlightLight->SetVisibility(false);
 	HeadlightLight->SetIsReplicated(true);
 
-	// Create InventoryComponent and Set changing Itemslot Input Action
-
 	// Create Components
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
 
 	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
 
 	// Set hand actions anim montages
-	// EHandActionMontageType
-	// 0 : Pick		1 : Change
 	HandActionMontageType = EHandActionMontageType::Pick;;
 
 	// 0 : Pick Anim Montage
@@ -121,23 +116,6 @@ APGPlayerCharacter::APGPlayerCharacter()
 	if (DropMontageRef.Object) {
 		HandActionAnimMontages.Add(DropMontageRef.Object);
 	}
-}
-
-void APGPlayerCharacter::NotifyControllerChanged()
-{
-	Super::NotifyControllerChanged();
-
-	// Add Input Mapping Context
-	// [NEW] Do this on controller
-	/*
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
-	*/
 }
 
 void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -231,50 +209,29 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 	{
 		return;
 	}
-	
-	// 서버에서의 작업이 끝나고 client 작업 호출해야 겠다.
 
-	//					서버 클라
-	// 
-	// 입력 차단           O
-	// 어빌 제거  O
-	// 이동 차단  O
-	// 애님 중지           O
-	// 캐릭 이동           O
-	// 잡히는 모션               ???
-	// 근데 애니메이션 중지 이후에 어차피 잡히는 애니메이션 연출할거라 이건 좀 고민해야겠네.
-	// Client의 사망 관련 처리는 OnRep을 이용해서 처리하는 것이 좋다.
-	// 나 같은 경우는 Player.State.Dead의 추가를 기다리는 것이 어떨까.
-	// 이후 처리 과정
-	// 태그 추가  O      O
-	// 아이템 드랍, 레그돌 [서버] / 카메라 멀어지기 후 관전 [클라] << Player Death 함수 ?
-
-	// Set player dead and rotate camera to the enemy's head
-	// And camera move away slowly, activate spectating mode
 	UE_LOG(LogTemp, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
 
-	// 1. Remove all abilities [ Server ]
+	// Remove all abilities.
 	AbilitySystemComponent->ClearAllAbilities();
 	
-	// 2. 캐릭터 이동 차단
+	// Stop character movement.
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
 		Movement->StopMovementImmediately();
 		Movement->DisableMovement();
 	}
 
-	// 3 - 1. 캐릭터 회전 [ Server, Client ]
+	// Set character Rotation.
 	const FRotator CurrentRotation = GetActorRotation();
-	FRotator TargetRotation = (InstigatorHeadLocation - GetActorLocation()).Rotation();
-	TargetRotation.Pitch = 0.0f;
-	TargetRotation.Roll = 0.0f;
+	FRotator NewCharacterRotation = (InstigatorHeadLocation - GetActorLocation()).Rotation();
+	NewCharacterRotation.Pitch = 0.0f;
+	NewCharacterRotation.Roll = 0.0f;
 
-	SetActorRotation(TargetRotation);
+	SetActorRotation(NewCharacterRotation);
 
-	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetActorRotation OnServer"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
-
-	// 3 - 2. 캐릭터를 몹 앞으로 이동. [ Server, Client ]
-	float EnemyCharacterDistance = 180.0f;
+	// Set character Location. 
+	const float EnemyCharacterDistance = 180.0f;
 
 	FVector NewCharacterLocation = GetActorLocation();
 	NewCharacterLocation.Z = InstigatorHeadLocation.Z - 50;
@@ -285,48 +242,39 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 
 	SetActorLocation(NewCharacterLocation);
 
-	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetActorLocation OnServer"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
-
 	// Notify client to replicate server-side attack handling
 	Client_OnAttacked(GetActorLocation(), GetActorRotation());
 }
 
 void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, FRotator NewRotation)
 {
-	// 1. 플레이어 입력 차단 [ Client ]
+	// Stop player input.
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		UE_LOG(LogTemp, Log, TEXT("PlayerController Test"));
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			// Subsystem->RemoveMappingContext(DefaultMappingContext);
-		}
 		DisableInput(PlayerController);
 	}
 
-	// 2.  애니메이션 중단
+	// Stop anim.
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
 		AnimInstance->StopAllMontages(0.1f);
 	}
 
-	// 카메라 회전
+	// Set character location and rotation.
 	SetActorLocation(NewLocation);
 	SetActorRotation(NewRotation);
 	Controller->SetControlRotation(NewRotation);
 
-	UE_LOG(LogTemp, Log, TEXT("Location : [%s] Rotation : [%s] After SetControlRotation OnClient"), *GetActorRotation().ToString(), *GetActorLocation().ToString());
-
-	// 3. 본인이 안보이도록
+	// Make the character hidden to itself when attacked
 	GetMesh()->SetOwnerNoSee(true);
 
-	// 4. 잡히는 모션 진행 [ 이건 서버냐 클라냐 그것이 문제로다... ]
+	// TODO : Play attacked anim
 
 }
 
+// Called on the server when the enemy's attack has ended.
 void APGPlayerCharacter::OnAttackFinished()
 {
-	// 적의 공격이 끝났을 때, 서버에서 처리되는 함수.
 	if (!HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("OnAttackFinished function is must be called on server."));
@@ -338,7 +286,7 @@ void APGPlayerCharacter::OnAttackFinished()
 		return;
 	}
 
-	// 1. Add Player.State.Dead Tag to Server and Client. It makes player state dead.
+	// Add Player.State.Dead Tag to Server and Client. It makes player state dead.
 	AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
 	AbilitySystemComponent->AddReplicatedLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
 
@@ -386,7 +334,7 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 		}
 	}
 
-	// 1. Stop character movement and animation
+	// Stop character movement and animation
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
 		Movement->StopMovementImmediately();
@@ -398,9 +346,9 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 		AnimInstance->StopAllMontages(0.1f);
 	}
 
-	// 2. 플레이어 아이템들 드랍 [ Server ]
+	// TODO : 플레이어 아이템들 드랍 [ Server ]
 
-	// 3. Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
+	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
 	bIsRagdoll = true;
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -421,7 +369,7 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 	// 본인이 보이도록 
 	GetMesh()->SetOwnerNoSee(false);
 
-	// 1. 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
+	// TODO : 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
 
 	FirstPersonCamera->Deactivate();
 
@@ -673,7 +621,7 @@ void APGPlayerCharacter::RemoveTagFromCharacter_Implementation(const FInputActio
 	}
 }
 
-void APGPlayerCharacter::ActivateAbilityByTag(FGameplayTagContainer Tag)
+void APGPlayerCharacter::ActivateAbilityByTag(const FGameplayTagContainer Tag)
 {
 	if (AbilitySystemComponent)
 	{
@@ -688,7 +636,7 @@ void APGPlayerCharacter::CacheInteractionTarget(AActor* CacheInteractTarget)
 
 TObjectPtr<UAnimMontage> APGPlayerCharacter::GetHandActionAnimMontages()
 {
-	int32 Index = static_cast<int32>(HandActionMontageType);
+	const int32 Index = static_cast<int32>(HandActionMontageType);
 
 	if (HandActionAnimMontages.IsValidIndex(Index))
 	{
@@ -766,11 +714,11 @@ void APGPlayerCharacter::RemoveItemFromInventory()
 void APGPlayerCharacter::DropItem_Implementation()
 {
 	//Cannot drop item during a HandAction.
-	FGameplayTag HandActionActivateTag = FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked"));
+	const FGameplayTag HandActionActivateTag = FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked"));
 
 	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionActivateTag))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot drop item during a HandAction."));
+		UE_LOG(LogTemp, Log, TEXT("Cannot drop item during a HandAction."));
 		return;
 	}
 

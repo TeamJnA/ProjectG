@@ -24,27 +24,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collision")
 	TObjectPtr<UShapeComponent> CollisionComponent;
 
-	/*
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent;
-	*/
-
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
-	FName ItemHitSound;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
-	FName ItemThrowSound;
+	/// Launches the projectile by setting its velocity in the given direction.
+	/// Called externally after this actor is spawned.
+	void ThrowInDirection(const FVector& ShootDirection);
 
 protected:
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = "Movement", meta = (AllowPrivateAccess = "true"))
-	float InitialSpeed;
-
 	UFUNCTION(Server, Reliable)
 	virtual void PlaySound(const FVector& HitLocation);
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USoundBase> HitSound;
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+	float InitialSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName ItemHitSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName ItemThrowSound;
 };

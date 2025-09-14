@@ -2,17 +2,14 @@
 
 
 #include "Item/Ability/GA_Item_Throw.h"
-#include "AbilitySystemComponent.h"
 
+#include "AbilitySystemComponent.h"
 #include "Character/Ability/Task/AT_PGWaitGameplayTagReAdded.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
-
 #include "Item/Ability/Consumable/GA_ThrowAction.h"
-
 #include "Character/PGPlayerCharacter.h"
-
-DEFINE_LOG_CATEGORY(LogAbility);
+#include "PGLogChannels.h"
 
 UGA_Item_Throw::UGA_Item_Throw()
 {
@@ -22,10 +19,6 @@ UGA_Item_Throw::UGA_Item_Throw()
 	HandActionTag = FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked"));
 
 	bThrowReady = false;
-
-	// This ability is activated in server.
-	// If activated with local predict, there is an issue with spawn projectile item.
-	// NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> ThrowAnimMontageRef(TEXT("/Game/ProjectG/Character/Animation/Throw/AM_Throw.AM_Throw"));
 	if (ThrowAnimMontageRef.Object){
@@ -60,8 +53,6 @@ void UGA_Item_Throw::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 
 void UGA_Item_Throw::MouseLeft()
 {
-	UE_LOG(LogAbility, Log, TEXT("MouseLeft Input. Start to throw item! %s | %s"), *GetClass()->GetName(), *GetName());
-
 	// Throwing Start. Check HandAction.Lock tag.
 	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
 	if (!AbilitySystemComponent)
@@ -69,16 +60,15 @@ void UGA_Item_Throw::MouseLeft()
 		UE_LOG(LogAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s"), *GetName());
 		return;
 	}
-
 	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionTag))
 	{
 		UE_LOG(LogAbility, Log, TEXT("Cannot do %s during hand action."), *GetName());
 		return;
 	}
+
+	UE_LOG(LogAbility, Log, TEXT("MouseLeft Input. Start to throw item! %s | %s"), *GetClass()->GetName(), *GetName());
 		
-	// Spawn item actor only on the server.
-	// ThrowAnimMontageAbility is local predicted. It is also run on th server. This manage hand action tag.
-	// And end this ability by remove ability's owner item from inventory.
+	// Spawn item actor on the server.
 	if (HasAuthority(&CurrentActivationInfo))
 	{
 		SpawnProjectileActor();
@@ -98,7 +88,7 @@ void UGA_Item_Throw::MouseLeft()
 
 void UGA_Item_Throw::MouseRight()
 {
-	//Cannot do ThrowReady while HandAction.
+	// Cannot do ThrowReady while HandAction.
 	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
 	if (!AbilitySystemComponent)
 	{
@@ -114,7 +104,6 @@ void UGA_Item_Throw::MouseRight()
 	UE_LOG(LogAbility, Log, TEXT("MouseRight Input. Ready to throw. %s | %s"), *GetClass()->GetName(), *GetName());
 	bThrowReady = true;
 	
-	//Wait at throw ready
 	UAbilityTask_PlayMontageAndWait* MontageTask =
 		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this,
@@ -124,16 +113,11 @@ void UGA_Item_Throw::MouseRight()
 			TEXT("Throw")
 		);
 
-	//Do not into RightInputCanceled by setting RightClickCanceled.
+	// When other anim montage cancel the FullThrowAnimMontage, set bThrowReady true to do not play RightInputCanceled anim.
 	MontageTask->OnInterrupted.AddDynamic(this, &UGA_Item_Throw::ThrowReadyCanceled);
 	MontageTask->ReadyForActivation();
 
-	///
-	/// Draw throw prediction line.
-	/// 
-	/// 
-	/// 
-	/// 
+	/// TODO : Draw throw prediction line.
 	/// 
 	/// 
 	/// 
@@ -152,8 +136,11 @@ void UGA_Item_Throw::MouseRight()
 
 void UGA_Item_Throw::RightInputCanceled()
 {
+	// RightInputCanceled already canceled by LeftClick(Throwing) or other hand actions.
 	if (bThrowReady == false)
+	{
 		return;
+	}
 	
 	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
 	if (!AbilitySystemComponent)
@@ -179,19 +166,11 @@ void UGA_Item_Throw::RightInputCanceled()
 	MontageTask->ReadyForActivation();
 }
 
-// This fuction implemented in child classes.
-// It is implemented differently depending on which actor item to spawn.
-void UGA_Item_Throw::SpawnProjectileActor()
-{
-	UE_LOG(LogAbility, Log, TEXT("SpawnProjectileActor"));
-}
-
 void UGA_Item_Throw::ThrowReadyCanceled()
 {
 	bThrowReady = false;
 }
 
-void UGA_Item_Throw::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+void UGA_Item_Throw::SpawnProjectileActor()
 {
-	Super::EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

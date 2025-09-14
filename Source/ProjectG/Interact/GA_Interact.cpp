@@ -8,14 +8,16 @@
 #include "Interact/Task/AT_WaitForHoldInput.h"
 
 #include "Character/PGPlayerCharacter.h"
-#include "Camera/CameraComponent.h"
 #include "AbilitySystemComponent.h"
+#include "Character/Component/PGInventoryComponent.h"
+#include "Camera/CameraComponent.h"
+
 #include "Interface/InteractableActorInterface.h"
 
 #include "Item/PGItemActor.h"
 #include "Level/PGDoor1.h"
 #include "Level/PGExitDoor.h"
-#include "Character/Component/PGInventoryComponent.h"
+
 
 /*
 * 라인 트레이스 태스크를 활성화하여 플레이어 캐릭터 카메라 정면 탐지
@@ -251,15 +253,13 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 
 	FGameplayAbilityActorInfo ActorInfo = *GetCurrentActorInfo();
 	const bool bSuccess = ASC->TriggerAbilityFromGameplayEvent(InteractAbilityHandle, &ActorInfo, Payload.EventTag, &Payload, *ASC);
-	// 실패시 복구
+
+	// 실패시 일회성 어빌리티 정리
 	if (!bSuccess)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GA_Interact: TriggerAbilityFromGameplayEvent failed for ability %s."), *AbilityToInteract->GetName());
 
-		// 실행에 실패한 일회성 어빌리티 정리
 		ASC->ClearAbility(InteractAbilityHandle);
-		// GA_Interact의 상태는 이미 깨끗하므로, 플레이어는 즉시 다시 상호작용을 시도 가능
-		// linetrace ability 재시작 필요 x
 	}
 }
 

@@ -17,21 +17,6 @@ class PROJECTG_API APGProjectileItemBrick : public APGProjectileItemBase
 public:
 	APGProjectileItemBrick();
 
-	//virtual void BeginPlay() override;
-
-	void ThrowInDirection(const FVector& ShootDirection);
-
-	/*
-	UFUNCTION()
-	void OnOverlapBegin(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult);
-	*/
-
 	virtual void OnHit(
 		UPrimitiveComponent* HitComponent, 
 		AActor* OtherActor,

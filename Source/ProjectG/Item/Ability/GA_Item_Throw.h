@@ -6,13 +6,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "GA_Item_Throw.generated.h"
 
-/**
- * 
- */
-DECLARE_LOG_CATEGORY_EXTERN(LogAbility, Log, All);
-
 // GA_Item_Throw is local predicted ability.
-// This ability is executed both server and client.
 UCLASS()
 class PROJECTG_API UGA_Item_Throw : public UGameplayAbility
 {
@@ -25,12 +19,6 @@ public:
 		const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		const FGameplayEventData* TriggerEventData) override;
-
-	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle,
-		const FGameplayAbilityActorInfo* ActorInfo,
-		const FGameplayAbilityActivationInfo ActivationInfo,
-		bool bReplicateEndAbility,
-		bool bWasCancelled) override;
 
 protected:
 	UFUNCTION()
@@ -51,15 +39,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	TSubclassOf<class APGProjectileItemBase> ProjectileItem;
 
-	// It is possible to do hand action while right-clicking.
-	// In this case, we need a boolean variable to prevent behavior 
-	// when releasing right-click after performing a different action during the right-click.
+	/// It is possible to do hand action while right-clicking.
+	/// In this case, we need a boolean variable to prevent behavior 
+	/// when releasing right-click after performing a different action during the right-click.
 	bool bThrowReady;
 
 	UFUNCTION()
 	void RightInputCanceled();
 
-	//This function will be implement in child class.
+	/// This fuction implemented in child classes.
+	/// It is implemented differently depending on which actor item to spawn.
 	UFUNCTION()
 	virtual void SpawnProjectileActor();
 
