@@ -59,7 +59,7 @@ void UPGInventoryComponent::BeginPlay()
 
 void UPGInventoryComponent::ChangeCurrentInventoryIndex(const int32 NewInventoryIndex)
 {
-	check(NewInventoryIndex >= MaxInventorySize);
+	check(NewInventoryIndex < MaxInventorySize);
 
 	if (NewInventoryIndex == CurrentInventoryIndex)
 	{

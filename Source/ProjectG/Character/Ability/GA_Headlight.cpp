@@ -8,7 +8,7 @@
 
 UGA_Headlight::UGA_Headlight()
 {
-	MouseLeftTag = FGameplayTag::RequestGameplayTag(FName("Input.MouseLeft"));
+	MouseLeftTag = FGameplayTag::RequestGameplayTag(FName("Input.MouseRight"));
 }
 
 void UGA_Headlight::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
