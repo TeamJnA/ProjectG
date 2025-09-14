@@ -190,7 +190,7 @@ void APGLevelGenerator::SpawnNextRoom()
 	}
 	else
 	{
-		const TSubclassOf<APGMasterRoom> NewRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
+		const TSubclassOf<APGMasterRoom>& NewRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
 		NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, spawnParams);
 	}
 
