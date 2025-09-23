@@ -216,7 +216,7 @@ void APGLevelGenerator::SpawnNextRoom()
 * RoomAmount가 남은 경우 다음 Room 생성
 * RoomAmount를 모두 소모한 경우 Room 생성 종료, 구조물 생성
 */
-void APGLevelGenerator::CheckOverlap(const TObjectPtr<USceneComponent>& InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck)
+void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck)
 {	
 	if (IsLatestRoomOverlapping(RoomToCheck))
 	{

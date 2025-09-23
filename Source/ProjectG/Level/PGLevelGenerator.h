@@ -24,7 +24,7 @@ protected:
 	void SetSeed();
 	void SpawnStartRoom();
 	void SpawnNextRoom();
-	void CheckOverlap(const TObjectPtr<USceneComponent>& InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck);
+	void CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck);
 	bool IsLatestRoomOverlapping(const APGMasterRoom* RoomToCheck) const;
 	void SetupLevelEnvironment();
 
