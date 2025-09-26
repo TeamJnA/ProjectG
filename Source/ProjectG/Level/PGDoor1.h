@@ -27,38 +27,48 @@ public:
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
 	//IInteractableActorInterface end
 	
-	void ToggleDoor();
+	void ToggleDoor(AActor* InteractInvestigator);
 
 	bool IsOpen() const { return bIsOpen; }
 	bool IsLocked() const { return bIsLocked; }
 	void Lock() { bIsLocked = true; OnRep_LockState(); }
 	void UnLock() { bIsLocked = false; OnRep_LockState(); }
 
-	void TEST_OpenDoorByAI();
+	void TEST_OpenDoorByAI(AActor* InteractInvestigator);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
 	TObjectPtr<USceneComponent> Root;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WallMesh")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "DoorMesh")
+	TObjectPtr<USceneComponent> DoorHinge;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "DoorMesh")
 	TObjectPtr<UStaticMeshComponent> Mesh0;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DoorState", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_DoorState)
+	UPROPERTY(ReplicatedUsing = OnRep_DesiredTransform)
+	FTransform DesiredTransform;
+
+	FTransform ClosedTransform;
+	FTransform OpenedTransform_A;
+	FTransform OpenedTransform_B;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DoorState", meta = (AllowPrivateAccess = "true"), Replicated)
 	bool bIsOpen = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lock", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_LockState)
 	bool bIsLocked = false;
 
 	UFUNCTION()
-	void OnRep_DoorState();
+	void OnRep_DesiredTransform();
 
 	UFUNCTION()
 	void OnRep_LockState();
 
-	void SetDoorState(bool _bIsOpen);
+	void SetDoorState(bool _bIsOpen, AActor* InteractInvestigator);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };

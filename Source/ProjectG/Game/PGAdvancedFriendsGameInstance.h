@@ -73,8 +73,8 @@ public:
 	// 로비로 돌아온 경우 세션에 다시 참가할 수 있도록 세팅
 	void OpenSession();
 
-	const TArray<TObjectPtr<APlayerState>>& GetExpectedPlayersForTravel() const;
-	void SetExpectedPlayersForTravel(const TArray<TObjectPtr<APlayerState>>& PlayerArray);
+	const TArray<FUniqueNetIdRepl>& GetExpectedPlayersForTravel() const { return ExpectedPlayersForTravel; }
+	void SetExpectedPlayersForTravel(const TArray<TObjectPtr<APlayerState>>& InPlayerArray);
 	void ClearExpectedPlayersForTravel();
 
 	void KickPlayerFromSession(const FUniqueNetId& PlayerToKickId);
@@ -91,8 +91,8 @@ public:
 
 
 	// -------- Save current game state --------
-	void SaveGameStateOnTravel(EGameState StateToSave);
-	EGameState LoadGameStateOnTravel();
+	void SaveGameStateOnTravel(const EGameState StateToSave) { CurrentSavedGameState = StateToSave; }
+	EGameState LoadGameStateOnTravel() const { return CurrentSavedGameState; }
 	// -------- Save current game state --------
 
 
@@ -147,7 +147,6 @@ private:
 
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSearch> LatestSessionSearch;
-	//TSharedPtr<FOnlineSessionSettings> LatestSessionSettings;
 	// 초대 정보 임시 저장
 	TSharedPtr<FOnlineSessionSearchResult> AcceptedInviteInfo;
 
@@ -157,7 +156,7 @@ private:
 	int32 PendingMaxPlayers;
 	bool bIsPendingSessionPrivate;
 
-	TArray<TObjectPtr<APlayerState>> ExpectedPlayersForTravel;
+	TArray<FUniqueNetIdRepl> ExpectedPlayersForTravel;
 	// ------- Session --------
 
 	bool bIsHost = false;

@@ -115,7 +115,7 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
         UE_LOG(LogTemp, Warning, TEXT("GA_Interact_Door::ActivateAbility - Calling Door->ToggleDoor() for %s."), *GetNameSafe(Door));
-        Door->ToggleDoor();
+        Door->ToggleDoor(AvatarActor);
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
     }    
 }

@@ -22,9 +22,6 @@
 #include "UI/PGHUD.h"
 #include "Sound/PGSoundManager.h"
 
-#include "Enemy/Blind/Character/PGBlindCharacter.h"
-
-
 APGGameMode::APGGameMode()
 {
 	bStartPlayersAsSpectators = true;
@@ -65,18 +62,6 @@ void APGGameMode::BeginPlay()
 		return;
 	}
 
-	TSet<TObjectPtr<APlayerState>> ExpectedPlayers;
-	const TArray<TObjectPtr<APlayerState>>& TravelPlayers = GI->GetExpectedPlayersForTravel();
-	ExpectedPlayers.Reserve(TravelPlayers.Num());
-	for (const TObjectPtr<APlayerState>& TravelPlayer : TravelPlayers)
-	{
-		if (TravelPlayer)
-		{
-			ExpectedPlayers.Add(TravelPlayer);
-		}
-	}
-	GI->ClearExpectedPlayersForTravel();
-
 	GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
 
 	SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
@@ -86,10 +71,13 @@ void APGGameMode::BeginPlay()
 	}
 
 	FTimerHandle TravelCheckTimer;
-	GetWorld()->GetTimerManager().SetTimer(TravelCheckTimer, FTimerDelegate::CreateLambda([this, ExpectedPlayers]()
-	{
-		CheckAllPlayersArrived(ExpectedPlayers);
-	}), 5.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(
+		TravelCheckTimer,
+		this,
+		&APGGameMode::CheckAllPlayersArrived,
+		5.0f,
+		false
+	);
 }
 
 /*
@@ -100,7 +88,7 @@ void APGGameMode::PlayerTravelSuccess(APlayerController* Player)
 {
 	if (Player && Player->PlayerState)
 	{
-		ArrivedPlayers.Add(Player->PlayerState);
+		ArrivedPlayers.Add(Player->PlayerState->GetUniqueId());
 	}
 }
 
@@ -110,40 +98,32 @@ void APGGameMode::PlayerTravelSuccess(APlayerController* Player)
 * 모든 플레이어를 확인하고 세션 검색을 막아 게임 중간 참가 방지
 * 이후 레벨 생성 작업 시작
 */
-void APGGameMode::CheckAllPlayersArrived(const TSet<TObjectPtr<APlayerState>>& ExpectedPlayers)
+void APGGameMode::CheckAllPlayersArrived()
 {
-	TArray<TObjectPtr<APlayerState>> FailedPlayers;
-	for (const TObjectPtr<APlayerState>& ExpectedPlayer : ExpectedPlayers)
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
 	{
-		if (ExpectedPlayer && !ArrivedPlayers.Contains(ExpectedPlayer))
-		{
-			FailedPlayers.Add(ExpectedPlayer);
-		}
+		return;
 	}
 
-	if (!FailedPlayers.IsEmpty())
+	const TArray<FUniqueNetIdRepl>& ExpectedPlayers = GI->GetExpectedPlayersForTravel();
+	for (const FUniqueNetIdRepl& ExpectedPlayer : ExpectedPlayers)
 	{
-		UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-		if (GI)
+		if (!ArrivedPlayers.Contains(ExpectedPlayer))
 		{
-			for (const TObjectPtr<APlayerState>& FailedPlayerState : FailedPlayers)
+			if (ExpectedPlayer.IsValid())
 			{
-				const FUniqueNetIdRepl& PlayerIdToKick = FailedPlayerState->GetUniqueId();
-				if (PlayerIdToKick.IsValid())
-				{
-					GI->KickPlayerFromSession(*PlayerIdToKick.GetUniqueNetId());
-				}
+				GI->KickPlayerFromSession(*ExpectedPlayer.GetUniqueNetId());
 			}
 		}
 	}
 
+	GI->ClearExpectedPlayersForTravel();
+
 	if (!ArrivedPlayers.IsEmpty())
 	{
 		SpawnLevelGenerator();
-		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
-		{
-			GI->CloseSession();
-		}
+		GI->CloseSession();
 	}
 }
 

@@ -40,7 +40,7 @@ protected:
 	// virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
 	// virtual void Logout(AController* Exiting) override;
 
-	void CheckAllPlayersArrived(const TSet<TObjectPtr<APlayerState>>& InExpectedPlayers);
+	void CheckAllPlayersArrived();
 
 	UFUNCTION()
 	void HandleMapGenerationComplete();
@@ -49,7 +49,8 @@ protected:
 	void SpawnLevelGenerator();
 	void SpawnGlobalLightManager();
 
-	TSet<TObjectPtr<APlayerState>> ArrivedPlayers;
+	UPROPERTY()
+	TSet<FUniqueNetIdRepl> ArrivedPlayers;
 
 	UPROPERTY()
 	TObjectPtr<APGSoundManager> SoundManager;
@@ -57,7 +58,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
 
-	bool bGamemodeReady = false;
 	float SpawnOffset = 0.0f;
 
 	void InitSoundManagerToPlayers();

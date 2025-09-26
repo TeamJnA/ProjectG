@@ -399,24 +399,16 @@ void UPGAdvancedFriendsGameInstance::OnUpdateSessionComplete(FName SessionName, 
 }
 
 /*
-* Travel 전 현재 기록된 세션 플레이어 return
-*/
-const TArray<TObjectPtr<APlayerState>>& UPGAdvancedFriendsGameInstance::GetExpectedPlayersForTravel() const
-{
-	return ExpectedPlayersForTravel;
-}
-
-/*
 * Travel 전 현재 세션 플레이어 기록
 */
-void UPGAdvancedFriendsGameInstance::SetExpectedPlayersForTravel(const TArray<TObjectPtr<APlayerState>>& PlayerArray)
+void UPGAdvancedFriendsGameInstance::SetExpectedPlayersForTravel(const TArray<TObjectPtr<APlayerState>>& InPlayerArray)
 {
 	ExpectedPlayersForTravel.Empty();
-	for (APlayerState* PS : PlayerArray)
+	for (APlayerState* PS : InPlayerArray)
 	{
 		if (PS)
 		{
-			ExpectedPlayersForTravel.Add(PS);
+			ExpectedPlayersForTravel.Add(PS->GetUniqueId());
 		}
 	}
 }
@@ -444,18 +436,6 @@ void UPGAdvancedFriendsGameInstance::KickPlayerFromSession(const FUniqueNetId& P
 	SessionInterface->UnregisterPlayer(NAME_GameSession, PlayerToKickId);
 }
 // ---------- Session ---------
-
-void UPGAdvancedFriendsGameInstance::SaveGameStateOnTravel(EGameState StateToSave)
-{
-	CurrentSavedGameState = StateToSave;
-	//UE_LOG(LogTemp, Log, TEXT("GI::SaveGameStateOnTravel: CurrentSavedGameState: %s"), *UEnum::GetValueAsString(TEXT("EGameState"), CurrentSavedGameState));
-}
-
-EGameState UPGAdvancedFriendsGameInstance::LoadGameStateOnTravel()
-{
-	//UE_LOG(LogTemp, Log, TEXT("GI::LoadGameStateOnTravel: CurrentSavedGameState: %s"), *UEnum::GetValueAsString(TEXT("EGameState"), CurrentSavedGameState));
-	return CurrentSavedGameState;
-}
 
 int32 UPGAdvancedFriendsGameInstance::GetMaxInventorySize() const
 {

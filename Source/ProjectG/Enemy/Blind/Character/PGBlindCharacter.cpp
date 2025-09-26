@@ -106,7 +106,7 @@ void APGBlindCharacter::ForceOpenDoorsAroundCharacter()
         if (OverlappedDoor)
         {
             UE_LOG(LogTemp, Log, TEXT("Door around BlindCharacter was detected"));
-            OverlappedDoor->TEST_OpenDoorByAI();
+            OverlappedDoor->TEST_OpenDoorByAI(this);
         }
     }
 }
@@ -125,6 +125,6 @@ void APGBlindCharacter::OnOpenDoorColliderOverlapBegin(UPrimitiveComponent* Over
     if (OverlappedDoor)
     {
         UE_LOG(LogTemp, Log, TEXT("Door was detected by BlindCharacter"));
-        OverlappedDoor->TEST_OpenDoorByAI();
+        OverlappedDoor->TEST_OpenDoorByAI(this);
     }
 }

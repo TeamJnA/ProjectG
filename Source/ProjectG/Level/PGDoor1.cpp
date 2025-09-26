@@ -19,23 +19,22 @@ APGDoor1::APGDoor1()
 	SetReplicateMovement(true);
 	bAlwaysRelevant = true;
 
-
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Script/Engine.StaticMesh'/Game/Imports/SICKA_mansion/StaticMeshes/SM_DoorCarved.SM_DoorCarved'"));
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	Root->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	Root->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-	Root->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	DoorHinge = CreateDefaultSubobject<USceneComponent>(TEXT("DoorHinge"));
+	DoorHinge->SetupAttachment(Root);
+	DoorHinge->SetRelativeLocation(FVector(0.0f, 82.0f, 0.0f));
 
 	Mesh0 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh0"));
-	Mesh0->SetupAttachment(Root);
+	Mesh0->SetupAttachment(DoorHinge);
 	if (MeshRef.Object)
 	{
 		Mesh0->SetStaticMesh(MeshRef.Object);
 	}
-	Mesh0->SetRelativeLocation(FVector(11.0f, 81.8f, 7.0f));	
+	Mesh0->SetRelativeLocation(FVector(11.0f, 0.0f, 7.0f));	
 	Mesh0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	Mesh0->SetRelativeScale3D(FVector(1.0f, 1.0f, 0.985f));
 
@@ -43,6 +42,16 @@ APGDoor1::APGDoor1()
 
 	// Door does not affect to NavMesh. AI ignore door.
 	Mesh0->SetCanEverAffectNavigation(false);
+
+	const FRotator ClosedRotation = FRotator::ZeroRotator;
+	const FVector ClosedLocation = FVector(0.0f, 82.0f, 0.0f);
+	ClosedTransform = FTransform(ClosedRotation, ClosedLocation);
+
+	const FRotator OpenedRotation_A = FRotator(0.0f, 90.0f, 0.0f);
+	const FRotator OpenedRotation_B = FRotator(0.0f, -90.0f, 0.0f);
+	const FVector OpenedLocation = FVector(0.0f, 74.0f, 0.0f);
+	OpenedTransform_A = FTransform(OpenedRotation_A, OpenedLocation);
+	OpenedTransform_B = FTransform(OpenedRotation_B, OpenedLocation);
 
 	InteractAbility = UGA_Interact_Door::StaticClass();
 }
@@ -61,17 +70,39 @@ TSubclassOf<UGameplayAbility> APGDoor1::GetAbilityToInteract() const
 	return InteractAbility;
 }
 
-void APGDoor1::ToggleDoor()
+void APGDoor1::ToggleDoor(AActor* InteractInvestigator)
 {
-	SetDoorState(!bIsOpen);
+	SetDoorState(!bIsOpen, InteractInvestigator);
 }
 
-void APGDoor1::SetDoorState(bool InbIsOpen)
+void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 {
 	bIsOpen = InbIsOpen;
+	if (bIsOpen)
+	{
+		Mesh0->SetCanEverAffectNavigation(true);
 
-	FRotator NewRot = InbIsOpen ? FRotator(0.0f, 180.0f, 0.0f) : FRotator(0.0f, 90.0f, 0.0f);
-	Mesh0->SetRelativeRotation(NewRot);
+		if (InteractInvestigator)
+		{
+			const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
+			const FVector DoorForwardVector = GetActorForwardVector();
+			const float DotProduct = FVector::DotProduct(DoorForwardVector, DoorToCharacter);
+
+			DesiredTransform = (DotProduct < 0.0f) ? OpenedTransform_A : OpenedTransform_B;
+		}
+		else
+		{
+			DesiredTransform = OpenedTransform_A;
+		}
+	}
+	else
+	{
+		Mesh0->SetCanEverAffectNavigation(false);
+
+		DesiredTransform = ClosedTransform;
+	}
+
+	OnRep_DesiredTransform();
 }
 
 void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -79,6 +110,7 @@ void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGDoor1, bIsOpen);
 	DOREPLIFETIME(APGDoor1, bIsLocked);
+	DOREPLIFETIME(APGDoor1, DesiredTransform);
 }
 
 /*
@@ -132,23 +164,9 @@ bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FTex
 	return true;
 }
 
-// Client action after toggle door
-void APGDoor1::OnRep_DoorState()
+void APGDoor1::OnRep_DesiredTransform()
 {
-	//SetDoorState(bIsOpen);
-
-	if (!HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("APGDoor1::OnRep_DoorState - Client received replication for %s. New bIsOpen: %s."),
-			*GetName(), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
-
-		FRotator NewRot = bIsOpen ? FRotator(0.0f, 180.0f, 0.0f) : FRotator(0.0f, 90.0f, 0.0f);
-		Mesh0->SetRelativeRotation(NewRot);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("APGDoor1::OnRep_DoorState - Server received OnRep_DoorState (SHOULD NOT HAPPEN)."), *GetName());
-	}
+	DoorHinge->SetRelativeTransform(DesiredTransform);
 }
 
 // Client action after change lock state
@@ -157,8 +175,8 @@ void APGDoor1::OnRep_LockState()
 	UE_LOG(LogTemp, Log, TEXT("Door lock state changed: %s"), bIsLocked ? TEXT("Locked") : TEXT("Unlocked"));
 }
 
-void APGDoor1::TEST_OpenDoorByAI()
+void APGDoor1::TEST_OpenDoorByAI(AActor* InteractInvestigator)
 {
 	UE_LOG(LogTemp, Log, TEXT("OpenDoor by AI"));
-	SetDoorState(true);
+	SetDoorState(true, InteractInvestigator);
 }
