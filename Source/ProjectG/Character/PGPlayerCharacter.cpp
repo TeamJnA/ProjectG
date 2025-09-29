@@ -159,6 +159,9 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		//Crouching
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &APGPlayerCharacter::StartInputActionByTag, CrouchTag);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::StopInputActionByTag, CrouchTag);
+
+		//HeadLight
+		EnhancedInputComponent->BindAction(HeadLightAction, ETriggerEvent::Started, this, &APGPlayerCharacter::ToggleHeadLight);
 		
 		//Interacting
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, InteractTag);
@@ -527,9 +530,24 @@ void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(c
 	}
 }
 
-void APGPlayerCharacter::MC_SetFlashlightState(bool _bIsFlashlightOn)
+void APGPlayerCharacter::MC_SetHeadlightState(bool _bIsFlashlightOn)
 {
 	HeadlightLight->SetVisibility(_bIsFlashlightOn);
+}
+
+void APGPlayerCharacter::ToggleHeadLight()
+{
+	if (!HeadlightLight->GetVisibleFlag())
+	{
+		ActivateAbilityByTag(HeadLightTag);
+	}
+	else
+	{
+		if (AbilitySystemComponent)
+		{
+			AbilitySystemComponent->CancelAbilities(&HeadLightTag);
+		}
+	}
 }
 
 /*
