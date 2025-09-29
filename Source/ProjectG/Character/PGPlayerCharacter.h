@@ -85,6 +85,9 @@ public:
 	TObjectPtr<UInputAction> InteractAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> HeadLightAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> DropItemAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -194,6 +197,9 @@ protected:
 	FGameplayTagContainer InteractTag;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
+	FGameplayTagContainer HeadLightTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
 	FGameplayTagContainer MouseLeftTag;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
@@ -238,6 +244,13 @@ protected:
 	//The interactive actor currently watching
 	TObjectPtr<AActor> InteractionTargetActor;
 
+// ------------ HeadLight --------------------
+public:
+	void MC_SetHeadlightState(bool _bIsFlashlightOn);
+
+protected:
+	void ToggleHeadLight();
+
 ///
 ///********* Item system ******************
 /// 
@@ -280,8 +293,6 @@ public:
 
 	UPROPERTY()
 	FOnStareTargetUpdate OnStareTargetUpdate;
-
-	void MC_SetFlashlightState(bool _bIsFlashlightOn);
 
 	UFUNCTION(Client, Reliable)
 	void Client_InitScoreBoardWidget();

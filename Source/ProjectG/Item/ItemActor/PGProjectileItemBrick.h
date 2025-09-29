@@ -25,9 +25,31 @@ public:
 		const FHitResult& Hit) override;
 
 protected:
-	TArray<TObjectPtr<AActor>> HitActors;
-
 	virtual void PlaySound_Implementation(const FVector& HitLocation) override;
 
+	void ConvertIntoItem();
+
+	UFUNCTION()
+	void ConvertIntoItemWithTimer();
+
+	UFUNCTION()
+	void OnRep_IsItem();
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	FTimerHandle ItemConvertTimer;
+
+	TArray<TObjectPtr<UPrimitiveComponent>> HitComponents;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsItem)
+	bool bIsItem;
+
 	bool bAlreadyHit;
+
+	// 순식간에 여러번 튕길 경우, 사운드 재생 횟수에 제한을 둔다.
+	float LastBounceTime;
+	float PlaySoundCoolTime;
+
+	// 특정 수준 이상의 충돌이어야 소리 재생
+	float MinBounceImpact;
 };
