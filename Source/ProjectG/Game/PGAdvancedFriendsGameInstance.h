@@ -150,6 +150,9 @@ private:
 	// 초대 정보 임시 저장
 	TSharedPtr<FOnlineSessionSearchResult> AcceptedInviteInfo;
 
+	// for debuging
+	TSharedPtr<const FUniqueNetId> PendingHostId;
+
 	bool bIsHostingAfterDestroy;
 
 	FName PendingSessionName;

@@ -22,7 +22,7 @@ class PROJECTG_API UPGPlayerEntryWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void SetupEntry(const FPlayerInfo& InPlayerInfo, UTexture2D* InAvatarTexture);
+	void SetupEntry(const APGPlayerState* InPlayerState, UTexture2D* InAvatarTexture);
 
 protected:
 	UPROPERTY(meta = (BindWidget))

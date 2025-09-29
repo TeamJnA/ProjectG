@@ -8,6 +8,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
 
 #include "Game/PGGameState.h"
+#include "Player/PGPlayerState.h"
 #include "Character/PGPlayerCharacter.h"
 
 #include "Level/PGExitDoor.h"
@@ -116,10 +117,10 @@ void UGA_Interact_ExitDoor::HandlePlayerFinished(APGPlayerCharacter* PGCharacter
     }
 
     APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-    APlayerState* PS = PGCharacter->GetPlayerState();
+    APGPlayerState* PS = PGCharacter->GetPlayerState<APGPlayerState>();
     if (GS && PS)
     {
-        GS->MarkPlayerAsFinished(PS);
+        PS->SetHasFinishedGame(true);
 
         if (GS->IsGameFinished())
         {

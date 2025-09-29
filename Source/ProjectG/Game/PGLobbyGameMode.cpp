@@ -80,56 +80,23 @@ void APGLobbyGameMode::BeginPlay()
 	}
 }
 
-void APGLobbyGameMode::PostLogin(APlayerController* NewPlayer)
-{
-	Super::PostLogin(NewPlayer);
-		
-	// PostLogin에서 PlayerList 업데이트
-	if (APGGameState* GS = GetGameState<APGGameState>())
-	{
-		GS->UpdatePlayerList();
-		UE_LOG(LogTemp, Log, TEXT("LobbyGM::PostLogin: Failsafe update requested."));
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("LobbyGM::PostLogin: Player [%s] has login."), *NewPlayer->GetName());
-
-}
-
-void APGLobbyGameMode::Logout(AController* Exiting)
-{
-	// Logout 상황에서 PlayerList 업데이트
-	if (APGGameState* GS = GetGameState<APGGameState>())
-	{
-		GS->UpdatePlayerList();
-		UE_LOG(LogTemp, Log, TEXT("LobbyGM::Logout: Failsafe (next tick) update requested."));
-	}
-	UE_LOG(LogTemp, Log, TEXT("LobbyGM::Logout: Player [%s] has logout."), *Exiting->GetName());
-
-	Super::Logout(Exiting);
-}
-
 void APGLobbyGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
 
-	if (NewPlayer)
+	UE_LOG(LogTemp, Log, TEXT("LobbyGM::HandleStartingNewPlayer_Implementation:"));
+
+	if (NewPlayer && NewPlayer->IsLocalController())
 	{
 		if (APGPlayerState* NewPlayerState = NewPlayer->GetPlayerState<APGPlayerState>())
 		{
-			if (NewPlayer->IsLocalController())
-			{
-				NewPlayerState->SetHost(true);
-			}
-			else
-			{
-				NewPlayerState->SetHost(false);
-			}
+			NewPlayerState->SetHost(true);
 		}
 	}
 
 	// 플레이어 상태가 갱신되어 모든 클라이언트 UI 업데이트
 	if (APGGameState* GS = GetGameState<APGGameState>())
 	{
-		GS->UpdatePlayerList();
+		GS->NotifyPlayerArrayUpdated();
 	}
 }

@@ -30,7 +30,7 @@ void UPGLobbyWidget::NativeConstruct()
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
-		GS->OnPlayerListUpdated.AddDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
+		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
 	}
 }
 
@@ -48,43 +48,63 @@ void UPGLobbyWidget::UpdatePlayerList()
 		return;
 	}
 
-	PlayerListContainer->ClearChildren();
+	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::UpdatePlayerList: Update"));
 
-	// GameState .h
-	// const TArray<FPlayerInfo>& GetPlayerList() const { return PlayerList; }
-	const TArray<FPlayerInfo>& PlayerList = GS->GetPlayerList();
-	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	for (APlayerState* PS : GS->PlayerArray)
 	{
-		if (PlayerInfo.bIsHost)
+		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
-			if (NewPlayerEntry)
+			if (!PGPS->OnPlayerStateUpdated.IsAlreadyBound(this, &UPGLobbyWidget::UpdatePlayerList))
 			{
-				UTexture2D* AvatarTexture = nullptr;
-				if (PlayerInfo.PlayerNetId.IsValid())
-				{
-					AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
-				}
-				NewPlayerEntry->SetupEntry(PlayerInfo, AvatarTexture);
-				PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
+				PGPS->OnPlayerStateUpdated.AddDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
 			}
 		}
 	}
 
-	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	PlayerListContainer->ClearChildren();
+
+	// GameState .h
+	// const TArray<FPlayerInfo>& GetPlayerList() const { return PlayerList; }
+	for (APlayerState* PS : GS->PlayerArray)
 	{
-		if (!PlayerInfo.bIsHost)
+		UE_LOG(LogTemp, Log, TEXT("LobbyWidget::UpdatePlayerList: [%s]"), *PS->GetPlayerName());
+
+		if (const APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
-			if (NewPlayerEntry)
+			if (PGPS->IsHost())
 			{
-				UTexture2D* AvatarTexture = nullptr;
-				if (PlayerInfo.PlayerNetId.IsValid())
+				UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+				if (NewPlayerEntry)
 				{
-					AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
+					UTexture2D* AvatarTexture = nullptr;
+					if (PGPS->GetUniqueId().IsValid())
+					{
+						AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
+					}
+					NewPlayerEntry->SetupEntry(PGPS, AvatarTexture);
+					PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
 				}
-				NewPlayerEntry->SetupEntry(PlayerInfo, AvatarTexture);
-				PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
+			}
+		}
+	}
+
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		if (const APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+		{
+			if (!PGPS->IsHost())
+			{
+				UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+				if (NewPlayerEntry)
+				{
+					UTexture2D* AvatarTexture = nullptr;
+					if (PGPS->GetUniqueId().IsValid())
+					{
+						AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
+					}
+					NewPlayerEntry->SetupEntry(PGPS, AvatarTexture);
+					PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
+				}
 			}
 		}
 	}

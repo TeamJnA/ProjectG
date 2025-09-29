@@ -17,7 +17,6 @@ void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGGameState, CurrentGameState);
-	DOREPLIFETIME(APGGameState, PlayerList);
 }
 
 void APGGameState::BeginPlay()
@@ -41,10 +40,10 @@ void APGGameState::BeginPlay()
 */
 void APGGameState::AddPlayerState(APlayerState* PlayerState)
 {
-	Super::AddPlayerState(PlayerState);
+	Super::AddPlayerState(PlayerState);	
 
-	UE_LOG(LogTemp, Log, TEXT("GS::AddPlayerState: Player added"));	
-	UpdatePlayerList();
+	UE_LOG(LogTemp, Log, TEXT("GS::AddPlayerState: [%s] Player added | %d"), *PlayerState->GetName(), HasAuthority());
+	NotifyPlayerArrayUpdated();
 }
 
 /*
@@ -54,53 +53,22 @@ void APGGameState::RemovePlayerState(APlayerState* PlayerState)
 {
 	Super::RemovePlayerState(PlayerState);
 
-	UE_LOG(LogTemp, Log, TEXT("GS::RemovePlayerState: Player removed"));
-	UpdatePlayerList();
+	UE_LOG(LogTemp, Log, TEXT("GS::RemovePlayerState: Player removed | %d"), HasAuthority());
+	NotifyPlayerArrayUpdated();
+}
+
+void APGGameState::NotifyPlayerArrayUpdated()
+{
+	UE_LOG(LogTemp, Log, TEXT("GS::UpdatePlayerArrayVersion: Player array updated | %d"), HasAuthority());
+	OnPlayerArrayChanged.Broadcast();
 }
 
 /*
-* 플레이어 업데이트
-* 업데이트는 서버에서만 수행
-* 현재 PlayerArray의 PlayerState에 접근해서 필요한 정보 사용 
+* 레벨 생성 완료 후 LevelGenerator에서 호출
 */
-void APGGameState::UpdatePlayerList()
+void APGGameState::NotifyMapGenerationComplete()
 {
-	if (!HasAuthority()) 
-	{
-		return;
-	}
-
-	PlayerList.Empty();
-	for (APlayerState* PS : PlayerArray)
-	{
-		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
-		{
-			FPlayerInfo Info;
-			Info.PlayerName = PGPS->GetPlayerName();
-			Info.bIsHost = PGPS->IsHost();
-
-			const FUniqueNetIdRepl& UniqueIdRepl = PGPS->GetUniqueId();
-			if (UniqueIdRepl.IsValid())
-			{
-				Info.PlayerNetId = UniqueIdRepl;
-			}
-
-			PlayerList.Add(Info);
-		}
-	}
-
-	// update server UI
-	OnRep_PlayerList();
-}
-
-/*
-* PlayerList 업데이트 시 클라이언트 호출
-*/
-void APGGameState::OnRep_PlayerList()
-{
-	// update client UI
-	OnPlayerListUpdated.Broadcast();
-	UE_LOG(LogTemp, Log, TEXT("GS::OnRep_LobbyPlayerList: New player list replicated to client. Broadcasting update."));
+	Multicast_MapGenerationComplete();
 }
 
 void APGGameState::Multicast_MapGenerationComplete()
@@ -128,14 +96,6 @@ void APGGameState::Multicast_InitFinalScoreBoardWidget_Implementation()
 }
 
 /*
-* 레벨 생성 완료 후 LevelGenerator에서 호출
-*/
-void APGGameState::NotifyMapGenerationComplete()
-{
-	Multicast_MapGenerationComplete();
-}
-
-/*
 * 게임 종료 후 처리 요청 시 호출
 * GameState 내부 MulticastRPC 함수 호출
 */
@@ -147,104 +107,35 @@ void APGGameState::NotifyGameFinished()
 	}
 	UE_LOG(LogTemp, Warning, TEXT("GS::NotifyGameFinished: called [%s] | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
 
-	Multicast_InitFinalScoreBoardWidget();
-}
-
-/*
-* PlayerList의 플레이어 상태를 종료 상태로 설정
-*/
-void APGGameState::MarkPlayerAsFinished(APlayerState* PlayerState)
-{
-	if (!HasAuthority() || !PlayerState)
-	{
-		return;
-	}
-
-	const FUniqueNetIdRepl& FinishedPlayerId = PlayerState->GetUniqueId();
-	for (FPlayerInfo& PlayerInfo : PlayerList)
-	{
-		if (PlayerInfo.PlayerNetId == FinishedPlayerId)
-		{
-			PlayerInfo.bHasFinishedGame = true;
-			UE_LOG(LogTemp, Log, TEXT("GameState: Marked player %s as finished."), *PlayerInfo.PlayerName);
-			break;
-		}
-	}
-
-	// update server UI
-	OnRep_PlayerList();
-}
-
-/*
-* PlayerList의 플레이어 상태를 사망 상태로 설정
-*/
-void APGGameState::MarkPlayerAsDead(APlayerState* PlayerState)
-{
-	if (!HasAuthority() || !PlayerState)
-	{
-		return;
-	}
-
-	const FUniqueNetIdRepl& DeadPlayerId = PlayerState->GetUniqueId();
-	for (FPlayerInfo& PlayerInfo : PlayerList)
-	{
-		if (PlayerInfo.PlayerNetId == DeadPlayerId)
-		{
-			PlayerInfo.bIsDead = true;
-			UE_LOG(LogTemp, Log, TEXT("GameState: Marked player %s as Dead."), *PlayerInfo.PlayerName);
-			break;
-		}
-	}
-
-	// update server UI
-	OnRep_PlayerList();
+	FTimerHandle FinalScoreBoardTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(FinalScoreBoardTimerHandle, this, &APGGameState::Multicast_InitFinalScoreBoardWidget, 2.0f, false);
+	//GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameState::Multicast_InitFinalScoreBoardWidget);
 }
 
 /*
 * 게임이 종료 상태가 되었는지 확인
 * 모든 플레이어가 종료 상태인 경우 true
 */
-bool APGGameState::IsGameFinished()
+bool APGGameState::IsGameFinished() const
 {
-	if (PlayerList.IsEmpty())
+	if (PlayerArray.IsEmpty())
 	{
 		return false;
 	}
 
-	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	for (const APlayerState* PS : PlayerArray)
 	{
-		if (!PlayerInfo.bHasFinishedGame)
+		if (const APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			return false;
+			if (!PGPS->HasFinishedGame())
+			{
+				return false;
+			}
 		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("APGGameState::IsGameFinished: All players have finished the game."));
 	return true;
-}
-
-/*
-* 요청한 PlayerList의 bIsReadyToReturnLobby를 true로 설정
-*/
-void APGGameState::SetPlayerReadyStateForReturnLobby(const APlayerState* InPlayerState)
-{
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	if (InPlayerState)
-	{
-		const FUniqueNetIdRepl& TargetPlayerId = InPlayerState->GetUniqueId();
-		for (FPlayerInfo& PlayerInfo : PlayerList)
-		{
-			if (PlayerInfo.PlayerNetId == TargetPlayerId)
-			{
-				PlayerInfo.bIsReadyToReturnLobby = true;
-				break;
-			}
-		}
-	}
 }
 
 bool APGGameState::IsAllReadyToReturnLobby() const
@@ -254,16 +145,19 @@ bool APGGameState::IsAllReadyToReturnLobby() const
 		return false;
 	}
 
-	if (PlayerList.IsEmpty())
+	if (PlayerArray.IsEmpty())
 	{
 		return false;
 	}
 
-	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	for (const APlayerState* PS : PlayerArray)
 	{
-		if (!PlayerInfo.bIsReadyToReturnLobby)
+		if (const APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			return false;
+			if (!PGPS->IsReadyToReturnLobby())
+			{
+				return false;
+			}
 		}
 	}
 

@@ -28,7 +28,7 @@ public:
 
 	void PlayerTravelSuccess(APlayerController* Player);
 
-	void SetPlayerReadyToReturnLobby(const APlayerState* PlayerState);
+	void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
 
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;

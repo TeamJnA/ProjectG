@@ -138,14 +138,16 @@ void APGGameMode::HandleMapGenerationComplete()
 * 요청한 플레이어 PlayerList의 bIsReadyToReturnLobby를 true로 설정
 * 남아있는 모든 플레이어의 bIsReadyToReturnLobby == true 인 경우 -> 세션을 유지하고 로비로 이동 
 */
-void APGGameMode::SetPlayerReadyToReturnLobby(const APlayerState* PlayerState)
+void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 {
-	APGGameState* GS = GetGameState<APGGameState>();
-	if (GS && PlayerState)
+	if (APGPlayerState* PGPS = Cast<APGPlayerState>(PlayerState))
 	{
-		GS->SetPlayerReadyStateForReturnLobby(PlayerState);
 		UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: Player %s ready state updated"), *PlayerState->GetPlayerName());
+		PGPS->SetReadyToReturnLobby(true);
+	}
 
+	if (APGGameState* GS = GetGameState<APGGameState>())
+	{
 		if (GS->IsAllReadyToReturnLobby())
 		{
 			UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: All players are ready to return lobby"));

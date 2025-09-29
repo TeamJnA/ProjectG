@@ -11,7 +11,7 @@
 #include "PGGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerListUpdatedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerArrayChangedDelegate);
 
 class APGPlayerController;
 
@@ -34,29 +34,19 @@ public:
 
 	EGameState GetCurrentGameState() const { return CurrentGameState; }
 	void SetCurrentGameState(EGameState NewGameState) { CurrentGameState = NewGameState; }
-	const TArray<FPlayerInfo>& GetPlayerList() const { return PlayerList; }
-
-	UPROPERTY(BlueprintAssignable, Category = "Events")
+	
 	FOnMapGenerationComplete OnMapGenerationComplete;
 
 	// EndGame
-	bool IsGameFinished();
-
+	bool IsGameFinished() const;
 	void NotifyGameFinished();
-
-	void SetPlayerReadyStateForReturnLobby(const APlayerState* InPlayerState);
-
+	//void SetPlayerReadyStateForReturnLobby(const APlayerState* InPlayerState);
 	bool IsAllReadyToReturnLobby() const;
 
 	// ----- Player List ---------
-	UPROPERTY(BlueprintAssignable, Category = "Event")
-	FOnPlayerListUpdatedDelegate OnPlayerListUpdated;
+	FOnPlayerArrayChangedDelegate OnPlayerArrayChanged;
 	
-	// only call on server
-	void UpdatePlayerList();
-
-	void MarkPlayerAsFinished(APlayerState* PlayerState);
-	void MarkPlayerAsDead(APlayerState* PlayerState);
+	void NotifyPlayerArrayUpdated();
 	// ----- Player List ---------
 
 protected:
@@ -73,15 +63,7 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InitFinalScoreBoardWidget();
 
-	// 클라이언트의 위젯이 접근할 복제된 플레이어 목록
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_PlayerList, Category = "Lobby")
-	TArray<FPlayerInfo> PlayerList;
-
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "GameState")
 	EGameState CurrentGameState;
 
-	// ----- Lobby Player List ---------
-	// LobbyPlayerList가 클라이언트에 복제될 때 호출될 함수
-	UFUNCTION()
-	void OnRep_PlayerList();
 };

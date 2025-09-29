@@ -30,7 +30,15 @@ void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
-		GS->OnPlayerListUpdated.AddDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
+		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
+
+		for (APlayerState* PS : GS->PlayerArray)
+		{
+			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+			{
+				PGPS->OnPlayerStateUpdated.AddDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
+			}
+		}
 	}
 
 	UpdatePlayerEntry();
@@ -56,23 +64,25 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 
 	PlayerContainer->ClearChildren();
 
-	const TArray<FPlayerInfo>& PlayerList = GS->GetPlayerList();
-	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	for (APlayerState* PS : GS->PlayerArray)
 	{
-		if (PlayerInfo.bHasFinishedGame)
+		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
-			if (NewSlot)
+			if (PGPS->HasFinishedGame())
 			{
-				UTexture2D* AvatarTexture = nullptr;
-				if (PlayerInfo.PlayerNetId.IsValid())
+				UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+				if (NewSlot)
 				{
-					AvatarTexture = GI->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
-				}
+					UTexture2D* AvatarTexture = nullptr;
+					if (PGPS->GetUniqueId().IsValid())
+					{
+						AvatarTexture = GI->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
+					}
 
-				NewSlot->SetupEntry(PlayerInfo, AvatarTexture);
-				PlayerContainer->AddChild(NewSlot);
-				UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PlayerInfo.PlayerName);
+					NewSlot->SetupEntry(PGPS, AvatarTexture);
+					PlayerContainer->AddChild(NewSlot);
+					UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PGPS->GetPlayerName());
+				}
 			}
 		}
 	}

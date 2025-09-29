@@ -394,8 +394,15 @@ void UPGAdvancedFriendsGameInstance::OpenSession()
 
 void UPGAdvancedFriendsGameInstance::OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Log, TEXT("GI::OnUpdateSessionComplete: Session '%s' update completed. Success: %d. bShouldAdvertise: %d"), 
-		*SessionName.ToString(), bWasSuccessful, SessionInterface->GetNamedSession(NAME_GameSession)->SessionSettings.bShouldAdvertise);
+	if (SessionInterface->GetNamedSession(NAME_GameSession))
+	{
+		UE_LOG(LogTemp, Log, TEXT("GI::OnUpdateSessionComplete: Session '%s' update completed. Success: %d. bShouldAdvertise: %d"),
+			*SessionName.ToString(), bWasSuccessful, SessionInterface->GetNamedSession(NAME_GameSession)->SessionSettings.bShouldAdvertise);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::OnUpdateSessionComplete: Session '%s' update completed but session no longer exists."), *SessionName.ToString());
+	}
 }
 
 /*

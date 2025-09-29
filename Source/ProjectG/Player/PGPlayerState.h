@@ -10,6 +10,8 @@
 class UPGAbilitySystemComponent;
 class UPGAttributeSet;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerStateUpdatedDelegate);
+
 UCLASS()
 class PROJECTG_API APGPlayerState : public APlayerState, public IAbilitySystemInterface
 {
@@ -23,9 +25,21 @@ public:
 	virtual UPGAttributeSet* GetAttributeSet() const;
 	
 	bool IsHost() const { return bIsHost; }
-	void SetHost(bool _bIsHost) { bIsHost = _bIsHost; }
+	void SetHost(bool bInIsHost) { bIsHost = bInIsHost; OnRep_PlayerStateUpdated(); }
+
+	bool HasFinishedGame() const { return bHasFinishedGame; }
+	void SetHasFinishedGame(bool bInHasFinishedGame) { bHasFinishedGame = bInHasFinishedGame; OnRep_PlayerStateUpdated(); }
+
+	bool IsDead() const { return bIsDead; }
+	void SetIsDead(bool bInIsDead) { bIsDead = bInIsDead; OnRep_PlayerStateUpdated(); }
+
+	bool IsReadyToReturnLobby() const { return bIsReadyToReturnLobby; }
+	void SetReadyToReturnLobby(bool bInIsReadyToReturnLobby) { bIsReadyToReturnLobby = bInIsReadyToReturnLobby; OnRep_PlayerStateUpdated(); }
+
+	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
 
 protected:
+	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY()
@@ -34,8 +48,20 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UPGAttributeSet> AttributeSet;
 
-	UPROPERTY(Replicated, BlueprintReadOnly)
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
 	bool bIsHost = false;
+
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
+	bool bHasFinishedGame = false;
+
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
+	bool bIsDead = false;
+
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
+	bool bIsReadyToReturnLobby = false;
+
+	UFUNCTION()
+	void OnRep_PlayerStateUpdated();
 
 private:
 };

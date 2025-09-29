@@ -28,7 +28,6 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
 
 	UFUNCTION()
 	void OnReturnToMainMenuButtonClicked();
@@ -49,7 +48,4 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> ReturnToLobbyButton;
-
-private:
-	TWeakObjectPtr<APGGameState> GSRef;
 };

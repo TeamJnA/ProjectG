@@ -28,8 +28,25 @@ UPGAttributeSet* APGPlayerState::GetAttributeSet() const
 	return AttributeSet;
 }
 
+void APGPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	UE_LOG(LogTemp, Log, TEXT("PS::BeginPlay: [%s] PlayerState Begin"), *GetPlayerName());
+	OnPlayerStateUpdated.Broadcast();
+}
+
 void APGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGPlayerState, bIsHost);
+	DOREPLIFETIME(APGPlayerState, bHasFinishedGame);
+	DOREPLIFETIME(APGPlayerState, bIsDead);
+	DOREPLIFETIME(APGPlayerState, bIsReadyToReturnLobby);
+}
+
+void APGPlayerState::OnRep_PlayerStateUpdated()
+{
+	UE_LOG(LogTemp, Log, TEXT("PS::OnRep_PlayerStateUpdated: [%s] PlayerState updated"), *GetPlayerName());
+	OnPlayerStateUpdated.Broadcast();
 }

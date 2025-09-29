@@ -30,15 +30,6 @@ void UPGFinalScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
 
 	PCRef = InPC;
 
-	if (UWorld* World = GetWorld())
-	{
-		if (APGGameState* GS = World->GetGameState<APGGameState>())
-		{
-			GSRef = GS;
-			GS->OnPlayerListUpdated.AddDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
-		}
-	}
-
 	UpdatePlayerEntry();
 }
 
@@ -62,22 +53,24 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 
 	PlayerContainer->ClearChildren();
 
-	const TArray<FPlayerInfo>& PlayerList = GS->GetPlayerList();
-	for (const FPlayerInfo& PlayerInfo : PlayerList)
+	for (APlayerState* PS : GS->PlayerArray)
 	{
-		UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
-		if (NewSlot)
+		if (const APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			UTexture2D* AvatarTexture = nullptr;
-			if (PlayerInfo.PlayerNetId.IsValid())
+			UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+			if (NewSlot)
 			{
-				AvatarTexture = GI->GetSteamAvatarAsTexture(*PlayerInfo.PlayerNetId.GetUniqueNetId());
-			}
+				UTexture2D* AvatarTexture = nullptr;
+				if (PGPS->GetUniqueId().IsValid())
+				{
+					AvatarTexture = GI->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
+				}
 
-			NewSlot->SetupEntry(PlayerInfo, AvatarTexture);
-			PlayerContainer->AddChild(NewSlot);
-			UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PlayerInfo.PlayerName);
-		}
+				NewSlot->SetupEntry(PGPS, AvatarTexture);
+				PlayerContainer->AddChild(NewSlot);
+				UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PGPS->GetPlayerName());
+			}
+		}		
 	}
 }
 
@@ -94,17 +87,6 @@ void UPGFinalScoreBoardWidget::NativeConstruct()
 	{
 		ReturnToLobbyButton->OnClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked);
 	}
-}
-
-void UPGFinalScoreBoardWidget::NativeDestruct()
-{
-	if (GSRef.IsValid())
-	{
-		GSRef->OnPlayerListUpdated.RemoveDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
-		UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget: OnPlayerListUpdated delegate unbound."));
-	}
-
-	Super::NativeDestruct();
 }
 
 /*

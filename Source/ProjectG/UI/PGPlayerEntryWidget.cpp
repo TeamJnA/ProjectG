@@ -6,6 +6,8 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 
+#include "Player/PGPlayerState.h"
+
 #include "Type/CharacterTypes.h"
 
 /*
@@ -13,11 +15,18 @@
 * 탈출/사망 상태 -> ScoreBoardWidget, FinalScoreBoardWidget
 * 호스트 여부 -> LobbyWidget
 */
-void UPGPlayerEntryWidget::SetupEntry(const FPlayerInfo& InPlayerInfo, UTexture2D* InAvatarTexture)
+void UPGPlayerEntryWidget::SetupEntry(const APGPlayerState* InPlayerState, UTexture2D* InAvatarTexture)
 {
+	UE_LOG(LogTemp, Log, TEXT("PlayerEntryWidget::SetupEntry: [%s]"), *InPlayerState->GetPlayerName());
+	
+	if (!InPlayerState)
+	{
+		return;
+	}
+
 	if (PlayerNameText) 
 	{ 
-		PlayerNameText->SetText(FText::FromString(InPlayerInfo.PlayerName));
+		PlayerNameText->SetText(FText::FromString(InPlayerState->GetPlayerName()));
 	}
 
 	if (PlayerAvatar)
@@ -40,7 +49,7 @@ void UPGPlayerEntryWidget::SetupEntry(const FPlayerInfo& InPlayerInfo, UTexture2
 
 		bool bShowStatus = true;
 
-		if (InPlayerInfo.bIsDead)
+		if (InPlayerState->IsDead())
 		{
 			PlayerNameFontSize = 32;
 
@@ -48,7 +57,7 @@ void UPGPlayerEntryWidget::SetupEntry(const FPlayerInfo& InPlayerInfo, UTexture2
 			StatusMessage = FText::FromString(TEXT("DEAD"));
 			StatusColor = FLinearColor::Red;
 		}
-		else if (InPlayerInfo.bHasFinishedGame)
+		else if (InPlayerState->HasFinishedGame())
 		{
 			PlayerNameFontSize = 32;
 
@@ -56,7 +65,7 @@ void UPGPlayerEntryWidget::SetupEntry(const FPlayerInfo& InPlayerInfo, UTexture2
 			StatusMessage = FText::FromString(TEXT("ESCAPED"));
 			StatusColor = FLinearColor::Green;
 		}
-		else if (InPlayerInfo.bIsHost)
+		else if (InPlayerState->IsHost())
 		{
 			PlayerNameFontSize = 16;
 

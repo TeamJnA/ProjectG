@@ -316,11 +316,11 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 	}
 
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	APlayerState* PS = GetPlayerState();
+	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
 	if (GS && PS)
 	{
-		GS->MarkPlayerAsFinished(PS); 
-		GS->MarkPlayerAsDead(PS);
+		PS->SetHasFinishedGame(true);
+		PS->SetIsDead(true);
 
 		if (GS->IsGameFinished())
 		{
