@@ -29,11 +29,20 @@ protected:
 
 	void ConvertIntoItem();
 
-	bool bIsItem;
+	UFUNCTION()
+	void ConvertIntoItemWithTimer();
+
+	UFUNCTION()
+	void OnRep_IsItem();
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	FTimerHandle ItemConvertTimer;
 
 	TArray<TObjectPtr<UPrimitiveComponent>> HitComponents;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsItem)
+	bool bIsItem;
 
 	bool bAlreadyHit;
 

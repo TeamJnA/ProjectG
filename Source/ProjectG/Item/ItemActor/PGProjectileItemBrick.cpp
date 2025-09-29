@@ -11,12 +11,15 @@
 #include "GameFramework/GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "PGLogChannels.h"
+#include "Net/UnrealNetwork.h" 
 
 
 APGProjectileItemBrick::APGProjectileItemBrick()
 {
+	/*
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 	CollisionComponent->SetupAttachment(RootComponent);
+	*/
 
 	static ConstructorHelpers::FObjectFinder<UPGItemData> ItemDataRef(TEXT("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick"));
 	if (ItemDataRef.Object)
@@ -49,6 +52,11 @@ APGProjectileItemBrick::APGProjectileItemBrick()
 // 3. 여러 번 Hit 시 사운드 쿨타임 적용.
 void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	bAlreadyHit = true;
 
 	// Brick hits once per actor.
@@ -61,7 +69,7 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 	// Play sound at hit location with cooltime.
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 
-	if (HasAuthority() && CurrentTime - LastBounceTime >= PlaySoundCoolTime)
+	if (CurrentTime - LastBounceTime >= PlaySoundCoolTime)
 	{
 		LastBounceTime = CurrentTime;
 
@@ -80,6 +88,7 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 	
 	if ((ObjectType == ECC_WorldDynamic || ObjectType == ECC_WorldStatic) && Hit.ImpactNormal.Z > 0.6)
 	{
+		bIsItem = true;
 		ConvertIntoItem();
 	}
 	else
@@ -91,7 +100,7 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 		GetWorld()->GetTimerManager().SetTimer(
 			ItemConvertTimer,
 			this,
-			&APGProjectileItemBrick::ConvertIntoItem,
+			&APGProjectileItemBrick::ConvertIntoItemWithTimer,
 			2.0f,
 			false
 		);
@@ -121,5 +130,22 @@ void APGProjectileItemBrick::ConvertIntoItem()
 {
 	StaticMesh->SetSimulatePhysics(false);
 	StaticMesh->SetCollisionProfileName(TEXT("Item"));
-	CollisionComponent->SetCollisionProfileName(TEXT("Item"));
+}
+
+void APGProjectileItemBrick::ConvertIntoItemWithTimer()
+{
+	bIsItem = true;
+	ConvertIntoItem();
+}
+
+void APGProjectileItemBrick::OnRep_IsItem()
+{
+	ConvertIntoItem();
+}
+
+void APGProjectileItemBrick::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APGProjectileItemBrick, bIsItem);
 }
