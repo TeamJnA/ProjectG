@@ -10,6 +10,7 @@
 #include "InputActionValue.h"
 
 #include "Character/PGPlayerCharacter.h"
+#include "Camera/CameraActor.h"
 
 #include "EngineUtils.h" 
 #include "Net/UnrealNetwork.h"
@@ -64,7 +65,7 @@ void APGSpectatorPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void APGSpectatorPawn::OnOrbitYaw(const FInputActionValue& Value)
 {
 	// 클라이언트에서 입력 처리
-	if (!IsLocallyControlled()) 
+	if (!IsLocallyControlled() || !bCanOrbit)
 	{
 		return;
 	}
@@ -107,6 +108,27 @@ void APGSpectatorPawn::SetSpectateTarget(AActor* NewTarget)
 {
 	TargetToOrbit = NewTarget;
 
+	if (ACameraActor* CameraTarget = Cast<ACameraActor>(NewTarget))
+	{
+		bCanOrbit = false;
+		SetActorTickEnabled(false);
+
+		SetActorLocation(CameraTarget->GetActorLocation());
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			PC->SetControlRotation(CameraTarget->GetActorRotation());
+		}
+	}
+	else
+	{
+		bCanOrbit = true;
+		SetActorTickEnabled(true);
+
+		CurrentOrbitYawAngle = NewTarget->GetActorRotation().Yaw;
+
+		UpdateSpectatorPositionAndRotation();
+	}
+
 	// for server update
 	OnRep_TargetToOrbit();
 }
@@ -119,14 +141,26 @@ void APGSpectatorPawn::OnRep_TargetToOrbit()
 {
 	if (IsLocallyControlled())
 	{
-		if (IsValid(TargetToOrbit))
+		if (Cast<ACameraActor>(TargetToOrbit))
+		{
+			bCanOrbit = false;
+			SetActorTickEnabled(false);
+			SetActorLocation(TargetToOrbit->GetActorLocation());
+			if (APlayerController* PC = Cast<APlayerController>(GetController()))
+			{
+				PC->SetControlRotation(TargetToOrbit->GetActorRotation());
+			}
+		}
+		else if (IsValid(TargetToOrbit))
 		{
 			UE_LOG(LogTemp, Log, TEXT("SpectatorPawn: OnRep_TargetToOrbit called. IsLocalPlayerController: %d, Target: %s"), IsLocallyControlled(), *GetNameSafe(TargetToOrbit));
+			bCanOrbit = true;
 			SetActorTickEnabled(true);
-			UpdateSpectatorPositionAndRotation();
+			CurrentOrbitYawAngle = TargetToOrbit->GetActorRotation().Yaw;
 		}
 		else
 		{
+			bCanOrbit = false;
 			SetActorTickEnabled(false);
 		}
 	}

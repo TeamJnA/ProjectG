@@ -7,6 +7,7 @@
 #include "Game/PGLobbyGameMode.h"
 #include "Player/PGPlayerController.h"
 #include "Player/PGPlayerState.h"
+#include "Character/PGPlayerCharacter.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -109,7 +110,6 @@ void APGGameState::NotifyGameFinished()
 
 	FTimerHandle FinalScoreBoardTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(FinalScoreBoardTimerHandle, this, &APGGameState::Multicast_InitFinalScoreBoardWidget, 2.0f, false);
-	//GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameState::Multicast_InitFinalScoreBoardWidget);
 }
 
 /*
@@ -162,4 +162,44 @@ bool APGGameState::IsAllReadyToReturnLobby() const
 	}
 
 	return true;
+}
+
+void APGGameState::NotifyPlayerFinished(APlayerState* FinishedPlayerState)
+{
+	if (!HasAuthority() || !FinishedPlayerState)
+	{
+		return;
+	}
+	HandlePlayerFinished(FinishedPlayerState);
+}
+
+/*
+* 플레이어 종료 처리 구현부
+* 플레이어를 종료 상태로 설정 (!사망 && 종료 -> 탈출 상태)
+* 플레이어 탈출 후 모든 플레이어가 종료 상태인지 확인
+* 종료 상태인 경우 게임을 종료 상태로 변경
+* 아직 플레이 중인 플레이어가 있는 경우 종료 상태인 플레이어들의 상태를 디스플레이하는 ScoreBoardWidget Init
+*/
+void APGGameState::HandlePlayerFinished(APlayerState* FinishedPlayerState)
+{
+	APGPlayerState* PS = Cast<APGPlayerState>(FinishedPlayerState);
+	if (PS && !PS->HasFinishedGame())
+	{
+		PS->SetHasFinishedGame(true);
+
+		APGPlayerCharacter* FinishedPlayerCharacter = Cast<APGPlayerCharacter>(PS->GetPawn());
+
+		if (IsGameFinished())
+		{
+			SetCurrentGameState(EGameState::EndGame);
+			NotifyGameFinished();
+		}
+		else
+		{
+			if (FinishedPlayerCharacter)
+			{
+				FinishedPlayerCharacter->Client_InitScoreBoardWidget();
+			}
+		}
+	}
 }

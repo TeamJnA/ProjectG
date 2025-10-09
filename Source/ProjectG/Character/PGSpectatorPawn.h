@@ -25,6 +25,7 @@ public:
 	void UpdateSpectatorPositionAndRotation();	
 	// 관전 대상 지정
 	void SetSpectateTarget(AActor* NewTarget);
+	const AActor* GetSpectateTarget() const { return TargetToOrbit; }
 
 protected:
 	virtual void Tick(float DeltaSeconds) override;
@@ -57,4 +58,6 @@ private:
 	float CurrentOrbitDistance = 150.0f;
 	// 대상 주위를 공전하는 현재 Yaw 각도
 	float CurrentOrbitYawAngle = 0.0f;
+
+	bool bCanOrbit = true;
 };

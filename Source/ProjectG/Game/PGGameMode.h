@@ -30,6 +30,8 @@ public:
 
 	void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
 
+	void HandlePlayerEscaping(ACharacter* EscapingPlayer);
+
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;
 	// ~ISoundManagerInterface

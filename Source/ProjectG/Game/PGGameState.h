@@ -14,6 +14,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerArrayChangedDelegate);
 
 class APGPlayerController;
+class APGPlayerCharacter;
 
 UENUM(BlueprintType)
 enum class EGameState : uint8
@@ -37,11 +38,12 @@ public:
 	
 	FOnMapGenerationComplete OnMapGenerationComplete;
 
-	// EndGame
+	// Game State Process
 	bool IsGameFinished() const;
 	void NotifyGameFinished();
-	//void SetPlayerReadyStateForReturnLobby(const APlayerState* InPlayerState);
 	bool IsAllReadyToReturnLobby() const;
+	void NotifyPlayerFinished(APlayerState* FinishedPlayerState);
+
 
 	// ----- Player List ---------
 	FOnPlayerArrayChangedDelegate OnPlayerArrayChanged;
@@ -62,6 +64,8 @@ protected:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InitFinalScoreBoardWidget();
+
+	void HandlePlayerFinished(APlayerState* FinishedPlayerState);
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "GameState")
 	EGameState CurrentGameState;

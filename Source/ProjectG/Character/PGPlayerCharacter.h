@@ -23,6 +23,7 @@ class UPGInventoryComponent;
 class USpotLightComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
 
 /**
  * 
@@ -302,4 +303,20 @@ public:
 
 protected:
 	TObjectPtr<AActor> StaringTargetActor = nullptr;
+
+public:
+	UPROPERTY()
+	FOnAutomatedMovementCompleted OnAutomatedMovementCompleted;
+
+	void StartAutomatedMovement(const FVector& TargetLocation);
+
+private:
+	// 자동 이동 관련 변수들
+	bool bIsMovingAutomated = false;
+	FVector AutomatedMoveTarget;
+	FTimerHandle AutomatedMoveTimer;
+
+	void UpdateAutomatedMovement();
+
+
 };

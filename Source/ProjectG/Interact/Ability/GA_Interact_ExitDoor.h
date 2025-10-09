@@ -39,8 +39,6 @@ public:
 		bool bWasCancelled) override;
 
 protected:
-	void HandlePlayerFinished(APGPlayerCharacter* PGCharacter);
-
 	FGameplayTag HandActionLockTag;
 	TObjectPtr<UAnimMontage> ThrowAnimMontage;
 };

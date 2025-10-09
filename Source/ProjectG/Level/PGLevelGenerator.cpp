@@ -157,6 +157,31 @@ void APGLevelGenerator::SpawnStartRoom()
 	}
 	DeafultKey2->SetActorRelativeLocation(FVector(538.0f, 356.0f, 90.0f));
 
+	
+	// for test ~
+	APGItemActor* TestExitKey1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData3 = GI->GetItemDataByKey("ExitKey"))
+	{
+		TestExitKey1->InitWithData(ItemData3);
+	}
+	TestExitKey1->SetActorRelativeLocation(FVector(700.0f, 270.0f, 10.0f));
+
+	APGItemActor* TestExitKey2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData4 = GI->GetItemDataByKey("ExitKey"))
+	{
+		TestExitKey2->InitWithData(ItemData4);
+	}
+	TestExitKey2->SetActorRelativeLocation(FVector(700.0f, 350.0f, 10.0f));
+
+	APGItemActor* TestExitKey3 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData5 = GI->GetItemDataByKey("ExitKey"))
+	{
+		TestExitKey3->InitWithData(ItemData5);
+	}
+	TestExitKey3->SetActorRelativeLocation(FVector(700.0f, 430.0f, 10.0f));
+	// ~ for test
+
+
 	APGExitDoor* ExitDoor = World->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), SpawnParams);
 	ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
 	ExitDoor->SetActorRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));

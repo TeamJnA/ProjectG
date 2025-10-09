@@ -71,11 +71,7 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
     PG_CHECK_VALID_INTERACT(ExitDoor);
     // --- check valid ---
 
-    if (ExitDoor->IsOpened())
-    {
-        HandlePlayerFinished(PGCharacter);
-    }
-    else if (ExitDoor->IsLocked())
+    if (ExitDoor->IsLocked())
     {
         UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit Door is locked."));
 
@@ -92,46 +88,13 @@ void UGA_Interact_ExitDoor::ActivateAbility(const FGameplayAbilitySpecHandle Han
             ExitDoor->SubtractLockStack();
         }
     }
-    else
+    else if (!ExitDoor->IsOpened())
     {
         UE_LOG(LogTemp, Log, TEXT("UGA_Interact_ExitDoor::ActivateAbility: Exit door is unlocked. Open exit door"));
         ExitDoor->ToggleDoor();
-        HandlePlayerFinished(PGCharacter);
     }
 
     EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-}
-
-/*
-* 플레이어 종료 처리 구현부
-* 플레이어를 종료 상태로 설정 (!사망 && 종료 -> 탈출 상태)
-* 플레이어 탈출 후 모든 플레이어가 종료 상태인지 확인
-* 종료 상태인 경우 게임을 종료 상태로 변경
-* 아직 플레이 중인 플레이어가 있는 경우 종료 상태인 플레이어들의 상태를 디스플레이하는 ScoreBoardWidget Init
-*/
-void UGA_Interact_ExitDoor::HandlePlayerFinished(APGPlayerCharacter* PGCharacter)
-{
-    if (!PGCharacter)
-    {
-        return;
-    }
-
-    APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-    APGPlayerState* PS = PGCharacter->GetPlayerState<APGPlayerState>();
-    if (GS && PS)
-    {
-        PS->SetHasFinishedGame(true);
-
-        if (GS->IsGameFinished())
-        {
-            GS->SetCurrentGameState(EGameState::EndGame);
-            GS->NotifyGameFinished();
-        }
-        else
-        {
-            PGCharacter->Client_InitScoreBoardWidget();
-        }
-    }
 }
 
 void UGA_Interact_ExitDoor::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)

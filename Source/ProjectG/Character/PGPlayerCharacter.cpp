@@ -514,6 +514,48 @@ void APGPlayerCharacter::InitHUD()
 }
 
 /*
+* 플레이어 탈출 시 목표 지점으로 이동
+*/
+void APGPlayerCharacter::StartAutomatedMovement(const FVector& TargetLocation)
+{
+	bIsMovingAutomated = true;
+	AutomatedMoveTarget = TargetLocation;
+	
+	AbilitySystemComponent->ClearAllAbilities();
+
+	GetWorld()->GetTimerManager().SetTimer(AutomatedMoveTimer, this, &APGPlayerCharacter::UpdateAutomatedMovement, GetWorld()->GetDeltaSeconds(), true);
+}
+
+/*
+* 이동 구현부
+*/
+void APGPlayerCharacter::UpdateAutomatedMovement()
+{
+	if (!bIsMovingAutomated)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(AutomatedMoveTimer);
+		return;
+	}
+
+	const FVector CurrentLocation = GetActorLocation();
+	if (FVector::DistSquared(CurrentLocation, AutomatedMoveTarget) < FMath::Square(50.0f))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Character::UpdateAutomatedMovement: End move"))
+		bIsMovingAutomated = false;
+		GetWorld()->GetTimerManager().ClearTimer(AutomatedMoveTimer);
+
+		OnAutomatedMovementCompleted.Broadcast();
+	}
+	else
+	{
+		const FVector WorldDirectionToTarget = (AutomatedMoveTarget - CurrentLocation).GetSafeNormal();
+		UE_LOG(LogTemp, Log, TEXT("Character::UpdateAutomatedMovement: moving"));
+
+		AddMovementInput(WorldDirectionToTarget, 1.0f);
+	}
+}
+
+/*
 * 실패 메시지 디스플레이
 */
 void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(const FText& Message)

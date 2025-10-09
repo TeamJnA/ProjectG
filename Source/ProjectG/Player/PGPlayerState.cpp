@@ -43,6 +43,7 @@ void APGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(APGPlayerState, bHasFinishedGame);
 	DOREPLIFETIME(APGPlayerState, bIsDead);
 	DOREPLIFETIME(APGPlayerState, bIsReadyToReturnLobby);
+	DOREPLIFETIME(APGPlayerState, bIsEscaping);
 }
 
 void APGPlayerState::OnRep_PlayerStateUpdated()

@@ -9,6 +9,9 @@
 
 #include "PGExitDoor.generated.h"
 
+class UBoxComponent;
+class APGPlayerCharacter;
+
 UCLASS()
 class PROJECTG_API APGExitDoor : public AActor, public IInteractableActorInterface
 {
@@ -32,6 +35,7 @@ public:
 	void ToggleDoor();
 
 protected:
+	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
@@ -43,20 +47,30 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "DoorMesh")
 	TObjectPtr<UStaticMeshComponent> Mesh1;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "EscapeMesh")
+	TObjectPtr<UStaticMeshComponent> EscapeMesh0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "EscapeMesh")
+	TObjectPtr<UStaticMeshComponent> EscapeMesh1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Trigger")
+	TObjectPtr<UBoxComponent> EscapeTriggerVolume;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
 	UPROPERTY(ReplicatedUsing = OnRep_LockStack)
 	int32 LockStack;
 
-	UFUNCTION()
-	void OnRep_LockStack();
-
 	UPROPERTY(ReplicatedUsing = OnRep_DoorState)
 	bool bIsOpen = false;
 
 	UFUNCTION()
+	void OnRep_LockStack();
+
+	UFUNCTION()
 	void OnRep_DoorState();
 
-
+	UFUNCTION()
+	void OnEscapeTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };

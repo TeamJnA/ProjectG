@@ -3,8 +3,16 @@
 
 #include "Level/PGExitDoor.h"
 
+#include "Components/BoxComponent.h"
+
 #include "AbilitySystemComponent.h"
 #include "Interact/Ability/GA_Interact_ExitDoor.h"
+
+#include "Character/PGPlayerCharacter.h"
+#include "Game/PGGameMode.h"
+#include "Game/PGGameState.h"
+#include "Player/PGPlayerState.h"
+#include "Player/PGPlayerController.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -39,6 +47,39 @@ APGExitDoor::APGExitDoor()
 		Mesh0->SetStaticMesh(MeshRef.Object);
 		Mesh1->SetStaticMesh(MeshRef.Object);
 	}
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> EscapeMeshRef(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+	static ConstructorHelpers::FObjectFinder<UMaterial> EscapeMeshMaterialRef(TEXT("/Script/Engine.Material'/Engine/EngineDebugMaterials/BlackUnlitMaterial.BlackUnlitMaterial'"));
+
+	EscapeMesh0 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EscapeMesh0"));
+	EscapeMesh0->SetupAttachment(Root);
+	EscapeMesh0->SetRelativeLocation(FVector(0.0f, -200.0f, 150.0f));
+	EscapeMesh0->SetRelativeScale3D(FVector(3.5f, 4.0f, 3.25f));
+	EscapeMesh0->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	EscapeMesh1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EscapeMesh1"));
+	EscapeMesh1->SetupAttachment(Root);
+	EscapeMesh1->SetRelativeLocation(FVector(0.0f, -200.0f, -10.0f));
+	EscapeMesh1->SetRelativeScale3D(FVector(3.5f, 4.0f, 0.25f));
+	EscapeMesh1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+
+	if (EscapeMeshRef.Succeeded())
+	{
+		EscapeMesh0->SetStaticMesh(EscapeMeshRef.Object);
+		EscapeMesh1->SetStaticMesh(EscapeMeshRef.Object);
+	}
+	if (EscapeMeshMaterialRef.Succeeded())
+	{
+		EscapeMesh0->SetMaterial(0, EscapeMeshMaterialRef.Object);
+		EscapeMesh1->SetMaterial(0, EscapeMeshMaterialRef.Object);
+	}
+
+	EscapeTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("EscapeTriggerVolume"));
+	EscapeTriggerVolume->SetupAttachment(Root);
+	EscapeTriggerVolume->SetRelativeLocation(FVector(0.0f, 0.0f, 150.0f));
+	EscapeTriggerVolume->SetBoxExtent(FVector(130.0f, 10.0f, 150.0f));
+	EscapeTriggerVolume->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	EscapeTriggerVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 	InteractAbility = UGA_Interact_ExitDoor::StaticClass();
 
@@ -86,9 +127,18 @@ FInteractionInfo APGExitDoor::GetInteractionInfo() const
 *	상호작용 시도 플레이어가 ExitKey를 들고 있지	않으면 상호작용 불가능, 실패 메시지 return
 * 잠김 x
 *	상호작용 가능
+* 
+* 이미 열려있는 경우
+*	상호작용 불가능
 */
 bool APGExitDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
 {	
+	if (bIsOpen)
+	{
+		OutFailureMessage = FText::GetEmpty();
+		return false;
+	}
+	
 	// if exit door is locked
 	if (LockStack > 0)
 	{
@@ -127,6 +177,18 @@ void APGExitDoor::ToggleDoor()
 	Mesh1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 }
 
+void APGExitDoor::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	EscapeTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &APGExitDoor::OnEscapeTriggerOverlap);
+}
+
 void APGExitDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -146,4 +208,32 @@ void APGExitDoor::OnRep_DoorState()
 
 	Mesh0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	Mesh1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+}
+
+/*
+* 플레이어가 ExitDoor를 열고 트리거에 닿은 경우 종료처리
+*/
+void APGExitDoor::OnEscapeTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!bIsOpen)
+	{
+		return;
+	}
+
+	if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(OtherActor))
+	{
+		// 컷신 -> 종료처리 -> 종료 카메라 뷰 변환 -> 스코어보드
+		if (APGPlayerState* PS = PlayerCharacter->GetPlayerState<APGPlayerState>(); PS && !PS->HasFinishedGame())
+		{
+			if (APGGameMode* GM = GetWorld()->GetAuthGameMode<APGGameMode>())
+			{
+				GM->HandlePlayerEscaping(PlayerCharacter);
+			}
+
+			if (APGPlayerController* PC = Cast<APGPlayerController>(PlayerCharacter->GetController()))
+			{
+				PC->Client_StartEscapeSequence();
+			}
+		}
+	}
 }

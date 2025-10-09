@@ -6,7 +6,7 @@
 #include "Game/PGGameMode.h"
 #include "Game/PGGameState.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
-
+#include "Player/PGPlayerState.h"
 #include "Character/PGSpectatorPawn.h"
 #include "Character/PGPlayerCharacter.h"
 
@@ -20,6 +20,8 @@
 #include "UI/PGPauseMenuWidget.h"
 #include "UI/PGHUD.h"
 
+#include "Camera/CameraActor.h"
+#include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "Net/UnrealNetwork.h"
 
@@ -200,6 +202,111 @@ void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 }
 
 /*
+* GM에서 호출
+* 탈출하려는 플레이어를 관전 중인 경우
+* 해당 플레이어가 탈출을 시작하면 Escape 카메라를 찾아 SetSpectateTarget
+*/
+void APGPlayerController::ForceSpectateTarget()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	TArray<AActor*> FoundCameras;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
+	ACameraActor* TargetCamera = FoundCameras.Num() > 0 ? Cast<ACameraActor>(FoundCameras[0]) : nullptr;
+
+	if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
+	{
+		Spectator->SetSpectateTarget(TargetCamera);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PGPC::ForceEscapeSpectate: EscapeCutsceneCamera not found! Switching to next target as a fallback."));
+		Server_ChangeSpectateTarget(true);
+	}
+}
+
+/*
+* 현재 관전 대상 return
+*/
+const APlayerState* APGPlayerController::GetCurrentSpectateTargetPlayerState() const
+{
+	if (SpectateTargetList.IsValidIndex(CurrentSpectateIndex))
+	{
+		return SpectateTargetList[CurrentSpectateIndex];
+	}
+	return nullptr;
+}
+
+/*
+* 플레이어 탈출 -> 플레이어 입력 비활성화 -> 목표 지점으로 이동 -> Escape 카메라로 시점 변환
+*/
+void APGPlayerController::Client_StartEscapeSequence_Implementation()
+{
+	APGPlayerCharacter* PlayerCharacter = GetPawn<APGPlayerCharacter>();
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	TArray<AActor*> FoundCameras;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
+	ACameraActor* TargetCamera = FoundCameras.Num() > 0 ? Cast<ACameraActor>(FoundCameras[0]) : nullptr;
+
+	const FVector Destination = FVector(2060.0f, 310.0f, 10.0f);
+
+	if (!TargetCamera)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Escape sequence actors not found. Requesting immediate escape."));
+		OnEscapeMovementFinished();
+		return;
+	}
+
+	PlayerCharacter->DisableInput(this);
+	PlayerCharacter->OnAutomatedMovementCompleted.AddUniqueDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
+	PlayerCharacter->StartAutomatedMovement(Destination);
+	//SetViewTargetWithBlend(TargetCamera, 0.2f);	
+	SetViewTarget(TargetCamera);
+	SetControlRotation(TargetCamera->GetActorRotation());
+}
+
+/*
+* 목적지 도착 -> GS 상태 처리, 플레이어 캐릭터 제거
+*/
+void APGPlayerController::OnEscapeMovementFinished()
+{
+	APGPlayerCharacter* PlayerCharacter = GetPawn<APGPlayerCharacter>();
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->OnAutomatedMovementCompleted.RemoveDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
+	}
+
+	Server_RequestFinishEscape();
+}
+
+/*
+* GS 상태 처리, 플레이어 캐릭터 제거
+*/
+void APGPlayerController::Server_RequestFinishEscape_Implementation()
+{
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		if (PlayerState)
+		{
+			GS->NotifyPlayerFinished(PlayerState);
+		}
+	}
+
+	if (APawn* MyPawn = GetPawn())
+	{
+		UnPossess();
+		MyPawn->Destroy();
+	}
+}
+
+/*
 * 관전 시작 환경 구성
 * ServerRPC를 통해 서버에 관전용 pawn, 관전 대상 설정 요청
 */
@@ -217,6 +324,7 @@ void APGPlayerController::StartSpectate()
 
 	bShowMouseCursor = false;
 	SetInputMode(FInputModeGameOnly());
+	EnableInput(this);
 
 	Server_EnterSpectatorMode();
 
@@ -233,25 +341,30 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 		return;
 	}
 
-	APawn* PrevPawn = GetPawn();
-	if (PrevPawn)
-	{
-		PrevPawn->DisableInput(this);
-	}
+	//APawn* PrevPawn = GetPawn();
+	//if (PrevPawn)
+	//{
+	//	PrevPawn->DisableInput(this);
+	//}
 
 	SpectateTargetList.Empty();
 	CurrentSpectateIndex = -1;
-	UWorld* World = GetWorld();
-	if (World)
+	
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
-		for (TActorIterator<APGPlayerCharacter> It(World); It; ++It)
+		for (APlayerState* PS : GS->PlayerArray)
 		{
-			APGPlayerCharacter* CurrentCharacter = *It;
-			if (CurrentCharacter && CurrentCharacter != PrevPawn)
+			if (PS && PS != this->PlayerState)
 			{
-				SpectateTargetList.Add(CurrentCharacter);
+				SpectateTargetList.Add(PS);
 			}
 		}
+	}
+
+	if (SpectateTargetList.Num() <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Spectate Target"));
+		return;
 	}
 
 	FActorSpawnParameters SpawnParams;
@@ -259,7 +372,7 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	SpawnParams.bNoFail = true; 
 
-	APGSpectatorPawn* Spectator = GetWorld()->SpawnActor<APGSpectatorPawn>(APGSpectatorPawn::StaticClass(), PrevPawn->GetActorTransform(), SpawnParams);
+	APGSpectatorPawn* Spectator = GetWorld()->SpawnActor<APGSpectatorPawn>(APGSpectatorPawn::StaticClass(), SpawnParams);
 	if (Spectator)
 	{
 		Possess(Spectator);
@@ -271,6 +384,7 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 * 관전 대상 변경
 * bNext == true -> 다음 대상
 * bNext == false -> 이전 대상
+* 관전 대상이 탈출한 플레이어인 경우 Escape 카메라 SetSpectateTarget
 */
 void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 {
@@ -288,12 +402,39 @@ void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 		CurrentSpectateIndex = (CurrentSpectateIndex - 1 + SpectateTargetList.Num()) % SpectateTargetList.Num();
 	}
 
-	if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
+	APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>();
+	if (!Spectator)
 	{
-		if (SpectateTargetList.IsValidIndex(CurrentSpectateIndex))
+		return;
+	}
+
+	APGPlayerState* NewTargetPS = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? Cast<APGPlayerState>(SpectateTargetList[CurrentSpectateIndex]) : nullptr;
+	if (!NewTargetPS)
+	{
+		return;
+	}
+
+	if (NewTargetPS->IsEscaping())
+	{
+		TArray<AActor*> FoundCameras;
+		UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
+		if (FoundCameras.Num() > 0)
 		{
-			APGPlayerCharacter* NewTarget = SpectateTargetList[CurrentSpectateIndex];
-			Spectator->SetSpectateTarget(NewTarget);
+			Spectator->SetSpectateTarget(FoundCameras[0]);
+		}
+	}
+	else
+	{
+		AActor* TargetPawn = NewTargetPS->GetPawn();
+		if (TargetPawn)
+		{
+			UE_LOG(LogTemp, Log, TEXT("PGPC::Server_ChangeSpectateTarget: TargetPawn: [%s]"), *NewTargetPS->GetPlayerName());
+			Spectator->SetSpectateTarget(TargetPawn);
+		}
+		else
+		{
+			// TODO: 뭔가 버그로 대상이 유효하지 않은 경우
+			// 다음 대상으로 넘기기
 		}
 	}
 }

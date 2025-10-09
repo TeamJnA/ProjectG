@@ -35,6 +35,13 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_ForceReturnToLobby();
 
+	UFUNCTION(Client, Reliable)
+	void Client_StartEscapeSequence();
+
+	void ForceSpectateTarget();
+
+	const APlayerState* GetCurrentSpectateTargetPlayerState() const;
+
 	virtual void OnRep_Pawn() override;
 
 protected:	
@@ -54,11 +61,20 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetReadyToReturnLobby();
 
+	UFUNCTION()
+	void OnEscapeMovementFinished();
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestFinishEscape();
+
 	UFUNCTION(Server, Reliable)
 	void Server_EnterSpectatorMode();
 
 	UFUNCTION(Server, Reliable)
 	void Server_ChangeSpectateTarget(bool bNext);
+
+	UPROPERTY()
+	TArray<TObjectPtr<APlayerState>> SpectateTargetList;
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -77,7 +93,7 @@ protected:
 	TObjectPtr<UInputAction> SpectatePrevAction;
 
 	// spectate
-	TArray<TObjectPtr<APGPlayerCharacter>> SpectateTargetList;
+	//TArray<TObjectPtr<APGPlayerCharacter>> SpectateTargetList;
 
 	int32 CurrentSpectateIndex = -1;
 

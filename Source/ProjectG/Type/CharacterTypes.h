@@ -17,27 +17,3 @@ enum class EHandActionMontageType : uint8
 	Change,
 	Drop
 };
-
-USTRUCT(BlueprintType)
-struct FPlayerInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly)
-	FUniqueNetIdRepl PlayerNetId;
-
-	UPROPERTY(BlueprintReadOnly)
-	FString PlayerName;
-
-	UPROPERTY(BlueprintReadOnly)
-	bool bIsHost = false;
-
-	UPROPERTY(BlueprintReadOnly)
-	bool bHasFinishedGame = false;
-
-	UPROPERTY(BlueprintReadOnly)
-	bool bIsDead = false;
-
-	UPROPERTY(BlueprintReadOnly)
-	bool bIsReadyToReturnLobby = false;
-};

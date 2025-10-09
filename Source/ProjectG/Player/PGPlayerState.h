@@ -36,6 +36,9 @@ public:
 	bool IsReadyToReturnLobby() const { return bIsReadyToReturnLobby; }
 	void SetReadyToReturnLobby(bool bInIsReadyToReturnLobby) { bIsReadyToReturnLobby = bInIsReadyToReturnLobby; OnRep_PlayerStateUpdated(); }
 
+	bool IsEscaping() const { return bIsEscaping; }
+	void SetIsEscaping(bool bInIsEscaping) { bIsEscaping = bInIsEscaping; }
+
 	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
 
 protected:
@@ -59,6 +62,9 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
 	bool bIsReadyToReturnLobby = false;
+
+	UPROPERTY(Replicated)
+	bool bIsEscaping = false;
 
 	UFUNCTION()
 	void OnRep_PlayerStateUpdated();

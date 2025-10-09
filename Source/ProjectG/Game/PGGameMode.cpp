@@ -169,6 +169,37 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 }
 
 /*
+* 탈출하는 플레이어 상태 설정
+* 탈출하는 플레이어를 관전 중인 플레이어가 있다면 Escape 카메라로 관전 시점 변경
+*/
+void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer)
+{
+	if (!EscapingPlayer)
+	{
+		return;
+	}
+
+	APGPlayerState* EscapingPlayerPS = EscapingPlayer->GetPlayerState<APGPlayerState>();
+	if (!EscapingPlayerPS)
+	{
+		return;
+	}
+	EscapingPlayerPS->SetIsEscaping(true);
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; It++)
+	{
+		APGPlayerController* SpectatorPC = Cast<APGPlayerController>(It->Get());
+		if (SpectatorPC)
+		{
+			if (SpectatorPC->GetCurrentSpectateTargetPlayerState() == EscapingPlayerPS)
+			{
+				SpectatorPC->ForceSpectateTarget();
+			}
+		}
+	}
+}
+
+/*
 * 캐릭터 플레이어 스폰
 * 각 PC에 Possess
 */
