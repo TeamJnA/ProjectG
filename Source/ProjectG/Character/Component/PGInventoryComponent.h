@@ -32,6 +32,7 @@ DECLARE_DYNAMIC_DELEGATE(FOnInventoryComponentReady);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCurrentSlotIndexChanged, int32, NewIndex);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryItemUpdate, const TArray<FInventoryItem>&, InventoryItems);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemHeldStateChanged, bool, NewState);
 
 DECLARE_LOG_CATEGORY_EXTERN(LogInventory, Log, All);
 
@@ -71,6 +72,11 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	void CheckHeldItemChanged();
+
+	UPROPERTY(BlueprintAssignable)
+	FOnItemHeldStateChanged OnItemHeldStateChanged;
+
 private:
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_InventoryItems, EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (AllowPrivateAccess = "true"))
 	TArray<FInventoryItem> InventoryItems;
@@ -89,6 +95,9 @@ private:
 
 	bool bInventoryFull;
 
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_HeldItemFlag)
+	bool bPrevHeldItemFlag;
+
 	// Drop item to spawn
 	UPROPERTY()
 	TSubclassOf<APGItemActor> ItemActor;
@@ -97,6 +106,8 @@ protected:
 	UFUNCTION()
 	void OnRep_InventoryItems();
 
+	UFUNCTION()
+	void OnRep_HeldItemFlag();
 
 /*
 	UI part

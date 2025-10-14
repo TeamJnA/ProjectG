@@ -24,6 +24,8 @@ UPGInventoryComponent::UPGInventoryComponent()
 	CurrentInventoryIndex = 0;
 	MaxInventorySize = 5;
 
+	bPrevHeldItemFlag = false;
+
 	SetIsReplicatedByDefault(true);
 
 	static ConstructorHelpers::FClassFinder<APGItemActor> ItemActorRef(TEXT("/Game/ProjectG/Items/BP_PGItemActor.BP_PGItemActor_C"));
@@ -91,6 +93,8 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(const int32 NewInventory
 
 	SetCurrentInventoryIndex(NewInventoryIndex);
 
+	CheckHeldItemChanged();
+
 	// Broadcast to InventoryWidget
 	if (OnCurrentSlotIndexChanged.IsBound())
 	{
@@ -154,6 +158,8 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 	const FGameplayAbilitySpec AbilitySpec(ItemData->ItemAbility, 1);
 	InventoryItems[ItemInputIdx].ItemAbilitySpecHandle = AbilitySystemComponent->GiveAbility(AbilitySpec);
 
+	CheckHeldItemChanged();
+
 	// Broadcast to Inventory Widget
 	OnInventoryItemUpdate.Broadcast(InventoryItems);
 }
@@ -165,6 +171,11 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 void UPGInventoryComponent::OnRep_InventoryItems()
 {
 	OnInventoryItemUpdate.Broadcast(InventoryItems);
+}
+
+void UPGInventoryComponent::OnRep_HeldItemFlag()
+{
+	OnItemHeldStateChanged.Broadcast(bPrevHeldItemFlag);
 }
 
 void UPGInventoryComponent::ActivateCurrentItemAbility()
@@ -253,6 +264,8 @@ void UPGInventoryComponent::RemoveCurrentItem()
 
 	UE_LOG(LogInventory, Log, TEXT("Remove item and clear ability."));
 
+	CheckHeldItemChanged();
+
 	/*
 	* Broadcast to Inventory Widget
 	*/
@@ -265,5 +278,22 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 	DOREPLIFETIME(UPGInventoryComponent, InventoryItems);
 	DOREPLIFETIME(UPGInventoryComponent, CurrentInventoryIndex);
+	DOREPLIFETIME(UPGInventoryComponent, bPrevHeldItemFlag);
+}
+
+// TODO :: Check Replication of held Item
+void UPGInventoryComponent::CheckHeldItemChanged()
+{
+	if ( bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
+	{
+		bPrevHeldItemFlag = false;
+		OnItemHeldStateChanged.Broadcast(false);
+	}
+	else if ( !bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData)
+	{
+		bPrevHeldItemFlag = true;
+		OnItemHeldStateChanged.Broadcast(true);
+	}
+	// Flag 이용해서 이전 내용 확인하고 변하면 브로드캐스트
 }
 
