@@ -93,7 +93,7 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(const int32 NewInventory
 
 	SetCurrentInventoryIndex(NewInventoryIndex);
 
-	CheckHeldItemChanged();
+	CheckHeldItemChanged(NewInventoryIndex);
 
 	// Broadcast to InventoryWidget
 	if (OnCurrentSlotIndexChanged.IsBound())
@@ -158,7 +158,7 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 	const FGameplayAbilitySpec AbilitySpec(ItemData->ItemAbility, 1);
 	InventoryItems[ItemInputIdx].ItemAbilitySpecHandle = AbilitySystemComponent->GiveAbility(AbilitySpec);
 
-	CheckHeldItemChanged();
+	CheckHeldItemChanged(CurrentInventoryIndex);
 
 	// Broadcast to Inventory Widget
 	OnInventoryItemUpdate.Broadcast(InventoryItems);
@@ -264,7 +264,7 @@ void UPGInventoryComponent::RemoveCurrentItem()
 
 	UE_LOG(LogInventory, Log, TEXT("Remove item and clear ability."));
 
-	CheckHeldItemChanged();
+	CheckHeldItemChanged(CurrentInventoryIndex);
 
 	/*
 	* Broadcast to Inventory Widget
@@ -281,19 +281,17 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPGInventoryComponent, bPrevHeldItemFlag);
 }
 
-// TODO :: Check Replication of held Item
-void UPGInventoryComponent::CheckHeldItemChanged()
+void UPGInventoryComponent::CheckHeldItemChanged_Implementation(const int32 CheckItemIndex)
 {
-	if ( bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
+	if ( bPrevHeldItemFlag && InventoryItems[CheckItemIndex].ItemData == nullptr)
 	{
 		bPrevHeldItemFlag = false;
 		OnItemHeldStateChanged.Broadcast(false);
 	}
-	else if ( !bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData)
+	else if ( !bPrevHeldItemFlag && InventoryItems[CheckItemIndex].ItemData)
 	{
 		bPrevHeldItemFlag = true;
 		OnItemHeldStateChanged.Broadcast(true);
 	}
-	// Flag 이용해서 이전 내용 확인하고 변하면 브로드캐스트
 }
 

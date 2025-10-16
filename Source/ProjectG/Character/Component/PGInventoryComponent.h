@@ -72,7 +72,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	void CheckHeldItemChanged();
+	UFUNCTION(Server, Unreliable)
+	void CheckHeldItemChanged(const int32 CheckItemIndex);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnItemHeldStateChanged OnItemHeldStateChanged;
