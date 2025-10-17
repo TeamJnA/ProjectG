@@ -79,7 +79,7 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 						AvatarTexture = GI->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
 					}
 
-					NewSlot->SetupEntry(PGPS, AvatarTexture);
+					NewSlot->SetupEntry(PGPS, AvatarTexture, EPlayerEntryContext::Scoreboard);
 					PlayerContainer->AddChild(NewSlot);
 					UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PGPS->GetPlayerName());
 				}

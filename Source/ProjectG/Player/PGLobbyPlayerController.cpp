@@ -188,3 +188,13 @@ void APGLobbyPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 		HUD->InitPauseMenuWidget();
 	}
 }
+
+void APGLobbyPlayerController::Client_ShowLoadingScreen_Implementation()
+{
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LobbyPC::Client_ShowLoadingScreen: No valid gi"));
+	}
+	GI->ShowLoadingScreen();
+}

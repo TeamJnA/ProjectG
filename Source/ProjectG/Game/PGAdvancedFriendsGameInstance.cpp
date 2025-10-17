@@ -20,7 +20,7 @@
 #include "Engine/Texture2D.h"
 
 #include "Item/PGItemData.h"
-#include "UI/PGMainMenuWidget.h"
+#include "Blueprint/UserWidget.h"
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 #include "steam/steam_api.h" 
@@ -443,6 +443,34 @@ void UPGAdvancedFriendsGameInstance::KickPlayerFromSession(const FUniqueNetId& P
 	SessionInterface->UnregisterPlayer(NAME_GameSession, PlayerToKickId);
 }
 // ---------- Session ---------
+
+void UPGAdvancedFriendsGameInstance::ShowLoadingScreen()
+{
+	if (!LoadingScreenWidgetClass || (LoadingScreenWidget && LoadingScreenWidget->IsInViewport()))
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("GI::ShowLoadingScreen: Show loading screen"));
+	LoadingScreenWidget = CreateWidget<UUserWidget>(this, LoadingScreenWidgetClass);
+	if (!LoadingScreenWidget)
+	{
+		return;
+	}
+	LoadingScreenWidget->AddToViewport(100);
+}
+
+void UPGAdvancedFriendsGameInstance::HideLoadingScreen()
+{
+	if (!LoadingScreenWidget)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("GI::HideLoadingScreen: hide loading screen"));
+	LoadingScreenWidget->RemoveFromParent();
+	LoadingScreenWidget = nullptr;
+}
 
 int32 UPGAdvancedFriendsGameInstance::GetMaxInventorySize() const
 {

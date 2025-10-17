@@ -219,12 +219,19 @@ void APGLevelGenerator::SpawnNextRoom()
 		NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, spawnParams);
 	}
 
+	TWeakObjectPtr<APGLevelGenerator> WeakThis(this);
+	TWeakObjectPtr<APGMasterRoom> WeakNewRoom(NewRoom);
+	TWeakObjectPtr<USceneComponent> WeakSelectedExitPoint(SelectedExitPoint);
+
 	FTimerHandle DelayTimerHandle;
 	World->GetTimerManager().SetTimer(
 		DelayTimerHandle,
-		FTimerDelegate::CreateLambda([this, SelectedExitPoint, NewRoom]()
+		FTimerDelegate::CreateLambda([WeakThis, WeakSelectedExitPoint, WeakNewRoom]()
 		{
-			CheckOverlap(SelectedExitPoint, NewRoom);
+			if (WeakThis.IsValid() && WeakSelectedExitPoint.IsValid() && WeakNewRoom.IsValid())
+			{
+				WeakThis->CheckOverlap(WeakSelectedExitPoint.Get(), WeakNewRoom.Get());
+			}
 		}), 
 		0.1f,
 		false
@@ -567,6 +574,7 @@ void APGLevelGenerator::CheckLevelGenerateTimeOut() const
 	{
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 
+		UE_LOG(LogTemp, Log, TEXT("LG::CheckLevelGenerateTimeout: Timeout. re-open level"));
 		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 	}
 }

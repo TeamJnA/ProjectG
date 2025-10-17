@@ -4,6 +4,7 @@
 #include "UI/PGHUD.h"
 #include "UI/PGMainMenuWidget.h"
 #include "UI/PGLobbyWidget.h"
+#include "UI/PGSpectatorWidget.h"
 #include "UI/PGAttributesWidget.h"
 #include "UI/PGInventoryWidget.h"
 #include "UI/PGMessageManagerWidget.h"
@@ -116,6 +117,27 @@ void APGHUD::InitLobbyWidget()
 		FInputModeGameOnly InputMode;
 		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = false;
+	}
+}
+
+void APGHUD::InitSpectatorWidget()
+{
+	if (!SpectatorWidgetClass || (SpectatorWidget && SpectatorWidget->IsInViewport()))
+	{
+		return;
+	}
+
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC)
+	{
+		return;
+	}
+
+	SpectatorWidget = CreateWidget<UPGSpectatorWidget>(PC, SpectatorWidgetClass);
+	if (SpectatorWidget)
+	{
+		SpectatorWidget->AddToViewport();
+		SpectatorWidget->Init();
 	}
 }
 
@@ -239,3 +261,10 @@ void APGHUD::DisplayInteractionFailedMessage(const FText& Message, float Duratio
 	}
 }
 
+void APGHUD::ClearViewport()
+{
+	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+	{
+		Viewport->RemoveAllViewportWidgets();
+	}
+}

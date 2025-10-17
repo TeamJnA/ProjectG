@@ -538,7 +538,7 @@ void APGPlayerCharacter::UpdateAutomatedMovement()
 	}
 
 	const FVector CurrentLocation = GetActorLocation();
-	if (FVector::DistSquared(CurrentLocation, AutomatedMoveTarget) < FMath::Square(50.0f))
+	if (FVector::DistSquared2D(CurrentLocation, AutomatedMoveTarget) < FMath::Square(50.0f))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Character::UpdateAutomatedMovement: End move"))
 		bIsMovingAutomated = false;
@@ -548,7 +548,9 @@ void APGPlayerCharacter::UpdateAutomatedMovement()
 	}
 	else
 	{
-		const FVector WorldDirectionToTarget = (AutomatedMoveTarget - CurrentLocation).GetSafeNormal();
+		FVector DirectionToTarget = AutomatedMoveTarget - CurrentLocation;
+		DirectionToTarget.Z = 0.0f;
+		const FVector WorldDirectionToTarget = DirectionToTarget.GetSafeNormal();
 		UE_LOG(LogTemp, Log, TEXT("Character::UpdateAutomatedMovement: moving"));
 
 		AddMovementInput(WorldDirectionToTarget, 1.0f);

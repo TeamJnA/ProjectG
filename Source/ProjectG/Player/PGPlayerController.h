@@ -27,6 +27,9 @@ class PROJECTG_API APGPlayerController : public APlayerController
 public:
 	APGPlayerController();
 
+	UFUNCTION(Client, Reliable)
+	void Client_HideLoadingScreen();
+
 	void StartSpectate();
 	void InitFinalScoreBoardWidget();
 

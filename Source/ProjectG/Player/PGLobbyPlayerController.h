@@ -24,6 +24,9 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void Client_ForceReturnToLobby();
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowLoadingScreen();
 	
 protected:
 	virtual void BeginPlay() override;

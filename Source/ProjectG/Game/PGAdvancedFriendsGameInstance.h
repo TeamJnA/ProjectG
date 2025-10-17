@@ -19,6 +19,7 @@
 class UPGItemData;
 class FUniqueNetId;
 class FOnlineSessionSearchResult;
+class UUserWidget;
 
 USTRUCT(BlueprintType)
 struct FSteamFriendInfo
@@ -109,6 +110,13 @@ public:
 	TArray<FSteamFriendInfo> CachedFriends;	
 	// -------- Steam Friend --------
 
+
+	// -------- LoadingScreen --------
+	void ShowLoadingScreen();
+	void HideLoadingScreen();
+	// -------- LoadingScreen --------
+
+
 protected:
 	virtual void Init() override;
 
@@ -126,6 +134,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameState", meta = (AllowPrivateAccess = "true"))
 	EGameState CurrentSavedGameState;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UUserWidget> LoadingScreenWidgetClass;
 
 private:	
 	// ------- Session --------
@@ -152,6 +163,9 @@ private:
 
 	// for debuging
 	TSharedPtr<const FUniqueNetId> PendingHostId;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> LoadingScreenWidget;
 
 	bool bIsHostingAfterDestroy;
 

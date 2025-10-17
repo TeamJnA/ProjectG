@@ -9,6 +9,7 @@
 #include "Player/PGPlayerState.h"
 #include "Character/PGSpectatorPawn.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Camera/CameraActor.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -16,11 +17,8 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 
-#include "UI/PGFinalScoreBoardWidget.h"
-#include "UI/PGPauseMenuWidget.h"
 #include "UI/PGHUD.h"
 
-#include "Camera/CameraActor.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "Net/UnrealNetwork.h"
@@ -58,19 +56,6 @@ APGPlayerController::APGPlayerController()
 	}
 }
 
-// when Client possess pawn, 
-void APGPlayerController::OnRep_Pawn()
-{
-	Super::OnRep_Pawn();
-
-	if (!IsLocalController())
-	{
-		return;
-	}
-
-	ReplaceInputMappingContext(GetPawn());
-}
-
 void APGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -98,14 +83,49 @@ void APGPlayerController::SetupInputComponent()
 	}
 }
 
+// server
 void APGPlayerController::OnPossess(APawn* NewPawn)
 {
 	// Changing mapping context by pawn( Default gameplay or Spectate )
 	Super::OnPossess(NewPawn);
 
+	if (!IsLocalController())
+	{
+		return;
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("APGPlayerController::OnPossess new pawn [%s]"), *NewPawn->GetName());
 
 	ReplaceInputMappingContext(NewPawn);
+
+	if (const APGSpectatorPawn* Spectator = Cast<APGSpectatorPawn>(NewPawn))
+	{
+		if (APGHUD* HUD = GetHUD<APGHUD>())
+		{
+			HUD->InitSpectatorWidget();
+		}
+	}
+}
+
+// when Client possess pawn, 
+void APGPlayerController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	ReplaceInputMappingContext(GetPawn());
+
+	if (const APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
+	{
+		if (APGHUD* HUD = GetHUD<APGHUD>())
+		{
+			HUD->InitSpectatorWidget();
+		}
+	}
 }
 
 void APGPlayerController::ReplaceInputMappingContext(const APawn* PawnType)
@@ -154,6 +174,14 @@ void APGPlayerController::Client_PostSeamlessTravel_Implementation()
 		return;
 	}
 
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PC::Client_PostSeamlessTravel_Implementation: No valid GI"));
+		return;
+	}
+	GI->ShowLoadingScreen();
+
 	Server_ReportTravelSuccess();
 }
 
@@ -175,6 +203,17 @@ void APGPlayerController::Client_ForceReturnToLobby_Implementation()
 	}
 }
 
+void APGPlayerController::Client_HideLoadingScreen_Implementation()
+{
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PC::Client_HidLoadingScreen: No valid GI"));
+		return;
+	}
+	GI->HideLoadingScreen();
+}
+
 /*
 * 로비로 나가기 버튼을 누른 경우 로컬 플레이어의 선택을 ServerRPC로 GameMode에 전달
 */
@@ -182,7 +221,6 @@ void APGPlayerController::NotifyReadyToReturnLobby()
 {
 	if (!IsLocalController())
 	{
-		UE_LOG(LogTemp, Error, TEXT("PC::NotifyReturnToLobby: PC is not local"));
 		return;
 	}
 
@@ -195,10 +233,11 @@ void APGPlayerController::NotifyReadyToReturnLobby()
 void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 {
 	APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode());
-	if (GM && PlayerState)
+	if (!GM || !PlayerState)
 	{
-		GM->SetPlayerReadyToReturnLobby(PlayerState);
+		return;
 	}
+	GM->SetPlayerReadyToReturnLobby(PlayerState);
 }
 
 /*
@@ -217,14 +256,18 @@ void APGPlayerController::ForceSpectateTarget()
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
 	ACameraActor* TargetCamera = FoundCameras.Num() > 0 ? Cast<ACameraActor>(FoundCameras[0]) : nullptr;
 
+	APlayerState* EscapingPlayerState = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? SpectateTargetList[CurrentSpectateIndex] : nullptr;
 	if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
 	{
-		Spectator->SetSpectateTarget(TargetCamera);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PGPC::ForceEscapeSpectate: EscapeCutsceneCamera not found! Switching to next target as a fallback."));
-		Server_ChangeSpectateTarget(true);
+		if (TargetCamera && EscapingPlayerState)
+		{
+			Spectator->SetSpectateTarget(TargetCamera, EscapingPlayerState);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PGPC::ForceEscapeSpectate: EscapeCutsceneCamera not found! Switching to next target as a fallback."));
+			Server_ChangeSpectateTarget(true);
+		}
 	}
 }
 
@@ -254,15 +297,13 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation()
 	TArray<AActor*> FoundCameras;
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
 	ACameraActor* TargetCamera = FoundCameras.Num() > 0 ? Cast<ACameraActor>(FoundCameras[0]) : nullptr;
-
-	const FVector Destination = FVector(2060.0f, 310.0f, 10.0f);
-
 	if (!TargetCamera)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Escape sequence actors not found. Requesting immediate escape."));
 		OnEscapeMovementFinished();
 		return;
 	}
+	const FVector Destination = FVector(2060.0f, 310.0f, 0.0f);
 
 	PlayerCharacter->DisableInput(this);
 	PlayerCharacter->OnAutomatedMovementCompleted.AddUniqueDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
@@ -278,10 +319,11 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation()
 void APGPlayerController::OnEscapeMovementFinished()
 {
 	APGPlayerCharacter* PlayerCharacter = GetPawn<APGPlayerCharacter>();
-	if (PlayerCharacter)
+	if (!PlayerCharacter)
 	{
-		PlayerCharacter->OnAutomatedMovementCompleted.RemoveDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
+		return;
 	}
+	PlayerCharacter->OnAutomatedMovementCompleted.RemoveDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
 
 	Server_RequestFinishEscape();
 }
@@ -317,9 +359,9 @@ void APGPlayerController::StartSpectate()
 		return;
 	}
 
-	if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
+	if (APGHUD* HUD = GetHUD<APGHUD>())
 	{
-		ViewPort->RemoveAllViewportWidgets();
+		HUD->ClearViewport();
 	}
 
 	bShowMouseCursor = false;
@@ -328,7 +370,7 @@ void APGPlayerController::StartSpectate()
 
 	Server_EnterSpectatorMode();
 
-	UE_LOG(LogTemp, Warning, TEXT("PC::StartSpectate: Client requested EnterSpectatorMode."));
+	UE_LOG(LogTemp, Log, TEXT("PC::StartSpectate: Client requested EnterSpectatorMode."));
 }
 
 /*
@@ -341,16 +383,10 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 		return;
 	}
 
-	//APawn* PrevPawn = GetPawn();
-	//if (PrevPawn)
-	//{
-	//	PrevPawn->DisableInput(this);
-	//}
-
 	SpectateTargetList.Empty();
 	CurrentSpectateIndex = -1;
 	
-	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	if (const APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
 		for (APlayerState* PS : GS->PlayerArray)
 		{
@@ -361,9 +397,9 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 		}
 	}
 
-	if (SpectateTargetList.Num() <= 0)
+	if (SpectateTargetList.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No Spectate Target"));
+		UE_LOG(LogTemp, Warning, TEXT("PC::Server_EnterSpectatorMode: No Spectate Target"));
 		return;
 	}
 
@@ -373,11 +409,12 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 	SpawnParams.bNoFail = true; 
 
 	APGSpectatorPawn* Spectator = GetWorld()->SpawnActor<APGSpectatorPawn>(APGSpectatorPawn::StaticClass(), SpawnParams);
-	if (Spectator)
+	if (!Spectator)
 	{
-		Possess(Spectator);
-		Server_ChangeSpectateTarget(true);
+		return;
 	}
+	Possess(Spectator);
+	Server_ChangeSpectateTarget(true);
 }
 
 /*
@@ -393,14 +430,14 @@ void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 		return;
 	}
 
-	if (bNext)
+	const int32 NewIndex = bNext 
+		? (CurrentSpectateIndex + 1) % SpectateTargetList.Num()
+		: (CurrentSpectateIndex - 1 + SpectateTargetList.Num()) % SpectateTargetList.Num();
+	if (NewIndex == CurrentSpectateIndex)
 	{
-		CurrentSpectateIndex = (CurrentSpectateIndex + 1) % SpectateTargetList.Num();
+		return;
 	}
-	else
-	{
-		CurrentSpectateIndex = (CurrentSpectateIndex - 1 + SpectateTargetList.Num()) % SpectateTargetList.Num();
-	}
+	CurrentSpectateIndex = NewIndex;
 
 	APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>();
 	if (!Spectator)
@@ -408,7 +445,7 @@ void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 		return;
 	}
 
-	APGPlayerState* NewTargetPS = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? Cast<APGPlayerState>(SpectateTargetList[CurrentSpectateIndex]) : nullptr;
+	const APGPlayerState* NewTargetPS = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? Cast<APGPlayerState>(SpectateTargetList[CurrentSpectateIndex]) : nullptr;
 	if (!NewTargetPS)
 	{
 		return;
@@ -420,21 +457,20 @@ void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 		UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
 		if (FoundCameras.Num() > 0)
 		{
-			Spectator->SetSpectateTarget(FoundCameras[0]);
+			Spectator->SetSpectateTarget(FoundCameras[0], NewTargetPS);
 		}
 	}
 	else
 	{
-		AActor* TargetPawn = NewTargetPS->GetPawn();
+		const AActor* TargetPawn = NewTargetPS->GetPawn();
 		if (TargetPawn)
 		{
 			UE_LOG(LogTemp, Log, TEXT("PGPC::Server_ChangeSpectateTarget: TargetPawn: [%s]"), *NewTargetPS->GetPlayerName());
-			Spectator->SetSpectateTarget(TargetPawn);
+			Spectator->SetSpectateTarget(TargetPawn, NewTargetPS);
 		}
 		else
 		{
-			// TODO: 뭔가 버그로 대상이 유효하지 않은 경우
-			// 다음 대상으로 넘기기
+			UE_LOG(LogTemp, Warning, TEXT("PGPC::Server_ChangeSpectateTarget: Spectate target is not valid"));
 		}
 	}
 }

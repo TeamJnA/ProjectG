@@ -129,8 +129,7 @@ void APGGameMode::CheckAllPlayersArrived()
 
 void APGGameMode::HandleMapGenerationComplete()
 {
-	UE_LOG(LogTemp, Log, TEXT("GameMode: Recieved OnMapGenerationComplete"));
-
+	UE_LOG(LogTemp, Log, TEXT("GM::HandleMapGenerationComplete: Recieved OnMapGenerationComplete"));
 	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnAllPlayers);
 }
 
@@ -207,7 +206,7 @@ void APGGameMode::SpawnAllPlayers()
 {
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		APlayerController* PC = It->Get();
+		APGPlayerController* PC = Cast<APGPlayerController>(It->Get());
 		if (!PC || !PC->PlayerState)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("GameMode: SpawnAllPlayers: PlayerController is nullptr."));
@@ -222,6 +221,8 @@ void APGGameMode::SpawnAllPlayers()
 		}
 
 		SpawnOffset += 50;
+
+		PC->Client_HideLoadingScreen();
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager and SoundManager."));

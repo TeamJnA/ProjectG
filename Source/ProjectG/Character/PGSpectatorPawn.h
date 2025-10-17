@@ -10,6 +10,8 @@ class UInputAction;
 struct FInputActionValue;
 class APGPlayerCharacter;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpectateTargetChangedDelegate, const APlayerState*, NewTarget);
+
 /**
  * 
  */
@@ -24,8 +26,12 @@ public:
 	// 관전 대상 트래킹, 회전
 	void UpdateSpectatorPositionAndRotation();	
 	// 관전 대상 지정
-	void SetSpectateTarget(AActor* NewTarget);
+	void SetSpectateTarget(const AActor* NewTarget, const APlayerState* NewTargetPlayerState);
 	const AActor* GetSpectateTarget() const { return TargetToOrbit; }
+	const APlayerState* GetSpectateTargetPlayerState() const { return TargetPlayerState; }
+
+	UPROPERTY()
+	FOnSpectateTargetChangedDelegate OnSpectateTargetChanged;
 
 protected:
 	virtual void Tick(float DeltaSeconds) override;
@@ -47,10 +53,16 @@ protected:
 private:
 	// 관전 대상 Actor (서버에서 설정하고 클라이언트로 복제)
 	UPROPERTY(ReplicatedUsing = OnRep_TargetToOrbit)
-	AActor* TargetToOrbit = nullptr;
+	TObjectPtr<AActor> TargetToOrbit = nullptr;
+
+	UPROPERTY(ReplicatedUsing = OnRep_TargetPlayerState)
+	TObjectPtr<APlayerState> TargetPlayerState = nullptr;
 
 	UFUNCTION()
 	void OnRep_TargetToOrbit();
+
+	UFUNCTION()
+	void OnRep_TargetPlayerState();
 
 	// 초당 회전
 	float RotationSpeed = 90.0f;
@@ -58,6 +70,7 @@ private:
 	float CurrentOrbitDistance = 150.0f;
 	// 대상 주위를 공전하는 현재 Yaw 각도
 	float CurrentOrbitYawAngle = 0.0f;
+	float CurrentOrbitPitchAngle = 15.0f;
 
 	bool bCanOrbit = true;
 };

@@ -56,6 +56,7 @@ void APGSpectatorPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APGSpectatorPawn, TargetToOrbit);
+	DOREPLIFETIME(APGSpectatorPawn, TargetPlayerState);
 }
 
 /*
@@ -70,8 +71,10 @@ void APGSpectatorPawn::OnOrbitYaw(const FInputActionValue& Value)
 		return;
 	}
 
-	float AxisValue = Value.Get<float>();
-	CurrentOrbitYawAngle += AxisValue * RotationSpeed * GetWorld()->GetDeltaSeconds();
+	const FVector2D LookAxisVector = Value.Get<FVector2D>();
+	CurrentOrbitYawAngle += LookAxisVector.X * RotationSpeed * GetWorld()->GetDeltaSeconds();
+	CurrentOrbitPitchAngle -= LookAxisVector.Y * RotationSpeed * GetWorld()->GetDeltaSeconds();
+	CurrentOrbitPitchAngle = FMath::Clamp(CurrentOrbitPitchAngle, -49.0f, 69.0f);
 }
 
 /*
@@ -84,18 +87,19 @@ void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 		return;
 	}
 
-	FVector TargetLocation = TargetToOrbit->GetActorLocation();
-	FVector RelativeVector = FRotator(0.0f, CurrentOrbitYawAngle, 0.0f).Vector() * CurrentOrbitDistance;
-	FVector NewLocation = TargetLocation + RelativeVector + FVector(0.0f, 0.0f, 90.0f);
+	const FVector TargetLocation = TargetToOrbit->GetActorLocation() + FVector(0.0f, 0.0f, 65.0f);
+	const FRotator OrbitRotation = FRotator(CurrentOrbitPitchAngle, CurrentOrbitYawAngle, 0.0f);
+	const FVector RelativeVector = OrbitRotation.Vector() * CurrentOrbitDistance;
+	const FVector NewLocation = TargetLocation + RelativeVector;
 
-	// Location -> Pawn 위치 직접 업데이트
+	// Location -> PawnLocation 업데이트
 	SetActorLocation(NewLocation);
 
 	// Rotation -> ControlRotation 업데이트
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		FVector LookAtVector = TargetLocation - NewLocation;
-		FRotator NewRotation = LookAtVector.Rotation();
+		const FVector LookAtVector = TargetLocation - NewLocation;
+		const FRotator NewRotation = LookAtVector.Rotation();
 		PC->SetControlRotation(NewRotation);
 	}
 }
@@ -104,37 +108,18 @@ void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 * 관전 pawn의 관전 대상 설정
 * 클라이언트에도 관전 대상 정보 레플리케이트
 */
-void APGSpectatorPawn::SetSpectateTarget(AActor* NewTarget)
+void APGSpectatorPawn::SetSpectateTarget(const AActor* NewTarget, const APlayerState* NewTargetPlayerState)
 {
-	TargetToOrbit = NewTarget;
-
-	if (ACameraActor* CameraTarget = Cast<ACameraActor>(NewTarget))
-	{
-		bCanOrbit = false;
-		SetActorTickEnabled(false);
-
-		SetActorLocation(CameraTarget->GetActorLocation());
-		if (APlayerController* PC = Cast<APlayerController>(GetController()))
-		{
-			PC->SetControlRotation(CameraTarget->GetActorRotation());
-		}
-	}
-	else
-	{
-		bCanOrbit = true;
-		SetActorTickEnabled(true);
-
-		CurrentOrbitYawAngle = NewTarget->GetActorRotation().Yaw;
-
-		UpdateSpectatorPositionAndRotation();
-	}
+	TargetToOrbit = const_cast<AActor*>(NewTarget);
+	TargetPlayerState = const_cast<APlayerState*>(NewTargetPlayerState);
 
 	// for server update
 	OnRep_TargetToOrbit();
+	OnRep_TargetPlayerState();
 }
 
 /*
-* 관전 대상 설정 시 Tick을 활성화하여 지연 없이 로컬에서 직접 추적
+* 관전 대상 설정 시 Tick을 활성화하여 로컬에서 직접 추적
 * 관전 대상 이동에 따른 회전, 대상과의 거리 업데이트
 */
 void APGSpectatorPawn::OnRep_TargetToOrbit()
@@ -164,4 +149,9 @@ void APGSpectatorPawn::OnRep_TargetToOrbit()
 			SetActorTickEnabled(false);
 		}
 	}
+}
+
+void APGSpectatorPawn::OnRep_TargetPlayerState()
+{
+	OnSpectateTargetChanged.Broadcast(TargetPlayerState);
 }

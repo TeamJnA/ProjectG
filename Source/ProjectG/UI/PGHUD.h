@@ -10,13 +10,14 @@ class UPGAttributesWidget;
 class UPGInventoryWidget;
 class UPGInventoryComponent;
 class UPGMessageManagerWidget;
-class UPGScoreBoardWidget;
-class UPGFinalScoreBoardWidget;
-class UPGPauseMenuWidget;
 class UPGCrosshairWidget;
 class UPGInteractionProgressWidget;
 class UPGMainMenuWidget;
 class UPGLobbyWidget;
+class UPGSpectatorWidget;
+class UPGScoreBoardWidget;
+class UPGFinalScoreBoardWidget;
+class UPGPauseMenuWidget;
 
 /**
  * 
@@ -30,11 +31,14 @@ public:
 	void Init();
 	void InitMainMenuWidget();
 	void InitLobbyWidget();
+	void InitSpectatorWidget();
 	void InitScoreBoardWidget();
 	void InitFinalScoreBoardWidget();
 	void InitPauseMenuWidget();
 	void UpdateInteractionProgress(float Progress);
 	void DisplayInteractionFailedMessage(const FText& Message, float Duration);
+
+	void ClearViewport();
 
 	// MessageManagerWidget Getter
 	UPGMessageManagerWidget* GetMessageManagerWidget() const { return MessageManagerWidget; }
@@ -51,6 +55,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGLobbyWidget> LobbyWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGSpectatorWidget> SpectatorWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGAttributesWidget> AttributeWidgetClass;
@@ -82,6 +89,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGLobbyWidget> LobbyWidget;
+	
+	UPROPERTY()
+	TObjectPtr<UPGSpectatorWidget> SpectatorWidget;
 
 	UPROPERTY()
 	TObjectPtr<UPGAttributesWidget> AttributeWidget;

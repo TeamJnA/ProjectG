@@ -81,7 +81,7 @@ void UPGLobbyWidget::UpdatePlayerList()
 					{
 						AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
 					}
-					NewPlayerEntry->SetupEntry(PGPS, AvatarTexture);
+					NewPlayerEntry->SetupEntry(PGPS, AvatarTexture, EPlayerEntryContext::Lobby);
 					PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
 				}
 			}
@@ -102,7 +102,7 @@ void UPGLobbyWidget::UpdatePlayerList()
 					{
 						AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
 					}
-					NewPlayerEntry->SetupEntry(PGPS, AvatarTexture);
+					NewPlayerEntry->SetupEntry(PGPS, AvatarTexture, EPlayerEntryContext::Lobby);
 					PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
 				}
 			}

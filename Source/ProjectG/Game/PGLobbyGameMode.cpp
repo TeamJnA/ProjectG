@@ -38,6 +38,17 @@ void APGLobbyGameMode::StartGame()
 		return;
 	}
 
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APGLobbyPlayerController* PC = Cast<APGLobbyPlayerController>(It->Get());
+		if (!PC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("LobbyGM::StartGame: No valid pc"));
+			continue;
+		}
+		PC->Client_ShowLoadingScreen();
+	}
+
 	GI->SaveGameStateOnTravel(EGameState::InGame);
 	GI->SetExpectedPlayersForTravel(GS->PlayerArray);
 
