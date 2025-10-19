@@ -283,6 +283,17 @@ const APlayerState* APGPlayerController::GetCurrentSpectateTargetPlayerState() c
 	return nullptr;
 }
 
+void APGPlayerController::Client_ClearViewport_Implementation()
+{
+	if (IsLocalController())
+	{
+		if (APGHUD* HUD = GetHUD<APGHUD>())
+		{
+			HUD->ClearViewport();
+		}
+	}
+}
+
 /*
 * 플레이어 탈출 -> 플레이어 입력 비활성화 -> 목표 지점으로 이동 -> Escape 카메라로 시점 변환
 */

@@ -45,6 +45,9 @@ public:
 
 	const APlayerState* GetCurrentSpectateTargetPlayerState() const;
 
+	UFUNCTION(Client, Reliable)
+	void Client_ClearViewport();
+
 	virtual void OnRep_Pawn() override;
 
 protected:	

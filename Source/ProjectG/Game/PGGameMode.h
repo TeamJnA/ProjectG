@@ -31,6 +31,8 @@ public:
 	void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
 
 	void HandlePlayerEscaping(ACharacter* EscapingPlayer);
+	
+	void RespawnPlayer(AController* PlayerController, const FTransform& SpawnTransform);
 
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;

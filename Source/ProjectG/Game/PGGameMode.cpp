@@ -198,6 +198,38 @@ void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer)
 	}
 }
 
+void APGGameMode::RespawnPlayer(AController* PlayerController, const FTransform& SpawnTransform)
+{
+	APGPlayerController* PC = Cast<APGPlayerController>(PlayerController);
+	APGPlayerState* PS = PlayerController ? PlayerController->GetPlayerState<APGPlayerState>() : nullptr;
+	if (!PC || !PS)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Revive] RespawnPlayer called with a NULL controller or NULL player state"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("GM::RespawnPlayer: Respawn player %s"), *PS->GetPlayerName());
+
+	PS->SetIsDead(false);
+	PS->SetHasFinishedGame(false);
+
+	if (APawn* Spectator = PC->GetPawn())
+	{
+		PC->UnPossess();
+		Spectator->Destroy();
+	}
+
+	APGPlayerCharacter* NewCharacter = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform);
+	if (NewCharacter)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[Revive] New character spawned. Possessing..."));
+
+		PC->Client_ClearViewport();
+		PC->Possess(NewCharacter);
+		NewCharacter->InitSoundManager(GetSoundManager());
+	}
+}
+
 /*
 * 캐릭터 플레이어 스폰
 * 각 PC에 Possess

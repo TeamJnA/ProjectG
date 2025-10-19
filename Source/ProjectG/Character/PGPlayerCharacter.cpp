@@ -32,8 +32,10 @@
 
 // Interface
 #include "Interface/InteractableActorInterface.h"
+#include "Interact/Ability/GA_Interact_Revive.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -123,6 +125,7 @@ void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APGPlayerCharacter, bIsRagdoll);
+	DOREPLIFETIME(APGPlayerCharacter, DeadPlayerState);
 }
 
 void APGPlayerCharacter::BeginPlay()
@@ -322,6 +325,7 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
 	if (GS && PS)
 	{
+		DeadPlayerState = PS;
 		PS->SetHasFinishedGame(true);
 		PS->SetIsDead(true);
 
@@ -353,12 +357,7 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 
 	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
 	bIsRagdoll = true;
-
-	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
-	GetCapsuleComponent()->SetSimulatePhysics(true);
-
-	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-	GetMesh()->SetSimulatePhysics(true);
+	OnRep_IsRagdoll();
 }
 
 // This function is called on Client when [Player.State.Dead] tag was added.
@@ -397,6 +396,8 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 
 		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 		GetMesh()->SetSimulatePhysics(true);
+		
+		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	}
 }
 
@@ -554,6 +555,56 @@ void APGPlayerCharacter::UpdateAutomatedMovement()
 		UE_LOG(LogTemp, Log, TEXT("Character::UpdateAutomatedMovement: moving"));
 
 		AddMovementInput(WorldDirectionToTarget, 1.0f);
+	}
+}
+
+TSubclassOf<UGameplayAbility> APGPlayerCharacter::GetAbilityToInteract() const
+{
+	if (bIsRagdoll)
+	{
+		return UGA_Interact_Revive::StaticClass();
+	}
+	return nullptr;
+}
+
+FInteractionInfo APGPlayerCharacter::GetInteractionInfo() const
+{
+	if (bIsRagdoll)
+	{
+		return FInteractionInfo(EInteractionType::Hold, 3.0f);
+	}
+	return FInteractionInfo();
+}
+
+bool APGPlayerCharacter::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+{
+	if (bIsRagdoll)
+	{
+		//if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.ReviveKit"))))
+		//{
+		//	return true;
+		//}
+		//OutFailureMessage = FText::FromString(TEXT("Need Revive Kit"));
+		//return false;
+
+		return true; // for test
+	}
+	return false;
+}
+
+void APGPlayerCharacter::HighlightOn() const
+{
+	if (bIsRagdoll && GetMesh())
+	{
+		GetMesh()->SetRenderCustomDepth(true);
+	}
+}
+
+void APGPlayerCharacter::HighlightOff() const
+{
+	if (bIsRagdoll && GetMesh())
+	{
+		GetMesh()->SetRenderCustomDepth(false);
 	}
 }
 

@@ -242,6 +242,13 @@ void UPGInventoryComponent::DropCurrentItem(const FVector DropLocation)
 
 void UPGInventoryComponent::RemoveCurrentItem()
 {
+	AbilitySystemComponent = PlayerCharacter->GetAbilitySystemComponent();
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogInventory, Warning, TEXT("ASC is null in PGInventoryComponent::RemoveCurrentItem. Cannot remove item ability."));
+		return;
+	}
+
 	DeactivateCurrentItemAbility();
 
 	AbilitySystemComponent->ClearAbility(InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle);

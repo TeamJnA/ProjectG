@@ -8,6 +8,7 @@
 #include "GameplayTagContainer.h"
 #include "Type/CharacterTypes.h"
 #include "Interface/AttackableTarget.h"
+#include "Interface/InteractableActorInterface.h"
 
 #include "PGPlayerCharacter.generated.h"
 
@@ -29,7 +30,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
  * 
  */
 UCLASS()
-class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget
+class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IInteractableActorInterface
 {
 	GENERATED_BODY()
 	
@@ -318,5 +319,18 @@ private:
 
 	void UpdateAutomatedMovement();
 
+public:
+	//~ IInteractableActorInterface
+	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
+	virtual FInteractionInfo GetInteractionInfo() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual void HighlightOn() const override;
+	virtual void HighlightOff() const override;
+	//~ IInteractableActorInterface end
 
+	APlayerState* GetDeadPlayerState() const { return DeadPlayerState; }
+
+protected:
+	UPROPERTY(Replicated)
+	TObjectPtr<APlayerState> DeadPlayerState;
 };
