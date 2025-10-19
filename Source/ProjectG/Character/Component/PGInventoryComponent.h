@@ -68,12 +68,14 @@ public:
 
 	void DropCurrentItem(const FVector DropLocation);
 
-	bool IsInventoryFull() { return	bInventoryFull; };
+	FORCEINLINE bool IsInventoryFull() const { return	bInventoryFull; };
+
+	FORCEINLINE bool HasCurrentItem() const { return InventoryItems[CurrentInventoryIndex].ItemData != nullptr; };
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION(Server, Unreliable)
-	void CheckHeldItemChanged(const int32 CheckItemIndex);
+	void Server_CheckHeldItemChanged();
 
 	UPROPERTY(BlueprintAssignable)
 	FOnItemHeldStateChanged OnItemHeldStateChanged;

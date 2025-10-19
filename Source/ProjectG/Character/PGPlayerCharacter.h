@@ -8,6 +8,7 @@
 #include "GameplayTagContainer.h"
 #include "Type/CharacterTypes.h"
 #include "Interface/AttackableTarget.h"
+#include "Interface/HandItemInterface.h"
 
 #include "PGPlayerCharacter.generated.h"
 
@@ -28,7 +29,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, Inter
  * 
  */
 UCLASS()
-class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget
+class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IHandItemInterface
 {
 	GENERATED_BODY()
 	
@@ -268,6 +269,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attachment")
 	TObjectPtr<USceneComponent> ItemSocket;
+
+	// IHandItemInterface 
+	void SetItemMesh();
+	void SetRightHandIK();
+	// ~ IHandItemInterface
 
 ///
 ///********* UI and Components ******************

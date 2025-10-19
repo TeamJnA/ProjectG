@@ -93,8 +93,6 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(const int32 NewInventory
 
 	SetCurrentInventoryIndex(NewInventoryIndex);
 
-	CheckHeldItemChanged(NewInventoryIndex);
-
 	// Broadcast to InventoryWidget
 	if (OnCurrentSlotIndexChanged.IsBound())
 	{
@@ -158,8 +156,6 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 	const FGameplayAbilitySpec AbilitySpec(ItemData->ItemAbility, 1);
 	InventoryItems[ItemInputIdx].ItemAbilitySpecHandle = AbilitySystemComponent->GiveAbility(AbilitySpec);
 
-	CheckHeldItemChanged(CurrentInventoryIndex);
-
 	// Broadcast to Inventory Widget
 	OnInventoryItemUpdate.Broadcast(InventoryItems);
 }
@@ -201,6 +197,8 @@ void UPGInventoryComponent::ActivateCurrentItemAbility()
 	}
 
 	AbilitySystemComponent->TryActivateAbility(InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle);
+
+	Server_CheckHeldItemChanged();
 }
 
 void UPGInventoryComponent::DeactivateCurrentItemAbility()
@@ -264,7 +262,7 @@ void UPGInventoryComponent::RemoveCurrentItem()
 
 	UE_LOG(LogInventory, Log, TEXT("Remove item and clear ability."));
 
-	CheckHeldItemChanged(CurrentInventoryIndex);
+	Server_CheckHeldItemChanged();
 
 	/*
 	* Broadcast to Inventory Widget
@@ -281,14 +279,14 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPGInventoryComponent, bPrevHeldItemFlag);
 }
 
-void UPGInventoryComponent::CheckHeldItemChanged_Implementation(const int32 CheckItemIndex)
+void UPGInventoryComponent::Server_CheckHeldItemChanged_Implementation()
 {
-	if ( bPrevHeldItemFlag && InventoryItems[CheckItemIndex].ItemData == nullptr)
+	if ( bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
 	{
 		bPrevHeldItemFlag = false;
 		OnItemHeldStateChanged.Broadcast(false);
 	}
-	else if ( !bPrevHeldItemFlag && InventoryItems[CheckItemIndex].ItemData)
+	else if ( !bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData)
 	{
 		bPrevHeldItemFlag = true;
 		OnItemHeldStateChanged.Broadcast(true);
