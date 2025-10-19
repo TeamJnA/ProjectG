@@ -9,6 +9,7 @@
 #include "Type/CharacterTypes.h"
 #include "Interface/AttackableTarget.h"
 #include "Interface/InteractableActorInterface.h"
+#include "Interface/HandItemInterface.h"
 
 #include "PGPlayerCharacter.generated.h"
 
@@ -30,7 +31,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
  * 
  */
 UCLASS()
-class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IInteractableActorInterface
+class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IHandItemInterface, public IInteractableActorInterface
 {
 	GENERATED_BODY()
 	
@@ -168,7 +169,20 @@ public:
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_IsRagdoll, VisibleAnywhere, BlueprintReadWrite, Category = Ragdoll)
 	bool bIsRagdoll = false;
 
+	// IInteractableActorInterface ~
+	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
+	virtual FInteractionInfo GetInteractionInfo() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual void HighlightOn() const override;
+	virtual void HighlightOff() const override;
+	//~ IInteractableActorInterface end
+
+	FORCEINLINE APlayerState* GetDeadPlayerState() const { return DeadPlayerState; }
+
 protected:
+	UPROPERTY(Replicated)
+	TObjectPtr<APlayerState> DeadPlayerState;
+
 	UFUNCTION()
 	void OnRep_IsRagdoll();
 
@@ -271,6 +285,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attachment")
 	TObjectPtr<USceneComponent> ItemSocket;
 
+	// IHandItemInterface 
+	void SetItemMesh();
+	void SetRightHandIK();
+	// ~ IHandItemInterface
+
 ///
 ///********* UI and Components ******************
 ///
@@ -318,19 +337,4 @@ private:
 	FTimerHandle AutomatedMoveTimer;
 
 	void UpdateAutomatedMovement();
-
-public:
-	//~ IInteractableActorInterface
-	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
-	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
-	virtual void HighlightOn() const override;
-	virtual void HighlightOff() const override;
-	//~ IInteractableActorInterface end
-
-	APlayerState* GetDeadPlayerState() const { return DeadPlayerState; }
-
-protected:
-	UPROPERTY(Replicated)
-	TObjectPtr<APlayerState> DeadPlayerState;
 };

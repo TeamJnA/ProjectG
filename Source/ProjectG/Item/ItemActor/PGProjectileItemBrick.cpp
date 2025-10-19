@@ -47,9 +47,6 @@ APGProjectileItemBrick::APGProjectileItemBrick()
 	MinBounceImpact = 100.0f;
 }
 
-// TODO : Component 단위로 Hit 계산.
-// 2. 마지막 Hit 후 2초 지나면 Item화.
-// 3. 여러 번 Hit 시 사운드 쿨타임 적용.
 void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (!HasAuthority())
@@ -93,7 +90,7 @@ void APGProjectileItemBrick::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 	}
 	else
 	{
-		// 추가로 물체가 상향 방향으로 튕기지 않았으나 멈추는 경우를 계산하기 위한, 
+		// 추가로 물체가 바닥에 닿지 않았으나 멈추는 경우를 계산하기 위한, 
 		// 타이머를 통한 아이템 화 카운트 진행.
 		GetWorld()->GetTimerManager().ClearTimer(ItemConvertTimer);
 

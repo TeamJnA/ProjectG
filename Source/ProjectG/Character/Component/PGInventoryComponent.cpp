@@ -24,6 +24,8 @@ UPGInventoryComponent::UPGInventoryComponent()
 	CurrentInventoryIndex = 0;
 	MaxInventorySize = 5;
 
+	bPrevHeldItemFlag = false;
+
 	SetIsReplicatedByDefault(true);
 
 	static ConstructorHelpers::FClassFinder<APGItemActor> ItemActorRef(TEXT("/Game/ProjectG/Items/BP_PGItemActor.BP_PGItemActor_C"));
@@ -167,6 +169,11 @@ void UPGInventoryComponent::OnRep_InventoryItems()
 	OnInventoryItemUpdate.Broadcast(InventoryItems);
 }
 
+void UPGInventoryComponent::OnRep_HeldItemFlag()
+{
+	OnItemHeldStateChanged.Broadcast(bPrevHeldItemFlag);
+}
+
 void UPGInventoryComponent::ActivateCurrentItemAbility()
 {
 	if (InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
@@ -190,6 +197,8 @@ void UPGInventoryComponent::ActivateCurrentItemAbility()
 	}
 
 	AbilitySystemComponent->TryActivateAbility(InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle);
+
+	Server_CheckHeldItemChanged();
 }
 
 void UPGInventoryComponent::DeactivateCurrentItemAbility()
@@ -260,6 +269,8 @@ void UPGInventoryComponent::RemoveCurrentItem()
 
 	UE_LOG(LogInventory, Log, TEXT("Remove item and clear ability."));
 
+	Server_CheckHeldItemChanged();
+
 	/*
 	* Broadcast to Inventory Widget
 	*/
@@ -272,5 +283,20 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 	DOREPLIFETIME(UPGInventoryComponent, InventoryItems);
 	DOREPLIFETIME(UPGInventoryComponent, CurrentInventoryIndex);
+	DOREPLIFETIME(UPGInventoryComponent, bPrevHeldItemFlag);
+}
+
+void UPGInventoryComponent::Server_CheckHeldItemChanged_Implementation()
+{
+	if ( bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
+	{
+		bPrevHeldItemFlag = false;
+		OnItemHeldStateChanged.Broadcast(false);
+	}
+	else if ( !bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData)
+	{
+		bPrevHeldItemFlag = true;
+		OnItemHeldStateChanged.Broadcast(true);
+	}
 }
 

@@ -778,19 +778,19 @@ void APGPlayerCharacter::PlayHandActionAnimMontage(EHandActionMontageType _HandA
 	ActivateAbilityByTag(HandActionTagContainer);
 }
 
-//After HandAction, this function is called to activate currentitem's ability.
+// After HandAction, this function is called to activate currentitem's ability.
 void APGPlayerCharacter::EquipCurrentInventoryItem()
 {
-	InventoryComponent->ActivateCurrentItemAbility();
-	AttachMeshOnHand();
+	if (InventoryComponent->HasCurrentItem())
+	{
+		InventoryComponent->ActivateCurrentItemAbility();
+		AttachMeshOnHand();
+	}
 }
 
 void APGPlayerCharacter::AttachMeshOnHand()
 {
-	// Need to Multicast.
-	// Different in client and server.
-	// Client : Attach mesh on sub Hand.
-	// Server : Attach mesh on main hand and multicast
+	// Attach mesh on hand and multicast
 
 	UE_LOG(LogTemp, Log, TEXT("Attach Item On Hand"));
 	/*
@@ -822,6 +822,15 @@ void APGPlayerCharacter::DetachMeshOnHand()
 void APGPlayerCharacter::RemoveItemFromInventory()
 {
 	InventoryComponent->RemoveCurrentItem();
+}
+
+void APGPlayerCharacter::SetItemMesh()
+{
+}
+
+void APGPlayerCharacter::SetRightHandIK()
+{
+	InventoryComponent->Server_CheckHeldItemChanged();
 }
 
 void APGPlayerCharacter::DropItem_Implementation()
