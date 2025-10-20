@@ -177,6 +177,8 @@ public:
 	virtual void HighlightOff() const override;
 	//~ IInteractableActorInterface end
 
+	void OnRevive();
+
 	FORCEINLINE APlayerState* GetDeadPlayerState() const { return DeadPlayerState; }
 
 protected:

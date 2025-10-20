@@ -9,7 +9,7 @@ void UAN_SetItemMeshOnHand::Notify(USkeletalMeshComponent* MeshComp, UAnimSequen
 {
 	Super::Notify(MeshComp, Animation);
 
-	UE_LOG(LogAnimNotify, Log, TEXT("Play SetItemMeshOnHand Notify"));
+	UE_LOG(LogPGAnimNotify, Log, TEXT("Play SetItemMeshOnHand Notify"));
 
 	AActor* OwnerActor = MeshComp->GetOwner();
 	if (!OwnerActor)

@@ -32,7 +32,7 @@ public:
 
 	void HandlePlayerEscaping(ACharacter* EscapingPlayer);
 	
-	void RespawnPlayer(AController* PlayerController, const FTransform& SpawnTransform);
+	void RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform);
 
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;
@@ -52,6 +52,8 @@ protected:
 	void SpawnAllPlayers();
 	void SpawnLevelGenerator();
 	void SpawnGlobalLightManager();
+
+	void UpdateSpectatorsTarget(const ACharacter* RevivedCharacter, const APlayerState* RevivedPlayerState);
 
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> ArrivedPlayers;

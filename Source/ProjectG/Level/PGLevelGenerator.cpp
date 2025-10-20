@@ -179,8 +179,28 @@ void APGLevelGenerator::SpawnStartRoom()
 		TestExitKey3->InitWithData(ItemData5);
 	}
 	TestExitKey3->SetActorRelativeLocation(FVector(700.0f, 430.0f, 10.0f));
-	// ~ for test
 
+	APGItemActor* TestReviveKit1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData6 = GI->GetItemDataByKey("ReviveKit"))
+	{
+		TestReviveKit1->InitWithData(ItemData6);
+	}
+	TestReviveKit1->SetActorRelativeLocation(FVector(900.0f, 270.0f, 10.0f));
+
+	APGItemActor* TestReviveKit2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData7 = GI->GetItemDataByKey("ReviveKit"))
+	{
+		TestReviveKit2->InitWithData(ItemData7);
+	}
+	TestReviveKit2->SetActorRelativeLocation(FVector(900.0f, 350.0f, 10.0f));
+
+	APGItemActor* TestReviveKit3 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData8 = GI->GetItemDataByKey("ReviveKit"))
+	{
+		TestReviveKit3->InitWithData(ItemData8);
+	}
+	TestReviveKit3->SetActorRelativeLocation(FVector(900.0f, 430.0f, 10.0f));
+	// ~ for test
 
 	APGExitDoor* ExitDoor = World->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), SpawnParams);
 	ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
@@ -445,7 +465,7 @@ void APGLevelGenerator::SpawnDoors()
 */
 void APGLevelGenerator::SpawnItems()
 {
-	const int32 ItemAmount = 20;
+	const int32 ItemAmount = 24;
 	SpawnSingleItem_Async(ItemAmount);
 }
 
@@ -474,17 +494,21 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 	}
 
 	FName ItemKeyToLoad;
-	if (ItemAmount >= 18)
+	if (ItemAmount >= 22)
 	{
 		ItemKeyToLoad = FName("ExitKey");
 	}
-	else if (ItemAmount >= 10)
+	else if (ItemAmount >= 13)
 	{
 		ItemKeyToLoad = FName("Brick");
 	}
-	else
+	else if (ItemAmount >= 5)
 	{
 		ItemKeyToLoad = FName("Key");
+	}
+	else
+	{
+		ItemKeyToLoad = FName("ReviveKit");
 	}
 
 	ItemAmount--;

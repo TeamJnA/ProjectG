@@ -580,14 +580,12 @@ bool APGPlayerCharacter::CanStartInteraction(UAbilitySystemComponent* Interactin
 {
 	if (bIsRagdoll)
 	{
-		//if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.ReviveKit"))))
-		//{
-		//	return true;
-		//}
-		//OutFailureMessage = FText::FromString(TEXT("Need Revive Kit"));
-		//return false;
-
-		return true; // for test
+		if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.ReviveKit"))))
+		{
+			return true;
+		}
+		OutFailureMessage = FText::FromString(TEXT("Need Revive Kit"));
+		return false;
 	}
 	return false;
 }
@@ -606,6 +604,32 @@ void APGPlayerCharacter::HighlightOff() const
 	{
 		GetMesh()->SetRenderCustomDepth(false);
 	}
+}
+
+void APGPlayerCharacter::OnRevive()
+{
+	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
+	if (!PS)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Character::OnRevive: No valid PS"));
+		return;
+	}
+
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Character::OnRevive: No valid ASC"));
+		return;
+	}	
+
+	const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("Player.State.Dead"));
+	if (!AbilitySystemComponent->HasMatchingGameplayTag(DeadTag))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Character::OnRevive: No dead tag"));
+		return;
+	}
+	UE_LOG(LogTemp, Log, TEXT("Character::OnRevive: %s - Remove Dead tag."), *GetName());
+	AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(DeadTag);
+	AbilitySystemComponent->RemoveLooseGameplayTag(DeadTag);
 }
 
 /*

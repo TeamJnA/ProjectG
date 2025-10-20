@@ -41,12 +41,13 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_StartEscapeSequence();
 
-	void ForceSpectateTarget();
+	void SetSpectateEscapeCamera();
+	void SetSpectateNewTarget(const AActor* NewTarget, const APlayerState* NewTargetPlayerState);
 
 	const APlayerState* GetCurrentSpectateTargetPlayerState() const;
 
 	UFUNCTION(Client, Reliable)
-	void Client_ClearViewport();
+	void Client_OnRevive();
 
 	virtual void OnRep_Pawn() override;
 

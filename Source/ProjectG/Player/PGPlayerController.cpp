@@ -245,7 +245,7 @@ void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 * 탈출하려는 플레이어를 관전 중인 경우
 * 해당 플레이어가 탈출을 시작하면 Escape 카메라를 찾아 SetSpectateTarget
 */
-void APGPlayerController::ForceSpectateTarget()
+void APGPlayerController::SetSpectateEscapeCamera()
 {
 	if (!HasAuthority())
 	{
@@ -271,6 +271,22 @@ void APGPlayerController::ForceSpectateTarget()
 	}
 }
 
+void APGPlayerController::SetSpectateNewTarget(const AActor* NewTarget, const APlayerState* NewTargetPlayerState)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>();
+	if (!Spectator)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PGPC::SetSpectateNewTarget: Player is not spectating"));
+		return;
+	}
+	Spectator->SetSpectateTarget(NewTarget, NewTargetPlayerState);
+}
+
 /*
 * 현재 관전 대상 return
 */
@@ -283,7 +299,7 @@ const APlayerState* APGPlayerController::GetCurrentSpectateTargetPlayerState() c
 	return nullptr;
 }
 
-void APGPlayerController::Client_ClearViewport_Implementation()
+void APGPlayerController::Client_OnRevive_Implementation()
 {
 	if (IsLocalController())
 	{
@@ -291,6 +307,9 @@ void APGPlayerController::Client_ClearViewport_Implementation()
 		{
 			HUD->ClearViewport();
 		}
+
+		bShowMouseCursor = false;
+		SetInputMode(FInputModeGameOnly());
 	}
 }
 

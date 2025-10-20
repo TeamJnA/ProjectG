@@ -13,6 +13,7 @@
 #include "Player/PGPlayerState.h"
 
 #include "Character/PGPlayerCharacter.h"
+#include "Character/PGSpectatorPawn.h"
 
 #include "Game/PGGameState.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
@@ -168,69 +169,6 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 }
 
 /*
-* 탈출하는 플레이어 상태 설정
-* 탈출하는 플레이어를 관전 중인 플레이어가 있다면 Escape 카메라로 관전 시점 변경
-*/
-void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer)
-{
-	if (!EscapingPlayer)
-	{
-		return;
-	}
-
-	APGPlayerState* EscapingPlayerPS = EscapingPlayer->GetPlayerState<APGPlayerState>();
-	if (!EscapingPlayerPS)
-	{
-		return;
-	}
-	EscapingPlayerPS->SetIsEscaping(true);
-
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; It++)
-	{
-		APGPlayerController* SpectatorPC = Cast<APGPlayerController>(It->Get());
-		if (SpectatorPC)
-		{
-			if (SpectatorPC->GetCurrentSpectateTargetPlayerState() == EscapingPlayerPS)
-			{
-				SpectatorPC->ForceSpectateTarget();
-			}
-		}
-	}
-}
-
-void APGGameMode::RespawnPlayer(AController* PlayerController, const FTransform& SpawnTransform)
-{
-	APGPlayerController* PC = Cast<APGPlayerController>(PlayerController);
-	APGPlayerState* PS = PlayerController ? PlayerController->GetPlayerState<APGPlayerState>() : nullptr;
-	if (!PC || !PS)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[Revive] RespawnPlayer called with a NULL controller or NULL player state"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("GM::RespawnPlayer: Respawn player %s"), *PS->GetPlayerName());
-
-	PS->SetIsDead(false);
-	PS->SetHasFinishedGame(false);
-
-	if (APawn* Spectator = PC->GetPawn())
-	{
-		PC->UnPossess();
-		Spectator->Destroy();
-	}
-
-	APGPlayerCharacter* NewCharacter = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform);
-	if (NewCharacter)
-	{
-		UE_LOG(LogTemp, Log, TEXT("[Revive] New character spawned. Possessing..."));
-
-		PC->Client_ClearViewport();
-		PC->Possess(NewCharacter);
-		NewCharacter->InitSoundManager(GetSoundManager());
-	}
-}
-
-/*
 * 캐릭터 플레이어 스폰
 * 각 PC에 Possess
 */
@@ -306,4 +244,98 @@ void APGGameMode::InitSoundManagerToPlayers()
 APGSoundManager* APGGameMode::GetSoundManager()
 {
 	return SoundManager;
+}
+
+/*
+* 탈출하는 플레이어 상태 설정
+* 탈출하는 플레이어를 관전 중인 플레이어가 있다면 Escape 카메라로 관전 시점 변경
+*/
+void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer)
+{
+	if (!EscapingPlayer)
+	{
+		return;
+	}
+
+	APGPlayerState* EscapingPlayerPS = EscapingPlayer->GetPlayerState<APGPlayerState>();
+	if (!EscapingPlayerPS)
+	{
+		return;
+	}
+	EscapingPlayerPS->SetIsEscaping(true);
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; It++)
+	{
+		APGPlayerController* SpectatorPC = Cast<APGPlayerController>(It->Get());
+		if (!SpectatorPC)
+		{
+			continue;
+		}
+
+		if (SpectatorPC->GetCurrentSpectateTargetPlayerState() == EscapingPlayerPS)
+		{
+			SpectatorPC->SetSpectateEscapeCamera();
+		}
+	}
+}
+
+void APGGameMode::RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform)
+{
+	APGPlayerController* DeadPC = Cast<APGPlayerController>(DeadPlayerController);
+	APGPlayerState* DeadPS = DeadPlayerController->GetPlayerState<APGPlayerState>();
+	if (!DeadPC || !DeadPS)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GM::RespawnPlayer called with a NULL controller or NULL player state"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("GM::RespawnPlayer: Respawn player %s"), *DeadPS->GetPlayerName());
+	DeadPS->SetIsDead(false);
+	DeadPS->SetHasFinishedGame(false);
+
+	APawn* OldPawn = DeadPC->GetPawn();
+	if (!OldPawn)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GM::RespawnPlayer: Current pawn is not valid"));
+		return;
+	}
+	DeadPC->UnPossess();
+	OldPawn->Destroy();
+
+	APGPlayerCharacter* NewCharacter = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform);
+	if (!NewCharacter || !SoundManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GM::RespawnPlayer: No character or sound manager valid"));
+		return;
+	}
+	DeadPC->Client_OnRevive();
+	DeadPC->Possess(NewCharacter);
+	NewCharacter->InitSoundManager(SoundManager);
+	NewCharacter->OnRevive();
+
+	UpdateSpectatorsTarget(NewCharacter, DeadPS);
+}
+
+void APGGameMode::UpdateSpectatorsTarget(const ACharacter* RevivedCharacter, const APlayerState* RevivedPlayerState)
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		APGPlayerController* SpectatorPC = Cast<APGPlayerController>(It->Get());
+		if (!SpectatorPC || SpectatorPC->PlayerState == RevivedPlayerState)
+		{
+			continue;
+		}
+
+		APGSpectatorPawn* SpectatorPawn = SpectatorPC->GetPawn<APGSpectatorPawn>();
+		if (!SpectatorPawn)
+		{
+			continue;
+		}
+
+		if (SpectatorPawn->GetSpectateTargetPlayerState() == RevivedPlayerState)
+		{
+			UE_LOG(LogTemp, Log, TEXT("GM::UpdateSpectatorsTarget: [%s] Updating target to revived character."), *SpectatorPC->GetName());
+			SpectatorPC->SetSpectateNewTarget(RevivedCharacter, RevivedPlayerState);
+		}
+	}
 }
