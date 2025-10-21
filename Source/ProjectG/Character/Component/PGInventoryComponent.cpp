@@ -286,6 +286,18 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPGInventoryComponent, bPrevHeldItemFlag);
 }
 
+TObjectPtr<UStaticMesh> UPGInventoryComponent::GetCurrentItemMesh() const
+{
+	if (InventoryItems[CurrentInventoryIndex].ItemData)
+	{
+		return InventoryItems[CurrentInventoryIndex].ItemData->ItemMesh;
+	}
+	else
+	{
+		return nullptr;
+	}
+}
+
 void UPGInventoryComponent::Server_CheckHeldItemChanged_Implementation()
 {
 	if ( bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData == nullptr)

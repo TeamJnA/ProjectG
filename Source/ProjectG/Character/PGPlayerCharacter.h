@@ -56,7 +56,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Headlight, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpotLightComponent> HeadlightLight;
 
-
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -282,14 +281,13 @@ public:
 	UFUNCTION(Server, Reliable)
 	void DropItem();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attachment")
-	TObjectPtr<USceneComponent> ItemSocket;
-
 	// IHandItemInterface 
-	void SetItemMesh();
+	void SetItemMesh(const bool bIsVisible);
 	void SetRightHandIK();
 	// ~ IHandItemInterface
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item)
+	TObjectPtr<UStaticMeshComponent> EquippedItemMesh;
 ///
 ///********* UI and Components ******************
 ///

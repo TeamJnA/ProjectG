@@ -15,5 +15,11 @@ class PROJECTG_API UAN_SetItemMeshOnHand : public UAnimNotify
 	GENERATED_BODY()
 
 public:
+	UAN_SetItemMeshOnHand();
+
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visibility", meta = (AllowPrivateAccess = "true"))
+	bool bIsVisible;
 };

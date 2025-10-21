@@ -5,6 +5,11 @@
 #include "Interface/HandItemInterface.h"
 #include "PGLogChannels.h"
 
+UAN_SetItemMeshOnHand::UAN_SetItemMeshOnHand()
+{
+	bIsVisible = false;
+}
+
 void UAN_SetItemMeshOnHand::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
 	Super::Notify(MeshComp, Animation);
@@ -19,7 +24,14 @@ void UAN_SetItemMeshOnHand::Notify(USkeletalMeshComponent* MeshComp, UAnimSequen
 
 	if (IHandItemInterface* HandItemInterface = Cast<IHandItemInterface>(OwnerActor))
 	{
-		HandItemInterface->SetItemMesh();
-		HandItemInterface->SetRightHandIK();
+		if (bIsVisible)
+		{
+			HandItemInterface->SetItemMesh(true);
+			HandItemInterface->SetRightHandIK();
+		}
+		else
+		{
+			HandItemInterface->SetItemMesh(false);
+		}
 	}
 }

@@ -79,9 +79,9 @@ APGPlayerCharacter::APGPlayerCharacter()
 
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
-	ItemSocket = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSocket"));
-	ItemSocket->SetupAttachment(GetMesh(), TEXT("middle_metacarpal_r"));
-	ItemSocket->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	EquippedItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EquippedItemMesh"));
+	EquippedItemMesh->SetupAttachment(GetMesh(), TEXT("middle_metacarpal_r"));
+	EquippedItemMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 
 	HeadlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadlightMesh"));
 	HeadlightMesh->SetupAttachment(FirstPersonCamera);
@@ -824,8 +824,15 @@ void APGPlayerCharacter::RemoveItemFromInventory()
 	InventoryComponent->RemoveCurrentItem();
 }
 
-void APGPlayerCharacter::SetItemMesh()
+void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 {
+	TObjectPtr<UStaticMesh> ItemMeshToAttach = InventoryComponent->GetCurrentItemMesh();
+	if (!ItemMeshToAttach)
+	{
+		EquippedItemMesh->SetStaticMesh(nullptr);
+		return;
+	}
+	EquippedItemMesh->SetStaticMesh(ItemMeshToAttach);
 }
 
 void APGPlayerCharacter::SetRightHandIK()
