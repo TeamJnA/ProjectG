@@ -271,6 +271,9 @@ void APGPlayerController::SetSpectateEscapeCamera()
 	}
 }
 
+/*
+* 관전 대상 강제 지정
+*/
 void APGPlayerController::SetSpectateNewTarget(const AActor* NewTarget, const APlayerState* NewTargetPlayerState)
 {
 	if (!HasAuthority())
@@ -299,6 +302,9 @@ const APlayerState* APGPlayerController::GetCurrentSpectateTargetPlayerState() c
 	return nullptr;
 }
 
+/*
+* 플레이어 부활시 뷰포트, 인풋모드 초기화
+*/
 void APGPlayerController::Client_OnRevive_Implementation()
 {
 	if (IsLocalController())

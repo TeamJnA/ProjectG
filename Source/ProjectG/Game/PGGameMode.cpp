@@ -232,11 +232,11 @@ void APGGameMode::InitSoundManagerToPlayers()
 		APlayerController* PC = it->Get();
 		if (!PC) continue;
 
-		APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(PC->GetPawn());
-		if (PGPC)
+		APGPlayerCharacter* Character = Cast<APGPlayerCharacter>(PC->GetPawn());
+		if (Character)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s"), *PGPC->GetName());
-			PGPC->InitSoundManager(GetSoundManager());
+			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s"), *Character->GetName());
+			Character->InitSoundManager(GetSoundManager());
 		}
 	}
 }

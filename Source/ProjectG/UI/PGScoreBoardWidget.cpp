@@ -45,8 +45,8 @@ void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
 }
 
 /*
-* 플레이어 목록 업데이트 구현부
-* 현재 종료 상태인 플레이어들의 Steam 프로필 이미지, 이름, 종료 상태 디스플레이
+* 플레이어 목록 업데이트
+* 플레이어들의 Steam 프로필 이미지, 이름, 종료 상태 디스플레이
 */
 void UPGScoreBoardWidget::UpdatePlayerEntry()
 {
@@ -68,21 +68,18 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 	{
 		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			if (PGPS->HasFinishedGame())
+			UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
+			if (NewSlot)
 			{
-				UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
-				if (NewSlot)
+				UTexture2D* AvatarTexture = nullptr;
+				if (PGPS->GetUniqueId().IsValid())
 				{
-					UTexture2D* AvatarTexture = nullptr;
-					if (PGPS->GetUniqueId().IsValid())
-					{
-						AvatarTexture = GI->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
-					}
-
-					NewSlot->SetupEntry(PGPS, AvatarTexture, EPlayerEntryContext::Scoreboard);
-					PlayerContainer->AddChild(NewSlot);
-					UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PGPS->GetPlayerName());
+					AvatarTexture = GI->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
 				}
+
+				NewSlot->SetupEntry(PGPS, AvatarTexture, EPlayerEntryContext::Scoreboard);
+				PlayerContainer->AddChild(NewSlot);
+				UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PGPS->GetPlayerName());
 			}
 		}
 	}

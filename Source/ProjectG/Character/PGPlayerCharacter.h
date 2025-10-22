@@ -61,10 +61,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 
-	/** Jump Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> JumpAction;
-
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MoveAction;
@@ -268,6 +264,11 @@ public:
 
 protected:
 	void ToggleHeadLight();
+	
+	UFUNCTION(Client, Reliable)
+	void Client_SetHeadlightState(bool bIsVisible);
+
+	bool bIsHeadlightForcedOn = false;
 
 ///
 ///********* Item system ******************

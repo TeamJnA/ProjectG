@@ -4,13 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+
+#include "Interface/SoundManagerInterface.h"
+
 #include "PGLobbyGameMode.generated.h"
+
+class APGSoundManager;
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API APGLobbyGameMode : public AGameMode
+class PROJECTG_API APGLobbyGameMode : public AGameMode, public ISoundManagerInterface
 {
 	GENERATED_BODY()
 
@@ -20,6 +25,10 @@ public:
 	void StartGame();
 	void SpawnAndPossessPlayer(APlayerController* NewPlayer);
 
+	// ISoundManagerInterface~
+	virtual APGSoundManager* GetSoundManager() override;
+	// ~ISoundManagerInterface
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -27,4 +36,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
+
+	UPROPERTY()
+	TObjectPtr<APGSoundManager> SoundManager;
 };

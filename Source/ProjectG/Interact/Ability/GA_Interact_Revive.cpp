@@ -24,48 +24,48 @@ UGA_Interact_Revive::UGA_Interact_Revive()
 void UGA_Interact_Revive::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	UE_LOG(LogTemp, Log, TEXT("[Revive] GA_Interact_RevivePlayer Activated."));
+	UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: Activated."));
 
 	APGPlayerCharacter* InteractingCharacter = Cast<APGPlayerCharacter>(ActorInfo->AvatarActor.Get());
 	if (!InteractingCharacter)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Revive] InteractingCharacter (Reviver) is NULL."));
+		UE_LOG(LogTemp, Error, TEXT("GA_Interact_Revive::ActivateAbility: InteractingCharacter (Reviver) is NULL."));
 
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	UE_LOG(LogTemp, Log, TEXT("[Revive] Reviver: %s"), *InteractingCharacter->GetName());
+	UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: Reviver: %s"), *InteractingCharacter->GetName());
 
 	APGPlayerCharacter* DeadCharacter = Cast<APGPlayerCharacter>(const_cast<AActor*>(TriggerEventData->Target.Get()));
 	if (!DeadCharacter)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Revive] DeadCharacter (Target) is NULL."));
+		UE_LOG(LogTemp, Error, TEXT("GA_Interact_Revive::ActivateAbility: DeadCharacter (Target) is NULL."));
 
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	UE_LOG(LogTemp, Log, TEXT("[Revive] Target Ragdoll: %s"), *DeadCharacter->GetName());
+	UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: Target Ragdoll: %s"), *DeadCharacter->GetName());
 
 	APGPlayerState* DeadPlayerState = Cast<APGPlayerState>(DeadCharacter->GetDeadPlayerState());
 	if (!DeadPlayerState || !DeadPlayerState->IsDead())
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Revive] Target's PlayerState is NULL or target is not dead."));
+		UE_LOG(LogTemp, Error, TEXT("GA_Interact_Revive::ActivateAbility: Target's PlayerState is NULL or target is not dead."));
 
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	UE_LOG(LogTemp, Log, TEXT("[Revive] Target's PlayerState is valid and marked as dead."));
+	UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: Target's PlayerState is valid and marked as dead."));
 
 	AController* DeadPlayerController = nullptr;
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		APlayerController* PC = It->Get();
-		UE_LOG(LogTemp, Log, TEXT("[Revive] Checking Controller: %s with PlayerState: %s"), *PC->GetName(), PC->PlayerState ? *PC->PlayerState->GetPlayerName() : TEXT("NULL"));
+		UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: Checking Controller: %s with PlayerState: %s"), *PC->GetName(), PC->PlayerState ? *PC->PlayerState->GetPlayerName() : TEXT("NULL"));
 
 		if (PC && PC->PlayerState == DeadPlayerState)
 		{
 			DeadPlayerController = PC;
-			UE_LOG(LogTemp, Log, TEXT("[Revive] Found matching controller for dead player: %s"), *DeadPlayerController->GetName());
+			UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: Found matching controller for dead player: %s"), *DeadPlayerController->GetName());
 
 			break;
 		}
@@ -73,28 +73,27 @@ void UGA_Interact_Revive::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 	if (!DeadPlayerController)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Revive] FAILED to find the Controller for the dead player."));
+		UE_LOG(LogTemp, Error, TEXT("GA_Interact_Revive::ActivateAbility: FAILED to find the Controller for the dead player."));
 
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
 	APGGameMode* GM = GetWorld()->GetAuthGameMode<APGGameMode>();
-	if (GM)
+	if (!GM)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[Revive] GameMode found. Calling RespawnPlayer..."));
+		UE_LOG(LogTemp, Error, TEXT("GA_Interact_Revive::ActivateAbility: GameMode is NULL."));
 
-		GM->RespawnPlayer(DeadPlayerController, DeadCharacter->GetActorTransform());
-		InteractingCharacter->RemoveItemFromInventory();
-		UE_LOG(LogTemp, Log, TEXT("[Revive] Destroying old ragdoll body."));
-
-		DeadCharacter->Destroy();
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("[Revive] GameMode is NULL."));
+	UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: GameMode found. Calling RespawnPlayer..."));
 
-	}
+	const FVector RespawnLocation = DeadCharacter->GetActorTransform().GetLocation() + FVector(0.0f, 0.0f, 50.0f);
+	const FTransform RespawnTransform = FTransform(DeadCharacter->GetActorTransform().GetRotation(), RespawnLocation);
+	GM->RespawnPlayer(DeadPlayerController, RespawnTransform);
+	DeadCharacter->Destroy();
+	InteractingCharacter->RemoveItemFromInventory();
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }

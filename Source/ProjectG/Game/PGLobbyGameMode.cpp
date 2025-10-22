@@ -9,6 +9,9 @@
 #include "Game/PGGameState.h"
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerState.h"
+#include "Character/PGPlayerCharacter.h"
+
+#include "Sound/PGSoundManager.h"
 
 APGLobbyGameMode::APGLobbyGameMode()
 {
@@ -16,6 +19,43 @@ APGLobbyGameMode::APGLobbyGameMode()
 	GameStateClass = APGGameState::StaticClass();
 
 	bUseSeamlessTravel = true;
+}
+
+void APGLobbyGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		GI->OpenSession();
+	}
+
+	SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
+	if (!SoundManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
+	}
+}
+
+void APGLobbyGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+
+	UE_LOG(LogTemp, Log, TEXT("LobbyGM::HandleStartingNewPlayer_Implementation:"));
+
+	if (NewPlayer && NewPlayer->IsLocalController())
+	{
+		if (APGPlayerState* NewPlayerState = NewPlayer->GetPlayerState<APGPlayerState>())
+		{
+			NewPlayerState->SetHost(true);
+		}
+	}
+
+	// 플레이어 상태가 갱신되어 모든 클라이언트 UI 업데이트
+	if (APGGameState* GS = GetGameState<APGGameState>())
+	{
+		GS->NotifyPlayerArrayUpdated();
+	}
 }
 
 /*
@@ -74,40 +114,15 @@ void APGLobbyGameMode::SpawnAndPossessPlayer(APlayerController* NewPlayer)
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	APawn* LobbyCharacter = World->SpawnActor<APawn>(PlayerPawnClass, SpawnTransform, SpawnParams);
+	APGPlayerCharacter* LobbyCharacter = World->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform, SpawnParams);
 	if (LobbyCharacter)
 	{
 		NewPlayer->Possess(LobbyCharacter);
+		LobbyCharacter->InitSoundManager(SoundManager);
 	}
 }
 
-void APGLobbyGameMode::BeginPlay()
+APGSoundManager* APGLobbyGameMode::GetSoundManager()
 {
-	Super::BeginPlay();
-
-	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance()))
-	{
-		GI->OpenSession();
-	}
-}
-
-void APGLobbyGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
-{
-	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
-
-	UE_LOG(LogTemp, Log, TEXT("LobbyGM::HandleStartingNewPlayer_Implementation:"));
-
-	if (NewPlayer && NewPlayer->IsLocalController())
-	{
-		if (APGPlayerState* NewPlayerState = NewPlayer->GetPlayerState<APGPlayerState>())
-		{
-			NewPlayerState->SetHost(true);
-		}
-	}
-
-	// 플레이어 상태가 갱신되어 모든 클라이언트 UI 업데이트
-	if (APGGameState* GS = GetGameState<APGGameState>())
-	{
-		GS->NotifyPlayerArrayUpdated();
-	}
+	return SoundManager;
 }
