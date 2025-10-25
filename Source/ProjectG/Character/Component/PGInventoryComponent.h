@@ -80,7 +80,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnItemHeldStateChanged OnItemHeldStateChanged;
 
-	TObjectPtr<UStaticMesh> GetCurrentItemMesh() const;
+	TObjectPtr<UPGItemData> GetCurrentItemMesh() const;
 
 private:
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_InventoryItems, EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (AllowPrivateAccess = "true"))

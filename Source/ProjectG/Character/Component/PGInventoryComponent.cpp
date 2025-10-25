@@ -286,11 +286,11 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPGInventoryComponent, bPrevHeldItemFlag);
 }
 
-TObjectPtr<UStaticMesh> UPGInventoryComponent::GetCurrentItemMesh() const
+TObjectPtr<UPGItemData> UPGInventoryComponent::GetCurrentItemMesh() const
 {
 	if (InventoryItems[CurrentInventoryIndex].ItemData)
 	{
-		return InventoryItems[CurrentInventoryIndex].ItemData->ItemMesh;
+		return InventoryItems[CurrentInventoryIndex].ItemData;
 	}
 	else
 	{

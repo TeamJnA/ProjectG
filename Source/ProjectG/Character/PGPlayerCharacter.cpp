@@ -23,6 +23,7 @@
 
 // UI and Components
 #include "Component/PGInventoryComponent.h"
+#include "Item/PGItemData.h"
 #include "Component/PGSoundManagerComponent.h"
 #include "UI/PGHUD.h"
 #include "UI/PGMessageManagerWidget.h"
@@ -80,7 +81,7 @@ APGPlayerCharacter::APGPlayerCharacter()
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
 	EquippedItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EquippedItemMesh"));
-	EquippedItemMesh->SetupAttachment(GetMesh(), TEXT("middle_metacarpal_r"));
+	EquippedItemMesh->SetupAttachment(GetMesh(), TEXT("hand_r"));
 	EquippedItemMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 
 	HeadlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadlightMesh"));
@@ -793,25 +794,6 @@ void APGPlayerCharacter::AttachMeshOnHand()
 	// Attach mesh on hand and multicast
 
 	UE_LOG(LogTemp, Log, TEXT("Attach Item On Hand"));
-	/*
-	void AMyCharacter::AttachItemMeshToHand(UItemData* ItemData)
-	{
-		if (!ItemData || !ItemData->ItemMesh)
-			return;
-        
-		HeldItemMeshComponent->SetStaticMesh(ItemData->ItemMesh);
-		HeldItemMeshComponent->AttachToComponent(GetMesh(), 
-			FAttachmentTransformRules::SnapToTargetNotIncludingScale, 
-			TEXT("HandSocket"));
-		HeldItemMeshComponent->SetVisibility(true);
-	}
-
-	void AMyCharacter::DetachItemMesh()
-	{
-		HeldItemMeshComponent->SetVisibility(false);
-		HeldItemMeshComponent->SetStaticMesh(nullptr);
-	}
-	*/
 }
 
 void APGPlayerCharacter::DetachMeshOnHand()
@@ -826,13 +808,16 @@ void APGPlayerCharacter::RemoveItemFromInventory()
 
 void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 {
-	TObjectPtr<UStaticMesh> ItemMeshToAttach = InventoryComponent->GetCurrentItemMesh();
+	
+	TObjectPtr<UPGItemData> ItemMeshToAttach = InventoryComponent->GetCurrentItemMesh();
 	if (!ItemMeshToAttach)
 	{
 		EquippedItemMesh->SetStaticMesh(nullptr);
+		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
 		return;
 	}
-	EquippedItemMesh->SetStaticMesh(ItemMeshToAttach);
+	EquippedItemMesh->SetRelativeTransform(ItemMeshToAttach->ItemSocketOffset);
+	EquippedItemMesh->SetStaticMesh(ItemMeshToAttach->ItemMesh);
 }
 
 void APGPlayerCharacter::SetRightHandIK()
