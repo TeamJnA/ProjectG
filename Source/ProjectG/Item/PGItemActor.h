@@ -37,7 +37,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// When player drop item, this two functions are used to spawn item.
-	void DropItemSpawned();
+	void DropItemSpawned(const FRotator DropRotation);
 
 	UFUNCTION()
 	void StopItemOnGroundHit(

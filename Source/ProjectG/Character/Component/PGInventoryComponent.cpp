@@ -218,7 +218,7 @@ void UPGInventoryComponent::DeactivateCurrentItemAbility()
 	AbilitySystemComponent->CancelAbilityHandle(InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle);
 }
 
-void UPGInventoryComponent::DropCurrentItem(const FVector DropLocation)
+void UPGInventoryComponent::DropCurrentItem(const FVector DropLocation, const FRotator DropRotation)
 {
 	if (InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
 	{
@@ -242,7 +242,7 @@ void UPGInventoryComponent::DropCurrentItem(const FVector DropLocation)
 		if (DropItem)
 		{
 			DropItem->InitWithData(InventoryItems[CurrentInventoryIndex].ItemData);			
-			DropItem->DropItemSpawned();
+			DropItem->DropItemSpawned(DropRotation);
 		}
 	}
 

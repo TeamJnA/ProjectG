@@ -837,11 +837,11 @@ void APGPlayerCharacter::DropItem_Implementation()
 	}
 
 	FVector DropItemLocation;
-	FRotator TempRotation;
-	GetActorEyesViewPoint(DropItemLocation, TempRotation);
-	DropItemLocation += GetActorForwardVector() * 10 + GetActorUpVector() * (-10);
+	FRotator DropItemRotation;
+	GetActorEyesViewPoint(DropItemLocation, DropItemRotation);
+	DropItemLocation += GetActorForwardVector() * 10 + GetActorUpVector() * (-30);
 
-	InventoryComponent->DropCurrentItem(DropItemLocation);
+	InventoryComponent->DropCurrentItem(DropItemLocation, DropItemRotation);
 }
 
 void APGPlayerCharacter::Move(const FInputActionValue& Value)
