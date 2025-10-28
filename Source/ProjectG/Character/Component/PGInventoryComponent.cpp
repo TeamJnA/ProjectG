@@ -254,35 +254,6 @@ void UPGInventoryComponent::DropItemByIndex(const FVector DropLocation, const FR
 void UPGInventoryComponent::DropCurrentItem(const FVector DropLocation, const FRotator DropRotation)
 {
 	DropItemByIndex(DropLocation, DropRotation, CurrentInventoryIndex);
-	/*
-	if (InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
-	{
-		return;
-	}
-
-	// Play HandAction with Drop anim.
-	PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Drop);
-	
-	// Spawn Item
-	UWorld* World = GetWorld();
-	if (World)
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = GetOwner();
-		SpawnParams.Instigator = Cast<APawn>(GetOwner());
-
-		UE_LOG(LogInventory, Log, TEXT("Spawned item to drop."));
-		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, FRotator::ZeroRotator, SpawnParams);
-		
-		if (DropItem)
-		{
-			DropItem->InitWithData(InventoryItems[CurrentInventoryIndex].ItemData);			
-			DropItem->DropItemSpawned(DropRotation);
-		}
-	}
-
-	RemoveCurrentItem();
-	*/
 }
 
 void UPGInventoryComponent::RemoveItem(const int32 RemoveItemIndex)
