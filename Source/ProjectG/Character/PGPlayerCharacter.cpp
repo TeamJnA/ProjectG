@@ -355,6 +355,7 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 	}
 
 	// TODO : 플레이어 아이템들 드랍 [ Server ]
+	InventoryComponent->DropAllItems(GetActorLocation());
 
 	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
 	bIsRagdoll = true;

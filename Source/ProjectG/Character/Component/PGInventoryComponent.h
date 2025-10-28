@@ -62,11 +62,15 @@ public:
 
 	void ActivateCurrentItemAbility();
 
-	void DeactivateCurrentItemAbility();
+	void DeactivateItemAbility(const int32 DeactivateItemIndex);
+
+	void RemoveItem(const int32 RemoveItemIndex);
 
 	void RemoveCurrentItem();
 
 	void DropCurrentItem(const FVector DropLocation, const FRotator DropRotation);
+
+	void DropAllItems(const FVector DropLocation);
 
 	FORCEINLINE bool IsInventoryFull() const { return	bInventoryFull; };
 
@@ -83,6 +87,8 @@ public:
 	TObjectPtr<UPGItemData> GetCurrentItemMesh() const;
 
 private:
+	void DropItemByIndex(const FVector DropLocation, const FRotator DropRotation, const int32 DropItemIndex);
+
 	UPROPERTY(Replicated, ReplicatedUsing = OnRep_InventoryItems, EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (AllowPrivateAccess = "true"))
 	TArray<FInventoryItem> InventoryItems;
 
