@@ -21,15 +21,15 @@ void UGA_ThrowBrick::SpawnProjectileActor()
 {
     if (!ProjectileItem)
     {
-        UE_LOG(LogAbility, Warning, TEXT("Cannot found spawn item in %s"), *GetName());
+        UE_LOG(LogPGAbility, Warning, TEXT("Cannot found spawn item in %s"), *GetName());
         return;
     }
-    UE_LOG(LogAbility, Log, TEXT("SpawnActor in %s"), *GetName());
+    UE_LOG(LogPGAbility, Log, TEXT("SpawnActor in %s"), *GetName());
     
     AActor* AvatarActor = GetAvatarActorFromActorInfo();
     APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(AvatarActor);
     if (!PGPC) {
-        UE_LOG(LogAbility, Warning, TEXT("Cannot found avatar actor in %s"), *GetName());
+        UE_LOG(LogPGAbility, Warning, TEXT("Cannot found avatar actor in %s"), *GetName());
         return;
     }
     

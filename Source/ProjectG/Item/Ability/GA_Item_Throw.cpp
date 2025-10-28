@@ -25,13 +25,13 @@ UGA_Item_Throw::UGA_Item_Throw()
 		ThrowAnimMontage = ThrowAnimMontageRef.Object;
 	}
 	else{
-		UE_LOG(LogAbility, Warning, TEXT("Anim montage not found in GA_Item_Throw."));
+		UE_LOG(LogPGAbility, Warning, TEXT("Anim montage not found in GA_Item_Throw."));
 	}
 }
 
 void UGA_Item_Throw::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	UE_LOG(LogAbility, Log, TEXT("%s | %s ability activated."), *GetClass()->GetName(), *GetName());
+	UE_LOG(LogPGAbility, Log, TEXT("%s | %s ability activated."), *GetClass()->GetName(), *GetName());
 	bThrowReady = false;
 
 	// Wait to input mouse left or mouse right button.
@@ -57,16 +57,16 @@ void UGA_Item_Throw::MouseLeft()
 	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
 	if (!AbilitySystemComponent)
 	{
-		UE_LOG(LogAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s"), *GetName());
+		UE_LOG(LogPGAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s"), *GetName());
 		return;
 	}
 	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionTag))
 	{
-		UE_LOG(LogAbility, Log, TEXT("Cannot do %s during hand action."), *GetName());
+		UE_LOG(LogPGAbility, Log, TEXT("Cannot do %s during hand action."), *GetName());
 		return;
 	}
 
-	UE_LOG(LogAbility, Log, TEXT("MouseLeft Input. Start to throw item! %s | %s"), *GetClass()->GetName(), *GetName());
+	UE_LOG(LogPGAbility, Log, TEXT("MouseLeft Input. Start to throw item! %s | %s"), *GetClass()->GetName(), *GetName());
 		
 	// Spawn item actor on the server.
 	if (HasAuthority(&CurrentActivationInfo))
@@ -79,7 +79,7 @@ void UGA_Item_Throw::MouseLeft()
 		AActor* AvatarActor = GetAvatarActorFromActorInfo();
 		APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(AvatarActor);
 		if (!PGPC) {
-			UE_LOG(LogAbility, Warning, TEXT("Cannot found avatar actor in RemoveItem %s"), *GetName());
+			UE_LOG(LogPGAbility, Warning, TEXT("Cannot found avatar actor in RemoveItem %s"), *GetName());
 			return;
 		}
 		PGPC->RemoveItemFromInventory();
@@ -92,16 +92,16 @@ void UGA_Item_Throw::MouseRight()
 	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
 	if (!AbilitySystemComponent)
 	{
-		UE_LOG(LogAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s ::RightInputCanceled"), *GetName());
+		UE_LOG(LogPGAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s ::RightInputCanceled"), *GetName());
 		return;
 	}
 	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionTag))
 	{
-		UE_LOG(LogAbility, Log, TEXT("Cannot do %s ::RightInputCanceled during hand action."), *GetName());
+		UE_LOG(LogPGAbility, Log, TEXT("Cannot do %s ::RightInputCanceled during hand action."), *GetName());
 		return;
 	}
 
-	UE_LOG(LogAbility, Log, TEXT("MouseRight Input. Ready to throw. %s | %s"), *GetClass()->GetName(), *GetName());
+	UE_LOG(LogPGAbility, Log, TEXT("MouseRight Input. Ready to throw. %s | %s"), *GetClass()->GetName(), *GetName());
 	bThrowReady = true;
 	
 	UAbilityTask_PlayMontageAndWait* MontageTask =
@@ -145,12 +145,12 @@ void UGA_Item_Throw::RightInputCanceled()
 	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
 	if (!AbilitySystemComponent)
 	{
-		UE_LOG(LogAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s ::RightInputCanceled"), *GetName());
+		UE_LOG(LogPGAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s ::RightInputCanceled"), *GetName());
 		return;
 	}
 	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionTag))
 	{
-		UE_LOG(LogAbility, Log, TEXT("Cannot do %s ::RightInputCanceled during hand action."), *GetName());
+		UE_LOG(LogPGAbility, Log, TEXT("Cannot do %s ::RightInputCanceled during hand action."), *GetName());
 		return;
 	}
 

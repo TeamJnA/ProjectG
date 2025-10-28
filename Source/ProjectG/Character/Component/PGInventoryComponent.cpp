@@ -85,7 +85,7 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(const int32 NewInventory
 	}
 
 	//Before changing item, Deactivate Current Item's Ability.
-	DeactivateCurrentItemAbility();
+	DeactivateItemAbility(CurrentInventoryIndex);
 
 	// Play HandAction with Change anim.
 	// After HandAction, activate new ability and change mesh on hand at PGPlayerCharacter::EquipCurrentInventoryItem.
@@ -201,9 +201,9 @@ void UPGInventoryComponent::ActivateCurrentItemAbility()
 	Server_CheckHeldItemChanged();
 }
 
-void UPGInventoryComponent::DeactivateCurrentItemAbility()
+void UPGInventoryComponent::DeactivateItemAbility(const int32 DeactivateItemIndex)
 {
-	if (InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
+	if (InventoryItems[DeactivateItemIndex].ItemData == nullptr)
 	{
 		return;
 	}
@@ -215,19 +215,21 @@ void UPGInventoryComponent::DeactivateCurrentItemAbility()
 		return;
 	}
 
-	AbilitySystemComponent->CancelAbilityHandle(InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle);
+	AbilitySystemComponent->CancelAbilityHandle(InventoryItems[DeactivateItemIndex].ItemAbilitySpecHandle);
 }
 
-void UPGInventoryComponent::DropCurrentItem(const FVector DropLocation)
+void UPGInventoryComponent::DropItemByIndex(const FVector DropLocation, const FRotator DropRotation, const int32 DropItemIndex)
 {
-	if (InventoryItems[CurrentInventoryIndex].ItemData == nullptr)
+	check(DropItemIndex < MaxInventorySize && DropItemIndex >= 0);
+
+	if (InventoryItems[DropItemIndex].ItemData == nullptr)
 	{
 		return;
 	}
 
 	// Play HandAction with Drop anim.
 	PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Drop);
-	
+
 	// Spawn Item
 	UWorld* World = GetWorld();
 	if (World)
@@ -238,18 +240,23 @@ void UPGInventoryComponent::DropCurrentItem(const FVector DropLocation)
 
 		UE_LOG(LogInventory, Log, TEXT("Spawned item to drop."));
 		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, FRotator::ZeroRotator, SpawnParams);
-		
+
 		if (DropItem)
 		{
-			DropItem->InitWithData(InventoryItems[CurrentInventoryIndex].ItemData);			
-			DropItem->DropItemSpawned();
+			DropItem->InitWithData(InventoryItems[DropItemIndex].ItemData);
+			DropItem->DropItemSpawned(DropRotation);
 		}
 	}
 
-	RemoveCurrentItem();
+	RemoveItem(DropItemIndex);
 }
 
-void UPGInventoryComponent::RemoveCurrentItem()
+void UPGInventoryComponent::DropCurrentItem(const FVector DropLocation, const FRotator DropRotation)
+{
+	DropItemByIndex(DropLocation, DropRotation, CurrentInventoryIndex);
+}
+
+void UPGInventoryComponent::RemoveItem(const int32 RemoveItemIndex)
 {
 	AbilitySystemComponent = PlayerCharacter->GetAbilitySystemComponent();
 	if (!AbilitySystemComponent)
@@ -258,11 +265,11 @@ void UPGInventoryComponent::RemoveCurrentItem()
 		return;
 	}
 
-	DeactivateCurrentItemAbility();
+	DeactivateItemAbility(RemoveItemIndex);
 
-	AbilitySystemComponent->ClearAbility(InventoryItems[CurrentInventoryIndex].ItemAbilitySpecHandle);
+	AbilitySystemComponent->ClearAbility(InventoryItems[RemoveItemIndex].ItemAbilitySpecHandle);
 
-	InventoryItems[CurrentInventoryIndex].ItemData = nullptr;
+	InventoryItems[RemoveItemIndex].ItemData = nullptr;
 
 	InventoryItemCount--;
 	bInventoryFull = false;
@@ -277,6 +284,30 @@ void UPGInventoryComponent::RemoveCurrentItem()
 	OnInventoryItemUpdate.Broadcast(InventoryItems);
 }
 
+void UPGInventoryComponent::RemoveCurrentItem()
+{
+	RemoveItem(CurrentInventoryIndex);
+}
+
+void UPGInventoryComponent::DropAllItems(const FVector DropLocation)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	UE_LOG(LogInventory, Log, TEXT("Drop all items"));
+
+	for (int32 i = 0; i < MaxInventorySize; i++)
+	{
+		if (InventoryItems[i].ItemData != nullptr)
+		{
+			FRotator DropRotation(0.0f, 72.0f * i, 0.0f);
+			DropItemByIndex(DropLocation, DropRotation, i);
+		}
+	}
+}
+
 void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -284,6 +315,18 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPGInventoryComponent, InventoryItems);
 	DOREPLIFETIME(UPGInventoryComponent, CurrentInventoryIndex);
 	DOREPLIFETIME(UPGInventoryComponent, bPrevHeldItemFlag);
+}
+
+TObjectPtr<UPGItemData> UPGInventoryComponent::GetCurrentItemMesh() const
+{
+	if (InventoryItems[CurrentInventoryIndex].ItemData)
+	{
+		return InventoryItems[CurrentInventoryIndex].ItemData;
+	}
+	else
+	{
+		return nullptr;
+	}
 }
 
 void UPGInventoryComponent::Server_CheckHeldItemChanged_Implementation()

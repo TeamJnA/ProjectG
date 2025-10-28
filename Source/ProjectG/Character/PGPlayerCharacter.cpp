@@ -23,6 +23,7 @@
 
 // UI and Components
 #include "Component/PGInventoryComponent.h"
+#include "Item/PGItemData.h"
 #include "Component/PGSoundManagerComponent.h"
 #include "UI/PGHUD.h"
 #include "UI/PGMessageManagerWidget.h"
@@ -79,9 +80,9 @@ APGPlayerCharacter::APGPlayerCharacter()
 
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
-	ItemSocket = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSocket"));
-	ItemSocket->SetupAttachment(GetMesh(), TEXT("middle_metacarpal_r"));
-	ItemSocket->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	EquippedItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EquippedItemMesh"));
+	EquippedItemMesh->SetupAttachment(GetMesh(), TEXT("hand_r"));
+	EquippedItemMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 
 	HeadlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadlightMesh"));
 	HeadlightMesh->SetupAttachment(FirstPersonCamera);
@@ -404,6 +405,7 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 	}
 
 	// TODO : 플레이어 아이템들 드랍 [ Server ]
+	InventoryComponent->DropAllItems(GetActorLocation());
 
 	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
 	bIsRagdoll = true;
@@ -878,25 +880,6 @@ void APGPlayerCharacter::AttachMeshOnHand()
 	// Attach mesh on hand and multicast
 
 	UE_LOG(LogTemp, Log, TEXT("Attach Item On Hand"));
-	/*
-	void AMyCharacter::AttachItemMeshToHand(UItemData* ItemData)
-	{
-		if (!ItemData || !ItemData->ItemMesh)
-			return;
-        
-		HeldItemMeshComponent->SetStaticMesh(ItemData->ItemMesh);
-		HeldItemMeshComponent->AttachToComponent(GetMesh(), 
-			FAttachmentTransformRules::SnapToTargetNotIncludingScale, 
-			TEXT("HandSocket"));
-		HeldItemMeshComponent->SetVisibility(true);
-	}
-
-	void AMyCharacter::DetachItemMesh()
-	{
-		HeldItemMeshComponent->SetVisibility(false);
-		HeldItemMeshComponent->SetStaticMesh(nullptr);
-	}
-	*/
 }
 
 void APGPlayerCharacter::DetachMeshOnHand()
@@ -909,8 +892,18 @@ void APGPlayerCharacter::RemoveItemFromInventory()
 	InventoryComponent->RemoveCurrentItem();
 }
 
-void APGPlayerCharacter::SetItemMesh()
+void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 {
+	
+	TObjectPtr<UPGItemData> ItemMeshToAttach = InventoryComponent->GetCurrentItemMesh();
+	if (!ItemMeshToAttach)
+	{
+		EquippedItemMesh->SetStaticMesh(nullptr);
+		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
+		return;
+	}
+	EquippedItemMesh->SetRelativeTransform(ItemMeshToAttach->ItemSocketOffset);
+	EquippedItemMesh->SetStaticMesh(ItemMeshToAttach->ItemMesh);
 }
 
 void APGPlayerCharacter::SetRightHandIK()
@@ -930,11 +923,11 @@ void APGPlayerCharacter::DropItem_Implementation()
 	}
 
 	FVector DropItemLocation;
-	FRotator TempRotation;
-	GetActorEyesViewPoint(DropItemLocation, TempRotation);
-	DropItemLocation += GetActorForwardVector() * 10 + GetActorUpVector() * (-10);
+	FRotator DropItemRotation;
+	GetActorEyesViewPoint(DropItemLocation, DropItemRotation);
+	DropItemLocation += GetActorForwardVector() * 10 + GetActorUpVector() * (-30);
 
-	InventoryComponent->DropCurrentItem(DropItemLocation);
+	InventoryComponent->DropCurrentItem(DropItemLocation, DropItemRotation);
 }
 
 void APGPlayerCharacter::Move(const FInputActionValue& Value)

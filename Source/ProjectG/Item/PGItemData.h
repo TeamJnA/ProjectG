@@ -32,4 +32,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UGameplayAbility> ItemAbility;
+
+	UPROPERTY(EditDefaultsOnly)
+	FTransform ItemSocketOffset;
 };

@@ -97,10 +97,16 @@ UPGItemData* APGItemActor::GetItemData()
 	return LoadedItemData;
 }
 
-void APGItemActor::DropItemSpawned()
+void APGItemActor::DropItemSpawned(const FRotator DropRotation)
 {
 	UE_LOG(LogTemp, Log, TEXT("Set spawned drop item coliision and physics."));
 	StaticMesh->SetSimulatePhysics(true);
+
+	const FVector DropDirection = DropRotation.Vector();
+	const float ImpulseStrength = 1500.0f;
+
+	StaticMesh->AddImpulse(DropDirection * ImpulseStrength);
+
 	StaticMesh->OnComponentHit.AddDynamic(this, &APGItemActor::StopItemOnGroundHit);
 }
 
