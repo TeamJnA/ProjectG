@@ -15,6 +15,7 @@ class UButton;
 class UTextBlock;
 class UPGSessionSlotWidget;
 class UPGConfirmWidget;
+class UPGSessionStatusWidget;
 class UPGSettingMenuWidget;
 class UWidgetSwitcher;
 
@@ -56,8 +57,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UPGSessionStatusWidget> SessionStatusWidgetClass;
+
 	UPROPERTY()
 	TObjectPtr<UPGConfirmWidget> ConfirmWidgetInstance;
+
+	UPROPERTY()
+	TObjectPtr<UPGSessionStatusWidget> SessionStatusWidgetInstance;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGSettingMenuWidget> SettingMenuWidgetClass;
@@ -82,6 +89,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	UFUNCTION()
 	void OnHostButtonClicked();
@@ -102,4 +110,26 @@ protected:
 	void OnBackButtonClicked();
 
 	void OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SessionResults);
+
+	UFUNCTION()
+	void HandleFindSessionStarted();
+
+	UFUNCTION()
+	void HandleFindSessionFinished(bool bWasSuccessful);
+
+	UFUNCTION()
+	void HandleJoinAttemptStarted();
+
+	UFUNCTION()
+	void HandleJoinAttemptFinished(bool bWasSuccessful, const FText& ErrorMessage);
+
+	void SetMainMenuButtonEnabled(bool bEnabled);
+	void SetSessionListButtonEnabled(bool bEnabled);
+
+	void ShowSessionStatusWidget(const FText& Message, bool bShowCloseButton = true);
+
+	UFUNCTION()
+	void HideSessionStatusWidget(float Delay = 0.0f);
+
+	FTimerHandle SessionStatusWidgetTimerHandle;
 };

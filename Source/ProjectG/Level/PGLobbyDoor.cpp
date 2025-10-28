@@ -2,6 +2,8 @@
 
 
 #include "Level/PGLobbyDoor.h"
+#include "AbilitySystemComponent.h"
+#include "Player/PGPlayerState.h"
 
 // Sets default values
 APGLobbyDoor::APGLobbyDoor()
@@ -66,4 +68,25 @@ void APGLobbyDoor::HighlightOff() const
 FInteractionInfo APGLobbyDoor::GetInteractionInfo() const
 {
 	return FInteractionInfo(EInteractionType::Hold, 3.0f);
+}
+
+bool APGLobbyDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+{
+	if (!InteractingASC)
+	{
+		OutFailureMessage = FText::FromString(TEXT("Error"));
+		return false;
+	}
+
+	const AActor* Interactor = InteractingASC->GetOwnerActor();
+	const APGPlayerState* PS = Cast<APGPlayerState>(Interactor);
+	if (PS && PS->IsHost())
+	{
+		return true;
+	}
+	else
+	{
+		OutFailureMessage = FText::FromString(TEXT("Only host can start game"));
+		return false;
+	}
 }

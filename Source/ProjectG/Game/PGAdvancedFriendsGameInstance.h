@@ -42,6 +42,11 @@ DECLARE_DELEGATE_OneParam(FOnItemDataLoaded, UPGItemData*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSessionsFoundDelegate, const TArray<FOnlineSessionSearchResult>&);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFriendListUpdatedDelegate);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFindSessionAttemptStartedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFindSessionAttemptFinishedDelegate, bool, bWasSuccessful);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnJoinSessionAttemptStartedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnJoinSessionAttemptFinishedDelegate, bool, bWasSuccesful, const FText&, ErrorMessage);
+
 /**
  * 
  */
@@ -81,6 +86,10 @@ public:
 	void KickPlayerFromSession(const FUniqueNetId& PlayerToKickId);
 
 	FOnSessionsFoundDelegate OnSessionsFound;
+	FOnFindSessionAttemptStartedDelegate OnFindSessionAttemptStarted;
+	FOnFindSessionAttemptFinishedDelegate OnFindSessionAttemptFinished;
+	FOnJoinSessionAttemptStartedDelegate OnJoinSessionAttemptStarted;
+	FOnJoinSessionAttemptFinishedDelegate OnJoinSessionAttemptFinished;
 	// --------- Session ---------
 
 

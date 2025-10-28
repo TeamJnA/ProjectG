@@ -10,6 +10,7 @@
 
 #include "UI/PGSessionSlotWidget.h"
 #include "UI/PGConfirmWidget.h"
+#include "UI/PGSessionStatusWidget.h"
 #include "UI/PGSettingMenuWidget.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
@@ -96,7 +97,21 @@ void UPGMainMenuWidget::NativeConstruct()
 	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
 		GI->OnSessionsFound.AddUObject(this, &UPGMainMenuWidget::OnSessionsFound);
+
+		GI->OnFindSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleFindSessionStarted);
+		GI->OnFindSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleFindSessionFinished);
+		GI->OnJoinSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleJoinAttemptStarted);
+		GI->OnJoinSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleJoinAttemptFinished);
 	}
+
+	SetMainMenuButtonEnabled(true);	
+}
+
+void UPGMainMenuWidget::NativeDestruct()
+{
+	GetWorld()->GetTimerManager().ClearTimer(SessionStatusWidgetTimerHandle);
+
+	Super::NativeDestruct();
 }
 
 void UPGMainMenuWidget::OnHostButtonClicked()
@@ -182,15 +197,175 @@ void UPGMainMenuWidget::OnSessionsFound(const TArray<FOnlineSessionSearchResult>
 
 	if (SessionResults.Num() == 0)
 	{
+		ShowSessionStatusWidget(FText::FromString(TEXT("No sessions found")), true);
+		HideSessionStatusWidget(1.0f);
 		UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::OnSessionsFound: No sessions found"));
+	}
+	else
+	{
+		HideSessionStatusWidget();
+		for (int32 i = 0; i < SessionResults.Num(); ++i)
+		{
+			const FOnlineSessionSearchResult& Result = SessionResults[i];
+			FString CustomServerName = FString::Printf(TEXT("%s Session"), *Result.Session.OwningUserName);
+
+			AddSessionSlot(CustomServerName, i);
+		}
+	}
+
+	SetMainMenuButtonEnabled(true);
+	SetSessionListButtonEnabled(true);
+}
+
+void UPGMainMenuWidget::HandleFindSessionStarted()
+{
+	ShowSessionStatusWidget(FText::FromString(TEXT("Finding Sessions")), false);
+	SetMainMenuButtonEnabled(false);
+	SetSessionListButtonEnabled(false);
+}
+
+void UPGMainMenuWidget::HandleFindSessionFinished(bool bWasSuccessful)
+{
+	if (!bWasSuccessful)
+	{
+		ShowSessionStatusWidget(FText::FromString(TEXT("Failed to find sessions")), true);
+		HideSessionStatusWidget(2.0f);
+	}
+	else
+	{
+		HideSessionStatusWidget();
+	}
+}
+
+void UPGMainMenuWidget::HandleJoinAttemptStarted()
+{
+	ShowSessionStatusWidget(FText::FromString(TEXT("Joining Session")), false);
+	SetMainMenuButtonEnabled(false);
+	SetSessionListButtonEnabled(false);
+}
+
+void UPGMainMenuWidget::HandleJoinAttemptFinished(bool bWasSuccessful, const FText& ErrorMessage)
+{
+	if (!bWasSuccessful)
+	{
+		ShowSessionStatusWidget(ErrorMessage, true);
+		HideSessionStatusWidget(2.0f);
+		SetMainMenuButtonEnabled(true);
+		SetSessionListButtonEnabled(true);
+	}
+}
+
+void UPGMainMenuWidget::SetMainMenuButtonEnabled(bool bEnabled)
+{
+	if (HostButton)
+	{
+		HostButton->SetIsEnabled(bEnabled);
+	}
+	
+	if (JoinButton)
+	{
+		JoinButton->SetIsEnabled(bEnabled);
+	}
+
+	if (RefreshButton)
+	{
+		RefreshButton->SetIsEnabled(bEnabled);
+	}
+
+	if (OptionButton)
+	{
+		OptionButton->SetIsEnabled(bEnabled);
+	}
+
+	if (ExitButton)
+	{
+		ExitButton->SetIsEnabled(bEnabled);
+	}
+
+	if (OptionMenuCanvas_BackButton)
+	{
+		OptionMenuCanvas_BackButton->SetIsEnabled(bEnabled);
+	}
+
+	if (SessionListCanvas_BackButton)
+	{
+		SessionListCanvas_BackButton->SetIsEnabled(bEnabled);
+	}
+}
+
+void UPGMainMenuWidget::SetSessionListButtonEnabled(bool bEnabled)
+{
+	if (!SessionListContainer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MainMenuWidget::SetSessionListButtonEnabled: Session list container is not valid"));
 		return;
 	}
 
-	for (int32 i = 0; i < SessionResults.Num(); ++i)
+	for (UWidget* Child : SessionListContainer->GetAllChildren())
 	{
-		const FOnlineSessionSearchResult& Result = SessionResults[i];
-		FString CustomServerName = FString::Printf(TEXT("%s Session"), *Result.Session.OwningUserName);
+		UPGSessionSlotWidget* SessionSlot = Cast<UPGSessionSlotWidget>(Child);
+		if (!SessionSlot)
+		{
+			continue;
+		}
 
-		AddSessionSlot(CustomServerName, i);
+		if (!SessionSlot->JoinButton)
+		{
+			continue;
+		}
+
+		SessionSlot->JoinButton->SetIsEnabled(bEnabled);
+	}
+}
+
+void UPGMainMenuWidget::ShowSessionStatusWidget(const FText& Message, bool bShowCloseButton)
+{
+	GetWorld()->GetTimerManager().ClearTimer(SessionStatusWidgetTimerHandle);
+
+	if (!SessionStatusWidgetClass)
+	{
+		return;
+	}
+
+	APlayerController* PC = GetOwningPlayer();
+	if (!PC)
+	{
+		return;
+	}
+
+	if (!SessionStatusWidgetInstance)
+	{
+		SessionStatusWidgetInstance = CreateWidget<UPGSessionStatusWidget>(PC, SessionStatusWidgetClass);
+		if (!SessionStatusWidgetInstance)
+		{
+			return;
+		}
+	}
+
+	SessionStatusWidgetInstance->SetStatusMessage(Message, bShowCloseButton);
+	if (!SessionStatusWidgetInstance->IsInViewport())
+	{
+		SessionStatusWidgetInstance->AddToViewport(10);
+	}
+}
+
+void UPGMainMenuWidget::HideSessionStatusWidget(float Delay)
+{
+	if (Delay > 0.0f)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(SessionStatusWidgetTimerHandle);
+
+		FTimerDelegate Delegate;
+		Delegate.BindUFunction(this, FName("HideSessionStatusWidget"), 0.0f);
+		GetWorld()->GetTimerManager().SetTimer(SessionStatusWidgetTimerHandle, Delegate, Delay, false);
+	}
+	else
+	{
+		if (SessionStatusWidgetInstance && SessionStatusWidgetInstance->IsInViewport())
+		{
+			SessionStatusWidgetInstance->RemoveFromParent();
+			// SessionStatusWidgetInstance = nullptr;
+		}
+		GetWorld()->GetTimerManager().ClearTimer(SessionStatusWidgetTimerHandle);
 	}
 }

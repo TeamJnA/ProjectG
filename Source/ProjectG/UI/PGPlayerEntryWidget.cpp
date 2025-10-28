@@ -31,7 +31,7 @@ void UPGPlayerEntryWidget::SetupEntry(const APGPlayerState* InPlayerState, UText
 	{
 		PlayerAvatar->SetBrushFromTexture(InAvatarTexture);
 	}
-	PlayerAvatar->SetVisibility(bHasAvatar ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	PlayerAvatar->SetVisibility(bHasAvatar ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 
 	int32 PlayerNameFontSize;
 	int32 StatusFontSize;
@@ -92,7 +92,7 @@ void UPGPlayerEntryWidget::SetupEntry(const APGPlayerState* InPlayerState, UText
 	StatusText->SetFont(StatusFontInfo);
 	StatusText->SetText(StatusMessage);
 	StatusText->SetColorAndOpacity(StatusColor);
-	StatusText->SetVisibility(bShowStatus ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	StatusText->SetVisibility(bShowStatus ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 
 	UnhighlightEntry();
 }

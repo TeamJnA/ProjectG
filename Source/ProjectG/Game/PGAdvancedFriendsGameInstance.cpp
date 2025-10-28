@@ -138,8 +138,11 @@ void UPGAdvancedFriendsGameInstance::FindSessions()
 	{
 		UE_LOG(LogTemp, Error, TEXT("GI::FindSessions: no valid session interface"));
 		OnSessionsFound.Broadcast(TArray<FOnlineSessionSearchResult>());
+		OnFindSessionAttemptFinished.Broadcast(false);
 		return;
 	}
+
+	OnFindSessionAttemptStarted.Broadcast();
 
 	LatestSessionSearch = MakeShareable(new FOnlineSessionSearch());
 	LatestSessionSearch->bIsLanQuery = false;
@@ -156,6 +159,8 @@ void UPGAdvancedFriendsGameInstance::FindSessions()
 */
 void UPGAdvancedFriendsGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 {
+	OnFindSessionAttemptFinished.Broadcast(bWasSuccessful);
+
 	if (bWasSuccessful && LatestSessionSearch.IsValid())
 	{
 		UE_LOG(LogTemp, Log, TEXT("GI::OnFindSessionsComplete: Found %d sessions."), LatestSessionSearch->SearchResults.Num());
@@ -178,11 +183,14 @@ void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
 	if (!SessionInterface.IsValid() || !LatestSessionSearch.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("GI::JoinFoundSession: no valid session interface or session search"));
+		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Session system error")));
 		return;
 	}
 
 	if (LatestSessionSearch->SearchResults.IsValidIndex(SessionIndex))
-	{		
+	{
+		OnJoinSessionAttemptStarted.Broadcast();
+
 		LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUseLobbiesIfAvailable = true;
 		LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUsesPresence = true;
 
@@ -190,6 +198,7 @@ void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
 	}
 	else
 	{
+		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Invalid session selected")));
 		UE_LOG(LogTemp, Warning, TEXT("GI::JoinFoundSession: Invalid session index [%d]"), SessionIndex);
 	}
 }
@@ -200,25 +209,41 @@ void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
 */
 void UPGAdvancedFriendsGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	if (Result == EOnJoinSessionCompleteResult::Success && SessionInterface.IsValid())
+	bool bSuccess = (Result == EOnJoinSessionCompleteResult::Success);
+	FText ErrorMessage = FText::GetEmpty();
+
+	if (bSuccess && SessionInterface.IsValid())
 	{
 		FString ConnectString;
 		if (SessionInterface->GetResolvedConnectString(SessionName, ConnectString))
 		{
+			OnJoinSessionAttemptFinished.Broadcast(true, ErrorMessage);
+
 			APlayerController* PC = GetFirstLocalPlayerController();
 			if (PC)
 			{
 				PC->ClientTravel(ConnectString, ETravelType::TRAVEL_Absolute);
 			}
+
+			return;
 		}
 		else
 		{
-			ForceReturnToMainMenu();
+			bSuccess = false;
+			ErrorMessage = FText::FromString(TEXT("Could not resolve connection string"));
+			//ForceReturnToMainMenu();
 		}
 	}
 	else
 	{
-		ForceReturnToMainMenu();
+		bSuccess = false;
+		ErrorMessage = FText::FromString(TEXT("Failed to join session"));
+		//ForceReturnToMainMenu();
+	}
+
+	if (!bSuccess)
+	{
+		OnJoinSessionAttemptFinished.Broadcast(false, ErrorMessage);
 	}
 }
 

@@ -118,7 +118,13 @@ void APGLobbyGameMode::SpawnAndPossessPlayer(APlayerController* NewPlayer)
 	if (LobbyCharacter)
 	{
 		NewPlayer->Possess(LobbyCharacter);
-		LobbyCharacter->InitSoundManager(SoundManager);
+		// TODO: 서버쪽에서 사운드매니저가 안달리는듯?
+		//LobbyCharacter->InitSoundManager(SoundManager);
+
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this, LobbyCharacter]()
+		{
+			LobbyCharacter->InitSoundManager(SoundManager);
+		}));
 	}
 }
 
