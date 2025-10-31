@@ -133,12 +133,13 @@ void APGPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	//if (Controller->IsLocalController())
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::BeginPlay: Init HUD [%s] | HasAuthority %d"), *GetNameSafe(this), HasAuthority());
-
-	//	InitHUD();
-	//}
+	// Set camera max pitch rotation
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC && PC->PlayerCameraManager)
+	{
+		PC->PlayerCameraManager->ViewPitchMax = 75.0f;
+		PC->PlayerCameraManager->ViewPitchMin = -75.0f;
+	}
 }
 
 void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
