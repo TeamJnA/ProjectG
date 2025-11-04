@@ -11,7 +11,7 @@
 #include "Player/PGPlayerState.h"
 #include "Character/PGPlayerCharacter.h"
 
-#include "Level/PGExitDoor.h"
+#include "Level/Misc/PGExitDoor.h"
 
 UGA_Interact_ExitDoor::UGA_Interact_ExitDoor()
 {

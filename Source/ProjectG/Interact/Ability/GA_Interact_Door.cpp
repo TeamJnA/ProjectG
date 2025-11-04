@@ -8,7 +8,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
 
-#include "Level/PGDoor1.h"
+#include "Level/Misc/PGDoor1.h"
 
 UGA_Interact_Door::UGA_Interact_Door()
 {

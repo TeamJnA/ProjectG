@@ -25,10 +25,10 @@
 #include "Component/PGInventoryComponent.h"
 #include "Item/PGItemData.h"
 #include "Component/PGSoundManagerComponent.h"
-#include "UI/PGHUD.h"
-#include "UI/PGMessageManagerWidget.h"
-#include "UI/PGInventoryWidget.h"
-#include "UI/PGScoreBoardWidget.h"
+#include "UI/Manager/PGHUD.h"
+#include "UI/HUD/PGMessageManagerWidget.h"
+#include "UI/HUD/PGInventoryWidget.h"
+#include "UI/PlayerEntry/ScoreBoard/PGScoreBoardWidget.h"
 #include "Components/SpotLightComponent.h"
 
 // Interface

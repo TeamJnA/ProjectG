@@ -17,7 +17,7 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 
-#include "UI/PGHUD.h"
+#include "UI/Manager/PGHUD.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"

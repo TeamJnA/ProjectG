@@ -18,9 +18,9 @@
 #include "Game/PGGameState.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
-#include "Level/PGLevelGenerator.h"
-#include "Level/PGGlobalLightManager.h"
-#include "UI/PGHUD.h"
+#include "Level/Manager/PGLevelGenerator.h"
+#include "Level/Manager/PGGlobalLightManager.h"
+#include "UI/Manager/PGHUD.h"
 #include "Sound/PGSoundManager.h"
 
 APGGameMode::APGGameMode()

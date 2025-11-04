@@ -15,8 +15,8 @@
 #include "Interface/InteractableActorInterface.h"
 
 #include "Item/PGItemActor.h"
-#include "Level/PGDoor1.h"
-#include "Level/PGExitDoor.h"
+#include "Level/Misc/PGDoor1.h"
+#include "Level/Misc/PGExitDoor.h"
 
 
 /*

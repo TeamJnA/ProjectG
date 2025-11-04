@@ -12,7 +12,7 @@
 #include "Game/PGLobbyGameMode.h"
 #include "Player/PGPlayerState.h"
 
-#include "Level/PGLobbyDoor.h"
+#include "Level/Misc/PGLobbyDoor.h"
 
 UGA_Interact_LobbyDoor::UGA_Interact_LobbyDoor()
 {

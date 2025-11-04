@@ -19,7 +19,7 @@
 #include "InputActionValue.h"
 
 #include "Camera/CameraActor.h"
-#include "UI/PGHUD.h"
+#include "UI/Manager/PGHUD.h"
 
 APGLobbyPlayerController::APGLobbyPlayerController()
 {

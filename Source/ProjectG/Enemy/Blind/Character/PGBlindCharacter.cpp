@@ -6,7 +6,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Components/BoxComponent.h"
 
-#include "Level/PGDoor1.h"
+#include "Level/Misc/PGDoor1.h"
 
 APGBlindCharacter::APGBlindCharacter()
 {
