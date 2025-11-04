@@ -5,18 +5,46 @@
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
+#include "OnlineSessionSettings.h"
 
 /*
 * 技记 浇吩 Setup 备泅何
 */
-void UPGSessionSlotWidget::Setup(const FString& SessionName, int32 SessionIndex, UPGAdvancedFriendsGameInstance* GI)
+void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult, int32 SessionIndex, UPGAdvancedFriendsGameInstance* GI)
 {
 	Index = SessionIndex;
 	GameInstanceRef = GI;
 
 	if (SessionNameText)
 	{
+		FString SessionName = FString::Printf(TEXT("%s Session"), *SearchResult.Session.OwningUserName);
 		SessionNameText->SetText(FText::FromString(SessionName));
+	}
+
+	if (PlayerCountText)
+	{
+		const FOnlineSessionSettings& SessionSettings = SearchResult.Session.SessionSettings;
+		const int32 MaxPlayers = SessionSettings.NumPublicConnections;
+		int32 CurrentPlayers = 0;
+
+		if (SessionSettings.Settings.Contains(SESSION_KEY_CURRENT_PLAYERS))
+		{
+			SessionSettings.Settings[SESSION_KEY_CURRENT_PLAYERS].Data.GetValue(CurrentPlayers);
+		}
+		else
+		{
+			CurrentPlayers = MaxPlayers - SearchResult.Session.NumOpenPublicConnections;
+			UE_LOG(LogTemp, Warning, TEXT("SessionSlotWidget::Setup: Could not find CURRENT_PLAYERS key. Using fallback logic."));
+		}
+
+		FText PlayerCount = FText::FromString(FString::Printf(TEXT("%d / %d"), CurrentPlayers, MaxPlayers));
+		PlayerCountText->SetText(PlayerCount);
+	}
+
+	if (PingText)
+	{
+		FText Ping = FText::FromString(FString::Printf(TEXT("%d ms"), SearchResult.PingInMs));
+		PingText->SetText(Ping);
 	}
 
 	if (JoinButton)

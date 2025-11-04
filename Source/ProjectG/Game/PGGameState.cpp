@@ -45,6 +45,11 @@ void APGGameState::AddPlayerState(APlayerState* PlayerState)
 
 	UE_LOG(LogTemp, Log, TEXT("GS::AddPlayerState: [%s] Player added | %d"), *PlayerState->GetName(), HasAuthority());
 	NotifyPlayerArrayUpdated();
+
+	if (HasAuthority())
+	{
+		RequestUpdateSessionPlayerCount();
+	}
 }
 
 /*
@@ -56,6 +61,38 @@ void APGGameState::RemovePlayerState(APlayerState* PlayerState)
 
 	UE_LOG(LogTemp, Log, TEXT("GS::RemovePlayerState: Player removed | %d"), HasAuthority());
 	NotifyPlayerArrayUpdated();
+
+	if (HasAuthority())
+	{
+		RequestUpdateSessionPlayerCount();
+	}
+}
+
+void APGGameState::RequestUpdateSessionPlayerCount()
+{
+	const float UpdateDelay = 0.3f;
+	GetWorld()->GetTimerManager().SetTimer(
+		SessionPlayerCountUpdateTimer,
+		this,
+		&APGGameState::UpdateSessionPlayerCount_Internal,
+		UpdateDelay,
+		false
+	);
+}
+
+void APGGameState::UpdateSessionPlayerCount_Internal()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		return;
+	}
+	GI->UpdateSessionPlayerCount(PlayerArray.Num());
 }
 
 void APGGameState::NotifyPlayerArrayUpdated()

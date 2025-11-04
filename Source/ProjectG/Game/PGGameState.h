@@ -58,6 +58,11 @@ protected:
 	// ----- Player List ---------
 	virtual void AddPlayerState(APlayerState* PlayerState) override;
 	virtual void RemovePlayerState(APlayerState* PlayerState) override;
+
+	FTimerHandle SessionPlayerCountUpdateTimer;
+	
+	void RequestUpdateSessionPlayerCount();
+	void UpdateSessionPlayerCount_Internal();
 	// ----- Player List ---------
 
 	void Multicast_MapGenerationComplete();

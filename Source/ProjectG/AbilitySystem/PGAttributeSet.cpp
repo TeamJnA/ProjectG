@@ -8,6 +8,7 @@
 UPGAttributeSet::UPGAttributeSet()
 {
 	InitStamina(100.0f);
+	InitSanity(100.0f);
 }
 
 void UPGAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -19,6 +20,10 @@ void UPGAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	/// COND_OwnerOnly : Replicated to only actors owner.
 	DOREPLIFETIME_CONDITION_NOTIFY(UPGAttributeSet, Stamina, COND_OwnerOnly, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UPGAttributeSet, MaxStamina, COND_OwnerOnly, REPNOTIFY_Always);
+
+	DOREPLIFETIME_CONDITION_NOTIFY(UPGAttributeSet, Sanity, COND_OwnerOnly, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPGAttributeSet, MaxSanity, COND_OwnerOnly, REPNOTIFY_Always);
+
 	DOREPLIFETIME_CONDITION_NOTIFY(UPGAttributeSet, MovementSpeed, COND_OwnerOnly, REPNOTIFY_Always);
 }
 
@@ -28,7 +33,11 @@ void UPGAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 
 	if (Attribute == GetStaminaAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxStamina());
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxStamina());
+	}
+	else if (Attribute == GetSanityAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxSanity());
 	}
 }
 
@@ -44,7 +53,11 @@ void UPGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 			GetOwningAbilitySystemComponent()->GetAvatarActor();
 			GetOwningAbilitySystemComponent()->CancelAbilities();
 		}*/
-		SetStamina(FMath::Clamp(GetStamina(), 0.f, GetMaxStamina()));
+		SetStamina(FMath::Clamp(GetStamina(), 0.0f, GetMaxStamina()));
+	}
+	else if (Data.EvaluatedData.Attribute == GetSanityAttribute())
+	{
+		SetSanity(FMath::Clamp(GetSanity(), 0.0f, GetMaxSanity()));
 	}
 }
 
@@ -57,6 +70,16 @@ void UPGAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina) co
 void UPGAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina) const
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPGAttributeSet, MaxStamina, OldMaxStamina);
+}
+
+void UPGAttributeSet::OnRep_Sanity(const FGameplayAttributeData& OldSanity) const
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPGAttributeSet, Sanity, OldSanity);
+}
+
+void UPGAttributeSet::OnRep_MaxSanity(const FGameplayAttributeData& OldMaxSanity) const
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPGAttributeSet, MaxSanity, OldMaxSanity);
 }
 
 void UPGAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed) const

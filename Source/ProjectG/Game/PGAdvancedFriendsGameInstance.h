@@ -21,6 +21,8 @@ class FUniqueNetId;
 class FOnlineSessionSearchResult;
 class UUserWidget;
 
+static const FName SESSION_KEY_CURRENT_PLAYERS = FName(TEXT("CURRENT_PLAYERS"));
+
 USTRUCT(BlueprintType)
 struct FSteamFriendInfo
 {
@@ -42,6 +44,8 @@ DECLARE_DELEGATE_OneParam(FOnItemDataLoaded, UPGItemData*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSessionsFoundDelegate, const TArray<FOnlineSessionSearchResult>&);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFriendListUpdatedDelegate);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHostSessionAttemptStartedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHostSessionAttempFinishedDelegate, bool, bWasSuccesful, const FText&, ErrorMessage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFindSessionAttemptStartedDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFindSessionAttemptFinishedDelegate, bool, bWasSuccessful);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnJoinSessionAttemptStartedDelegate);
@@ -85,7 +89,11 @@ public:
 
 	void KickPlayerFromSession(const FUniqueNetId& PlayerToKickId);
 
+	void UpdateSessionPlayerCount(int32 CurrentPlayers);
+
 	FOnSessionsFoundDelegate OnSessionsFound;
+	FOnHostSessionAttemptStartedDelegate OnHostSessionAttemptStarted;
+	FOnHostSessionAttempFinishedDelegate OnHostSessionAttemptFinished;
 	FOnFindSessionAttemptStartedDelegate OnFindSessionAttemptStarted;
 	FOnFindSessionAttemptFinishedDelegate OnFindSessionAttemptFinished;
 	FOnJoinSessionAttemptStartedDelegate OnJoinSessionAttemptStarted;

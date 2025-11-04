@@ -9,6 +9,8 @@
 class UButton;
 class UTextBlock;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnConfirmClickedDelegate);
+
 /**
  * 
  */
@@ -16,9 +18,11 @@ UCLASS()
 class PROJECTG_API UPGConfirmWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
 public:
-	void SetOwningPlayerController(APlayerController* PC);
+	void SetConfirmText(const FText& Message);
+
+	FOnConfirmClickedDelegate OnConfirmClicked;
 
 protected:
 	virtual void NativeConstruct() override;
@@ -37,6 +41,4 @@ protected:
 
 	UFUNCTION()
 	void OnNoButtonClicked();
-
-	TWeakObjectPtr<APlayerController> OwningPC;
 };

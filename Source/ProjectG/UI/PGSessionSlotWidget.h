@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+
+#include "Interfaces/OnlineSessionInterface.h"
+
 #include "PGSessionSlotWidget.generated.h"
 
 class UTextBlock;
@@ -19,18 +22,25 @@ class PROJECTG_API UPGSessionSlotWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	void Setup(const FString& SessionName, int32 SessionIndex, UPGAdvancedFriendsGameInstance* GI);
+	void Setup(const FOnlineSessionSearchResult& SearchResult, int32 SessionIndex, UPGAdvancedFriendsGameInstance* GI);
 
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* SessionNameText;
+	TObjectPtr<UButton> JoinButton;
+
+protected:
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> SessionNameText;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* JoinButton;
+	TObjectPtr<UTextBlock> PlayerCountText;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> PingText;
 
 	UFUNCTION()
 	void OnJoinClicked();
 
 private:
 	int32 Index;
-	UPGAdvancedFriendsGameInstance* GameInstanceRef;
+	TObjectPtr<UPGAdvancedFriendsGameInstance> GameInstanceRef;
 };

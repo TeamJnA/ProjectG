@@ -43,6 +43,14 @@ public:
 	FGameplayAttributeData MaxStamina;
 	ATTRIBUTE_ACCESSORS(UPGAttributeSet, MaxStamina);
 
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Sanity, Category = "Ability | Gameplay Attribute")
+	FGameplayAttributeData Sanity;
+	ATTRIBUTE_ACCESSORS(UPGAttributeSet, Sanity);
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxSanity, Category = "Ability | Gameplay Attribute")
+	FGameplayAttributeData MaxSanity;
+	ATTRIBUTE_ACCESSORS(UPGAttributeSet, MaxSanity);
+
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MovementSpeed, Category = "Ability | Gameplay Attribute")
 	FGameplayAttributeData MovementSpeed;
 	ATTRIBUTE_ACCESSORS(UPGAttributeSet, MovementSpeed);
@@ -52,6 +60,12 @@ public:
 
 	UFUNCTION()
 	void OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina) const;
+
+	UFUNCTION()
+	void OnRep_Sanity(const FGameplayAttributeData& OldSanity) const;
+
+	UFUNCTION()
+	void OnRep_MaxSanity(const FGameplayAttributeData& OldMaxSanity) const;
 
 	UFUNCTION()
 	void OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed) const;

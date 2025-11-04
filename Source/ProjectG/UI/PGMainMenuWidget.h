@@ -30,8 +30,7 @@ class PROJECTG_API UPGMainMenuWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void AddSessionSlot(const FString& ServerName, int32 Index);
+	void AddSessionSlot(const FOnlineSessionSearchResult& SearchResult, int32 Index);
 
 	UFUNCTION(BlueprintCallable)
 	void ClearSessionList();
@@ -95,10 +94,16 @@ protected:
 	void OnHostButtonClicked();
 
 	UFUNCTION()
+	void StartHostSession();
+
+	UFUNCTION()
 	void OnJoinButtonClicked();
 
 	UFUNCTION()
 	void OnExitButtonClicked();
+
+	UFUNCTION()
+	void QuitGame();
 
 	UFUNCTION()
 	void OnOptionButtonClicked();
@@ -109,6 +114,12 @@ protected:
 	UFUNCTION()
 	void OnBackButtonClicked();
 
+	UFUNCTION()
+	void HandleHostSessionStarted();
+
+	UFUNCTION()
+	void HandleHostSessionFinished(bool bWasSuccessful, const FText& ErrorMessage);
+
 	void OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SessionResults);
 
 	UFUNCTION()
@@ -118,10 +129,10 @@ protected:
 	void HandleFindSessionFinished(bool bWasSuccessful);
 
 	UFUNCTION()
-	void HandleJoinAttemptStarted();
+	void HandleJoinSessionStarted();
 
 	UFUNCTION()
-	void HandleJoinAttemptFinished(bool bWasSuccessful, const FText& ErrorMessage);
+	void HandleJoinSessionFinished(bool bWasSuccessful, const FText& ErrorMessage);
 
 	void SetMainMenuButtonEnabled(bool bEnabled);
 	void SetSessionListButtonEnabled(bool bEnabled);

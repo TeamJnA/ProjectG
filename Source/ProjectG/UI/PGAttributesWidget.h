@@ -19,5 +19,8 @@ public:
 
 protected:
 	UPROPERTY(BlueprintReadOnly)
-	float StaminaPercent;	
+	float StaminaPercent;
+
+	UPROPERTY(BlueprintReadOnly)
+	float SanityPercent;
 };

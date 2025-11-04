@@ -94,6 +94,8 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeadlightLight->SetVisibility(false);
 	HeadlightLight->SetIsReplicated(true);
 
+	HeadlightLight->SetVolumetricScatteringIntensity(5.0f);
+
 	// Create Components
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
 
@@ -472,6 +474,11 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 
 		AbilitySystemComponent->RegisterGameplayTagEvent(DeadTag, EGameplayTagEventType::NewOrRemoved)
 			.AddUObject(this, &APGPlayerCharacter::OnDeadTagChanged);
+
+		if (HeadlightLight)
+		{
+			HeadlightLight->SetVolumetricScatteringIntensity(0.0f);
+		}
 	}
 }
 
@@ -493,6 +500,11 @@ void APGPlayerCharacter::OnRep_PlayerState()
 
 		AbilitySystemComponent->RegisterGameplayTagEvent(DeadTag, EGameplayTagEventType::NewOrRemoved)
 			.AddUObject(this, &APGPlayerCharacter::OnDeadTagChanged);
+
+		if (HeadlightLight)
+		{
+			HeadlightLight->SetVolumetricScatteringIntensity(0.0f);
+		}
 	}
 }
 

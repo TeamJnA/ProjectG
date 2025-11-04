@@ -21,20 +21,21 @@ void UPGConfirmWidget::NativeConstruct()
 	}
 }
 
+void UPGConfirmWidget::SetConfirmText(const FText& Message)
+{
+	if (ConfirmText)
+	{
+		ConfirmText->SetText(Message);
+	}
+}
+
 void UPGConfirmWidget::OnYesButtonClicked()
 {
-	if (OwningPC.IsValid())
-	{
-		UKismetSystemLibrary::QuitGame(GetWorld(), OwningPC.Get(), EQuitPreference::Quit, true);
-	}
+	OnConfirmClicked.Broadcast();
+	RemoveFromParent();
 }
 
 void UPGConfirmWidget::OnNoButtonClicked()
 {
 	RemoveFromParent();
-}
-
-void UPGConfirmWidget::SetOwningPlayerController(APlayerController* PC)
-{
-	OwningPC = PC;
 }

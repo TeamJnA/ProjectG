@@ -21,10 +21,16 @@ void UPGAttributesWidget::BindToAttributes()
 
 	// Initial Attribute
 	StaminaPercent = AS->GetStaminaAttribute().GetNumericValue(AS) / AS->GetMaxStaminaAttribute().GetNumericValue(AS);
+	SanityPercent = AS->GetSanityAttribute().GetNumericValue(AS) / AS->GetMaxSanityAttribute().GetNumericValue(AS);
 
 	// Attribute Changes
 	ASC->GetGameplayAttributeValueChangeDelegate(AS->GetStaminaAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
 	{
 		StaminaPercent = Data.NewValue / AS->GetMaxStaminaAttribute().GetNumericValue(AS);
+	});
+
+	ASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
+	{
+		SanityPercent = Data.NewValue / AS->GetMaxSanityAttribute().GetNumericValue(AS);
 	});
 }

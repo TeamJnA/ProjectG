@@ -72,8 +72,11 @@ void UPGAdvancedFriendsGameInstance::HostSession(FName SessionName, int32 MaxPla
 {
 	if (!SessionInterface.IsValid())
 	{
+		OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Online Subsystem is not available")));
 		return;
 	}
+
+	OnHostSessionAttemptStarted.Broadcast();
 
 	const FNamedOnlineSession* ExistingSession = SessionInterface->GetNamedSession(SessionName);
 	if (ExistingSession != nullptr)
@@ -108,6 +111,7 @@ void UPGAdvancedFriendsGameInstance::CreateNewSession(FName SessionName, int32 M
 	SessionSettings.bAllowInvites = true;
 
 	SessionSettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_CURRENT_PLAYERS, 1, EOnlineDataAdvertisementType::ViaOnlineService);
 
 	SessionInterface->CreateSession(0, SessionName, SessionSettings);
 }
@@ -121,11 +125,15 @@ void UPGAdvancedFriendsGameInstance::OnCreateSessionComplete(FName SessionName, 
 	{
 		bIsHost = true;
 		CurrentSavedGameState = EGameState::Lobby;
+
+		OnHostSessionAttemptFinished.Broadcast(true, FText::GetEmpty());
+
 		UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true, "listen");
 	}
 	else
 	{
-		ForceReturnToMainMenu();
+		OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Failed to create session")));
+		//ForceReturnToMainMenu();
 	}
 }
 
@@ -209,41 +217,35 @@ void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
 */
 void UPGAdvancedFriendsGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	bool bSuccess = (Result == EOnJoinSessionCompleteResult::Success);
-	FText ErrorMessage = FText::GetEmpty();
+	if (!SessionInterface.IsValid())
+	{
+		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Online Subsystem is not available")));
+		return;
+	}
 
-	if (bSuccess && SessionInterface.IsValid())
+	if (Result == EOnJoinSessionCompleteResult::Success)
 	{
 		FString ConnectString;
 		if (SessionInterface->GetResolvedConnectString(SessionName, ConnectString))
 		{
-			OnJoinSessionAttemptFinished.Broadcast(true, ErrorMessage);
+			OnJoinSessionAttemptFinished.Broadcast(true, FText::GetEmpty());
 
 			APlayerController* PC = GetFirstLocalPlayerController();
 			if (PC)
 			{
 				PC->ClientTravel(ConnectString, ETravelType::TRAVEL_Absolute);
 			}
-
-			return;
 		}
 		else
 		{
-			bSuccess = false;
-			ErrorMessage = FText::FromString(TEXT("Could not resolve connection string"));
+			OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Could not resolve connection string")));
 			//ForceReturnToMainMenu();
 		}
 	}
 	else
 	{
-		bSuccess = false;
-		ErrorMessage = FText::FromString(TEXT("Failed to join session"));
+		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Failed to join session")));
 		//ForceReturnToMainMenu();
-	}
-
-	if (!bSuccess)
-	{
-		OnJoinSessionAttemptFinished.Broadcast(false, ErrorMessage);
 	}
 }
 
@@ -334,7 +336,13 @@ void UPGAdvancedFriendsGameInstance::LeaveSessionAndReturnToMainMenu()
 */
 void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	if (bWasSuccessful && SessionInterface.IsValid())
+	if (!SessionInterface.IsValid())
+	{
+		OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Online Subsystem is not available")));
+		return;
+	}
+
+	if (bWasSuccessful)
 	{
 		if (bIsHostingAfterDestroy)
 		{
@@ -354,6 +362,18 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 			AcceptedInviteInfo.Reset();
 
 			return;
+		}
+	}
+	else
+	{
+		if (bIsHostingAfterDestroy)
+		{
+			OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Failed to destroy previous session")));
+
+			bIsHostingAfterDestroy = false;
+			PendingSessionName = NAME_None;
+			PendingMaxPlayers = 0;
+			bIsPendingSessionPrivate = false;
 		}
 	}
 
@@ -467,6 +487,25 @@ void UPGAdvancedFriendsGameInstance::KickPlayerFromSession(const FUniqueNetId& P
 	UE_LOG(LogTemp, Warning, TEXT("GI::KickPlayerFromSession: Kicking player with ID '%s' from the session."), *PlayerToKickId.ToString());
 
 	SessionInterface->UnregisterPlayer(NAME_GameSession, PlayerToKickId);
+}
+
+void UPGAdvancedFriendsGameInstance::UpdateSessionPlayerCount(int32 CurrentPlayers)
+{
+	if (!bIsHost || !SessionInterface.IsValid())
+	{
+		return;
+	}
+
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(NAME_GameSession);
+	if (!Session)
+	{
+		return;
+	}
+
+	FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
+	UpdatedSettings.Set(SESSION_KEY_CURRENT_PLAYERS, CurrentPlayers, EOnlineDataAdvertisementType::ViaOnlineService);
+	UE_LOG(LogTemp, Log, TEXT("GI::UpdateSessionPlayerCount: Updating session player count to %d"), CurrentPlayers);
+	SessionInterface->UpdateSession(NAME_GameSession, UpdatedSettings, true);
 }
 // ---------- Session ---------
 

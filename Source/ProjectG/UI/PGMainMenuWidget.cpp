@@ -24,7 +24,7 @@
 * 技记 浇吩 积己何
 * 技记 积己/Setup
 */
-void UPGMainMenuWidget::AddSessionSlot(const FString& ServerName, int32 Index)
+void UPGMainMenuWidget::AddSessionSlot(const FOnlineSessionSearchResult& SearchResult, int32 Index)
 {
 	if (!SessionListContainer || !SessionSlotWidgetClass)
 	{
@@ -36,7 +36,7 @@ void UPGMainMenuWidget::AddSessionSlot(const FString& ServerName, int32 Index)
 	{
 		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 		{
-			SessionSlot->Setup(ServerName, Index, GI);
+			SessionSlot->Setup(SearchResult, Index, GI);
 		}
 		SessionListContainer->AddChild(SessionSlot);
 	}
@@ -98,10 +98,12 @@ void UPGMainMenuWidget::NativeConstruct()
 	{
 		GI->OnSessionsFound.AddUObject(this, &UPGMainMenuWidget::OnSessionsFound);
 
+		GI->OnHostSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleHostSessionStarted);
+		GI->OnHostSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleHostSessionFinished);
 		GI->OnFindSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleFindSessionStarted);
 		GI->OnFindSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleFindSessionFinished);
-		GI->OnJoinSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleJoinAttemptStarted);
-		GI->OnJoinSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleJoinAttemptFinished);
+		GI->OnJoinSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleJoinSessionStarted);
+		GI->OnJoinSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleJoinSessionFinished);
 	}
 
 	SetMainMenuButtonEnabled(true);	
@@ -116,11 +118,36 @@ void UPGMainMenuWidget::NativeDestruct()
 
 void UPGMainMenuWidget::OnHostButtonClicked()
 {
-	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	if (SessionStatusWidgetInstance && SessionStatusWidgetInstance->IsInViewport())
 	{
-		UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::OnHostButtonClicked: Host button clicked"));
-		GI->HostSession(NAME_GameSession, 4, false);
+		return;
 	}
+
+	if (ConfirmWidgetClass)
+	{
+		if (ConfirmWidgetInstance && ConfirmWidgetInstance->IsInViewport())
+		{
+			ConfirmWidgetInstance->RemoveFromParent();
+		}
+		
+		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
+		if (ConfirmWidgetInstance)
+		{
+			ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Create Session?")));
+			ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::StartHostSession);
+			ConfirmWidgetInstance->AddToViewport();
+		}
+	}
+}
+
+void UPGMainMenuWidget::StartHostSession()
+{
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		return;
+	}
+	GI->HostSession(NAME_GameSession, 4, false);
 }
 
 void UPGMainMenuWidget::OnJoinButtonClicked()
@@ -140,26 +167,35 @@ void UPGMainMenuWidget::OnJoinButtonClicked()
 
 void UPGMainMenuWidget::OnExitButtonClicked()
 {
-	if (ConfirmWidgetInstance && ConfirmWidgetInstance->IsInViewport())
+	if (SessionStatusWidgetInstance && SessionStatusWidgetInstance->IsInViewport())
 	{
 		return;
 	}
 
 	if (ConfirmWidgetClass)
 	{
+		if (ConfirmWidgetInstance && ConfirmWidgetInstance->IsInViewport())
+		{
+			ConfirmWidgetInstance->RemoveFromParent();
+		}
+
 		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
-		ConfirmWidgetInstance->SetOwningPlayerController(CachedPC);
 		if (ConfirmWidgetInstance)
 		{
+			ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Exit Game?")));
+			ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::QuitGame);
 			ConfirmWidgetInstance->AddToViewport();
-			UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::OnExitButtonClicked: Exit Confirm pop-up added"));
 		}
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("MainMenuWidget::OnExitButtonClicked: ConfirmWidget class is null"));
-	}
+}
 
+void UPGMainMenuWidget::QuitGame()
+{
+	if (!CachedPC)
+	{
+		return;
+	}
+	UKismetSystemLibrary::QuitGame(this, CachedPC, EQuitPreference::Quit, true);
 }
 
 void UPGMainMenuWidget::OnOptionButtonClicked()
@@ -188,6 +224,24 @@ void UPGMainMenuWidget::OnBackButtonClicked()
 	}
 }
 
+void UPGMainMenuWidget::HandleHostSessionStarted()
+{
+	ShowSessionStatusWidget(FText::FromString(TEXT("Creating Session")), false);
+	SetMainMenuButtonEnabled(false);
+	SetSessionListButtonEnabled(false);
+}
+
+void UPGMainMenuWidget::HandleHostSessionFinished(bool bWasSuccessful, const FText& ErrorMessage)
+{
+	if (!bWasSuccessful)
+	{
+		ShowSessionStatusWidget(ErrorMessage, true);
+		HideSessionStatusWidget(5.0f);
+		SetMainMenuButtonEnabled(true);
+		SetSessionListButtonEnabled(true);
+	}
+}
+
 /*
 * GameInstance肺何磐 八祸等 技记 格废阑 傈崔罐酒 技记 浇吩 积己
 */
@@ -198,7 +252,7 @@ void UPGMainMenuWidget::OnSessionsFound(const TArray<FOnlineSessionSearchResult>
 	if (SessionResults.Num() == 0)
 	{
 		ShowSessionStatusWidget(FText::FromString(TEXT("No sessions found")), true);
-		HideSessionStatusWidget(1.0f);
+		HideSessionStatusWidget(5.0f);
 		UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::OnSessionsFound: No sessions found"));
 	}
 	else
@@ -207,9 +261,8 @@ void UPGMainMenuWidget::OnSessionsFound(const TArray<FOnlineSessionSearchResult>
 		for (int32 i = 0; i < SessionResults.Num(); ++i)
 		{
 			const FOnlineSessionSearchResult& Result = SessionResults[i];
-			FString CustomServerName = FString::Printf(TEXT("%s Session"), *Result.Session.OwningUserName);
 
-			AddSessionSlot(CustomServerName, i);
+			AddSessionSlot(Result, i);
 		}
 	}
 
@@ -237,19 +290,19 @@ void UPGMainMenuWidget::HandleFindSessionFinished(bool bWasSuccessful)
 	}
 }
 
-void UPGMainMenuWidget::HandleJoinAttemptStarted()
+void UPGMainMenuWidget::HandleJoinSessionStarted()
 {
 	ShowSessionStatusWidget(FText::FromString(TEXT("Joining Session")), false);
 	SetMainMenuButtonEnabled(false);
 	SetSessionListButtonEnabled(false);
 }
 
-void UPGMainMenuWidget::HandleJoinAttemptFinished(bool bWasSuccessful, const FText& ErrorMessage)
+void UPGMainMenuWidget::HandleJoinSessionFinished(bool bWasSuccessful, const FText& ErrorMessage)
 {
 	if (!bWasSuccessful)
 	{
 		ShowSessionStatusWidget(ErrorMessage, true);
-		HideSessionStatusWidget(2.0f);
+		HideSessionStatusWidget(5.0f);
 		SetMainMenuButtonEnabled(true);
 		SetSessionListButtonEnabled(true);
 	}
