@@ -50,6 +50,13 @@ void UGA_ThrowBrick::SpawnProjectileActor()
     const FVector ForwardSpawnOffset = PGPC->GetActorForwardVector() * (40 + ForwardMovementAmount * 20);
 
     ThrowStartLocation += ForwardSpawnOffset + (PGPC->GetActorRightVector() * 25);
+
+    // Throw start location is upper when crouch.
+    if (PGPC->bIsCrouched)
+    {
+        ThrowStartLocation += PGPC->GetActorUpVector() * 50;
+    }
+
     ThrowStartRotation.Pitch += 10.0f;
 
     UWorld* World = GetWorld();
