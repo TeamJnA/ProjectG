@@ -190,6 +190,9 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 			if(ChangeItemSlotAction[i])
 				EnhancedInputComponent->BindAction(ChangeItemSlotAction[i], ETriggerEvent::Started, this, &APGPlayerCharacter::ChangingItemSlot, i);
 		}
+
+		// debug, decrease sanity
+		EnhancedInputComponent->BindAction(DebugDecreaseSanityAction, ETriggerEvent::Started, this, &APGPlayerCharacter::OnDebugDecreaseSanity);
 	}
 	else
 	{
@@ -1011,4 +1014,37 @@ void APGPlayerCharacter::StopInputActionByTag(const FInputActionValue& Value, FG
 void APGPlayerCharacter::ChangingItemSlot(const FInputActionValue& Value, int32 NumofSlot)
 {
 	InventoryComponent->ChangeCurrentInventoryIndex(NumofSlot);
+}
+
+void APGPlayerCharacter::OnDebugDecreaseSanity(const FInputActionValue& Value)
+{
+	if (IsLocallyControlled())
+	{
+		Server_Debug_DecreaseSanity();
+	}
+}
+
+void APGPlayerCharacter::Server_Debug_DecreaseSanity_Implementation()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	if (!SanityDecreaseEffect)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+	ContextHandle.AddInstigator(this, this);
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(SanityDecreaseEffect, 1.0f, ContextHandle);
+
+	if (SpecHandle.IsValid())
+	{
+		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		UE_LOG(LogTemp, Log, TEXT("Character::Server_Debug_DecreaseSanity: Applied Sanity Decrease Effect to %s"), *GetNameSafe(this));
+	}
 }

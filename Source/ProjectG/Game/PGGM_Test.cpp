@@ -7,9 +7,17 @@
 #include "Sound/PGSoundManager.h"
 #include "Kismet/GameplayStatics.h"
 
+#include "GameFramework/GameState.h"
+#include "Player/PGPlayerState.h"
+#include "Enemy/Ghost/Character/PGGhostCharacter.h"
 
 APGGM_Test::APGGM_Test()
 {
+	static ConstructorHelpers::FClassFinder<APGGhostCharacter> GhostPawnBPClass(TEXT("/Game/ProjectG/Enemy/Ghost/Character/BP_GhostCharacter.BP_GhostCharacter_C"));
+	if (GhostPawnBPClass.Class != nullptr)
+	{
+		GhostCharacterClass = GhostPawnBPClass.Class;
+	}
 }
 
 APGSoundManager* APGGM_Test::GetSoundManager()
@@ -19,6 +27,8 @@ APGSoundManager* APGGM_Test::GetSoundManager()
 
 void APGGM_Test::BeginPlay()
 {
+	Super::BeginPlay();
+
 	// Spawn sound manager on the lever.
 	SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
 	if (SoundManager) {
@@ -28,7 +38,13 @@ void APGGM_Test::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &APGGM_Test::InitSoundManagerToPlayers, 4.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &APGGM_Test::InitWorld, 4.0f, false);
+}
+
+void APGGM_Test::InitWorld()
+{
+	InitSoundManagerToPlayers();
+	SpawnGhost();
 }
 
 void APGGM_Test::InitSoundManagerToPlayers()
@@ -47,6 +63,46 @@ void APGGM_Test::InitSoundManagerToPlayers()
 		{
 			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s [2nd]"), *PGCB->GetName());
 			PGCB->InitSoundManager(SoundManager);
+		}
+	}
+}
+
+void APGGM_Test::SpawnGhost()
+{
+	UE_LOG(LogTemp, Log, TEXT("GM::SpawnGhostsForPlayers: Spawning ghosts for all players."));
+
+	AGameStateBase* GS = GetGameState<AGameStateBase>();
+	if (!GS)
+	{
+		UE_LOG(LogTemp, Error, TEXT("APGGM_Test::SpawnGhostsForPlayers: No APGGameState found!"));
+		return;
+	}
+
+	if (!GhostCharacterClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("APGGameMode::SpawnGhostsForPlayers: GhostCharacterClass is not set in GameMode! Check BP Path."));
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		if (PS && PS->GetPawn())
+		{
+			const FVector PlayerLocation = PS->GetPawn()->GetActorLocation();
+			const FVector SpawnLocation = PlayerLocation + FVector(300.0f, 0.0f, 100.0f);
+			const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
+
+			APGGhostCharacter* NewGhost = GetWorld()->SpawnActor<APGGhostCharacter>(GhostCharacterClass, SpawnTransform, SpawnParams);
+			if (NewGhost)
+			{
+				NewGhost->SetTargetPlayerState(PS);
+
+				UE_LOG(LogTemp, Log, TEXT("APGGameMode: Spawned Ghost (%s) and assigned to Player (%s)"), *NewGhost->GetName(), *PS->GetPlayerName());
+			}
 		}
 	}
 }

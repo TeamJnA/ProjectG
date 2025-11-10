@@ -14,6 +14,7 @@ class APGSoundManager;
 
 // TEST TO REMOVE
 class APGBlindCharacter;
+class APGGhostCharacter;
 
 /**
  * 
@@ -52,6 +53,7 @@ protected:
 	void SpawnAllPlayers();
 	void SpawnLevelGenerator();
 	void SpawnGlobalLightManager();
+	void SpawnGhost();
 
 	void UpdateSpectatorsTarget(const ACharacter* RevivedCharacter, const APlayerState* RevivedPlayerState);
 
@@ -63,6 +65,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	TSubclassOf<APGGhostCharacter> GhostCharacterClass;
 
 	float SpawnOffset = 0.0f;
 

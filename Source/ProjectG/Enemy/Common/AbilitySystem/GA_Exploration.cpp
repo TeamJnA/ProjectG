@@ -3,7 +3,10 @@
 
 #include "Enemy/Common/AbilitySystem/GA_Exploration.h"
 #include "AbilitySystemComponent.h"
-
+#include "GameFramework/Character.h"
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Enemy/Ghost/AI/E_PGGhostState.h"
 
 UGA_Exploration::UGA_Exploration()
 {
@@ -12,6 +15,7 @@ UGA_Exploration::UGA_Exploration()
 	
 	FGameplayTagContainer TagContainer;
 	TagContainer.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior.Exploration")));
+	TagContainer.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior")));
 	SetAssetTags(TagContainer);
 
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior.Exploration")));
@@ -36,7 +40,19 @@ void UGA_Exploration::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	
+	if (HasAuthority(&CurrentActivationInfo))
+	{
+		if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+		{
+			if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+			{
+				if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
+				{
+					BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Exploring);
+				}
+			}
+		}
+	}
 
 	if (ExplorationEffectClass)
 	{

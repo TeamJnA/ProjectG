@@ -10,6 +10,8 @@
 #include "PGGM_Test.generated.h"
 
 class APGSoundManager;
+class APGGhostCharacter;
+
 /**
  * 
  */
@@ -28,10 +30,16 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	void InitWorld();
+
 	void InitSoundManagerToPlayers();
+	void SpawnGhost();
 
 	UPROPERTY()
 	TObjectPtr<APGSoundManager> SoundManager;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	TSubclassOf<APGGhostCharacter> GhostCharacterClass;
 
 	FTimerHandle TimerHandle;
 };

@@ -56,7 +56,7 @@ protected:
 	TObjectPtr<AActor> CachedAttackedTarget;
 
 	UFUNCTION()
-	void OnTouchColliderOverlapBegin(
+	virtual void OnTouchColliderOverlapBegin(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,

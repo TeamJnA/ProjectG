@@ -93,6 +93,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> MouseRightAction;
+
+	// debug
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> DebugDecreaseSanityAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	TSubclassOf<UGameplayEffect> SanityDecreaseEffect;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -115,6 +122,11 @@ protected:
 
 	/** Called for Changing inventory currecnt slot by number */
 	void ChangingItemSlot(const FInputActionValue& Value, int32 NumofSlot);
+
+	void OnDebugDecreaseSanity(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Reliable)
+	void Server_Debug_DecreaseSanity();
 
 protected:
 	// Controller가 OnPossess할 때, Pawn의 PawnClientRestart를 호출하고 거기서 SetupPlayerInputComponent 호출
