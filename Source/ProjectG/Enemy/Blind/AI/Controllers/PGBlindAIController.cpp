@@ -26,7 +26,7 @@ APGBlindAIController::APGBlindAIController(FObjectInitializer const& ObjectIniti
 void APGBlindAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::OnPossess"));
+	UE_LOG(LogEnemyCharacter, Log, TEXT("APGBlindAIController::OnPossess"));
 
 	OwnerPawn = Cast<APGBlindCharacter>(InPawn);
 	ensureMsgf(OwnerPawn, TEXT("Cannot find APGBlindCharacter in APGBlindAIController"));
@@ -45,7 +45,7 @@ void APGBlindAIController::SetHearingRange(float NewRange)
 
 void APGBlindAIController::SetHearingEnabled(bool Enable)
 {
-	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::SetHearingEnabled"));
+	UE_LOG(LogEnemyCharacter, Log, TEXT("APGBlindAIController::SetHearingEnabled"));
 	if (HearingConfig)
 	{
 		GetPerceptionComponent()->SetSenseEnabled(UAISense_Hearing::StaticClass(), Enable);
@@ -54,7 +54,7 @@ void APGBlindAIController::SetHearingEnabled(bool Enable)
 
 void APGBlindAIController::ResetHuntLevel()
 {
-	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::ResetHuntLevel"));
+	UE_LOG(LogEnemyCharacter, Log, TEXT("APGBlindAIController::ResetHuntLevel"));
 	GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
 	OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
 	OwnerPawn->SetHuntLevel(EBlindHuntLevel::Exploration);
@@ -62,7 +62,7 @@ void APGBlindAIController::ResetHuntLevel()
 
 void APGBlindAIController::SetupPerceptionSystem()
 {
-	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::SetupPerceptionSystem"));
+	UE_LOG(LogEnemyCharacter, Log, TEXT("APGBlindAIController::SetupPerceptionSystem"));
 
 	SetPerceptionComponent(*CreateDefaultSubobject<UAIPerceptionComponent>(
 		TEXT("Perception Component")));
@@ -95,13 +95,13 @@ void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Sti
 	//듣기로 감지된 거면
 	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
 	{
-		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
+		UE_LOG(LogEnemyCharacter, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
 		CalculateNoise(Stimulus.Strength, Stimulus.StimulusLocation);
 	}
 	//touch로 감지된 거라면
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
 	{
-		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect by Touching."));
+		UE_LOG(LogEnemyCharacter, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect by Touching."));
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", Actor->GetActorLocation());
 		OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindBite::StaticClass(), true);
 		//ownerpawn->attack ()

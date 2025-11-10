@@ -155,8 +155,8 @@ void APGEnemyCharacterBase::ForceOpenDoorsAroundCharacter()
 		APGDoor1* OverlappedDoor = Cast<APGDoor1>(OverlappedActor);
 		if (OverlappedDoor)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Door around %s was detected"), *GetClass()->GetName());
-			OverlappedDoor->TEST_OpenDoorByAI();
+			UE_LOG(LogTemp, Log, TEXT("Door around EnemyCharacterBase was detected"));
+			OverlappedDoor->TEST_OpenDoorByAI(this);
 		}
 	}
 }
@@ -164,12 +164,12 @@ void APGEnemyCharacterBase::ForceOpenDoorsAroundCharacter()
 void APGEnemyCharacterBase::OnOpenDoorColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// if other actor is door, break the door!
-	UE_LOG(LogTemp, Log, TEXT("OtherActor was detected by BlindCharacter Door Collision"));
+	UE_LOG(LogEnemyCharacter, Log, TEXT("OtherActor was detected by BlindCharacter Door Collision"));
 
 	APGDoor1* OverlappedDoor = Cast<APGDoor1>(OtherActor);
 	if (OverlappedDoor)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Door was detected by %s"), *GetClass()->GetName());
-		OverlappedDoor->TEST_OpenDoorByAI();
+		UE_LOG(LogTemp, Log, TEXT("Door was detected by EnemyCharacterBase"));
+		OverlappedDoor->TEST_OpenDoorByAI(this);
 	}
 }

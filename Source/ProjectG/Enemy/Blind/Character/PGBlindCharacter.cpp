@@ -71,36 +71,7 @@ void APGBlindCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
     DOREPLIFETIME(APGBlindCharacter, HuntLevel);
 }
 
-// Open(Break) all doors around character.
-// When hunt level become 1 or 2 from 0, this function called to break doors.
-void APGBlindCharacter::ForceOpenDoorsAroundCharacter()
-{
-    TArray<AActor*> OverlappedActors;
-    DoorDetectCollider->GetOverlappingActors(OverlappedActors);
-    for (AActor* OverlappedActor : OverlappedActors)
-    {
-        APGDoor1* OverlappedDoor = Cast<APGDoor1>(OverlappedActor);
-        if (OverlappedDoor)
-        {
-            UE_LOG(LogTemp, Log, TEXT("Door around BlindCharacter was detected"));
-            OverlappedDoor->TEST_OpenDoorByAI(this);
-        }
-    }
-}
 void APGBlindCharacter::BeginPlay()
 {
     Super::BeginPlay();
-}
-
-void APGBlindCharacter::OnOpenDoorColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-    // if other actor is door, break the door!
-    UE_LOG(LogEnemyCharacter, Log, TEXT("OtherActor was detected by BlindCharacter Door Collision"));
-
-    APGDoor1* OverlappedDoor = Cast<APGDoor1>(OtherActor);
-    if (OverlappedDoor)
-    {
-        UE_LOG(LogTemp, Log, TEXT("Door was detected by BlindCharacter"));
-        OverlappedDoor->TEST_OpenDoorByAI(this);
-    }
 }

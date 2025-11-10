@@ -50,7 +50,7 @@ void APGDeafAIController::SetSightEnabled(bool Enable)
 
 void APGDeafAIController::ResetHuntLevel()
 {
-	UE_LOG(LogEnemy, Log, TEXT("APGDeafAIController::ResetHuntLevel"));
+	UE_LOG(LogEnemyCharacter, Log, TEXT("APGDeafAIController::ResetHuntLevel"));
 	//GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
 	ownerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
 	ownerPawn->SetHuntLevel(EDeafHuntLevel::Exploration);
@@ -109,13 +109,13 @@ void APGDeafAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stim
 {
 	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>())
 	{
-		UE_LOG(LogEnemy, Log, TEXT("[APGDeafAIController::OnTargetDetected] AI Detect by Sight."));
+		UE_LOG(LogEnemyCharacter, Log, TEXT("[APGDeafAIController::OnTargetDetected] AI Detect by Sight."));
 		AssignTargetBySight(Stimulus.StimulusLocation);
 	}
 	//touch로 감지된 거라면
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
 	{
-		UE_LOG(LogEnemy, Log, TEXT("[APGDeafAIController::OnTargetDetected] AI Detect by Touching."));
+		UE_LOG(LogEnemyCharacter, Log, TEXT("[APGDeafAIController::OnTargetDetected] AI Detect by Touching."));
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", Actor->GetActorLocation());
 		//OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindBite::StaticClass(), true);
 
@@ -129,7 +129,7 @@ void APGDeafAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stim
 void APGDeafAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	UE_LOG(LogEnemy, Log, TEXT("APGDeafAIController::OnPossess"));
+	UE_LOG(LogEnemyCharacter, Log, TEXT("APGDeafAIController::OnPossess"));
 
 	ownerPawn = Cast<APGDeafCharacter>(InPawn);
 	ensureMsgf(ownerPawn, TEXT("Cannot find APGBlindCharacter in APGDeafAIController"));
