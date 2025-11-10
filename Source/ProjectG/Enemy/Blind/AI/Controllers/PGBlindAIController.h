@@ -6,8 +6,6 @@
 #include "Enemy/Common/AI/Controllers/PGEnemyAIControllerBase.h"
 #include "PGBlindAIController.generated.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogEnemy, Log, All);
-
 class APGBlindCharacter;
 /**
  * 

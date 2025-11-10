@@ -5,46 +5,46 @@
 #include "CoreMinimal.h"
 #include "Enemy/Common/Character/PGEnemyCharacterBase.h"
 #include "Enemy/Common/AI/Interfaces/PGAIExplorationInterface.h"
-#include "Containers/List.h"
-
-
-
 #include "PGBlindCharacter.generated.h"
 
 class UPGBlindAttributeSet;
-class UBoxComponent;
+
 /**
- * 
+ * 시각이 없는 대신 소리와 촉각을 이용해 플레이어를 추적하는 적 캐릭터 클래스입니다.
+ * 탐색(Exploration), 조사(Investigation), 추격(Chase)의 3단계 사냥 레벨을 가집니다.
  */
+
+UENUM(BlueprintType)
+enum class EBlindHuntLevel : uint8
+{
+	Exploration,
+	Investigation,
+	Chase,
+	Count
+};
+
 UCLASS()
 class PROJECTG_API APGBlindCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface
 {
 	GENERATED_BODY()
 
-	
 public:
 
 	APGBlindCharacter();
 
 	// IPGAIExplorationInterface~
-	// explore 기능 쓰려면 해당 interface 상속 받아야합니다.
-	virtual float GetExplorationRadius() const override;
-	virtual float GetExplorationWaitTime() const override;
+	virtual float GetExplorationRadius() const override { return ExplorationRadius; }
+	virtual float GetExplorationWaitTime() const override { return ExplorationWaitTime; }
 	// ~IPGAIExplorationInterface
 
 
-	float GetNoiseLevelThreshold() const;
-	float GetNoiseMaxThreshold() const;
+	float GetNoiseLevelThreshold() const { return NoiseLevelThreshold; }
+	float GetNoiseMaxThreshold() const { return NoiseMaxThreshold; }
 
-	int GetHuntLevel() const;
-	void SetHuntLevel(int Level);
-
-
+	EBlindHuntLevel GetHuntLevel() const { return HuntLevel; }
+	void SetHuntLevel(EBlindHuntLevel newHuntLevel);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
-	TObjectPtr<UBoxComponent> DoorDetectCollider;
 
 	//Animation Montages
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
@@ -53,29 +53,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> RoarMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> SniffMontage;
+
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UPGBlindAttributeSet> BlindAttributeSet;
 
 	virtual void BeginPlay() override;
-	
-	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
-
-	// When BlindCharacter's HuntLevel is over than 0( State is Chase or Investigate ), 
-	// the door ovelaped with BlindCharacter need to be broken.
-	UFUNCTION()
-	void OnOpenDoorColliderOverlapBegin(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult);
-
-public:
-	void ForceOpenDoorsAroundCharacter();
-	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	float ExplorationRadius = 1500.f;
@@ -86,7 +72,7 @@ private:
 
 	//hunt level은 animation bp 추적용 변수
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", Replicated, meta = (AllowPrivateAccess = "true"))
-	int HuntLevel = 0;
+	EBlindHuntLevel HuntLevel = EBlindHuntLevel::Exploration;
 
 private:
 
@@ -96,13 +82,4 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	float NoiseMaxThreshold = 2000.f;
-
-
-	//detect touch
-private:
-
-	//다수의 적 인식 개발중 (신경 x)
-	//TLinkedList<AActor*> TouchedActorList;
-	//TMap<AActor*, TLinkedList<AActor*>::> ActorNodeMap;
-
 };

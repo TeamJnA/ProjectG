@@ -16,8 +16,6 @@
 #include "Enemy/Blind/Ability/Chase/GA_BlindChase.h"
 #include "Enemy/Blind/Ability/Bite/GA_BlindBite.h"
 
-DEFINE_LOG_CATEGORY(LogEnemy);
-
 APGBlindAIController::APGBlindAIController(FObjectInitializer const& ObjectInitializer) :
 	APGEnemyAIControllerBase{ ObjectInitializer }
 {
@@ -31,16 +29,13 @@ void APGBlindAIController::OnPossess(APawn* InPawn)
 	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::OnPossess"));
 
 	OwnerPawn = Cast<APGBlindCharacter>(InPawn);
-	if (!OwnerPawn)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot find APGBlindCharacter in APGBlindAIController"));
-	}
+	ensureMsgf(OwnerPawn, TEXT("Cannot find APGBlindCharacter in APGBlindAIController"));
 }
 
 
 void APGBlindAIController::SetHearingRange(float NewRange)
 {
-	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::SetHearingRange"));
+	//UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::SetHearingRange"));
 	if (HearingConfig)
 	{
 		HearingConfig->HearingRange = NewRange;
@@ -62,7 +57,7 @@ void APGBlindAIController::ResetHuntLevel()
 	UE_LOG(LogEnemy, Log, TEXT("APGBlindAIController::ResetHuntLevel"));
 	GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
 	OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
-	OwnerPawn->SetHuntLevel(0);
+	OwnerPawn->SetHuntLevel(EBlindHuntLevel::Exploration);
 }
 
 void APGBlindAIController::SetupPerceptionSystem()
@@ -97,20 +92,19 @@ void APGBlindAIController::SetupPerceptionSystem()
 
 void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
-	UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
-
 	//듣기로 감지된 거면
 	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
 	{
-		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Hearing."));
+		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect noise. NOISE LEVEL %f"), Stimulus.Strength);
 		CalculateNoise(Stimulus.Strength, Stimulus.StimulusLocation);
 	}
 	//touch로 감지된 거라면
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Touch>())
 	{
-		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect Noise by Touching."));
+		UE_LOG(LogEnemy, Log, TEXT("[APGBlindAIController::OnTargetDetected] AI Detect by Touching."));
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", Actor->GetActorLocation());
 		OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindBite::StaticClass(), true);
+		//ownerpawn->attack ()
 	}
 }
 
@@ -133,12 +127,12 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	float DetectedMaxNoiseMagnitude = GetBlackboardComponent()->GetValueAsFloat("DetectedMaxNoiseMagnitude");
 
 
-	// While in HuntLevel 2 (Chase), keep chasing the target that is making noise
+	// While in HuntLevel Chase, keep chasing the target that is making noise
 	//방금 들린 소리가 최대 소리라면, 
 	// huntlevel은 탐색레벨인데, 애니메이션블루프린트때문에 추가한 변수임. 
 	// hunt level 0: explore, 1: investigate, 2: chase
 	// if 문이 있는 이유가 상대방이 뛰어갈때 쫓아갈 수 있게 갱신하기 위한 if문
-	if (CurNoise > NoiseMaxThreshold && OwnerPawn->GetHuntLevel()==2)
+	if ((CurNoise > NoiseMaxThreshold) && (OwnerPawn->GetHuntLevel()==EBlindHuntLevel::Chase))
 	{
 		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoise);
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
@@ -155,7 +149,7 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	if (DetectedMaxNoiseMagnitude < CurNoise)
 	{
 		// If now hunt level is 0, open all doors around character.
-		if (OwnerPawn->GetHuntLevel() == 0)
+		if (OwnerPawn->GetHuntLevel() == EBlindHuntLevel::Exploration)
 		{
 			OwnerPawn->ForceOpenDoorsAroundCharacter();
 		}

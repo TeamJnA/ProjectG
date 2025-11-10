@@ -46,7 +46,7 @@ void UGA_BlindInvestigate::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 		UE_LOG(LogTemp, Warning, TEXT("Cannot find OwnerPawn in UGA_BlindInvestigate::ActivateAbility"));
 		return;
 	}
-	OwnerPawn->SetHuntLevel(1);
+	OwnerPawn->SetHuntLevel(EBlindHuntLevel::Investigation);
 
 	GetAbilitySystemComponentFromActorInfo()->
 		AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsInvestigating")));

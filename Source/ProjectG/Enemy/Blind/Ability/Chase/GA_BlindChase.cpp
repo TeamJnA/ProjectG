@@ -8,7 +8,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
-
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Character/Component/PGSoundManagerComponent.h"
 
 UGA_BlindChase::UGA_BlindChase()
@@ -59,7 +59,8 @@ void UGA_BlindChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	{
 		SoundManager->TriggerSoundForAllPlayers(TEXT("ENEMY_Roar"), OwnerPawn->GetActorLocation(), 5);
 	}		
-	else{
+	else
+	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager from AvatarActor in UGA_BlindChase"));
 	}
 
@@ -73,25 +74,45 @@ void UGA_BlindChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 		true,                               // bStopWhenAbilityEnds (Ability 종료시 중단 여부)
 		1.0f                               // 애니메이션 루트 모션 스케일
 	);
-
-	PlayMontageTask->OnCompleted.AddDynamic(this, &UGA_BlindChase::OnMontageCompleted);
+	PlayMontageTask->OnCompleted.AddDynamic(this, &UGA_BlindChase::OnRoarMontageCompleted);
 	PlayMontageTask->ReadyForActivation();
-		
+	OwnerPawn->SetHuntLevel(EBlindHuntLevel::Chase);
 }
 
 void UGA_BlindChase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find OwnerPawn in UGA_BlindChase::EndAbility"));
+		return;
+	}
+
+	AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
+	if (!AIController)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find AIController in UGA_BlindChase"));
+		return;
+	}
+
+	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
+	if (!Blackboard)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find Blackboard in UGA_BlindChase"));
+		return;
+	}
+	Blackboard->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
+
 	GetAbilitySystemComponentFromActorInfo()->
 		RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing")));
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_BlindChase::OnMontageCompleted()
+void UGA_BlindChase::OnRoarMontageCompleted()
 {
-	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
-	OwnerPawn->SetHuntLevel(2);
-
+	//APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
+	//OwnerPawn->SetHuntLevel(EBlindHuntLevel::Chase);
 
 	GetAbilitySystemComponentFromActorInfo()->
 		AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing")));
