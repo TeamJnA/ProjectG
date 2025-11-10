@@ -85,7 +85,7 @@ void UGA_BlindBite::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 				Blackboard->SetValueAsBool(FName("DetectedPlayer"), false);//Behavior tree의 Detected Player 값 변경.
 
 			if (APGBlindAIController* AIC = Cast<APGBlindAIController>(AIController))
-			{
+			{//TODO : 여기  무조건 reset하는게 맞는지? 
 				AIC->ResetHuntLevel();
 			}
 		}

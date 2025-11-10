@@ -41,6 +41,9 @@ public:
 	// Notify target actor that attack is finished
 	void NotifyAttackEnded();
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+	TObjectPtr<UBoxComponent> DoorDetectCollider;
+
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(AllowPrivateAccess="true"))
@@ -63,6 +66,17 @@ protected:
 		int32 OtherBodyIndex,
 		bool bFromSweep,
 		const FHitResult& SweepResult);
+public:
+	UFUNCTION()
+	void OnOpenDoorColliderOverlapBegin(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+public:
+	void ForceOpenDoorsAroundCharacter();
 
 	// Get Enemy's head location.
 	// Enemy's have different head sockets, use the top of the capsule component instead.

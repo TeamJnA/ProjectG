@@ -4,18 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "GA_BlindChase.generated.h"
+#include "GA_DeafChase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API UGA_BlindChase : public UGameplayAbility
+class PROJECTG_API UGA_DeafChase : public UGameplayAbility
 {
 	GENERATED_BODY()
-	
 public:
-	UGA_BlindChase();
+	UGA_DeafChase();
 
 	/** Actually activate ability, do not call this directly */
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -24,12 +23,10 @@ public:
 	/** Native function, called if an ability ends normally or abnormally. If bReplicate is set to true, try to replicate the ending to the client/server */
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
+
 private:
 	UPROPERTY()
 	TSubclassOf<UGameplayEffect> ChaseEffectClass;
 
-	UFUNCTION()
-	void OnRoarMontageCompleted();
-	
 };
-
