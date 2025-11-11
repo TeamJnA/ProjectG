@@ -36,8 +36,6 @@ APGProjectileItemBrick::APGProjectileItemBrick()
 	StaticMesh->BodyInstance.bLockYRotation = true;
 	StaticMesh->BodyInstance.bLockZRotation = true;
 
-	InitialSpeed = 1000.0f;
-
 	bAlreadyHit = false;
 	bIsItem = false;
 

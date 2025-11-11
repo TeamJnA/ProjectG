@@ -117,7 +117,7 @@ void UGA_Item_Throw::MouseRight()
 	MontageTask->OnInterrupted.AddDynamic(this, &UGA_Item_Throw::ThrowReadyCanceled);
 	MontageTask->ReadyForActivation();
 
-	/// TODO : Draw throw prediction line.
+	/// TODO : Draw throw prediction line. on client
 	/// 
 	/// 
 	/// 

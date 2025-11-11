@@ -15,6 +15,8 @@ UGA_ThrowBrick::UGA_ThrowBrick()
    {
        ProjectileItem = ProjectileItemRef.Class;
    }
+
+   InitialSpeed = 1000.0f;
 }
 
 void UGA_ThrowBrick::SpawnProjectileActor()
@@ -73,7 +75,7 @@ void UGA_ThrowBrick::SpawnProjectileActor()
         
         if (Projectile)
         {
-            Projectile->ThrowInDirection(ThrowStartRotation.Vector());
+            Projectile->ThrowInDirection(ThrowStartRotation.Vector(), InitialSpeed);
         }
     }
 }

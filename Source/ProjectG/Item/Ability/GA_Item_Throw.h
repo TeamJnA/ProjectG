@@ -44,6 +44,8 @@ protected:
 	/// when releasing right-click after performing a different action during the right-click.
 	bool bThrowReady;
 
+	float InitialSpeed;
+
 	UFUNCTION()
 	void RightInputCanceled();
 

@@ -31,14 +31,11 @@ public:
 
 	/// Launches the projectile by setting its velocity in the given direction.
 	/// Called externally after this actor is spawned.
-	void ThrowInDirection(const FVector& ShootDirection);
+	void ThrowInDirection(const FVector& ShootDirection, const float InitialSpeed);
 
 protected:
 	UFUNCTION(Server, Reliable)
 	virtual void PlaySound(const FVector& HitLocation);
-
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = "Movement", meta = (AllowPrivateAccess = "true"))
-	float InitialSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	FName ItemHitSound;
