@@ -6,6 +6,8 @@
 #include "Abilities/GameplayAbility.h"
 #include "GA_Item_Throw.generated.h"
 
+class UAT_PGPredictThrowableTrajectory;
+
 // GA_Item_Throw is local predicted ability.
 UCLASS()
 class PROJECTG_API UGA_Item_Throw : public UGameplayAbility
@@ -56,4 +58,6 @@ protected:
 
 	UFUNCTION()
 	void ThrowReadyCanceled();
+
+	TObjectPtr<UAT_PGPredictThrowableTrajectory> PredictThrowableTrajectory;
 };
