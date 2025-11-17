@@ -11,11 +11,9 @@ APGProjectileItemBase::APGProjectileItemBase()
     ArrowComponent->SetupAttachment(RootComponent);
 
     StaticMesh->SetAllUseCCD(true);
-
-    InitialSpeed = 700.0f;
 }
 
-void APGProjectileItemBase::ThrowInDirection(const FVector& ShootDirection)
+void APGProjectileItemBase::ThrowInDirection(const FVector& ShootDirection, const float InitialSpeed)
 {
     StaticMesh->SetPhysicsLinearVelocity(ShootDirection * InitialSpeed);
 }

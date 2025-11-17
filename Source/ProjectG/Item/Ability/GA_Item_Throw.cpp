@@ -7,6 +7,7 @@
 #include "Character/Ability/Task/AT_PGWaitGameplayTagReAdded.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
+#include "Item/AbilityTask//AT_PGPredictThrowableTrajectory.h"
 #include "Item/Ability/Consumable/GA_ThrowAction.h"
 #include "Character/PGPlayerCharacter.h"
 #include "PGLogChannels.h"
@@ -117,11 +118,9 @@ void UGA_Item_Throw::MouseRight()
 	MontageTask->OnInterrupted.AddDynamic(this, &UGA_Item_Throw::ThrowReadyCanceled);
 	MontageTask->ReadyForActivation();
 
-	/// TODO : Draw throw prediction line.
-	/// 
-	/// 
-	/// 
-	/// 
+	// Draw throw prediction line. on client
+	PredictThrowableTrajectory = UAT_PGPredictThrowableTrajectory::DrawTrajectory(this, InitialSpeed);
+	PredictThrowableTrajectory->ReadyForActivation();
 
 	// Wait for tag removed : Right Input.
 	// Play anim montage to return hand to default position.
@@ -154,6 +153,12 @@ void UGA_Item_Throw::RightInputCanceled()
 		return;
 	}
 
+	if (PredictThrowableTrajectory)
+	{
+		PredictThrowableTrajectory->EndTask();
+		PredictThrowableTrajectory = nullptr;
+	}
+
 	// Play anim montage to return hand to default position.
 	UAbilityTask_PlayMontageAndWait* MontageTask =
 		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
@@ -168,6 +173,11 @@ void UGA_Item_Throw::RightInputCanceled()
 
 void UGA_Item_Throw::ThrowReadyCanceled()
 {
+	if (PredictThrowableTrajectory)
+	{
+		PredictThrowableTrajectory->EndTask();
+		PredictThrowableTrajectory = nullptr;
+	}
 	bThrowReady = false;
 }
 

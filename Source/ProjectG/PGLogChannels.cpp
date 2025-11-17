@@ -1,5 +1,6 @@
 #include "PGLogChannels.h"
 
 DEFINE_LOG_CATEGORY(LogPGAbility);
+DEFINE_LOG_CATEGORY(LogPGAbilityTask);
 DEFINE_LOG_CATEGORY(LogItem);
 DEFINE_LOG_CATEGORY(LogPGAnimNotify);

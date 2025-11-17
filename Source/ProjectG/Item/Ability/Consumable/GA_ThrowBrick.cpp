@@ -15,6 +15,8 @@ UGA_ThrowBrick::UGA_ThrowBrick()
    {
        ProjectileItem = ProjectileItemRef.Class;
    }
+
+   InitialSpeed = 1000.0f;
 }
 
 void UGA_ThrowBrick::SpawnProjectileActor()
@@ -51,12 +53,6 @@ void UGA_ThrowBrick::SpawnProjectileActor()
 
     ThrowStartLocation += ForwardSpawnOffset + (PGPC->GetActorRightVector() * 25);
 
-    // Throw start location is upper when crouch.
-    if (PGPC->bIsCrouched)
-    {
-        ThrowStartLocation += PGPC->GetActorUpVector() * 50;
-    }
-
     ThrowStartRotation.Pitch += 10.0f;
 
     UWorld* World = GetWorld();
@@ -73,7 +69,7 @@ void UGA_ThrowBrick::SpawnProjectileActor()
         
         if (Projectile)
         {
-            Projectile->ThrowInDirection(ThrowStartRotation.Vector());
+            Projectile->ThrowInDirection(ThrowStartRotation.Vector(), InitialSpeed);
         }
     }
 }
