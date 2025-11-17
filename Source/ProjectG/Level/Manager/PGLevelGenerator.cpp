@@ -553,10 +553,10 @@ void APGLevelGenerator::SpawnEnemy()
 	}
 
 	//APGMasterRoom* EnemySpawnRoom = FindFarthestRoom();
-	const APGMasterRoom* EnemySpawnRoom = FindMiddleDistanceRoom();
-	if (EnemySpawnRoom)
+	const APGMasterRoom* BlindSpawnRoom = FindMiddleDistanceRoom();
+	if (BlindSpawnRoom)
 	{
-		const FTransform SpawnTransform(FRotator::ZeroRotator, EnemySpawnRoom->GetEnemySpawnLocation());
+		const FTransform SpawnTransform(FRotator::ZeroRotator, BlindSpawnRoom->GetEnemySpawnLocation());
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -567,7 +567,21 @@ void APGLevelGenerator::SpawnEnemy()
 			SpawnedBlindCharacter->InitSoundManager(GM->GetSoundManager());
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("LG::SetupLevelEnvironment: Spawn enemy at room '%s'"), *EnemySpawnRoom->GetName());
+		UE_LOG(LogTemp, Log, TEXT("LG::SetupLevelEnvironment: Spawn enemy at room '%s'"), *BlindSpawnRoom->GetName());
+	}
+
+	const APGMasterRoom* GhostSpawnRoom = FindFarthestRoom();
+	if (GhostSpawnRoom)
+	{
+		const FTransform SpawnTransform(FRotator::ZeroRotator, GhostSpawnRoom->GetEnemySpawnLocation());
+
+		UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn ghost. (Room: %s, Location: %s)"), *GhostSpawnRoom->GetName(), *SpawnTransform.GetLocation().ToString());
+
+		GM->SpawnGhost(SpawnTransform);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: failed find farthestroom."));
 	}
 }
 

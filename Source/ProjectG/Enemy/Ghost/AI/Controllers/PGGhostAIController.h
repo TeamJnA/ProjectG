@@ -6,11 +6,15 @@
 #include "Enemy/Common/AI/Controllers/PGEnemyAIControllerBase.h"
 
 #include "GameplayTagContainer.h"
+#include "Perception/AIPerceptionTypes.h"
 
 #include "PGGhostAIController.generated.h"
 
 class APGGhostCharacter;
 class APGPlayerState;
+class UAISenseConfig_Sight;
+class UAbilitySystemComponent;
+struct FOnAttributeChangeData;
 
 /**
  * 
@@ -23,25 +27,44 @@ class PROJECTG_API APGGhostAIController : public APGEnemyAIControllerBase
 public:
 	explicit APGGhostAIController(const FObjectInitializer& ObjectInitializer);
 
+	void SetupTarget(APlayerState* NewTargetPS);
+	void SetSightEnable(bool bEnable);
+
+	FORCEINLINE float GetChaseStartDistance() const { return ChaseStartDistance; }
+	FORCEINLINE float GetSanityChaseThreshold() const { return SanityChaseThreshold; }
+	FORCEINLINE float GetChaseStartLimitDistance() const { return ChaseStartLimitDistance; }
+	FORCEINLINE FName GetBlackboardKey_AIState() const { return BlackboardKey_AIState; }
+	FORCEINLINE FName GetBlackboardKey_TargetPawn() const { return BlackboardKey_TargetPawn; }
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
+	virtual void SetupPerceptionSystem() override;
 
-	void CheckHuntConditions();
+	UFUNCTION()
+	virtual void OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus) override;
+
+	void OnTargetSanityChanged(const FOnAttributeChangeData& Data);
 
 	UPROPERTY()
 	TObjectPtr<APGGhostCharacter> OwnerGhostCharacter;
 
-	FTimerHandle TimerHandle_CheckConditions;
+	FDelegateHandle SanityChangedDelegateHandle;
+
+	UPROPERTY()
+	TWeakObjectPtr<UAbilitySystemComponent> TargetPlayerASC;
+
+	UPROPERTY()
+	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GhostAI")
-	float ChaseStartDistance;
+	float ChaseStartDistance = 1500.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GhostAI")
-	float SanityChaseThreshold;
+	float ChaseStartLimitDistance = 800.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GhostAI")
-	float AttackStartLimitDistance;
+	float SanityChaseThreshold = 50.0f;
 
 	const FName BlackboardKey_AIState = FName(TEXT("AIState"));
 	const FName BlackboardKey_TargetPawn = FName(TEXT("TargetPlayerPawn"));

@@ -10,6 +10,7 @@
 #include "Interface/AttackableTarget.h"
 #include "Interface/InteractableActorInterface.h"
 #include "Interface/HandItemInterface.h"
+#include "GenericTeamAgentInterface.h"
 
 #include "PGPlayerCharacter.generated.h"
 
@@ -31,7 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
  * 
  */
 UCLASS()
-class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IHandItemInterface, public IInteractableActorInterface
+class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IHandItemInterface, public IInteractableActorInterface, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 	
@@ -102,6 +103,10 @@ public:
 	TSubclassOf<UGameplayEffect> SanityDecreaseEffect;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	// IGenericTeamAgentInterface~
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	// ~IGenericTeamAgentInterface
 
 protected:
 	virtual void BeginPlay() override;

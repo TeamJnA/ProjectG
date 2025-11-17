@@ -203,11 +203,9 @@ void APGGameMode::SpawnAllPlayers()
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager and SoundManager."));
-	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnGlobalLightManager);
+	//GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnGlobalLightManager);
 
 	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::InitSoundManagerToPlayers);
-
-	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &APGGameMode::SpawnGhost);
 }
 
 /*
@@ -233,7 +231,7 @@ void APGGameMode::SpawnGlobalLightManager()
 	APGGlobalLightManager* LightManager = GetWorld()->SpawnActor<APGGlobalLightManager>(APGGlobalLightManager::StaticClass());
 }
 
-void APGGameMode::SpawnGhost()
+void APGGameMode::SpawnGhost(const FTransform& SpawnTransform)
 {
 	UE_LOG(LogTemp, Log, TEXT("GM::SpawnGhostsForPlayers: Spawning ghosts for all players."));
 
@@ -254,17 +252,24 @@ void APGGameMode::SpawnGhost()
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	const float SpawnOffsetRadius = 100.0f;
+
 	for (APlayerState* PS : GS->PlayerArray)
 	{
-		if (PS && PS->GetPawn())
+		if (PS)
 		{
-			const FVector PlayerLocation = PS->GetPawn()->GetActorLocation();
-			const FVector SpawnLocation = PlayerLocation + FVector(FMath::RandRange(-800.f, 800.f), FMath::RandRange(-800.f, 800.f), 100.f);
-			const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
+			FVector RandomOffset = FVector(FMath::RandRange(-SpawnOffsetRadius, SpawnOffsetRadius), FMath::RandRange(-SpawnOffsetRadius, SpawnOffsetRadius), 0.0f);
+			FTransform FinalSpawnTransform = SpawnTransform;
+			FinalSpawnTransform.AddToTranslation(RandomOffset);
 
-			APGGhostCharacter* NewGhost = GetWorld()->SpawnActor<APGGhostCharacter>(GhostCharacterClass, SpawnTransform, SpawnParams);
+			APGGhostCharacter* NewGhost = GetWorld()->SpawnActor<APGGhostCharacter>(GhostCharacterClass, FinalSpawnTransform, SpawnParams);
 			if (NewGhost)
 			{
+				/*if (SoundManager)
+				{
+					NewGhost->InitSoundManager(SoundManager);
+				}*/
+
 				NewGhost->SetTargetPlayerState(PS);
 
 				UE_LOG(LogTemp, Log, TEXT("APGGameMode: Spawned Ghost (%s) and assigned to Player (%s)"), *NewGhost->GetName(), *PS->GetPlayerName());

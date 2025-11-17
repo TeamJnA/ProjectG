@@ -9,6 +9,9 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
+#include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISenseConfig_Sight.h"
+
 #include "Enemy/Ghost/Ability/Chase/GA_GhostChase.h"
 #include "Enemy/Ghost/Ability/Chase/GA_GhostStopChase.h"
 #include "Enemy/Ghost/Ability/Track/GA_GhostTrack.h"
@@ -20,14 +23,70 @@ APGGhostAIController::APGGhostAIController(const FObjectInitializer& ObjectIniti
 	, BlackboardKey_AIState(FName(TEXT("AIState")))
 	, BlackboardKey_TargetPawn(FName(TEXT("TargetPlayerPawn")))
 {
-	ChaseStartDistance = 2000.0f;
-	SanityChaseThreshold = 50.0f;
-	AttackStartLimitDistance = 500.0f;
+	SetupPerceptionSystem();
+}
+
+void APGGhostAIController::SetupTarget(APlayerState* NewTargetPS)
+{
+	if (!HasAuthority() || !OwnerGhostCharacter)
+	{
+		return;
+	}
+
+	if (TargetPlayerASC.IsValid() && SanityChangedDelegateHandle.IsValid())
+	{
+		if (APGPlayerState* OldPS = Cast<APGPlayerState>(TargetPlayerASC->GetOwner()))
+		{
+			if (const UPGAttributeSet* OldAS = OldPS->GetAttributeSet())
+			{
+				TargetPlayerASC->GetGameplayAttributeValueChangeDelegate(OldAS->GetSanityAttribute()).Remove(SanityChangedDelegateHandle);
+			}
+		}
+	}
+	SanityChangedDelegateHandle.Reset();
+	TargetPlayerASC.Reset();
+
+	APGPlayerState* TargetPS = Cast<APGPlayerState>(NewTargetPS);
+	if (!TargetPS)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ghost::SetupTargetCallbacks: No valid TargetPS."));
+		return;
+	}
+
+	UAbilitySystemComponent* TargetASC = TargetPS->GetAbilitySystemComponent();
+	const UPGAttributeSet* TargetAttributeSet = TargetPS->GetAttributeSet();
+
+	if (TargetASC && TargetAttributeSet)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Ghost::SetupTargetCallbacks: bind delegate to target sanity."), *TargetPS->GetPlayerName());
+		TargetPlayerASC = TargetASC;
+		SanityChangedDelegateHandle =
+			TargetASC->GetGameplayAttributeValueChangeDelegate(TargetAttributeSet->GetSanityAttribute()).AddUObject(this, &APGGhostAIController::OnTargetSanityChanged);
+
+		FOnAttributeChangeData InitData;
+		InitData.NewValue = TargetAttributeSet->GetSanity();
+		InitData.OldValue = InitData.NewValue;
+		OnTargetSanityChanged(InitData);
+	}
+}
+
+void APGGhostAIController::SetSightEnable(bool bEnable)
+{
+	if (SightConfig)
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGGhostAIController::SetSightEnabled: Sight sense %s"), bEnable ? TEXT("Enabled") : TEXT("Disabled"));
+		GetPerceptionComponent()->SetSenseEnabled(UAISense_Sight::StaticClass(), bEnable);
+	}
 }
 
 void APGGhostAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+
+	if (!HasAuthority())
+	{
+		return;
+	}
 
 	OwnerGhostCharacter = Cast<APGGhostCharacter>(InPawn);
 	if (!OwnerGhostCharacter)
@@ -36,157 +95,107 @@ void APGGhostAIController::OnPossess(APawn* InPawn)
 		return;
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(
-		TimerHandle_CheckConditions,
-		this,
-		&APGGhostAIController::CheckHuntConditions,
-		0.5f,
-		true
-	);
+	APlayerState* ExistingTargetPS = OwnerGhostCharacter->GetTargetPlayerState();
+	if (ExistingTargetPS)
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGGhostAIController::OnPossess: TargetPS is valid"));
+		SetupTarget(ExistingTargetPS);
+	}
 }
 
 void APGGhostAIController::OnUnPossess()
 {
-	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_CheckConditions);
+	if (HasAuthority())
+	{
+		if (TargetPlayerASC.IsValid() && SanityChangedDelegateHandle.IsValid())
+		{
+			if (APGPlayerState* OldPS = Cast<APGPlayerState>(TargetPlayerASC->GetOwner()))
+			{
+				if (const UPGAttributeSet* OldAS = OldPS->GetAttributeSet())
+				{
+					TargetPlayerASC->GetGameplayAttributeValueChangeDelegate(OldAS->GetSanityAttribute()).Remove(SanityChangedDelegateHandle);
+				}
+			}
+		}
+	}
+
+	SanityChangedDelegateHandle.Reset();
+	TargetPlayerASC.Reset();
+
 	Super::OnUnPossess();
 }
 
-void APGGhostAIController::CheckHuntConditions()
+void APGGhostAIController::SetupPerceptionSystem()
 {
-	// valid check
-	if (!OwnerGhostCharacter)
+	SetPerceptionComponent(*CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionComponent")));
+	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
+	if (SightConfig)
+	{
+		SightConfig->SightRadius = ChaseStartDistance;
+		SightConfig->LoseSightRadius = ChaseStartDistance + 500.0f;
+		SightConfig->PeripheralVisionAngleDegrees = 360.0f;
+		SightConfig->SetMaxAge(5.0f);
+
+		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
+		SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
+		SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
+
+		GetPerceptionComponent()->SetDominantSense(*SightConfig->GetSenseImplementation());
+		GetPerceptionComponent()->ConfigureSense(*SightConfig);
+	}
+
+	GetPerceptionComponent()->OnTargetPerceptionUpdated.AddDynamic(this, &APGGhostAIController::OnTargetDetected);
+	GetPerceptionComponent()->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
+}
+
+void APGGhostAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
+{
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	if (!BB || !OwnerGhostCharacter)
+	{
+		return;
+	}
+
+	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>() && Stimulus.WasSuccessfullySensed() && Actor == OwnerGhostCharacter->GetTargetPlayerState()->GetPawn())
+	{
+		const E_PGGhostState CurrentState = (E_PGGhostState)BB->GetValueAsEnum(BlackboardKey_AIState);
+
+		if (CurrentState == E_PGGhostState::Tracking)
+		{
+			if (UAbilitySystemComponent* GhostASC = OwnerGhostCharacter->GetAbilitySystemComponent())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Target sighted while Tracking. Upgrading to Chase."));
+				GhostASC->TryActivateAbilityByClass(UGA_GhostChase::StaticClass(), true);
+			}
+		}
+	}
+}
+
+void APGGhostAIController::OnTargetSanityChanged(const FOnAttributeChangeData& Data)
+{
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	if (!BB || !OwnerGhostCharacter)
 	{
 		return;
 	}
 
 	UAbilitySystemComponent* GhostASC = OwnerGhostCharacter->GetAbilitySystemComponent();
-	APlayerState* TargetPS = OwnerGhostCharacter->GetTargetPlayerState();
-	if (!TargetPS || !GhostASC)
-	{
-		return;
-	}
-	
-	APawn* TargetPawn = TargetPS->GetPawn();
-	if (!TargetPawn)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Ghost (%s) has no TargetPlayerState or ASC. Waiting..."), *GetNameSafe(OwnerGhostCharacter));
-		return;
-	}
-
-	const APGPlayerState* PGPS = Cast<APGPlayerState>(TargetPS);
-	if (!PGPS || !PGPS->GetAttributeSet())
+	if (!GhostASC)
 	{
 		return;
 	}
 
-	if (!Blackboard)
-	{
-		return;
-	}
-	// valid check
+	const float NewSanity = Data.NewValue;
+	const E_PGGhostState CurrentState = (E_PGGhostState)BB->GetValueAsEnum(BlackboardKey_AIState);
 
-	const float CurrentSanity = PGPS->GetAttributeSet()->GetSanity();
+	UE_LOG(LogTemp, Log, TEXT("[PGGhostAIController] OnTargetSanityChanged: NewSanity=%.1f, CurrentState=%d"), NewSanity, (uint8)CurrentState);
 
-	const E_PGGhostState CurrentState = (E_PGGhostState)Blackboard->GetValueAsEnum(BlackboardKey_AIState);
-
-	const float Distance = FVector::Dist(OwnerGhostCharacter->GetActorLocation(), TargetPawn->GetActorLocation());
-
-	UE_LOG(LogTemp, Log, TEXT("[PGGhostAIController] Check (%s): Sanity=%.1f, Distance=%.0f"), *GetNameSafe(OwnerGhostCharacter), CurrentSanity, Distance);
-
-	if (CurrentSanity >= SanityChaseThreshold)
+	if (NewSanity >= SanityChaseThreshold)
 	{
 		if (CurrentState != E_PGGhostState::Exploring)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Sanity recovered. Stopping all chase actions."));
-			Blackboard->ClearValue(BlackboardKey_TargetPawn);
+			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Sanity recovered (%.1f). Stopping hunt."), NewSanity);
 			GhostASC->TryActivateAbilityByClass(UGA_GhostStopChase::StaticClass(), true);
 		}
-		return;
 	}
-
-	// Sanity < 50
-	Blackboard->SetValueAsObject(BlackboardKey_TargetPawn, TargetPawn);
-
-	if (CurrentState == E_PGGhostState::Chasing)
-	{
-		return;
-	}
-
-	if (CurrentState == E_PGGhostState::Waiting)
-	{
-		return;
-	}
-
-	if (CurrentState == E_PGGhostState::Tracking)
-	{
-		if (Distance <= ChaseStartDistance)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Track -> Chase transition. (Dist: %.0f)"), Distance);
-			GhostASC->TryActivateAbilityByClass(UGA_GhostChase::StaticClass(), true);
-		}
-		return;
-	}
-
-	if (CurrentState == E_PGGhostState::Exploring)
-	{
-		if (Distance <= AttackStartLimitDistance)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Too close to start chase (Dist: %.0f). Staying in Exploration."), Distance);
-		}
-		else if (Distance <= ChaseStartDistance)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Exploration -> Chase transition. (Dist: %.0f)"), Distance);
-			GhostASC->TryActivateAbilityByClass(UGA_GhostChase::StaticClass(), true);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Exploration -> Track transition. (Dist: %.0f)"), Distance);
-			GhostASC->TryActivateAbilityByClass(UGA_GhostTrack::StaticClass(), true);
-		}
-		return;
-	}
-
-	//const bool bShouldBeChasing = (CurrentSanity < SanityChaseThreshold) && (Distance > ChaseStartDistance);
-	//const bool bShouldStopChasing = (CurrentSanity >= SanityChaseThreshold);
-
-	//if (bShouldBeChasing)
-	//{
-	//	if (!bIsChasing)
-	//	{
-	//		UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] AI (%s) Hunt Conditions Met! (Sanity: %.1f, Distance: %.0f). Trying to activate GA_GhostChase..."),
-	//			*GetNameSafe(OwnerGhostCharacter), CurrentSanity, Distance);
-
-	//		if (Blackboard)
-	//		{
-	//			Blackboard->SetValueAsObject(TEXT("TargetPlayerPawn"), TargetPawn);
-	//		}
-	//		GhostASC->TryActivateAbilityByClass(UGA_GhostChase::StaticClass(), true);
-	//	}
-	//	else
-	//	{
-	//		UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] AI (%s) still Hunt Conditions (Sanity: %.1f, Distance: %.0f)."),
-	//			*GetNameSafe(OwnerGhostCharacter), CurrentSanity, Distance);
-	//	}
-	//}
-	//else
-	//{
-	//	if (!bIsChasing)
-	//	{
-	//		if (Blackboard && Blackboard->GetValueAsObject(TEXT("TargetPlayerPawn")) != nullptr)
-	//		{
-	//			UE_LOG(LogTemp, Log, TEXT("[PGGhostAIController] AI (%s) is not chasing. Clearing TargetPlayerPawn key to ensure Exploration."), *GetNameSafe(OwnerGhostCharacter));
-	//			Blackboard->ClearValue(TEXT("TargetPlayerPawn"));
-	//		}
-
-	//		if (!GhostASC->HasMatchingGameplayTag(ExploringTag))
-	//		{
-	//			GhostASC->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
-	//		}
-	//	}
-	//	else
-	//	{
-	//		UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] AI (%s) not met Hunt Conditions but in hunting proccess (Sanity: %.1f, Distance: %.0f)."),
-	//			*GetNameSafe(OwnerGhostCharacter), CurrentSanity, Distance);
-	//	}
-	//}
 }

@@ -7,6 +7,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
+#include "Enemy/Ghost/AI/Controllers/PGGhostAIController.h"
 
 UGA_GhostTrack::UGA_GhostTrack()
 {
@@ -32,37 +33,33 @@ void UGA_GhostTrack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (HasAuthority(&CurrentActivationInfo))
+	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Char->GetController()))
 		{
-			if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
-				if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
-				{
-					BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Tracking);
-				}
+				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Tracking);
 			}
-		}
 
-		if (TrackSpeedEffectClass)
-		{
-			if (HasAuthority(&CurrentActivationInfo))
-			{
-				FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(TrackSpeedEffectClass);
-				ActiveSpeedEffectHandle = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-			}
+			AIC->SetSightEnable(true);
 		}
+	}
+
+	if (TrackSpeedEffectClass)
+	{
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(TrackSpeedEffectClass);
+		ActiveSpeedEffectHandle = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 }
 
 void UGA_GhostTrack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (ActiveSpeedEffectHandle.IsValid())
+	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Char->GetController()))
 		{
-			ASC->RemoveActiveGameplayEffect(ActiveSpeedEffectHandle);
+			AIC->SetSightEnable(false);
 		}
 	}
 

@@ -39,4 +39,9 @@ protected:
 	float MaxChaseDuration;
 
 	FGameplayTag ChasingTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost")
+	TSubclassOf<UGameplayEffect> ChaseSpeedEffectClass;
+
+	FActiveGameplayEffectHandle ActiveSpeedEffectHandle;
 };

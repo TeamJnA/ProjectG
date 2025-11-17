@@ -11,6 +11,9 @@
 
 UGA_GhostStopChase::UGA_GhostStopChase()
 {
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
+
 	CancelAbilitiesWithTag.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior.Chase")));
 	CancelAbilitiesWithTag.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior.Investigate")));
 	CancelAbilitiesWithTag.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior.Wait")));
@@ -20,16 +23,14 @@ void UGA_GhostStopChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (HasAuthority(&CurrentActivationInfo))
+	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+		if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
 		{
-			if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
-				if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
-				{
-					BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Exploring);
-				}
+				BB->ClearValue(TEXT("TargetPlayerPawn"));
+				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Exploring);
 			}
 		}
 	}

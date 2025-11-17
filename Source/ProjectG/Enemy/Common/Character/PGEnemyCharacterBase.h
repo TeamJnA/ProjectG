@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "Character/PGCharacterBase.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "GameplayTagAssetInterface.h"
+#include "GenericTeamAgentInterface.h"
 
 #include "PGEnemyCharacterBase.generated.h"
 
@@ -17,12 +19,10 @@ class UBoxComponent;
  * 
  */
 UCLASS()
-class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase, public IGameplayTagAssetInterface
+class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase, public IGameplayTagAssetInterface, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
-	
-	
-	
+		
 public:
 	APGEnemyCharacterBase();
 
@@ -44,6 +44,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
 	TObjectPtr<UBoxComponent> DoorDetectCollider;
 
+	// IGenericTeamAgentInterface~
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+	// ~IGenericTeamAgentInterface
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(AllowPrivateAccess="true"))

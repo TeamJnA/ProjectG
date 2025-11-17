@@ -40,16 +40,13 @@ void UGA_Exploration::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (HasAuthority(&CurrentActivationInfo))
+	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+		if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
 		{
-			if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
-				if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
-				{
-					BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Exploring);
-				}
+				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Exploring);
 			}
 		}
 	}

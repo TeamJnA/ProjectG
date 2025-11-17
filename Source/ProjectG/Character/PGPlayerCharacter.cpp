@@ -131,6 +131,11 @@ void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(APGPlayerCharacter, DeadPlayerState);
 }
 
+FGenericTeamId APGPlayerCharacter::GetGenericTeamId() const
+{
+	return FGenericTeamId((uint8)EGameTeam::Player);
+}
+
 void APGPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();

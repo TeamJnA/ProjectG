@@ -17,3 +17,10 @@ enum class EHandActionMontageType : uint8
 	Change,
 	Drop
 };
+
+UENUM(BlueprintType)
+enum class EGameTeam : uint8
+{
+	Player	UMETA(DisplayName = "Player"),
+	AI		UMETA(DisplayName = "AI")
+};

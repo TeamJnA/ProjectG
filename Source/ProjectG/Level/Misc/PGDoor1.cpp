@@ -39,6 +39,7 @@ APGDoor1::APGDoor1()
 	Mesh0->SetRelativeScale3D(FVector(1.0f, 1.0f, 0.985f));
 
 	Mesh0->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Ignore);
+	Mesh0->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel4, ECR_Ignore);
 
 	// Door does not affect to NavMesh. AI ignore door.
 	Mesh0->SetCanEverAffectNavigation(false);

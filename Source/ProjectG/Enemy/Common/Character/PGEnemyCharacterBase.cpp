@@ -16,6 +16,7 @@
 
 #include "Interface/AttackableTarget.h"
 #include "Level/Misc/PGDoor1.h"
+#include "Type/CharacterTypes.h"
 
 DEFINE_LOG_CATEGORY(LogEnemyCharacter);
 
@@ -54,6 +55,26 @@ void APGEnemyCharacterBase::NotifyAttackEnded()
 
 		CachedAttackedTarget = nullptr;
 	}
+}
+
+FGenericTeamId APGEnemyCharacterBase::GetGenericTeamId() const
+{
+	return FGenericTeamId((uint8)EGameTeam::AI);
+}
+
+ETeamAttitude::Type APGEnemyCharacterBase::GetTeamAttitudeTowards(const AActor& Other) const
+{
+	if (const IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(&Other))
+	{
+		FGenericTeamId OtherTeamId = OtherTeamAgent->GetGenericTeamId();
+
+		if (OtherTeamId == (uint8)EGameTeam::Player)
+		{
+			return ETeamAttitude::Hostile;
+		}
+	}
+
+	return ETeamAttitude::Neutral;
 }
 
 void APGEnemyCharacterBase::BeginPlay()

@@ -35,6 +35,8 @@ public:
 	
 	void RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform);
 
+	void SpawnGhost(const FTransform& SpawnTransform);
+
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;
 	// ~ISoundManagerInterface
@@ -53,7 +55,6 @@ protected:
 	void SpawnAllPlayers();
 	void SpawnLevelGenerator();
 	void SpawnGlobalLightManager();
-	void SpawnGhost();
 
 	void UpdateSpectatorsTarget(const ACharacter* RevivedCharacter, const APlayerState* RevivedPlayerState);
 

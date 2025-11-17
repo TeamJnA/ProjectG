@@ -12,6 +12,9 @@
 
 UGA_GhostChase::UGA_GhostChase()
 {
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
+
 	MinChaseDuration = 7.0f;
 	MaxChaseDuration = 9.0f;
 	ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
@@ -24,6 +27,12 @@ UGA_GhostChase::UGA_GhostChase()
 	ActivationOwnedTags.AddTag(ChasingTag);
 
 	CancelAbilitiesWithTag.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior")));
+
+	static ConstructorHelpers::FObjectFinder<UClass> ChaseGERef(TEXT("/Game/ProjectG/Enemy/Ghost/Ability/Effect/GE_GhostChase.GE_GhostChase_C"));
+	if (ChaseGERef.Object)
+	{
+		ChaseSpeedEffectClass = ChaseGERef.Object;
+	}
 }
 
 void UGA_GhostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -33,18 +42,21 @@ void UGA_GhostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	UE_LOG(LogTemp, Log, TEXT("[GA_GhostChase] AI (%s) ACTIVATED. Applying 'AI.State.IsChasing' tag for %.1f-%.1f sec."),
 		*GetNameSafe(GetAvatarActorFromActorInfo()), MinChaseDuration, MaxChaseDuration);
 
-	if (HasAuthority(&CurrentActivationInfo))
+	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+		if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
 		{
-			if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
-				if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
-				{
-					BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Chasing);
-				}
+				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Chasing);
 			}
 		}
+	}
+
+	if (ChaseSpeedEffectClass)
+	{
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(ChaseSpeedEffectClass);
+		ActiveSpeedEffectHandle = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 
 	const float Duration = FMath::RandRange(MinChaseDuration, MaxChaseDuration);
@@ -71,21 +83,15 @@ void UGA_GhostChase::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 	UE_LOG(LogTemp, Log, TEXT("[GA_GhostChase] AI (%s) ENDED. Removing 'AI.State.IsChasing' tag."),
 		*GetNameSafe(GetAvatarActorFromActorInfo()));
 
-	if (HasAuthority(&CurrentActivationInfo))
+	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+		if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
 		{
-			if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
-				if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
+				if (!bWasCancelled)
 				{
-					// Sanity 회복 등으로 '취소'된(bWasCancelled)게 아니라면 (즉, 7-9초 타이머가 만료됨)
-					// BT가 'Wait' 상태로 진입하도록 Blackboard 키를 설정
-					if (!bWasCancelled)
-					{
-						BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Waiting);
-					}
-					// (취소된 경우, GA_GhostStopChase가 Exploring으로 설정)
+					BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Waiting);
 				}
 			}
 		}
