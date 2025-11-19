@@ -216,7 +216,7 @@ bool APGPlayerCharacter::IsValidAttackableTarget() const
 	return true;
 }
 
-void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
+void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float EnemyCharacterDistance)
 {
 	// This function only performed on server.
 	if (!HasAuthority())
@@ -278,8 +278,6 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation)
 	SetActorRotation(NewCharacterRotation);
 
 	// Set character Location. 
-	const float EnemyCharacterDistance = 180.0f;
-
 	FVector NewCharacterLocation = GetActorLocation();
 	NewCharacterLocation.Z = InstigatorHeadLocation.Z - 50;
 

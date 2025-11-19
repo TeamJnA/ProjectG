@@ -30,7 +30,7 @@ APGBlindCharacter::APGBlindCharacter()
         RoarMontage = RoarMontageRef.Object;
     }
 
-    static ConstructorHelpers::FObjectFinder<UAnimMontage> SniffMontageRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/Animation/Other/AM_BlindRoar.AM_BlindSniff"));
+    static ConstructorHelpers::FObjectFinder<UAnimMontage> SniffMontageRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/Animation/Other/AM_BlindSniff.AM_BlindSniff"));
     if (SniffMontageRef.Succeeded())
     {
         SniffMontage = SniffMontageRef.Object;

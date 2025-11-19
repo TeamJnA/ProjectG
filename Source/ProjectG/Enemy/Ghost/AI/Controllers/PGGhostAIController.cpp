@@ -132,7 +132,7 @@ void APGGhostAIController::SetupPerceptionSystem()
 	if (SightConfig)
 	{
 		SightConfig->SightRadius = ChaseStartDistance;
-		SightConfig->LoseSightRadius = ChaseStartDistance + 500.0f;
+		SightConfig->LoseSightRadius = ChaseStartDistance;
 		SightConfig->PeripheralVisionAngleDegrees = 360.0f;
 		SightConfig->SetMaxAge(5.0f);
 

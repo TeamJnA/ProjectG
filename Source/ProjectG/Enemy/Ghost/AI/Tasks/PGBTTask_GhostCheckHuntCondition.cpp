@@ -48,6 +48,13 @@ EBTNodeResult::Type UPGBTTask_GhostCheckHuntCondition::ExecuteTask(UBehaviorTree
 		return EBTNodeResult::Succeeded;
 	}
 
+	if (PGPS->IsDead())
+	{
+		UE_LOG(LogTemp, Log, TEXT("PGBTTask_CheckHuntConditions: Target player is dead."));
+		BB->ClearValue(GhostAIC->GetBlackboardKey_TargetPawn());
+		return EBTNodeResult::Succeeded;
+	}
+
 	const float CurrentSanity = PGPS->GetAttributeSet()->GetSanity();
 
 	if (CurrentSanity < GhostAIC->GetSanityChaseThreshold())
@@ -59,11 +66,6 @@ EBTNodeResult::Type UPGBTTask_GhostCheckHuntCondition::ExecuteTask(UBehaviorTree
 		if (Distance <= GhostAIC->GetChaseStartLimitDistance())
 		{
 			UE_LOG(LogTemp, Log, TEXT("PGBTTask_CheckHuntConditions: Too close (%.0f). Re-Exploring."), Distance);
-		}
-		else if (Distance <= GhostAIC->GetChaseStartDistance())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PGBTTask_CheckHuntConditions: Starting Chase (Dist: %.0f)"), Distance);
-			GhostASC->TryActivateAbilityByClass(UGA_GhostChase::StaticClass(), true);
 		}
 		else
 		{

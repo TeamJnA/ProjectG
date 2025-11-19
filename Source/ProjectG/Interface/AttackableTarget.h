@@ -25,7 +25,7 @@ public:
 	virtual bool IsValidAttackableTarget() const  = 0;
 
 	// Need instigator's(Enemy's) head location to player camera look the instigator.
-	virtual void OnAttacked(FVector InstigatorHeadLocation) = 0;
+	virtual void OnAttacked(const FVector InstigatorHeadLocation, const float EnemyCharacterDistance = 180.0f) = 0;
 
 	virtual void OnAttackFinished() = 0;
 };
