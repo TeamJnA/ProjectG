@@ -3,25 +3,56 @@
 
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickBase.h"
 
+#include "AbilitySystemComponent.h"
+
 // Sets default values
 APGInteractableGimmickBase::APGInteractableGimmickBase()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+	SetReplicateMovement(true);
+	bAlwaysRelevant = true;
 
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	RootComponent = Root;
+
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
+	StaticMesh->SetupAttachment(RootComponent);
 }
 
-// Called when the game starts or when spawned
-void APGInteractableGimmickBase::BeginPlay()
+TSubclassOf<UGameplayAbility> APGInteractableGimmickBase::GetAbilityToInteract() const
 {
-	Super::BeginPlay();
-	
+	return InteractAbility;
 }
 
-// Called every frame
-void APGInteractableGimmickBase::Tick(float DeltaTime)
+void APGInteractableGimmickBase::HighlightOn() const
 {
-	Super::Tick(DeltaTime);
+	if (StaticMesh)
+	{
+		StaticMesh->SetRenderCustomDepth(true);
+	}
+}
 
+void APGInteractableGimmickBase::HighlightOff() const
+{
+	if (StaticMesh)
+	{
+		StaticMesh->SetRenderCustomDepth(false);
+	}
+}
+
+FInteractionInfo APGInteractableGimmickBase::GetInteractionInfo() const
+{
+	return FInteractionInfo(EInteractionType::Hold, 1.0f);
+}
+
+bool APGInteractableGimmickBase::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+{
+	if (!InteractAbility)
+	{
+		OutFailureMessage = FailReasonText;
+		return false;
+	}
+	return true;
 }
 

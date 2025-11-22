@@ -6,7 +6,11 @@
 #include "GameFramework/Actor.h"
 #include "PGTriggerGimmickBase.generated.h"
 
-UCLASS()
+class UBoxComponent;
+class UAbilitySystemComponent;
+class UGameplayEffect;
+
+UCLASS(Abstract)
 class PROJECTG_API APGTriggerGimmickBase : public AActor
 {
 	GENERATED_BODY()
@@ -16,11 +20,38 @@ public:
 	APGTriggerGimmickBase();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	UFUNCTION()
+	virtual void OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
 
+	void TryActivateEvent(UAbilitySystemComponent* TargetASC);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> Root;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> StaticMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UBoxComponent> TriggerVolume;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gimmick")
+	TSubclassOf<UGameplayEffect> TriggerEffectClass;
+
+	// 이벤트 발동 확률
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gimmick")
+	float ActivationChance = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gimmick")
+	bool bIsOneShotEvent = true;
+
+	UPROPERTY(Replicated)
+	bool bHasBeenTriggered = false;
 };
