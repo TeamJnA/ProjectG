@@ -155,7 +155,7 @@ public:
 	// If player is not dead(check by Gamplay Tag), is valid target is true.
 	bool IsValidAttackableTarget() const;
 
-	void OnAttacked(FVector InstigatorHeadLocation);
+	void OnAttacked(const FVector InstigatorHeadLocation, const float EnemyCharacterDistance);
 
 	void OnAttackFinished();
 	// ~IAttackableTarget

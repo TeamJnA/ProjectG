@@ -32,6 +32,9 @@ public:
 	virtual float GetExplorationWaitTime() const override { return ExplorationWaitTime; }
 	// ~IPGAIExplorationInterface
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> AttackMontage;
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
@@ -40,8 +43,15 @@ protected:
 
 	void OnChasingTagChanged(const FGameplayTag Tag, int32 NewCount);
 
+	void OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	void UpdateGhostVisibility();
+
 	UFUNCTION()
 	void OnRep_IsChasing();
+
+	UFUNCTION()
+	void OnRep_IsAttacking();
 
 	virtual void OnTouchColliderOverlapBegin(
 		UPrimitiveComponent* OverlappedComponent,
@@ -55,13 +65,16 @@ protected:
 	TObjectPtr<APlayerState> TargetPlayerState;
 
 	UPROPERTY(ReplicatedUsing = OnRep_IsChasing)
-	bool bIsCurrentlyChasing;
+	bool bIsCurrentlyChasing = false;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsAttacking)
+	bool bIsCurrentlyAttacking = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float ExplorationRadius;
+	float ExplorationRadius = 3000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float ExplorationWaitTime;
+	float ExplorationWaitTime = 5.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ghost Effect")
 	TObjectPtr<USphereComponent> LightExtinguishSphere;

@@ -8,6 +8,7 @@
 #include "Components/SphereComponent.h"
 #include "AbilitySystem/PGAbilitySystemComponent.h"
 #include "AbilitySystemComponent.h"
+#include "Enemy/Ghost/Ability/Attack/GA_GhostAttack.h"
 
 #include "Interface/AttackableTarget.h"
 #include "Interface/LightEffectInterface.h"
@@ -20,10 +21,6 @@
 
 APGGhostCharacter::APGGhostCharacter()
 {
-    ExplorationRadius = 3000.0f;
-    ExplorationWaitTime = 5.0f;
-    bIsCurrentlyChasing = false;
-
     bReplicates = true;
     bAlwaysRelevant = true;
     SetReplicateMovement(true);
@@ -43,6 +40,7 @@ void APGGhostCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
     DOREPLIFETIME(APGGhostCharacter, TargetPlayerState);
     DOREPLIFETIME_CONDITION(APGGhostCharacter, bIsCurrentlyChasing, COND_Custom);
+    DOREPLIFETIME_CONDITION(APGGhostCharacter, bIsCurrentlyAttacking, COND_Custom);
 }
 
 void APGGhostCharacter::BeginPlay()
@@ -55,22 +53,12 @@ void APGGhostCharacter::BeginPlay()
         {
             FGameplayTag ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
             AbilitySystemComponent->RegisterGameplayTagEvent(ChasingTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &APGGhostCharacter::OnChasingTagChanged);
-        }
 
-        APlayerController* HostPC = GetWorld()->GetFirstPlayerController();
-        if (HostPC && HostPC->PlayerState != TargetPlayerState)
-        {
-            GetMesh()->SetVisibility(false);
-        }
-        else
-        {
-            GetMesh()->SetVisibility(bIsCurrentlyChasing);
+            FGameplayTag AttackingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking"));
+            AbilitySystemComponent->RegisterGameplayTagEvent(AttackingTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &APGGhostCharacter::OnAttackingTagChanged);
         }
     }
-    else
-    {
-        GetMesh()->SetVisibility(bIsCurrentlyChasing);
-    }
+    UpdateGhostVisibility();
 
     APlayerController* LocalPC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
     if (LocalPC)
@@ -96,15 +84,9 @@ void APGGhostCharacter::SetTargetPlayerState(APlayerState* InPlayerState)
             APGGhostAIController* AIC = Cast<APGGhostAIController>(GetController());
             if (AIC)
             {
-                UE_LOG(LogTemp, Log, TEXT("APGGhostCharacter::SetTargetPlayerState: set target ps to controller."));
                 AIC->SetupTarget(TargetPlayerState);
             }
-			UE_LOG(LogTemp, Log, TEXT("Ghost::SetTargetPlayerState: TryStartLightEffectTimer"));
             TryBindLightEffectEvents();
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("Ghost::SetTargetPlayerState: Failed"));
         }
     }
 }
@@ -130,19 +112,51 @@ void APGGhostCharacter::OnChasingTagChanged(const FGameplayTag Tag, int32 NewCou
 
     if (HasAuthority())
     {
-        APlayerController* HostPC = GetWorld()->GetFirstPlayerController();
-        if (HostPC && HostPC->PlayerState == TargetPlayerState)
-        {
-            OnRep_IsChasing();
-        }
+        UpdateGhostVisibility();
     }
+    ForceNetUpdate();
+}
 
+void APGGhostCharacter::OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+    bIsCurrentlyAttacking = (NewCount > 0);
+
+    if (HasAuthority())
+    {
+        UpdateGhostVisibility();
+    }
     ForceNetUpdate();
 }
 
 void APGGhostCharacter::OnRep_IsChasing()
 {
-    GetMesh()->SetVisibility(bIsCurrentlyChasing);
+    UpdateGhostVisibility();
+}
+
+void APGGhostCharacter::OnRep_IsAttacking()
+{
+    UpdateGhostVisibility();
+}
+
+void APGGhostCharacter::UpdateGhostVisibility()
+{
+    bool bShouldBeVisible = false;
+
+    if (bIsCurrentlyChasing || bIsCurrentlyAttacking)
+    {
+        bShouldBeVisible = true;
+    }
+
+    if (HasAuthority())
+    {
+        APlayerController* HostPC = GetWorld()->GetFirstPlayerController();
+        if (HostPC && HostPC->PlayerState != TargetPlayerState)
+        {
+            bShouldBeVisible = false;
+        }
+    }
+
+    GetMesh()->SetVisibility(bShouldBeVisible);
 }
 
 void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -158,22 +172,19 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
     }
 
     const FGameplayTag ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
-    if (!AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(ChasingTag))
+    const FGameplayTag AttackingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking"));
+    if (!AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(ChasingTag) || AbilitySystemComponent->HasMatchingGameplayTag(AttackingTag))
     {
         return;
     }
 
     APGPlayerCharacter* TouchedPlayer = Cast<APGPlayerCharacter>(OtherActor);
-    if (!TouchedPlayer)
+    if (!TouchedPlayer || TouchedPlayer->GetPlayerState() != TargetPlayerState)
     {
         return;
     }
 
-    APlayerState* TouchedPlayerState = TouchedPlayer->GetPlayerState();
-    if (!TouchedPlayerState || TouchedPlayerState != TargetPlayerState)
-    {
-        return;
-    }
+    UE_LOG(LogTemp, Warning, TEXT("Ghost::OnTouchColliderOverlapBegin: Ghost touched target Starting Attack."));
 
     if (IAttackableTarget* AttackableInterface = Cast<IAttackableTarget>(OtherActor))
     {
@@ -181,9 +192,11 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
         {
             CachedAttackedTarget = OtherActor;
             UAISense_Touch::ReportTouchEvent(GetWorld(), this, OtherActor, OtherActor->GetActorLocation());
-            AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation());
+            AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation(), 160.0f);
         }
     }
+
+    AbilitySystemComponent->TryActivateAbilityByClass(UGA_GhostAttack::StaticClass(), true);
 }
 
 void APGGhostCharacter::OnLightExtinguishOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -193,17 +206,9 @@ void APGGhostCharacter::OnLightExtinguishOverlapBegin(UPrimitiveComponent* Overl
         return;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("Ghost::OnLightExtinguishOverlapBegin: Overlapped with Component: %s (Owner: %s)"), *GetNameSafe(OtherComp), *GetNameSafe(OtherActor));
-
     if (ILightEffectInterface* FadableTarget = Cast<ILightEffectInterface>(OtherComp))
     {
-        UE_LOG(LogTemp, Log, TEXT("Ghost::OnLightExtinguishOverlapBegin: Component (%s) implements ILightEffectInterface. Calling FadeOut()."), *OtherComp->GetName());
         FadableTarget->FadeOut();
-    }
-    else
-    {
-        UE_LOG(LogTemp, Log, TEXT("Ghost::OnLightExtinguishOverlapBegin: Overlap Begin object (%s or %s) does NOT implement ILightEffectInterface."), 
-            *OtherActor->GetName(), *OtherComp->GetName());
     }
 }
 
@@ -214,17 +219,9 @@ void APGGhostCharacter::OnLightExtinguishOverlapEnd(UPrimitiveComponent* Overlap
         return;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("Ghost::OnLightExtinguishOverlapEnd: Overlap END with Component: %s (Owner: %s)"), *GetNameSafe(OtherComp), *GetNameSafe(OtherActor));
-
     if (ILightEffectInterface* FadableTarget = Cast<ILightEffectInterface>(OtherComp))
     {
-        UE_LOG(LogTemp, Warning, TEXT("Ghost::OnLightExtinguishOverlapEnd: Component (%s) implements ILightEffectInterface. Calling FadeIn()."), *OtherComp->GetName());
         FadableTarget->FadeIn();
-    }
-    else
-    {
-        UE_LOG(LogTemp, Log, TEXT("Ghost::OnLightExtinguishOverlapEnd: Overlap End object (%s or %s) does NOT implement ILightEffectInterface."), 
-            *OtherActor->GetName(), *OtherComp->GetName());
     }
 }
 
@@ -238,11 +235,9 @@ void APGGhostCharacter::TryBindLightEffectEvents()
         return;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("Ghost::TryBindLightEffectEvents: bind start"));
-
     if (LocalPlayerStateCache.Get() == TargetPlayerState)
     {
-        UE_LOG(LogTemp, Warning, TEXT("TryBindLightEffectEvents: I AM THE TARGET. Binding overlap events. (Local: %s, Target: %s)"),
+        UE_LOG(LogTemp, Warning, TEXT("Ghost::TryBindLightEffectEvents: I AM THE TARGET. Binding overlap events. (Local: %s, Target: %s)"),
             *GetNameSafe(LocalPlayerStateCache.Get()), *GetNameSafe(TargetPlayerState));
 
         LightExtinguishSphere->OnComponentBeginOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapBegin);
@@ -256,7 +251,7 @@ void APGGhostCharacter::TryBindLightEffectEvents()
     }
     else
     {
-        UE_LOG(LogTemp, Log, TEXT("TryBindLightEffectEvents: I am NOT the target. Disabling light effect. (Local: %s, Target: %s)"),
+        UE_LOG(LogTemp, Log, TEXT("Ghost::TryBindLightEffectEvents: I am NOT the target. Disabling light effect. (Local: %s, Target: %s)"),
             *GetNameSafe(LocalPlayerStateCache.Get()), *GetNameSafe(TargetPlayerState));
     }
 }
