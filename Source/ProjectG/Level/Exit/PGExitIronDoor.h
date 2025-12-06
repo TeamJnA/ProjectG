@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Level/Exit/PGExitPointBase.h"
+#include "Interface/HoldInteractProgressHandler.h"
 #include "PGExitIronDoor.generated.h"
 
 /**
@@ -19,7 +20,7 @@ enum class E_LockPhase : uint8
 };
 
 UCLASS()
-class PROJECTG_API APGExitIronDoor : public APGExitPointBase
+class PROJECTG_API APGExitIronDoor : public APGExitPointBase, public IHoldInteractProgressHandler
 {
 	GENERATED_BODY()
 
@@ -33,9 +34,24 @@ public:
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
 	// ~IInteractableActorInterface
 
+	// IHoldInteractProgressHandler~
+	virtual void UpdateHoldProgress(float Progress) override;
+	virtual void StopHoldProress() override;
+	// ~IHoldInteractProgressHandler
+
 	virtual void Unlock() override;
 
 private:
+	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaSeconds) override;
+
+	void InitializeChainComponents();
+
+	void SetChainsUnlock();
+
+	void SetWheelMaterialOiled();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;
 
@@ -47,6 +63,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> IronChainMesh;
+	
+	UPROPERTY()
+	TArray<TObjectPtr<UStaticMeshComponent>> ChainMeshes;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> HandWheelHole;
@@ -54,5 +73,21 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> HandWheelLubricantPoint;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UMaterialInterface> HandWheelOiledMaterial;
+
 	E_LockPhase CurrentLockPhase;
+
+	/*
+	Door open properties
+	*/
+	FVector DoorBaseLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IronDoor", meta = (AllowPrivateAccess = "true"))
+	float MaxDoorHeight = 300.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "IronDoor", meta = (AllowPrivateAccess = "true"))
+	float CurrentDoorHeight = 0.0f;
+
+	bool bDoorAutoClose;
 };

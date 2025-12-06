@@ -27,14 +27,19 @@ struct FInteractionInfo
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float HoldDuration;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float HoldStartTime;
+
 	FInteractionInfo()
 		: InteractionType(EInteractionType::Instant)
 		, HoldDuration(0.0f)
+		, HoldStartTime(0.0f)
 	{}
 
-	FInteractionInfo(EInteractionType InType, float InDuration = 0.0f)
+	FInteractionInfo(EInteractionType InType, float InDuration = 0.0f, float InHoldStartTime = 0.0f)
 		: InteractionType(InType)
 		, HoldDuration(InDuration)
+		, HoldStartTime(InHoldStartTime)
 	{}
 };
 

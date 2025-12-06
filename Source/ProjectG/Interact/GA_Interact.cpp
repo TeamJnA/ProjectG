@@ -13,11 +13,7 @@
 #include "Camera/CameraComponent.h"
 
 #include "Interface/InteractableActorInterface.h"
-
-#include "Item/PGItemActor.h"
-#include "Level/Misc/PGDoor1.h"
-#include "Level/Misc/PGExitDoor.h"
-
+#include "Interface/HoldInteractProgressHandler.h"
 
 /*
 * 라인 트레이스 태스크를 활성화하여 플레이어 캐릭터 카메라 정면 탐지
@@ -165,10 +161,13 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 				}
 				case EInteractionType::Hold:
 				{
-					WaitForHoldInputTask = UAT_WaitForHoldInput::WaitForHoldInput(this, Info.HoldDuration);
+					CachedHoldTargetActor = TargetActor;
+
+					WaitForHoldInputTask = UAT_WaitForHoldInput::WaitForHoldInput(this, Info.HoldDuration, CachedHoldTargetActor.Get());
 					WaitForHoldInputTask->OnHoldInputProgressUpdated.AddDynamic(this, &UGA_Interact::UpdateInteractionUI);
 					WaitForHoldInputTask->OnHoldInputCompleted.AddDynamic(this, &UGA_Interact::OnHoldInputCompleted);
-					WaitForHoldInputTask->OnHoldInputCancelled.AddDynamic(this, &UGA_Interact::OnHoldInputCancelled);
+					WaitForHoldInputTask->OnHoldInputEnd.AddDynamic(this, &UGA_Interact::OnHoldInputEnded);
+					
 					WaitForHoldInputTask->ReadyForActivation();
 					break;
 				}
@@ -322,6 +321,12 @@ void UGA_Interact::UpdateInteractionUI(float Progress)
 		// Update progress bar
 		OwnerCharacter->Client_UpdateInteractionProgress(Progress);
 	}
+
+	// Do some progress hold actions
+	if (IHoldInteractProgressHandler* ProgressHander = Cast<IHoldInteractProgressHandler>(CachedHoldTargetActor))
+	{
+		ProgressHander->UpdateHoldProgress(Progress);
+	}
 }
 
 /*
@@ -330,6 +335,8 @@ void UGA_Interact::UpdateInteractionUI(float Progress)
 void UGA_Interact::OnHoldInputCompleted()
 {
 	InteractWithTarget(CachedTargetActor.Get());
+
+	CachedHoldTargetActor = nullptr;
 }
 
 /*
@@ -337,7 +344,25 @@ void UGA_Interact::OnHoldInputCompleted()
 */
 void UGA_Interact::OnHoldInputCancelled()
 {
+
+}
+
+void UGA_Interact::OnHoldInputEnded()
+{
 	WaitForHoldInputTask = nullptr;
+
+	APGPlayerCharacter* OwnerCharacter = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo());
+	if (OwnerCharacter)
+	{
+		// Update progress bar
+		OwnerCharacter->Client_UpdateInteractionProgress(0.0f);
+	}
+
+	if (IHoldInteractProgressHandler* ProgressHander = Cast<IHoldInteractProgressHandler>(CachedHoldTargetActor))
+	{
+		ProgressHander->StopHoldProress();
+	}
+	CachedHoldTargetActor = nullptr;
 }
 
 /*
