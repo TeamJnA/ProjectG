@@ -2,6 +2,7 @@
 
 
 #include "Level/Exit/PGExitIronDoor.h"
+#include "AbilitySystemComponent.h"
 
 APGExitIronDoor::APGExitIronDoor()
 {
@@ -117,6 +118,47 @@ FInteractionInfo APGExitIronDoor::GetInteractionInfo() const
 
 bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
 {
+    switch (CurrentLockPhase)
+    {
+    case E_LockPhase::E_ChainLock:
+    {
+        if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.ChainKey"))))
+        {
+            UE_LOG(LogTemp, Log, TEXT("CanStartInteraction ChainLock"));
+            return true;
+        }
+        OutFailureMessage = FText::FromString(TEXT("Chain is locked"));
+
+        return false;
+    }
+    case E_LockPhase::E_WheelAttach:
+    {
+        if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.Wheel"))))
+        {
+            UE_LOG(LogTemp, Log, TEXT("CanStartInteraction WheelPoint"));
+            return true;
+        }
+        OutFailureMessage = FText::FromString(TEXT("Required Wheel"));
+
+        return false;
+    }
+    case E_LockPhase::E_OilApplied:
+    {
+        if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.RustOil"))))
+        {
+            UE_LOG(LogTemp, Log, TEXT("CanStartInteraction HandWheel"));
+            return true;
+        }
+        OutFailureMessage = FText::FromString(TEXT("Required Oil to remove rust"));
+
+        return false;
+    }
+    case E_LockPhase::E_Unlocked:
+    {
+        UE_LOG(LogTemp, Log, TEXT("E_Unlocked"));
+        break;
+    }
+    }
 	return true;
 }
 
@@ -163,7 +205,7 @@ void APGExitIronDoor::StopHoldProress()
     }
 }
 
-void APGExitIronDoor::Unlock()
+bool APGExitIronDoor::Unlock()
 {
     switch (CurrentLockPhase)
     {
@@ -179,7 +221,7 @@ void APGExitIronDoor::Unlock()
 
             UE_LOG(LogTemp, Log, TEXT("Unlock chain"));
 
-            break;
+            return true;
         }
         case E_LockPhase::E_WheelAttach:
         {
@@ -192,7 +234,7 @@ void APGExitIronDoor::Unlock()
 
             UE_LOG(LogTemp, Log, TEXT("Attach Wheel"));
 
-            break;
+            return true;
         }
         case E_LockPhase::E_OilApplied:
         {
@@ -201,7 +243,7 @@ void APGExitIronDoor::Unlock()
 
             UE_LOG(LogTemp, Log, TEXT("Oiled Wheel"));
 
-            break;
+            return true;
         }
         case E_LockPhase::E_Unlocked:
         {
@@ -212,6 +254,8 @@ void APGExitIronDoor::Unlock()
             break;
         }
     }
+
+    return false;
 }
 
 void APGExitIronDoor::BeginPlay()

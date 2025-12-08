@@ -24,7 +24,8 @@ public:
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
 	// ~IInteractableActorInterface
 
-	virtual void Unlock();
+	// If true, remove item from inventory
+	virtual bool Unlock();
 
 protected:
 	UFUNCTION()

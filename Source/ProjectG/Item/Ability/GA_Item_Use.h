@@ -30,11 +30,13 @@ public:
 
 protected:
 	UFUNCTION()
-	virtual void Use();
+	void Use();
 
 	UFUNCTION()
 	void OnUseComplete();
 
 	UFUNCTION()
 	void OnUseCancel();
+
+	FGameplayTag ItemTag;
 };

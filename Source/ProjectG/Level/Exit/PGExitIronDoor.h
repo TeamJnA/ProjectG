@@ -39,7 +39,7 @@ public:
 	virtual void StopHoldProress() override;
 	// ~IHoldInteractProgressHandler
 
-	virtual void Unlock() override;
+	virtual bool Unlock() override;
 
 private:
 	virtual void BeginPlay() override;

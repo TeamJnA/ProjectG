@@ -35,8 +35,9 @@ bool APGExitPointBase::CanStartInteraction(UAbilitySystemComponent* InteractingA
 	return false;
 }
 
-void APGExitPointBase::Unlock()
+bool APGExitPointBase::Unlock()
 {
+	return true;
 }
 
 void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor)

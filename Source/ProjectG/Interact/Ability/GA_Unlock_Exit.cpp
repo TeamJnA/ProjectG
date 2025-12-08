@@ -58,19 +58,11 @@ void UGA_Unlock_Exit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
         return;
     }
     PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
-    PGExitPoint->Unlock();
-    /*
-    if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.ExitKey"))))
+
+    if (PGExitPoint->Unlock())
     {
-        if (ASC->HasMatchingGameplayTag(HandActionLockTag))
-        {
-            UE_LOG(LogTemp, Log, TEXT("Cannot do %s during hand action."), *GetName());
-            return;
-        }
-            PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
-            PGExitPoint->Unlock();
+        PGCharacter->RemoveItemFromInventory();
     }
-    */
 }
 
 void UGA_Unlock_Exit::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
