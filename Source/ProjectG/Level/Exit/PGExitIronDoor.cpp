@@ -3,6 +3,7 @@
 
 #include "Level/Exit/PGExitIronDoor.h"
 #include "AbilitySystemComponent.h"
+#include "PGLogChannels.h"
 
 APGExitIronDoor::APGExitIronDoor()
 {
@@ -63,7 +64,7 @@ void APGExitIronDoor::HighlightOn() const
         }
         default:
         {
-            UE_LOG(LogTemp, Error, TEXT(""));
+            UE_LOG(LogPGExitPoint, Error, TEXT(""));
             break;
         }
     }
@@ -82,19 +83,19 @@ FInteractionInfo APGExitIronDoor::GetInteractionInfo() const
     {
         case E_LockPhase::E_ChainLock:
         {
-            UE_LOG(LogTemp, Log, TEXT("Unlock chain"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
 
             break;
         }
         case E_LockPhase::E_WheelAttach:
         {
-            UE_LOG(LogTemp, Log, TEXT("Attach Wheel"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
 
             break;
         }
         case E_LockPhase::E_OilApplied:
         {
-            UE_LOG(LogTemp, Log, TEXT("Oiled Wheel"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("Oiled Wheel"));
 
             break;
         }
@@ -106,7 +107,7 @@ FInteractionInfo APGExitIronDoor::GetInteractionInfo() const
             const float UnlockDuration = 5.0f;
             const float UnlockStartTime = 5.0f * CurrentDoorHeight / MaxDoorHeight;
 
-            UE_LOG(LogTemp, Log, TEXT("ExitIronDoor Unlock Duration : [%f], Unlock Start Time : [%f]"), UnlockDuration, UnlockStartTime);
+            UE_LOG(LogPGExitPoint, Log, TEXT("ExitIronDoor Unlock Duration : [%f], Unlock Start Time : [%f]"), UnlockDuration, UnlockStartTime);
 
             return FInteractionInfo(EInteractionType::Hold, UnlockDuration, UnlockStartTime);
         }
@@ -116,7 +117,7 @@ FInteractionInfo APGExitIronDoor::GetInteractionInfo() const
     return FInteractionInfo(EInteractionType::Hold, Duration);
 }
 
-bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage)
 {
     switch (CurrentLockPhase)
     {
@@ -124,10 +125,12 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
     {
         if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.ChainKey"))))
         {
-            UE_LOG(LogTemp, Log, TEXT("CanStartInteraction ChainLock"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("CanStartInteraction ChainLock"));
             return true;
         }
         OutFailureMessage = FText::FromString(TEXT("Chain is locked"));
+
+        ActivateShakeEffect(MIDChainLock);
 
         return false;
     }
@@ -135,7 +138,7 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
     {
         if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.Wheel"))))
         {
-            UE_LOG(LogTemp, Log, TEXT("CanStartInteraction WheelPoint"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("CanStartInteraction WheelPoint"));
             return true;
         }
         OutFailureMessage = FText::FromString(TEXT("Required Wheel"));
@@ -146,7 +149,7 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
     {
         if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.RustOil"))))
         {
-            UE_LOG(LogTemp, Log, TEXT("CanStartInteraction HandWheel"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("CanStartInteraction HandWheel"));
             return true;
         }
         OutFailureMessage = FText::FromString(TEXT("Required Oil to remove rust"));
@@ -155,7 +158,7 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
     }
     case E_LockPhase::E_Unlocked:
     {
-        UE_LOG(LogTemp, Log, TEXT("E_Unlocked"));
+        UE_LOG(LogPGExitPoint, Log, TEXT("E_Unlocked"));
         break;
     }
     }
@@ -184,7 +187,7 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
         // Door open
         if (bDoorAutoClose)
         {
-            UE_LOG(LogTemp, Log, TEXT("Set bDoorAutoClose False"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("Set bDoorAutoClose False"));
             bDoorAutoClose = false;
             SetActorTickEnabled(false);
         }
@@ -196,10 +199,10 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
 
 void APGExitIronDoor::StopHoldProress()
 {
-    UE_LOG(LogTemp, Log, TEXT("Exit Iron Door stop hold progress"));
+    UE_LOG(LogPGExitPoint, Log, TEXT("Exit Iron Door stop hold progress"));
     if (CurrentDoorHeight > 0)
     {
-        UE_LOG(LogTemp, Log, TEXT("Set bDoorAutoClose True"));
+        UE_LOG(LogPGExitPoint, Log, TEXT("Set bDoorAutoClose True"));
         bDoorAutoClose = true;
         SetActorTickEnabled(true);
     }
@@ -219,7 +222,7 @@ bool APGExitIronDoor::Unlock()
 
             SetChainsUnlock();
 
-            UE_LOG(LogTemp, Log, TEXT("Unlock chain"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
 
             return true;
         }
@@ -232,7 +235,7 @@ bool APGExitIronDoor::Unlock()
             HandWheelLubricantPoint->SetVisibility(true);
             HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
-            UE_LOG(LogTemp, Log, TEXT("Attach Wheel"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
 
             return true;
         }
@@ -241,7 +244,7 @@ bool APGExitIronDoor::Unlock()
             CurrentLockPhase = E_LockPhase::E_Unlocked;
             SetWheelMaterialOiled();
 
-            UE_LOG(LogTemp, Log, TEXT("Oiled Wheel"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("Oiled Wheel"));
 
             return true;
         }
@@ -266,6 +269,17 @@ void APGExitIronDoor::BeginPlay()
 
     InitializeChainComponents();
 
+    // 스태틱 메시 컴포넌트에 할당된 머티리얼이 있는지 확인하고 MID 생성
+    if (IronChainMesh->GetMaterial(0))
+    {
+        MIDChainLock = IronChainMesh->CreateDynamicMaterialInstance(0);
+    }
+
+    if (HandWheelLubricantPoint->GetMaterial(0))
+    {
+        MIDWheel = HandWheelLubricantPoint->CreateDynamicMaterialInstance(0);
+    }
+
     // set base start door location
     DoorBaseLocation = IronDoorMesh->GetRelativeLocation();
 }
@@ -274,7 +288,7 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-    UE_LOG(LogTemp, Log, TEXT("APGExitIronDoor bDoorAutoClose Tick Check"));
+    UE_LOG(LogPGExitPoint, Log, TEXT("APGExitIronDoor bDoorAutoClose Tick Check"));
 
     // Close Door Automatically
     if (bDoorAutoClose)
@@ -286,7 +300,7 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
 
         if (CurrentDoorHeight <= 0)
         {
-            UE_LOG(LogTemp, Log, TEXT("The iron door closed automatically"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("The iron door closed automatically"));
 
             CurrentDoorHeight = 0;
             SetActorTickEnabled(false);
@@ -328,4 +342,37 @@ void APGExitIronDoor::SetWheelMaterialOiled()
     {
         HandWheelLubricantPoint->SetMaterial(0, HandWheelOiledMaterial);
     }
+}
+
+void APGExitIronDoor::ActivateShakeEffect(UMaterialInstanceDynamic* TargetMID)
+{
+    ToggleShakeEffect(TargetMID, true);
+    
+    // 0.5초 후 DisableEffect 함수를 호출하도록 타이머 설정 (TimerHandle1 관리)
+    FTimerDelegate TimerDelegate;
+    TimerDelegate.BindUFunction(this, FName("DisableShakeEffect"), TargetMID);
+
+    GetWorldTimerManager().SetTimer(
+        ShakeEffectTimerHandle,
+        TimerDelegate,
+        0.5f,
+        false
+    );
+}
+
+void APGExitIronDoor::DisableShakeEffect(UMaterialInstanceDynamic* TargetMID)
+{
+    ToggleShakeEffect(TargetMID, false);
+
+    GetWorldTimerManager().ClearTimer(ShakeEffectTimerHandle);
+}
+
+void APGExitIronDoor::ToggleShakeEffect(UMaterialInstanceDynamic* TargetMID, bool bToggle)
+{
+    check(TargetMID);
+    UE_LOG(LogPGExitPoint, Log, TEXT("%s : ToggleShakeEffect %s"), *TargetMID->GetName(), bToggle ? TEXT("TRUE") : TEXT("FALSE"));
+
+    float TargetValue = bToggle ? 1.0f : 0.0f;
+
+    TargetMID->SetScalarParameterValue(TargetParameterName, TargetValue);
 }

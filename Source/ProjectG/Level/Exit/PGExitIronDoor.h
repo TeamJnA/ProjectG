@@ -31,7 +31,7 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) override;
 	// ~IInteractableActorInterface
 
 	// IHoldInteractProgressHandler~
@@ -77,6 +77,30 @@ private:
 	TObjectPtr<UMaterialInterface> HandWheelOiledMaterial;
 
 	E_LockPhase CurrentLockPhase;
+
+
+	/*
+	* Dynamic materials to make shake effect
+	*/
+	UFUNCTION()
+	void ActivateShakeEffect(UMaterialInstanceDynamic* TargetMID);
+
+	UFUNCTION()
+	void DisableShakeEffect(UMaterialInstanceDynamic* TargetMID);
+
+	UFUNCTION()
+	void ToggleShakeEffect(UMaterialInstanceDynamic* TargetMID, bool bToggle);
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> MIDChainLock;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> MIDWheel;
+
+	FTimerHandle ShakeEffectTimerHandle;
+
+	UPROPERTY(EditAnywhere, Category = "Material Effect", meta = (AllowPrivateAccess = "true"))
+	FName TargetParameterName = TEXT("WPOPower");
 
 	/*
 	Door open properties
