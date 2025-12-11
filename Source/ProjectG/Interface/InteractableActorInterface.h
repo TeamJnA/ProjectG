@@ -67,4 +67,7 @@ public:
 	{
 		return true;
 	}
+	virtual void InteractionFailed()
+	{
+	}
 };

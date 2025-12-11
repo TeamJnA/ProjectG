@@ -306,6 +306,7 @@ void UGA_Interact::HandleFailedInteractionAttempt(AActor* TargetActor)
 
 	FText FailureMessage;
 	InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailureMessage);
+	InteractableInterface->InteractionFailed();
 	OwnerCharacter->Client_DisplayInteractionFailedMessage(FailureMessage);
 }
 

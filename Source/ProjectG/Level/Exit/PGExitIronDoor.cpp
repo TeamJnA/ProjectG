@@ -117,7 +117,7 @@ FInteractionInfo APGExitIronDoor::GetInteractionInfo() const
     return FInteractionInfo(EInteractionType::Hold, Duration);
 }
 
-bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage)
+bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
 {
     switch (CurrentLockPhase)
     {
@@ -129,8 +129,6 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
             return true;
         }
         OutFailureMessage = FText::FromString(TEXT("Chain is locked"));
-
-        ActivateShakeEffect(MIDChainLock);
 
         return false;
     }
@@ -163,6 +161,25 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
     }
     }
 	return true;
+}
+
+void APGExitIronDoor::InteractionFailed()
+{
+    switch (CurrentLockPhase)
+    {
+    case E_LockPhase::E_ChainLock:
+    {
+        ActivateShakeEffect(MIDChainLock);
+
+        break;
+    }
+    case E_LockPhase::E_OilApplied:
+    {
+        ActivateShakeEffect(MIDWheel);
+
+        break;
+    }
+    }
 }
 
 void APGExitIronDoor::UpdateHoldProgress(float Progress)
