@@ -17,14 +17,25 @@ APGExitIronDoor::APGExitIronDoor()
 	PillarMesh->SetupAttachment(Root);
 	PillarMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
+    // Chain Lock
 	IronChainMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IronChainMesh"));
 	IronChainMesh->SetupAttachment(PillarMesh);
 	IronChainMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
+    IronChain1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IronChain1"));
+    IronChain1->SetupAttachment(IronChainMesh);
+    IronChain1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+    IronChain2 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IronChain2"));
+    IronChain2->SetupAttachment(IronChainMesh);
+    IronChain2->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+    // Wheel Attach
 	HandWheelHole = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HandWheelHole"));
 	HandWheelHole->SetupAttachment(PillarMesh);
 	HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
+    // Oil applied
 	HandWheelLubricantPoint = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HandWheelLubricantPoint"));
 	HandWheelLubricantPoint->SetupAttachment(PillarMesh);
 	HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
@@ -45,6 +56,8 @@ void APGExitIronDoor::HighlightOn() const
         case E_LockPhase::E_ChainLock:
         {
             IronChainMesh->SetRenderCustomDepth(true);
+            IronChain1->SetRenderCustomDepth(true);
+            IronChain2->SetRenderCustomDepth(true);
             break;
         }
         case E_LockPhase::E_WheelAttach:
@@ -73,6 +86,8 @@ void APGExitIronDoor::HighlightOn() const
 void APGExitIronDoor::HighlightOff() const
 {
     IronChainMesh->SetRenderCustomDepth(false);
+    IronChain1->SetRenderCustomDepth(false);
+    IronChain2->SetRenderCustomDepth(false);
     HandWheelHole->SetRenderCustomDepth(false);
     HandWheelLubricantPoint->SetRenderCustomDepth(false);
 }
@@ -170,6 +185,8 @@ void APGExitIronDoor::InteractionFailed()
     case E_LockPhase::E_ChainLock:
     {
         ActivateShakeEffect(MIDChainLock);
+        ActivateShakeEffect(MIDIronChain1);
+        ActivateShakeEffect(MIDIronChain2);
 
         break;
     }
@@ -234,10 +251,18 @@ bool APGExitIronDoor::Unlock()
             CurrentLockPhase = E_LockPhase::E_WheelAttach;
 
             IronChainMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+            IronChainMesh->SetSimulatePhysics(true);
+            IronChainMesh->SetCollisionProfileName(TEXT("Item"));
+
+            IronChain1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+            IronChain1->SetSimulatePhysics(true);
+            IronChain1->SetCollisionProfileName(TEXT("Item"));
+
+            IronChain2->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+            IronChain2->SetSimulatePhysics(true);
+            IronChain2->SetCollisionProfileName(TEXT("Item"));
 
             HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-
-            SetChainsUnlock();
 
             UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
 
@@ -268,7 +293,7 @@ bool APGExitIronDoor::Unlock()
         case E_LockPhase::E_Unlocked:
         {
             ///
-            /// TODO : Open Door Completed by rotating wheel
+            /// TODO : Open Door Completed and stop
             ///
             StopHoldProress();
             break;
@@ -284,14 +309,19 @@ void APGExitIronDoor::BeginPlay()
 
     SetActorTickEnabled(false);
 
-    InitializeChainComponents();
-
     // 스태틱 메시 컴포넌트에 할당된 머티리얼이 있는지 확인하고 MID 생성
     if (IronChainMesh->GetMaterial(0))
     {
         MIDChainLock = IronChainMesh->CreateDynamicMaterialInstance(0);
     }
-
+    if (IronChain1->GetMaterial(0))
+    {
+        MIDIronChain1 = IronChain1->CreateDynamicMaterialInstance(0);
+    }
+    if (IronChain2->GetMaterial(0))
+    {
+        MIDIronChain2 = IronChain2->CreateDynamicMaterialInstance(0);
+    }
     if (HandWheelLubricantPoint->GetMaterial(0))
     {
         MIDWheel = HandWheelLubricantPoint->CreateDynamicMaterialInstance(0);
@@ -326,33 +356,6 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
     }
 }
 
-void APGExitIronDoor::InitializeChainComponents()
-{
-    // Init chain meshes
-    GetComponents<UStaticMeshComponent>(ChainMeshes);
-
-    for (int32 i = ChainMeshes.Num() - 1; i >= 0; --i)
-    {
-        if (!ChainMeshes[i]->GetName().Contains(TEXT("Chain")))
-        {
-            ChainMeshes.RemoveAt(i);
-        }
-    }
-}
-
-void APGExitIronDoor::SetChainsUnlock()
-{
-    for (UStaticMeshComponent* ChainMesh : ChainMeshes)
-    {
-        if (ChainMesh)
-        {
-            ChainMesh->SetSimulatePhysics(true);
-            ChainMesh->SetCollisionProfileName(TEXT("Item"));
-            ChainMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-        }
-    }
-}
-
 void APGExitIronDoor::SetWheelMaterialOiled()
 {
     if (HandWheelOiledMaterial)
@@ -372,7 +375,7 @@ void APGExitIronDoor::ActivateShakeEffect(UMaterialInstanceDynamic* TargetMID)
     GetWorldTimerManager().SetTimer(
         ShakeEffectTimerHandle,
         TimerDelegate,
-        0.5f,
+        0.1f,
         false
     );
 }

@@ -47,10 +47,6 @@ private:
 
 	virtual void Tick(float DeltaSeconds) override;
 
-	void InitializeChainComponents();
-
-	void SetChainsUnlock();
-
 	void SetWheelMaterialOiled();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
@@ -64,9 +60,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> IronChainMesh;
-	
-	UPROPERTY()
-	TArray<TObjectPtr<UStaticMeshComponent>> ChainMeshes;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> IronChain1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> IronChain2;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> HandWheelHole;
@@ -94,6 +93,12 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> MIDChainLock;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> MIDIronChain1;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> MIDIronChain2;
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> MIDWheel;
