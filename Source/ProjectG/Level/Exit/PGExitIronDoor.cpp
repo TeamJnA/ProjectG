@@ -180,19 +180,24 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
 
 void APGExitIronDoor::InteractionFailed()
 {
+    TArray<UMaterialInstanceDynamic*> MIDsToShake;
     switch (CurrentLockPhase)
     {
     case E_LockPhase::E_ChainLock:
     {
-        ActivateShakeEffect(MIDChainLock);
-        ActivateShakeEffect(MIDIronChain1);
-        ActivateShakeEffect(MIDIronChain2);
+        MIDsToShake.Add(MIDChainLock);
+        MIDsToShake.Add(MIDIronChain1);
+        MIDsToShake.Add(MIDIronChain2);
+
+        ActivateShakeEffect(MIDsToShake);
 
         break;
     }
     case E_LockPhase::E_OilApplied:
     {
-        ActivateShakeEffect(MIDWheel);
+        MIDsToShake.Add(MIDWheel);
+
+        ActivateShakeEffect(MIDsToShake);
 
         break;
     }
@@ -250,17 +255,17 @@ bool APGExitIronDoor::Unlock()
         {
             CurrentLockPhase = E_LockPhase::E_WheelAttach;
 
-            IronChainMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
             IronChainMesh->SetSimulatePhysics(true);
             IronChainMesh->SetCollisionProfileName(TEXT("Item"));
+            IronChainMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
-            IronChain1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
             IronChain1->SetSimulatePhysics(true);
             IronChain1->SetCollisionProfileName(TEXT("Item"));
+            IronChain1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
-            IronChain2->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
             IronChain2->SetSimulatePhysics(true);
             IronChain2->SetCollisionProfileName(TEXT("Item"));
+            IronChain2->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
             HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
@@ -335,8 +340,6 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-    UE_LOG(LogPGExitPoint, Log, TEXT("APGExitIronDoor bDoorAutoClose Tick Check"));
-
     // Close Door Automatically
     if (bDoorAutoClose)
     {
@@ -364,13 +367,13 @@ void APGExitIronDoor::SetWheelMaterialOiled()
     }
 }
 
-void APGExitIronDoor::ActivateShakeEffect(UMaterialInstanceDynamic* TargetMID)
+void APGExitIronDoor::ActivateShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs)
 {
-    ToggleShakeEffect(TargetMID, true);
+    ToggleShakeEffect(TargetMIDs, true);
     
     // 0.5초 후 DisableEffect 함수를 호출하도록 타이머 설정 (TimerHandle1 관리)
     FTimerDelegate TimerDelegate;
-    TimerDelegate.BindUFunction(this, FName("DisableShakeEffect"), TargetMID);
+    TimerDelegate.BindUFunction(this, FName("DisableShakeEffect"), TargetMIDs);
 
     GetWorldTimerManager().SetTimer(
         ShakeEffectTimerHandle,
@@ -380,19 +383,28 @@ void APGExitIronDoor::ActivateShakeEffect(UMaterialInstanceDynamic* TargetMID)
     );
 }
 
-void APGExitIronDoor::DisableShakeEffect(UMaterialInstanceDynamic* TargetMID)
+void APGExitIronDoor::DisableShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs)
 {
-    ToggleShakeEffect(TargetMID, false);
+    ToggleShakeEffect(TargetMIDs, false);
 
     GetWorldTimerManager().ClearTimer(ShakeEffectTimerHandle);
 }
 
-void APGExitIronDoor::ToggleShakeEffect(UMaterialInstanceDynamic* TargetMID, bool bToggle)
+void APGExitIronDoor::ToggleShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs, bool bToggle)
 {
-    check(TargetMID);
-    UE_LOG(LogPGExitPoint, Log, TEXT("%s : ToggleShakeEffect %s"), *TargetMID->GetName(), bToggle ? TEXT("TRUE") : TEXT("FALSE"));
-
     float TargetValue = bToggle ? 1.0f : 0.0f;
 
-    TargetMID->SetScalarParameterValue(TargetParameterName, TargetValue);
+    for (UMaterialInstanceDynamic* TargetMID : TargetMIDs)
+    {
+        if (TargetMID)
+        {
+            UE_LOG(LogPGExitPoint, Log, TEXT("%s : ToggleShakeEffect %s"), *TargetMID->GetName(), bToggle ? TEXT("TRUE") : TEXT("FALSE"));
+
+            TargetMID->SetScalarParameterValue(TargetParameterName, TargetValue);
+        }
+        else
+        {
+            UE_LOG(LogPGExitPoint, Warning, TEXT("APGExitIronDoor::ToggleShakeEffect - Null TargetMID found in array."));
+        }
+    }
 }

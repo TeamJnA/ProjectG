@@ -83,13 +83,13 @@ private:
 	* Dynamic materials to make shake effect
 	*/
 	UFUNCTION()
-	void ActivateShakeEffect(UMaterialInstanceDynamic* TargetMID);
+	void ActivateShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs);
 
 	UFUNCTION()
-	void DisableShakeEffect(UMaterialInstanceDynamic* TargetMID);
+	void DisableShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs);
 
 	UFUNCTION()
-	void ToggleShakeEffect(UMaterialInstanceDynamic* TargetMID, bool bToggle);
+	void ToggleShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs, bool bToggle);
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> MIDChainLock;
