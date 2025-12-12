@@ -198,7 +198,7 @@ void APGExitIronDoor::InteractionFailed()
 
         ActivateShakeEffect(MIDsToShake);
 
-        // Need Sound : 철그럭 거리는 자물쇠 실패 소리
+        // NeedSound : 철그럭 거리는 자물쇠 실패 소리
 
         break;
     }
@@ -210,7 +210,7 @@ void APGExitIronDoor::InteractionFailed()
 
         break;
 
-        // Need Sound : 녹슨거 돌리려다가 안돌아가는 끼릭 거리는 소리
+        // NeedSound : 녹슨거 돌리려다가 안돌아가는 끼릭 거리는 소리
     }
     }
 }
@@ -248,7 +248,7 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
         // 강제 셧다운 조작 시 닫히는 속도 원상복구.
         DoorAutoCloseSpeed = 6.0f;
 
-        // Need Sound : 핸들 돌리는 소리, 철문 올라가는 소리.
+        // NeedSound : 핸들 돌리는 소리, 철문 올라가는 소리.
     }
 }
 
@@ -287,7 +287,7 @@ bool APGExitIronDoor::Unlock()
 
             UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
 
-            // // Need Sound  : 자물쇠 해제 소리, 0.2 초 후 철소리( 체인 떨어지는 소리 )
+            // // NeedSound  : 자물쇠 해제 소리, 0.2 초 후 철소리( 체인 떨어지는 소리 )
 
             return true;
         }
@@ -300,7 +300,7 @@ bool APGExitIronDoor::Unlock()
             HandWheelLubricantPoint->SetVisibility(true);
             HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
-            // // Need Sound  : 대충 끼는 소리
+            // // NeedSound  : 대충 끼는 소리
 
             UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
 
@@ -311,7 +311,7 @@ bool APGExitIronDoor::Unlock()
             CurrentLockPhase = E_LockPhase::E_Unlocked;
             SetWheelMaterialOiled();
 
-            // Need Sound : 반짝? 삑? 기름 바르고 깔끔한 소리
+            // NeedSound : 반짝? 삑? 기름 바르고 깔끔한 소리
 
             UE_LOG(LogPGExitPoint, Log, TEXT("Oiled Wheel"));
 
@@ -386,7 +386,7 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
         const FVector NewDoorLocation = DoorBaseLocation + FVector(0.0f, 0.0f, CurrentDoorHeight);
         IronDoorMesh->SetRelativeLocation(NewDoorLocation);
 
-        // // Need Sound : 철문 떨어지는 소리. 속도 따라 다르게 해야하는ㄷ ㅔ이거....
+        // // NeedSound : 철문 떨어지는 소리. 속도 따라 다르게 해야하는ㄷ ㅔ이거....
 
         if (CurrentDoorHeight <= 0)
         {
@@ -459,7 +459,7 @@ void APGExitIronDoor::DoorForceClose()
 
     GetWorldTimerManager().ClearTimer(DoorForceOpenTimerHandle);
 
-    // Need Sound : 탕 하고 철로된 뭔가가 끊어지는 소리.
+    // NeedSound : 탕 하고 철로된 뭔가가 끊어지는 소리.
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Start Door force close."));
 }
