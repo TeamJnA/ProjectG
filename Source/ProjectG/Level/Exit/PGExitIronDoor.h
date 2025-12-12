@@ -120,4 +120,13 @@ private:
 	float CurrentDoorHeight = 0.0f;
 
 	bool bDoorAutoClose;
+
+	UFUNCTION()
+	void DoorForceClose();
+
+	bool bDoorForceOpen;
+
+	float DoorAutoCloseSpeed;
+
+	FTimerHandle DoorForceOpenTimerHandle;
 };
