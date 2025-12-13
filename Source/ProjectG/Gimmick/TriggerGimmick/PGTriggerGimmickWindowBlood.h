@@ -6,9 +6,6 @@
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickBase.h"
 #include "PGTriggerGimmickWindowBlood.generated.h"
 
-class UMaterialInterface;
-class UMaterialInstanceDynamic;
-
 /**
  * 
  */
@@ -21,23 +18,43 @@ public:
 	APGTriggerGimmickWindowBlood();
 
 protected:
-	virtual void BeginPlay() override;
 	virtual void OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent, 
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, 
 		int32 OtherBodyIndex,
 		bool bFromSweep,
 		const FHitResult& SweepResult) override;
+	virtual void LocalEffect(AActor* OtherActor, UPrimitiveComponent* OtherComp) override;
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PlayWindowEffect(const FVector& HitLocation);
+	void StartEffect();
+	void SingleEffect();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect")
-	TObjectPtr<UMaterialInterface> BloodDecalMaterial;
+	template<typename T>
+	void ShuffleTArray(TArray<T>& Array);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	TArray<TObjectPtr<UStaticMeshComponent>> EffectArray;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect")
 	FName WindowHitSoundName = FName("SFX_WindowHit");
 
-	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> DynamicWindowMaterial;
+	FTimerHandle EffectTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect", meta = (ClampMin = "0.0"))
+	float MaxEffectTime = 0.24f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect", meta = (ClampMin = "0.0"))
+	float MinEffectTime = 0.08f;
+
+	float TimeBetweenEffect = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect")
+	int32 MinEffect = 3;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect")
+	int32 MaxEffect = 9;
+
+	int32 NumEffect = 3;
+
+	int32 CurrentIndex = 0;
 };

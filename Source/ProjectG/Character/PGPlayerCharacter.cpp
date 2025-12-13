@@ -629,6 +629,37 @@ void APGPlayerCharacter::UpdateAutomatedMovement()
 	}
 }
 
+void APGPlayerCharacter::RequestApplyGimmickEffect(TSubclassOf<UGameplayEffect> EffectClass)
+{
+	Server_ApplyGameplayEffectToSelf(EffectClass);
+}
+
+void APGPlayerCharacter::Server_ApplyGameplayEffectToSelf_Implementation(TSubclassOf<UGameplayEffect> EffectClass)
+{
+	if (!AbilitySystemComponent || !EffectClass)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+	EffectContext.AddInstigator(this, this);
+
+	const FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.0f, EffectContext);
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
+}
+
+float APGPlayerCharacter::GetSanityValue() const
+{
+	if (!AttributeSet)
+	{
+		return 100.0f;
+	}
+	return AttributeSet->GetSanity();
+}
+
 TSubclassOf<UGameplayAbility> APGPlayerCharacter::GetAbilityToInteract() const
 {
 	if (bIsRagdoll)
@@ -756,7 +787,7 @@ void APGPlayerCharacter::Client_SetHeadlightState_Implementation(bool bIsVisible
 */
 void APGPlayerCharacter::Client_UpdateInteractionProgress_Implementation(float Progress)
 {
-	if (IsLocallyControlled())
+	if (IsLocallyControlled()) 
 	{
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
 		{

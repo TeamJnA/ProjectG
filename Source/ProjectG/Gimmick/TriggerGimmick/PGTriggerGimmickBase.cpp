@@ -4,11 +4,12 @@
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickBase.h"
 #include "Components/BoxComponent.h"
 
-#include "AbilitySystemInterface.h"
-#include "AbilitySystemComponent.h"
-#include "GameplayEffect.h"
+#include "Interface/GimmickTargetInterface.h"
 
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -47,52 +48,48 @@ void APGTriggerGimmickBase::BeginPlay()
 void APGTriggerGimmickBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(APGTriggerGimmickBase, bHasBeenTriggered);
 }
 
 void APGTriggerGimmickBase::OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!OtherActor || OtherActor == this || !HasAuthority())
+	if (!OtherActor || OtherActor == this)
 	{
 		return;
 	}
 
-	if (bIsOneShotEvent && bHasBeenTriggered)
+	if (UKismetMathLibrary::RandomFloat() > ActivationChance)
 	{
 		return;
 	}
 
-	if (IAbilitySystemInterface* ASCInterface = Cast<IAbilitySystemInterface>(OtherActor))
+	APlayerState* TriggeringPS = Cast<ACharacter>(OtherActor) ? Cast<ACharacter>(OtherActor)->GetPlayerState() : nullptr;
+	if (bIsOneShotEvent && TriggeringPS)
 	{
-		if (UAbilitySystemComponent* TargetASC = ASCInterface->GetAbilitySystemComponent())
+		if (TriggeredPlayers.Contains(TriggeringPS))
 		{
-			TryActivateEvent(TargetASC);
+			UE_LOG(LogTemp, Log, TEXT("GimmickBase::OnTriggerOverlap: one-shot event"));
+			return;
 		}
+
+		TriggeredPlayers.Add(TriggeringPS);
 	}
+
+	IGimmickTargetInterface* GimmickInterface = Cast<IGimmickTargetInterface>(OtherActor);
+	if (GimmickInterface)
+	{
+		GimmickInterface->RequestApplyGimmickEffect(TriggerEffectClass);
+	}
+
+	Multicast_PlayLocalEffect(OtherActor, OtherComp);
 }
 
-void APGTriggerGimmickBase::TryActivateEvent(UAbilitySystemComponent* TargetASC)
+void APGTriggerGimmickBase::Multicast_PlayLocalEffect_Implementation(AActor* OtherActor, UPrimitiveComponent* OtherComp)
 {
-	if (!TargetASC || !TriggerEffectClass)
+	if (ACharacter* Player = Cast<ACharacter>(OtherActor))
 	{
-		return;
-	}
-
-	if (UKismetMathLibrary::RandomFloat() <= ActivationChance)
-	{
-		UE_LOG(LogTemp, Log, TEXT("TriggerGimmickBase::TryActivateEvent: Activated! Applying effect."));
-		FGameplayEffectContextHandle EffectContext = TargetASC->MakeEffectContext();
-		EffectContext.AddSourceObject(this);
-
-		const FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(TriggerEffectClass, 1.0f, EffectContext);
-		TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-
-		if (bIsOneShotEvent)
+		if (Player->IsLocallyControlled())
 		{
-			bHasBeenTriggered = true;
-			TriggerVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			LocalEffect(OtherActor, OtherComp);
 		}
 	}
 }
-

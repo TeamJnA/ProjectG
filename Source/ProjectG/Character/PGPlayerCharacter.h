@@ -10,6 +10,7 @@
 #include "Interface/AttackableTarget.h"
 #include "Interface/InteractableActorInterface.h"
 #include "Interface/HandItemInterface.h"
+#include "Interface/GimmickTargetInterface.h"
 #include "GenericTeamAgentInterface.h"
 
 #include "PGPlayerCharacter.generated.h"
@@ -25,6 +26,8 @@ struct FOnAttributeChangeData;
 class UPGInventoryComponent;
 class USpotLightComponent;
 
+class APGTriggerGimmickMannequin;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
 
@@ -32,7 +35,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
  * 
  */
 UCLASS()
-class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IHandItemInterface, public IInteractableActorInterface, public IGenericTeamAgentInterface
+class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IHandItemInterface,
+	public IInteractableActorInterface, public IGenericTeamAgentInterface, public IGimmickTargetInterface
 {
 	GENERATED_BODY()
 	
@@ -355,4 +359,14 @@ private:
 	FTimerHandle AutomatedMoveTimer;
 
 	void UpdateAutomatedMovement();
+
+// Gimmick
+public:
+	// IGimmickTargetInterface~
+	virtual void RequestApplyGimmickEffect(TSubclassOf<UGameplayEffect> EffectClass) override;
+	virtual float GetSanityValue() const override;
+	// ~IGimmickTargetInterface
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectClass);
 };

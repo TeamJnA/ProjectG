@@ -1,3 +1,4 @@
+
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -31,7 +32,12 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-	void TryActivateEvent(UAbilitySystemComponent* TargetASC);
+	virtual void LocalEffect(AActor* OtherActor, UPrimitiveComponent* OtherComp) { }
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayLocalEffect(AActor* OtherActor, UPrimitiveComponent* OtherComp);
+
+	TSet<TWeakObjectPtr<APlayerState>> TriggeredPlayers;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> Root;
@@ -51,7 +57,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gimmick")
 	bool bIsOneShotEvent = true;
-
-	UPROPERTY(Replicated)
-	bool bHasBeenTriggered = false;
 };
