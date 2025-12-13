@@ -53,6 +53,9 @@ protected:
 	UFUNCTION()
 	void OnHoldInputCancelled();
 
+	UFUNCTION()
+	void OnHoldInputEnded();
+
 	TSubclassOf<UGameplayAbility> AbilityToInteract;
 
 	TObjectPtr<UAT_PGWaitGameplayTagAdded> WaitForInteractTag;
@@ -63,6 +66,9 @@ protected:
 
 	UPROPERTY()
 	TWeakObjectPtr<AActor> CachedTargetActor;
+
+	UPROPERTY()
+	TWeakObjectPtr<AActor> CachedHoldTargetActor;
 
 	// bind on inventory slot change
 	UFUNCTION()

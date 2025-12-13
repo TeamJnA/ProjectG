@@ -3,13 +3,16 @@
 #include "Interact/Task/AT_WaitForHoldInput.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "Interface/InteractableActorInterface.h"
+#include "PGLogChannels.h"
 
-UAT_WaitForHoldInput* UAT_WaitForHoldInput::WaitForHoldInput(UGameplayAbility* OwningAbility, float HoldTime)
+UAT_WaitForHoldInput* UAT_WaitForHoldInput::WaitForHoldInput(UGameplayAbility* OwningAbility, float HoldTime, AActor* InTargetActor)
 {
 	UAT_WaitForHoldInput* MyObj = NewAbilityTask<UAT_WaitForHoldInput>(OwningAbility);
 	MyObj->HoldDuration = HoldTime;
 	MyObj->InteractInputTag = FGameplayTag::RequestGameplayTag(FName("Input.Interact"));
 	MyObj->bTickingTask = true;
+	MyObj->TargetActor = InTargetActor;
 
 	return MyObj;
 }
@@ -70,12 +73,7 @@ void UAT_WaitForHoldInput::OnDestroy(bool AbilityIsEnding)
 {
 	if (ShouldBroadcastAbilityTaskDelegates())
 	{
-		if (!bInputHeld && TimeHeld < HoldDuration)
-		{
-			OnHoldInputCancelled.Broadcast();
-		}
-
-		OnHoldInputProgressUpdated.Broadcast(0.0f);
+		OnHoldInputEnd.Broadcast();
 	}
 
 	if (AbilitySystemComponent.IsValid() && InputTagEventHandle.IsValid())
@@ -96,8 +94,18 @@ void UAT_WaitForHoldInput::OnInteractInputChanged(const FGameplayTag GameplayTag
 		// if key is pressed
 		if (NewCount > 0)
 		{
-			bInputHeld = true;
 			TimeHeld = 0.0f;
+
+			if (IInteractableActorInterface* InteractableInterface = Cast<IInteractableActorInterface>(TargetActor))
+			{
+				HoldDuration = InteractableInterface->GetInteractionInfo().HoldDuration;
+				TimeHeld = InteractableInterface->GetInteractionInfo().HoldStartTime;
+			}
+			
+			UE_LOG(LogPGAbilityTask, Log, TEXT("UAT_WaitForHoldInput Hold Duration is : [%f]"), HoldDuration);
+			UE_LOG(LogPGAbilityTask, Log, TEXT("UAT_WaitForHoldInput HoldStartTime is : [%f]"), TimeHeld);
+
+			bInputHeld = true;
 		}
 		// if key is released
 		else

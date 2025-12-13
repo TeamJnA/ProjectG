@@ -11,6 +11,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHoldInputProgress, float, Progres
 // delegate for broadcast hold input complete
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldInputCompleted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldInputCancelled);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldInputEnd);
 
 /**
  * 
@@ -28,10 +29,10 @@ public:
 	FOnHoldInputCompleted OnHoldInputCompleted;
 
 	UPROPERTY()
-	FOnHoldInputCancelled OnHoldInputCancelled;
+	FOnHoldInputEnd OnHoldInputEnd;
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UAT_WaitForHoldInput* WaitForHoldInput(UGameplayAbility* OwningAbility, float HoldTime);
+	static UAT_WaitForHoldInput* WaitForHoldInput(UGameplayAbility* OwningAbility, float HoldTime, AActor* TargetActor);
 
 	virtual void Activate() override;
 	virtual void TickTask(float DeltaTime) override;
@@ -42,6 +43,7 @@ protected:
 	float HoldDuration;
 	float TimeHeld;
 	bool bInputHeld;
+	TObjectPtr<AActor> TargetActor;
 
 	FGameplayTag InteractInputTag;
 	FDelegateHandle InputTagEventHandle;
