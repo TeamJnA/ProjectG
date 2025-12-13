@@ -27,33 +27,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trigger")
-	TObjectPtr<UBoxComponent> EntryTrigger;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gate")
-	TObjectPtr<UStaticMeshComponent> GateMesh;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Config")
-	TSubclassOf<APGMirrorGhostCharacter> GhostClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
-	TObjectPtr<USceneComponent> GhostSpawnPointFolder;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
-	TObjectPtr<UChildActorComponent> LeverComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	TObjectPtr<UChildActorComponent> Mesh;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gate")
-	float GateMoveDuration = 1.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gate")
-	FVector GateOpenRelativeLocation = FVector(80.0f, -110.0f, 300.0f);
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gate")
-	FVector GateClosedRelativeLocation = FVector(80.0f, -110.0f, 0.0f);
-
 private:
 	UFUNCTION()
 	void OnEntryTriggerOverlap(UPrimitiveComponent* OverlappedComponent,
@@ -66,22 +39,51 @@ private:
 	UFUNCTION()
 	void OnEntryTriggerEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	void LockRoomAndSpawnGhosts();
-	void SpawnGhostForPlayer(APGPlayerCharacter* Player, const FTransform& SpawnTransforms);
+	void StartGimmick();
+	void SpawnMirrorGhost(APGPlayerCharacter* Player, const FTransform& SpawnTransforms);
 
 	void UpdateGateMovement();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetGateState(bool bLock);
 
+	UPROPERTY(EditDefaultsOnly, Category = "Gate")
+	FVector GateOpenRelativeLocation = FVector(80.0f, -110.0f, 300.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gate")
+	FVector GateClosedRelativeLocation = FVector(80.0f, -110.0f, 0.0f);
+
+	FVector GateStartLoc;
+	FVector GateTargetLoc;
+
 	UPROPERTY()
 	TArray<TObjectPtr<APGMirrorGhostCharacter>> SpawnedGhosts;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	TSubclassOf<APGMirrorGhostCharacter> GhostClass;
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trigger")
+	TObjectPtr<UBoxComponent> EntryTrigger;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gate")
+	TObjectPtr<UStaticMeshComponent> GateMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
+	TObjectPtr<USceneComponent> GhostSpawnPointFolder;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
+	TObjectPtr<UChildActorComponent> LeverComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
+	TObjectPtr<UChildActorComponent> Mesh;
+
+private:
 	FTimerHandle LockTriggerTimerHandle;
 	FTimerHandle GateMoveTimerHandle;
-	FVector GateStartLoc;
-	FVector GateTargetLoc;
+
 	float CurrentGateTime = 0.0f;
+	float GateMoveDuration = 1.0f;
 
 	bool bIsLocked = false;
 	bool bIsSolved = false;

@@ -30,7 +30,7 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void UpdateMovement(float DeltaTime);
-	bool IsPlayerLookingAtMe() const;
+	bool IsPlayerLooking() const;
 	void JumpscareAndDestroy();
 
 	UPROPERTY()

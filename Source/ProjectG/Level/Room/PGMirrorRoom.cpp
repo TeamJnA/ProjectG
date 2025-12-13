@@ -68,18 +68,26 @@ void APGMirrorRoom::OnEntryTriggerOverlap(UPrimitiveComponent* OverlappedCompone
 {
 	if (bIsLocked || bIsSolved) 
 	{
-		UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] cannor start overlap"));
-
+		UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] cannot start overlap"));
 		return;
 	}
 	UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] overlap start"));
 
-	if (Cast<APGPlayerCharacter>(OtherActor))
+	APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(OtherActor);
+	if (!Player)
 	{
-		if (!GetWorld()->GetTimerManager().IsTimerActive(LockTriggerTimerHandle))
-		{
-			GetWorld()->GetTimerManager().SetTimer(LockTriggerTimerHandle, this, &APGMirrorRoom::LockRoomAndSpawnGhosts, 2.0f, false);
-		}
+		return;
+	}
+
+	APGPlayerState* PS = Player->GetPlayerState<APGPlayerState>();
+	if (!PS || PS->IsDead())
+	{
+		return;
+	}
+
+	if (!GetWorld()->GetTimerManager().IsTimerActive(LockTriggerTimerHandle))
+	{
+		GetWorld()->GetTimerManager().SetTimer(LockTriggerTimerHandle, this, &APGMirrorRoom::StartGimmick, 2.0f, false);
 	}
 }
 
@@ -87,67 +95,99 @@ void APGMirrorRoom::OnEntryTriggerEndOverlap(UPrimitiveComponent* OverlappedComp
 {
 	if (bIsLocked || bIsSolved)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] cannor end overlap"));
-
+		UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] cannot end overlap"));
 		return;
 	}
 	UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] overlap end"));
 
-	if (Cast<APGPlayerCharacter>(OtherActor))
-	{
-		TArray<AActor*> OverlappingActors;
-		EntryTrigger->GetOverlappingActors(OverlappingActors, APGPlayerCharacter::StaticClass());
-
-		if (OverlappingActors.Num() == 0)
-		{
-			GetWorld()->GetTimerManager().ClearTimer(LockTriggerTimerHandle);
-		}
-	}
-}
-
-void APGMirrorRoom::LockRoomAndSpawnGhosts()
-{
-	if (bIsLocked) 
-	{
-		return;
-	}
-	bIsLocked = true;
-
-	UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] LockRoomAndSpawnGhosts"));
-
-	Multicast_SetGateState(true);
-	
-	TArray<USceneComponent*> SpawnPoints = GhostSpawnPointFolder->GetAttachChildren();
-	if (SpawnPoints.Num() == 0) 
+	APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(OtherActor);
+	if (!Player)
 	{
 		return;
 	}
 
 	TArray<AActor*> OverlappingActors;
 	EntryTrigger->GetOverlappingActors(OverlappingActors, APGPlayerCharacter::StaticClass());
+
+	bool bAnyPlayerAlive = false;
 	for (AActor* Actor : OverlappingActors)
 	{
-		APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(Actor);
-
-		bool bIsDead = false;
-		if (Player)
+		APGPlayerCharacter* RemainingPlayer = Cast<APGPlayerCharacter>(Actor);
+		if (!RemainingPlayer)
 		{
-			if (APGPlayerState* PS = Player->GetPlayerState<APGPlayerState>())
-			{
-				bIsDead = PS->IsDead();
-			}
+			UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] not player"));
+
+			continue;
 		}
 
-		if (!bIsDead)
+		APGPlayerState* PS = RemainingPlayer->GetPlayerState<APGPlayerState>();
+		if (!PS || PS->IsDead())
 		{
-			int32 RandIdx = FMath::RandRange(0, SpawnPoints.Num() - 1);
-			FTransform SpawnTransform = SpawnPoints[RandIdx]->GetComponentTransform();
-			SpawnGhostForPlayer(Player, SpawnTransform);
+			continue;
 		}
+
+		bAnyPlayerAlive = true;
+		break;
+	}
+
+	if (!bAnyPlayerAlive)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(LockTriggerTimerHandle);
 	}
 }
 
-void APGMirrorRoom::SpawnGhostForPlayer(APGPlayerCharacter* Player, const FTransform& SpawnTransform)
+void APGMirrorRoom::StartGimmick()
+{
+	if (bIsLocked || bIsSolved) 
+	{
+		return;
+	}
+	
+	TArray<AActor*> OverlappingActors;
+	EntryTrigger->GetOverlappingActors(OverlappingActors, APGPlayerCharacter::StaticClass());
+	TArray<APGPlayerCharacter*> ValidTargets;
+	for (AActor* Actor: OverlappingActors)
+	{
+		APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(Actor);
+		if (!Player)
+		{
+			continue;
+		}
+
+		APGPlayerState* PS = Player->GetPlayerState<APGPlayerState>();
+		if (!PS || PS->IsDead())
+		{
+			continue;
+		}
+
+		ValidTargets.Add(Player);
+	}
+
+	if (ValidTargets.Num() == 0)
+	{
+		return;
+	}
+
+	TArray<USceneComponent*> SpawnPoints = GhostSpawnPointFolder->GetAttachChildren();
+	if (SpawnPoints.Num() == 0)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] StartGimmick"));
+
+	bIsLocked = true;
+	Multicast_SetGateState(true);
+	
+	for (APGPlayerCharacter* Target : ValidTargets)
+	{
+		int32 RandIdx = FMath::RandRange(0, SpawnPoints.Num() - 1);
+		FTransform SpawnTransform = SpawnPoints[RandIdx]->GetComponentTransform();
+		SpawnMirrorGhost(Target, SpawnTransform);
+	}
+}
+
+void APGMirrorRoom::SpawnMirrorGhost(APGPlayerCharacter* Player, const FTransform& SpawnTransform)
 {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;

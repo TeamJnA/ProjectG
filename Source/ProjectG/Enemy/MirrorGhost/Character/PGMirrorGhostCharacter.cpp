@@ -71,7 +71,7 @@ void APGMirrorGhostCharacter::SetTargetPlayer(APGPlayerCharacter* InTargetPlayer
 
 void APGMirrorGhostCharacter::UpdateMovement(float DeltaTime)
 {
-	const bool bLooking = IsPlayerLookingAtMe();
+	const bool bLooking = IsPlayerLooking();
 	if (bIsFrozen != bLooking)
 	{
 		bIsFrozen = bLooking;
@@ -100,7 +100,7 @@ void APGMirrorGhostCharacter::UpdateMovement(float DeltaTime)
 	}
 }
 
-bool APGMirrorGhostCharacter::IsPlayerLookingAtMe() const
+bool APGMirrorGhostCharacter::IsPlayerLooking() const
 {
 	if (!TargetPlayer || !TargetPlayer->GetController())
 	{

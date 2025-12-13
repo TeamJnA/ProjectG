@@ -26,7 +26,6 @@ void UGA_Interact_Lever::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	const AActor* TargetActorConst = TriggerEventData->Target.Get();
 	AActor* TargetActor = const_cast<AActor*>(TargetActorConst);
 	APGInteractableGimmickLever* Lever = Cast<APGInteractableGimmickLever>(TargetActor);
-
 	if (Lever)
 	{
 		if (APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(ActorInfo->AvatarActor.Get()))
