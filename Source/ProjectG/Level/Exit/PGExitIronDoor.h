@@ -27,6 +27,8 @@ class PROJECTG_API APGExitIronDoor : public APGExitPointBase, public IHoldIntera
 public:
 	APGExitIronDoor();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	// IInteractableActorInterface~
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
@@ -46,8 +48,18 @@ private:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetDoorBaseLocation();
 
-	void SetWheelMaterialOiled();
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_UnlockChains();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_AttachWheel();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetWheelMaterialOiled();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;
@@ -82,8 +94,8 @@ private:
 	/*
 	* Dynamic materials to make shake effect
 	*/
-	UFUNCTION()
-	void ActivateShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs);
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_ActivateShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs);
 
 	UFUNCTION()
 	void DisableShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs);
@@ -116,8 +128,17 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IronDoor", meta = (AllowPrivateAccess = "true"))
 	float MaxDoorHeight = 300.0f;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "IronDoor", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentDoorHeight, VisibleAnywhere, BlueprintReadOnly, Category = "IronDoor", meta = (AllowPrivateAccess = "true"))
 	float CurrentDoorHeight = 0.0f;
+
+	UFUNCTION()
+	void OnRep_CurrentDoorHeight();
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentWheelQuat, VisibleAnywhere, BlueprintReadOnly, Category = "IronDoor", meta = (AllowPrivateAccess = "true"))
+	FQuat CurrentWheelQuat;
+
+	UFUNCTION()
+	void OnRep_CurrentWheelQuat();
 
 	bool bDoorAutoClose;
 

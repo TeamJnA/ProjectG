@@ -2,6 +2,7 @@
 
 
 #include "Level/Exit/PGExitIronDoor.h"
+#include "Net/UnrealNetwork.h"
 #include "AbilitySystemComponent.h"
 #include "PGLogChannels.h"
 
@@ -49,6 +50,14 @@ APGExitIronDoor::APGExitIronDoor()
     bDoorAutoClose = false;
     bDoorForceOpen = false;
     DoorAutoCloseSpeed = 6.0f;
+}
+
+void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(APGExitIronDoor, CurrentDoorHeight);
+    DOREPLIFETIME(APGExitIronDoor, CurrentWheelQuat);
 }
 
 void APGExitIronDoor::HighlightOn() const
@@ -196,7 +205,7 @@ void APGExitIronDoor::InteractionFailed()
         MIDsToShake.Add(MIDIronChain1);
         MIDsToShake.Add(MIDIronChain2);
 
-        ActivateShakeEffect(MIDsToShake);
+        Multicast_ActivateShakeEffect(MIDsToShake);
 
         // NeedSound : 철그럭 거리는 자물쇠 실패 소리
 
@@ -206,7 +215,7 @@ void APGExitIronDoor::InteractionFailed()
     {
         MIDsToShake.Add(MIDWheel);
 
-        ActivateShakeEffect(MIDsToShake);
+        Multicast_ActivateShakeEffect(MIDsToShake);
 
         break;
 
@@ -229,10 +238,10 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
         FQuat AdditiveRotation = FQuat(FVector::YAxisVector, FMath::DegreesToRadians(1.0f));
 
         // 3. 누적된 회전을 계산합니다. (회전 순서: 새로운 회전 * 현재 회전)
-        FQuat NewQuat = AdditiveRotation * CurrentQuat;
+        CurrentWheelQuat = AdditiveRotation * CurrentQuat;
 
         // 4. 새로운 쿼터니언 회전을 Rotator로 변환하여 설정합니다.
-        HandWheelLubricantPoint->SetRelativeRotation(NewQuat.Rotator());
+        HandWheelLubricantPoint->SetRelativeRotation(CurrentWheelQuat.Rotator());
 
         // Door open
         if (bDoorAutoClose)
@@ -271,23 +280,7 @@ bool APGExitIronDoor::Unlock()
         {
             CurrentLockPhase = E_LockPhase::E_WheelAttach;
 
-            IronChainMesh->SetSimulatePhysics(true);
-            IronChainMesh->SetCollisionProfileName(TEXT("Item"));
-            IronChainMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-
-            IronChain1->SetSimulatePhysics(true);
-            IronChain1->SetCollisionProfileName(TEXT("Item"));
-            IronChain1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-
-            IronChain2->SetSimulatePhysics(true);
-            IronChain2->SetCollisionProfileName(TEXT("Item"));
-            IronChain2->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-
-            HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-
-            UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
-
-            // // NeedSound  : 자물쇠 해제 소리, 0.2 초 후 철소리( 체인 떨어지는 소리 )
+            Multicast_UnlockChains();
 
             return true;
         }
@@ -295,21 +288,14 @@ bool APGExitIronDoor::Unlock()
         {
             CurrentLockPhase = E_LockPhase::E_OilApplied;
 
-            HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-
-            HandWheelLubricantPoint->SetVisibility(true);
-            HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-
-            // // NeedSound  : 대충 끼는 소리
-
-            UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
+            Multicast_AttachWheel();
 
             return true;
         }
         case E_LockPhase::E_OilApplied:
         {
             CurrentLockPhase = E_LockPhase::E_Unlocked;
-            SetWheelMaterialOiled();
+            Multicast_SetWheelMaterialOiled();
 
             // NeedSound : 반짝? 삑? 기름 바르고 깔끔한 소리
 
@@ -371,7 +357,7 @@ void APGExitIronDoor::BeginPlay()
     }
 
     // set base start door location
-    DoorBaseLocation = IronDoorMesh->GetRelativeLocation();
+    Multicast_SetDoorBaseLocation();
 }
 
 void APGExitIronDoor::Tick(float DeltaSeconds)
@@ -402,7 +388,45 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
     }
 }
 
-void APGExitIronDoor::SetWheelMaterialOiled()
+void APGExitIronDoor::Multicast_SetDoorBaseLocation_Implementation()
+{
+    DoorBaseLocation = IronDoorMesh->GetRelativeLocation();
+}
+
+void APGExitIronDoor::Multicast_UnlockChains_Implementation()
+{
+    IronChainMesh->SetSimulatePhysics(true);
+    IronChainMesh->SetCollisionProfileName(TEXT("Item"));
+    IronChainMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+
+    IronChain1->SetSimulatePhysics(true);
+    IronChain1->SetCollisionProfileName(TEXT("Item"));
+    IronChain1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+
+    IronChain2->SetSimulatePhysics(true);
+    IronChain2->SetCollisionProfileName(TEXT("Item"));
+    IronChain2->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+
+    HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+    UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
+
+    // NeedSound  : 자물쇠 해제 소리, 0.2 초 후 철소리( 체인 떨어지는 소리 ), 멀티캐스트 함수 내부라서 개인실행 해야 할듯?
+}
+
+void APGExitIronDoor::Multicast_AttachWheel_Implementation()
+{
+    HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+
+    HandWheelLubricantPoint->SetVisibility(true);
+    HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+    // // NeedSound  : 대충 끼는 소리
+
+    UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
+}
+
+void APGExitIronDoor::Multicast_SetWheelMaterialOiled_Implementation()
 {
     if (HandWheelOiledMaterial)
     {
@@ -410,7 +434,7 @@ void APGExitIronDoor::SetWheelMaterialOiled()
     }
 }
 
-void APGExitIronDoor::ActivateShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs)
+void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation(const TArray<UMaterialInstanceDynamic*>& TargetMIDs)
 {
     ToggleShakeEffect(TargetMIDs, true);
     
@@ -452,10 +476,21 @@ void APGExitIronDoor::ToggleShakeEffect(const TArray<UMaterialInstanceDynamic*>&
     }
 }
 
+void APGExitIronDoor::OnRep_CurrentDoorHeight()
+{
+    const FVector NewDoorLocation = DoorBaseLocation + FVector(0.0f, 0.0f, CurrentDoorHeight);
+    IronDoorMesh->SetRelativeLocation(NewDoorLocation);
+}
+
+void APGExitIronDoor::OnRep_CurrentWheelQuat()
+{
+    HandWheelLubricantPoint->SetRelativeRotation(CurrentWheelQuat.Rotator());
+}
+
 void APGExitIronDoor::DoorForceClose()
 {
     bDoorForceOpen = false;
-    DoorAutoCloseSpeed = 150.0f;
+    DoorAutoCloseSpeed = 250.0f;
 
     GetWorldTimerManager().ClearTimer(DoorForceOpenTimerHandle);
 
