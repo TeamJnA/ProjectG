@@ -202,9 +202,9 @@ void APGLevelGenerator::SpawnStartRoom()
 	TestReviveKit3->SetActorRelativeLocation(FVector(900.0f, 430.0f, 10.0f));
 	// ~ for test
 
-	APGExitDoor* ExitDoor = World->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), SpawnParams);
-	ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
-	ExitDoor->SetActorRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+	//APGExitDoor* ExitDoor = World->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), SpawnParams);
+	//ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
+	//ExitDoor->SetActorRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 }
 
 /*

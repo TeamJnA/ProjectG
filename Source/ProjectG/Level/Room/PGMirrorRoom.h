@@ -48,10 +48,10 @@ private:
 	void Multicast_SetGateState(bool bLock);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gate")
-	FVector GateOpenRelativeLocation = FVector(80.0f, -110.0f, 300.0f);
+	FVector GateOpenRelativeLocation = FVector(15.0f, 0.0f, 305.0f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gate")
-	FVector GateClosedRelativeLocation = FVector(80.0f, -110.0f, 0.0f);
+	FVector GateClosedRelativeLocation = FVector(15.0f, 0.0f, -11.0f);
 
 	FVector GateStartLoc;
 	FVector GateTargetLoc;

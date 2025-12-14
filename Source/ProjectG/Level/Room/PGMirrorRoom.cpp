@@ -13,7 +13,7 @@
 
 APGMirrorRoom::APGMirrorRoom()
 {
-	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_MansionMirrorRoom.LI_MansionMirrorRoom_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionMirrorRoom.LI_MansionMirrorRoom_C'"));
 
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -35,6 +35,8 @@ APGMirrorRoom::APGMirrorRoom()
 	GateMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateMesh"));
 	GateMesh->SetupAttachment(Root);
 	GateMesh->SetCollisionProfileName(TEXT("BlockAll"));
+	GateMesh->SetRelativeLocation(FVector(15.0f, 0.0f, 305.0f));
+	GateMesh->SetRelativeScale3D(FVector(1.0f, 1.6f, 2.05f));
 
 	GhostSpawnPointFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GhostSpawnPoints"));
 	GhostSpawnPointFolder->SetupAttachment(Root);

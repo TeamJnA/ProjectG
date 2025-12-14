@@ -9,7 +9,7 @@
 
 APGStartRoom::APGStartRoom()
 {
-	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/LevelInstance/LI_MansionMainRoom.LI_MansionMainRoom_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionMainRoom.LI_MansionMainRoom_C'"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);
@@ -53,8 +53,8 @@ APGStartRoom::APGStartRoom()
 	OverlapBox1->SetCollisionObjectType(ECC_GameTraceChannel1);
 	OverlapBox1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox1->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
-	OverlapBox1->SetRelativeLocation(FVector(2100.0f, 320.0f, 160.0f));
-	OverlapBox1->SetRelativeScale3D(FVector(6.25f, 9.0f, 4.5f));
+	OverlapBox1->SetRelativeLocation(FVector(2740.0f, 320.0f, -35.0f));
+	OverlapBox1->SetRelativeScale3D(FVector(26.5f, 26.5f, 11.0f));
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
