@@ -4,6 +4,9 @@
 #include "Level/Exit/PGExitIronDoor.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
+#include "Components/AudioComponent.h"
 #include "PGLogChannels.h"
 
 APGExitIronDoor::APGExitIronDoor()
@@ -50,6 +53,8 @@ APGExitIronDoor::APGExitIronDoor()
     bDoorAutoClose = false;
     bDoorForceOpen = false;
     DoorAutoCloseSpeed = 6.0f;
+
+    SoundPlayChecker.Init(false, 21);
 }
 
 void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -58,6 +63,7 @@ void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
     DOREPLIFETIME(APGExitIronDoor, CurrentDoorHeight);
     DOREPLIFETIME(APGExitIronDoor, CurrentWheelQuat);
+    DOREPLIFETIME(APGExitIronDoor, bInitMIDs);
 }
 
 void APGExitIronDoor::HighlightOn() const
@@ -196,26 +202,21 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
 
 void APGExitIronDoor::InteractionFailed()
 {
-    TArray<UMaterialInstanceDynamic*> MIDsToShake;
     switch (CurrentLockPhase)
     {
     case E_LockPhase::E_ChainLock:
     {
-        MIDsToShake.Add(MIDChainLock);
-        MIDsToShake.Add(MIDIronChain1);
-        MIDsToShake.Add(MIDIronChain2);
+        Multicast_ActivateShakeEffect(ChainsToShake);
 
-        Multicast_ActivateShakeEffect(MIDsToShake);
-
-        // NeedSound : 철그럭 거리는 자물쇠 실패 소리
+        PlaySound(CannotUnlockChainSound, IronChainMesh->GetComponentLocation());
 
         break;
     }
     case E_LockPhase::E_OilApplied:
     {
-        MIDsToShake.Add(MIDWheel);
+        Multicast_ActivateShakeEffect(WheelToShake);
 
-        Multicast_ActivateShakeEffect(MIDsToShake);
+        PlaySound(CannotRotateWheelSound, HandWheelLubricantPoint->GetComponentLocation());
 
         break;
 
@@ -229,18 +230,9 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
     if (CurrentLockPhase == E_LockPhase::E_Unlocked)
     {
         // Rotate wheel
-        
-        // 1. 현재 컴포넌트의 회전을 쿼터니언으로 가져옵니다.
         FQuat CurrentQuat = HandWheelLubricantPoint->GetRelativeRotation().Quaternion();
-
-        // 2. Pitch 축(일반적으로 Y축)을 기준으로 2.0도 회전하는 쿼터니언을 만듭니다.
-        // FQuat 생성자는 각도를 라디안으로 받습니다.
         FQuat AdditiveRotation = FQuat(FVector::YAxisVector, FMath::DegreesToRadians(1.0f));
-
-        // 3. 누적된 회전을 계산합니다. (회전 순서: 새로운 회전 * 현재 회전)
         CurrentWheelQuat = AdditiveRotation * CurrentQuat;
-
-        // 4. 새로운 쿼터니언 회전을 Rotator로 변환하여 설정합니다.
         HandWheelLubricantPoint->SetRelativeRotation(CurrentWheelQuat.Rotator());
 
         // Door open
@@ -249,15 +241,32 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
             UE_LOG(LogPGExitPoint, Log, TEXT("Set bDoorAutoClose False"));
             bDoorAutoClose = false;
             SetActorTickEnabled(false);
+            CleanSoundChecker();
+
+            // 강제 셧다운 조작 시 닫히는 속도 원상복구. 
+            DoorAutoCloseSpeed = 6.0f;
         }
         CurrentDoorHeight = Progress * MaxDoorHeight;
         const FVector NewDoorLocation = DoorBaseLocation + FVector(0.0f, 0.0f, CurrentDoorHeight);
         IronDoorMesh->SetRelativeLocation(NewDoorLocation);
 
-        // 강제 셧다운 조작 시 닫히는 속도 원상복구.
-        DoorAutoCloseSpeed = 6.0f;
+        // Play Sound
+        int32 NowIndex = ((float)CurrentDoorHeight / MaxDoorHeight) / 0.05f;
+        if (!SoundPlayChecker[NowIndex])
+        {
+            SoundPlayChecker[NowIndex] = true;
+            // PlaySound(IronDoorMeshBaseSound, IronDoorMesh->GetComponentLocation());
 
-        // NeedSound : 핸들 돌리는 소리, 철문 올라가는 소리.
+            if (NowIndex % 4 == 0 && NowIndex != 20)
+            {
+                PlaySound(IronDoorMeshRustySound, IronDoorMesh->GetComponentLocation());
+            }
+
+            if (NowIndex % 2 == 0 && NowIndex != 20)
+            {
+                PlaySound(WheelRotateRustySound, HandWheelLubricantPoint->GetComponentLocation());
+            }
+        }
     }
 }
 
@@ -268,6 +277,7 @@ void APGExitIronDoor::StopHoldProress()
     {
         UE_LOG(LogPGExitPoint, Log, TEXT("Set bDoorAutoClose True"));
         bDoorAutoClose = true;
+        CleanSoundChecker();
         SetActorTickEnabled(true);
     }
 }
@@ -282,6 +292,18 @@ bool APGExitIronDoor::Unlock()
 
             Multicast_UnlockChains();
 
+            PlaySound(UnlockChainSound, IronChainMesh->GetComponentLocation());
+
+            FTimerDelegate TimerDelegate;
+            TimerDelegate.BindUFunction(this, FName("PlayChainDropSound"));
+
+            GetWorldTimerManager().SetTimer(
+                ChainDropTimerHandle,
+                TimerDelegate,
+                0.4f,
+                false
+            );
+
             return true;
         }
         case E_LockPhase::E_WheelAttach:
@@ -290,6 +312,8 @@ bool APGExitIronDoor::Unlock()
 
             Multicast_AttachWheel();
 
+            PlaySound(WheelAttachedSound, HandWheelLubricantPoint->GetComponentLocation());
+
             return true;
         }
         case E_LockPhase::E_OilApplied:
@@ -297,9 +321,9 @@ bool APGExitIronDoor::Unlock()
             CurrentLockPhase = E_LockPhase::E_Unlocked;
             Multicast_SetWheelMaterialOiled();
 
-            // NeedSound : 반짝? 삑? 기름 바르고 깔끔한 소리
+            PlaySound(OilAppliedSound, HandWheelLubricantPoint->GetComponentLocation());
 
-            UE_LOG(LogPGExitPoint, Log, TEXT("Oiled Wheel"));
+            UE_LOG(LogPGExitPoint, Log, TEXT("Unlock :: case E_OilApplied"));
 
             return true;
         }
@@ -315,7 +339,7 @@ bool APGExitIronDoor::Unlock()
             FTimerDelegate TimerDelegate;
             TimerDelegate.BindUFunction(this, FName("DoorForceClose"));
 
-            // 타이머 설정
+            // 타이머 설정 및 카운트다운 오디오 시작
             TimerManager.SetTimer(
                 DoorForceOpenTimerHandle, 
                 TimerDelegate,      
@@ -324,6 +348,8 @@ bool APGExitIronDoor::Unlock()
             );
 
             bDoorForceOpen = true;
+
+            Multicast_StartCloseCountSound();
 
             break;
         }
@@ -338,22 +364,10 @@ void APGExitIronDoor::BeginPlay()
 
     SetActorTickEnabled(false);
 
-    // 스태틱 메시 컴포넌트에 할당된 머티리얼이 있는지 확인하고 MID 생성
-    if (IronChainMesh->GetMaterial(0))
+    if (HasAuthority())
     {
-        MIDChainLock = IronChainMesh->CreateDynamicMaterialInstance(0);
-    }
-    if (IronChain1->GetMaterial(0))
-    {
-        MIDIronChain1 = IronChain1->CreateDynamicMaterialInstance(0);
-    }
-    if (IronChain2->GetMaterial(0))
-    {
-        MIDIronChain2 = IronChain2->CreateDynamicMaterialInstance(0);
-    }
-    if (HandWheelLubricantPoint->GetMaterial(0))
-    {
-        MIDWheel = HandWheelLubricantPoint->CreateDynamicMaterialInstance(0);
+        InitMIDs();
+        bInitMIDs = true;
     }
 
     // set base start door location
@@ -373,17 +387,34 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
         IronDoorMesh->SetRelativeLocation(NewDoorLocation);
 
         // // NeedSound : 철문 떨어지는 소리. 속도 따라 다르게 해야하는ㄷ ㅔ이거....
+        int32 NowIndex = ((float)CurrentDoorHeight / MaxDoorHeight) / 0.05f;
+        if (!SoundPlayChecker[NowIndex])
+        {
+            SoundPlayChecker[NowIndex] = true;
+            if (NowIndex % 2 == 0 && NowIndex != 0)
+            {
+                PlaySound(IronDoorMeshBaseSound, NewDoorLocation);
+            }
+        }
 
         if (CurrentDoorHeight <= 0)
         {
             UE_LOG(LogPGExitPoint, Log, TEXT("The iron door closed automatically"));
 
-            //  NeedSound : 쾅 닫히는 소리
+            if (DoorAutoCloseSpeed > 10)
+            {
+                PlaySound(DoorClosedSound, IronDoorMesh->GetComponentLocation());
+            }
+            else
+            {
+                PlaySound(IronDoorMeshBaseSound, IronDoorMesh->GetComponentLocation());
+            }
 
             CurrentDoorHeight = 0;
             SetActorTickEnabled(false);
             bDoorAutoClose = false;
             DoorAutoCloseSpeed = 6.0f;
+            CleanSoundChecker();
         }
     }
 }
@@ -436,8 +467,14 @@ void APGExitIronDoor::Multicast_SetWheelMaterialOiled_Implementation()
 
 void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation(const TArray<UMaterialInstanceDynamic*>& TargetMIDs)
 {
+    if (TargetMIDs.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("ActivateShakeEffect : TargetMIDs is Null."));
+        return;
+    }
+
     ToggleShakeEffect(TargetMIDs, true);
-    
+
     // 0.5초 후 DisableEffect 함수를 호출하도록 타이머 설정 (TimerHandle1 관리)
     FTimerDelegate TimerDelegate;
     TimerDelegate.BindUFunction(this, FName("DisableShakeEffect"), TargetMIDs);
@@ -448,6 +485,64 @@ void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation(const TArray<
         0.1f,
         false
     );
+}
+
+void APGExitIronDoor::InitMIDs()
+{
+    if (IronChainMesh && !MIDChainLock)
+    {
+        if (IronChainMesh->GetMaterial(0))
+        {
+            MIDChainLock = IronChainMesh->CreateDynamicMaterialInstance(0);
+            if (MIDChainLock)
+            {
+                ChainsToShake.AddUnique(MIDChainLock);
+            }
+        }
+    }
+
+    if (IronChain1 && !MIDIronChain1)
+    {
+        if (IronChain1->GetMaterial(0))
+        {
+            MIDIronChain1 = IronChain1->CreateDynamicMaterialInstance(0);
+            if (MIDIronChain1)
+            {
+                ChainsToShake.AddUnique(MIDIronChain1);
+            }
+        }
+    }
+
+    if (IronChain2 && !MIDIronChain2)
+    {
+        if (IronChain2->GetMaterial(0))
+        {
+            MIDIronChain2 = IronChain2->CreateDynamicMaterialInstance(0);
+            if (MIDIronChain2)
+            {
+                ChainsToShake.AddUnique(MIDIronChain2);
+            }
+        }
+    }
+
+    if (HandWheelLubricantPoint && !MIDWheel)
+    {
+        if (HandWheelLubricantPoint->GetMaterial(0))
+        {
+            MIDWheel = HandWheelLubricantPoint->CreateDynamicMaterialInstance(0);
+            if (MIDWheel)
+            {
+                WheelToShake.AddUnique(MIDWheel);
+            }
+        }
+    }
+
+    UE_LOG(LogPGExitPoint, Log, TEXT("InitMIDs : Chains(%d), Wheels(%d)"), ChainsToShake.Num(), WheelToShake.Num());
+}
+
+void APGExitIronDoor::OnRep_InitMIDs()
+{
+    InitMIDs();
 }
 
 void APGExitIronDoor::DisableShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs)
@@ -494,9 +589,37 @@ void APGExitIronDoor::DoorForceClose()
 
     GetWorldTimerManager().ClearTimer(DoorForceOpenTimerHandle);
 
-    // NeedSound : 탕 하고 철로된 뭔가가 끊어지는 소리.
+    Multicast_StopCloseCountSound();
+
+    PlaySound(DoorCloseStartSound, IronDoorMesh->GetComponentLocation());
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Start Door force close."));
+}
+
+void APGExitIronDoor::CleanSoundChecker()
+{
+    SoundPlayChecker.Init(false, 21);
+}
+
+void APGExitIronDoor::PlayChainDropSound()
+{
+    PlaySound(ChainDropSound, IronChainMesh->GetComponentLocation());
+}
+
+void APGExitIronDoor::Multicast_StartCloseCountSound_Implementation()
+{
+    if (CloseCountSoundCue)
+    {
+        CloseCountSoundAudioComponent = UGameplayStatics::SpawnSound2D(this, CloseCountSoundCue);
+    }
+}
+
+void APGExitIronDoor::Multicast_StopCloseCountSound_Implementation()
+{
+    if (CloseCountSoundAudioComponent && CloseCountSoundAudioComponent->IsPlaying())
+    {
+        CloseCountSoundAudioComponent->Stop();
+    }
 }
 
 /*

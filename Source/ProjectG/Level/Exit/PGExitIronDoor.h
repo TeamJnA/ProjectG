@@ -10,6 +10,8 @@
 /**
  * 
  */
+class USoundCue;
+
 UENUM(BlueprintType)
 enum class E_LockPhase : uint8
 {
@@ -94,6 +96,15 @@ private:
 	/*
 	* Dynamic materials to make shake effect
 	*/
+	UPROPERTY(ReplicatedUsing = OnRep_InitMIDs)
+	bool bInitMIDs = false;
+
+	UFUNCTION()
+	void InitMIDs();
+
+	UFUNCTION()
+	void OnRep_InitMIDs();
+
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_ActivateShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs);
 
@@ -119,6 +130,12 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Material Effect", meta = (AllowPrivateAccess = "true"))
 	FName TargetParameterName = TEXT("WPOPower");
+
+	UPROPERTY()
+	TArray<TObjectPtr<UMaterialInstanceDynamic>> ChainsToShake;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UMaterialInstanceDynamic>> WheelToShake;
 
 	/*
 	Door open properties
@@ -150,4 +167,59 @@ private:
 	float DoorAutoCloseSpeed;
 
 	FTimerHandle DoorForceOpenTimerHandle;
+
+	FTimerHandle ChainDropTimerHandle;
+
+	// Sound Managing
+	TBitArray<FDefaultBitArrayAllocator> SoundPlayChecker;
+
+	void CleanSoundChecker();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName IronDoorMeshBaseSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName IronDoorMeshRustySound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName WheelRotateRustySound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName CannotRotateWheelSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName CannotUnlockChainSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DoorClosedSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName UnlockChainSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName ChainDropSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName WheelAttachedSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName OilAppliedSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DoorCloseStartSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoundCue> CloseCountSoundCue;
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> CloseCountSoundAudioComponent;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_StartCloseCountSound();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_StopCloseCountSound();
+
+	UFUNCTION()
+	void PlayChainDropSound();
 };
