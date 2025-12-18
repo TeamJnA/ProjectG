@@ -54,6 +54,8 @@ APGExitIronDoor::APGExitIronDoor()
     bDoorForceOpen = false;
     DoorAutoCloseSpeed = 6.0f;
 
+    bIsChain = true;
+
     SoundPlayChecker.Init(false, 21);
 }
 
@@ -206,7 +208,7 @@ void APGExitIronDoor::InteractionFailed()
     {
     case E_LockPhase::E_ChainLock:
     {
-        Multicast_ActivateShakeEffect(ChainsToShake);
+        Multicast_ActivateShakeEffect();
 
         PlaySound(CannotUnlockChainSound, IronChainMesh->GetComponentLocation());
 
@@ -214,7 +216,7 @@ void APGExitIronDoor::InteractionFailed()
     }
     case E_LockPhase::E_OilApplied:
     {
-        Multicast_ActivateShakeEffect(WheelToShake);
+        Multicast_ActivateShakeEffect();
 
         PlaySound(CannotRotateWheelSound, HandWheelLubricantPoint->GetComponentLocation());
 
@@ -440,6 +442,8 @@ void APGExitIronDoor::Multicast_UnlockChains_Implementation()
 
     HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
+    bIsChain = false;
+
     UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
 
     // NeedSound  : 자물쇠 해제 소리, 0.2 초 후 철소리( 체인 떨어지는 소리 ), 멀티캐스트 함수 내부라서 개인실행 해야 할듯?
@@ -465,19 +469,19 @@ void APGExitIronDoor::Multicast_SetWheelMaterialOiled_Implementation()
     }
 }
 
-void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation(const TArray<UMaterialInstanceDynamic*>& TargetMIDs)
+void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation()
 {
-    if (TargetMIDs.Num() == 0)
+    if (ChainsToShake.Num() == 0)
     {
         UE_LOG(LogTemp, Warning, TEXT("ActivateShakeEffect : TargetMIDs is Null."));
         return;
     }
 
-    ToggleShakeEffect(TargetMIDs, true);
+    ToggleShakeEffect(true);
 
     // 0.5초 후 DisableEffect 함수를 호출하도록 타이머 설정 (TimerHandle1 관리)
     FTimerDelegate TimerDelegate;
-    TimerDelegate.BindUFunction(this, FName("DisableShakeEffect"), TargetMIDs);
+    TimerDelegate.BindUFunction(this, FName("DisableShakeEffect"));
 
     GetWorldTimerManager().SetTimer(
         ShakeEffectTimerHandle,
@@ -485,6 +489,43 @@ void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation(const TArray<
         0.1f,
         false
     );
+}
+
+void APGExitIronDoor::DisableShakeEffect()
+{
+    ToggleShakeEffect(false);
+
+    GetWorldTimerManager().ClearTimer(ShakeEffectTimerHandle);
+}
+
+void APGExitIronDoor::ToggleShakeEffect(bool bToggle)
+{
+    float TargetValue = bToggle ? 1.0f : 0.0f;
+
+    if (bIsChain)
+    {
+        for (UMaterialInstanceDynamic* TargetMID : ChainsToShake)
+        {
+            if (TargetMID)
+            {
+                UE_LOG(LogPGExitPoint, Log, TEXT("%s : ToggleShakeEffect %s"), *TargetMID->GetName(), bToggle ? TEXT("TRUE") : TEXT("FALSE"));
+
+                TargetMID->SetScalarParameterValue(TargetParameterName, TargetValue);
+            }
+        }
+    }
+    else
+    {
+        for (UMaterialInstanceDynamic* TargetMID : WheelToShake)
+        {
+            if (TargetMID)
+            {
+                UE_LOG(LogPGExitPoint, Log, TEXT("%s : ToggleShakeEffect %s"), *TargetMID->GetName(), bToggle ? TEXT("TRUE") : TEXT("FALSE"));
+
+                TargetMID->SetScalarParameterValue(TargetParameterName, TargetValue);
+            }
+        }
+    }
 }
 
 void APGExitIronDoor::InitMIDs()
@@ -543,32 +584,6 @@ void APGExitIronDoor::InitMIDs()
 void APGExitIronDoor::OnRep_InitMIDs()
 {
     InitMIDs();
-}
-
-void APGExitIronDoor::DisableShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs)
-{
-    ToggleShakeEffect(TargetMIDs, false);
-
-    GetWorldTimerManager().ClearTimer(ShakeEffectTimerHandle);
-}
-
-void APGExitIronDoor::ToggleShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs, bool bToggle)
-{
-    float TargetValue = bToggle ? 1.0f : 0.0f;
-
-    for (UMaterialInstanceDynamic* TargetMID : TargetMIDs)
-    {
-        if (TargetMID)
-        {
-            UE_LOG(LogPGExitPoint, Log, TEXT("%s : ToggleShakeEffect %s"), *TargetMID->GetName(), bToggle ? TEXT("TRUE") : TEXT("FALSE"));
-
-            TargetMID->SetScalarParameterValue(TargetParameterName, TargetValue);
-        }
-        else
-        {
-            UE_LOG(LogPGExitPoint, Warning, TEXT("APGExitIronDoor::ToggleShakeEffect - Null TargetMID found in array."));
-        }
-    }
 }
 
 void APGExitIronDoor::OnRep_CurrentDoorHeight()

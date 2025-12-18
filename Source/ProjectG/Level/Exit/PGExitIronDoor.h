@@ -106,13 +106,13 @@ private:
 	void OnRep_InitMIDs();
 
 	UFUNCTION(NetMulticast, Unreliable)
-	void Multicast_ActivateShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs);
+	void Multicast_ActivateShakeEffect();
 
 	UFUNCTION()
-	void DisableShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs);
+	void DisableShakeEffect();
 
 	UFUNCTION()
-	void ToggleShakeEffect(const TArray<UMaterialInstanceDynamic*>& TargetMIDs, bool bToggle);
+	void ToggleShakeEffect(bool bToggle);
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> MIDChainLock;
@@ -136,6 +136,8 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UMaterialInstanceDynamic>> WheelToShake;
+
+	bool bIsChain;
 
 	/*
 	Door open properties
