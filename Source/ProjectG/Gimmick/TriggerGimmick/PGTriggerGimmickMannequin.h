@@ -10,7 +10,6 @@
 class APGPlayerCharacter;
 class UAbilitySystemComponent;
 class USphereComponent;
-class APGSoundManager;
 
 /**
  * 
@@ -60,9 +59,6 @@ protected:
 
     UPROPERTY()
     TWeakObjectPtr<APGPlayerCharacter> TargetPlayer;
-
-    UPROPERTY()
-    TWeakObjectPtr<APGSoundManager> SoundManager;
 
     FTimerHandle TrackingTimerHandle;
 

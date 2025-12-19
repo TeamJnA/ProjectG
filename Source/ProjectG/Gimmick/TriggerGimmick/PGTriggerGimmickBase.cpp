@@ -4,7 +4,10 @@
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickBase.h"
 #include "Components/BoxComponent.h"
 
+#include "GameFramework/GameModeBase.h"
 #include "Interface/GimmickTargetInterface.h"
+#include "Sound/PGSoundManager.h"
+#include "Interface/SoundManagerInterface.h"
 
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -42,12 +45,31 @@ void APGTriggerGimmickBase::BeginPlay()
 	if (HasAuthority())
 	{
 		TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &APGTriggerGimmickBase::OnTriggerOverlap);
+
+		if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+		{
+			SoundManager = GameModeSoundManagerInterface->GetSoundManager();
+			if (SoundManager)
+			{
+				UE_LOG(LogTemp, Log, TEXT("Init SoundManager Completely [%s]"), *GetNameSafe(this));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Init SoundManager Failed. Cannot find SoundManager in interface [%s]"), *GetNameSafe(this));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Init SoundManager Failed. Cannot find soundmanagerInterface [%s]"), *GetNameSafe(this));
+		}
 	}
 }
 
 void APGTriggerGimmickBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APGTriggerGimmickBase, SoundManager);
 }
 
 void APGTriggerGimmickBase::OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

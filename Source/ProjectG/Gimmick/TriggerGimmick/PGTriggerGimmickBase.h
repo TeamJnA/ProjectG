@@ -10,6 +10,7 @@
 class UBoxComponent;
 class UAbilitySystemComponent;
 class UGameplayEffect;
+class APGSoundManager;
 
 UCLASS(Abstract)
 class PROJECTG_API APGTriggerGimmickBase : public AActor
@@ -51,10 +52,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gimmick")
 	TSubclassOf<UGameplayEffect> TriggerEffectClass;
 
+	UPROPERTY(Replicated)
+	TObjectPtr<APGSoundManager> SoundManager;
+
 	// 이벤트 발동 확률
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gimmick")
 	float ActivationChance = 0.5f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gimmick")
 	bool bIsOneShotEvent = true;
+
 };

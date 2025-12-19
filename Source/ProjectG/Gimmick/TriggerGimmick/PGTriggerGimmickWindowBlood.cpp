@@ -3,9 +3,7 @@
 
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickWindowBlood.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/GameModeBase.h"
 #include "GameFramework/Character.h"
-#include "Interface/SoundManagerInterface.h"
 #include "Interface/GimmickTargetInterface.h"
 #include "Sound/PGSoundManager.h"
 
@@ -77,14 +75,14 @@ void APGTriggerGimmickWindowBlood::SingleEffect()
     {
         EffectArray[CurrentIndex]->SetVisibility(true, true);
 
-        APGSoundManager* SM = Cast<APGSoundManager>(UGameplayStatics::GetActorOfClass(GetWorld(), APGSoundManager::StaticClass()));
-        if (!SM)
+        CurrentIndex++;
+
+        if (!SoundManager)
         {
             UE_LOG(LogTemp, Warning, TEXT("WindowBlood::SingleEffect: No valid sound manager."));
+            return;
         }
-        SM->PlaySoundForSelf(WindowHitSoundName);
-
-        CurrentIndex++;
+        SoundManager->PlaySoundForSelf(WindowHitSoundName);
     }
     else
     {
