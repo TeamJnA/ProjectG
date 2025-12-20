@@ -65,5 +65,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemSound", meta = (AllowPrivateAccess = "true"))
+	FName ItemDropSound;
+
 	bool bOwned = false;
 };

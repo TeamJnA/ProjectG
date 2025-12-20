@@ -82,7 +82,7 @@ void APGTriggerGimmickMannequin::StartTracking(APGPlayerCharacter* Player)
 
     TargetPlayer = Player;
     bIsTracking = true;
-    SoundCount = 0;
+    SoundCount = MaxSoundCount - 2;
     CurrentSanityDamageApplied = 0.0f;
     if (EffectRangeSphere)
     {
@@ -115,7 +115,7 @@ void APGTriggerGimmickMannequin::StopTracking()
     }   
     TargetPlayer = nullptr;
     bIsTracking = false;
-    SoundCount = 0;
+    SoundCount = MaxSoundCount - 2;
     CurrentSanityDamageApplied = 0.0f;
 
     UE_LOG(LogTemp, Log, TEXT("Mannequin Tracking Stopped"));
@@ -181,7 +181,7 @@ void APGTriggerGimmickMannequin::PlaySoundLocal()
         return;
     }
 
-    if (SoundCount >= 30)
+    if (SoundCount >= MaxSoundCount)
     {
         SoundManager->PlaySoundForSelf(MannequinSoundName);
         SoundCount = 0;

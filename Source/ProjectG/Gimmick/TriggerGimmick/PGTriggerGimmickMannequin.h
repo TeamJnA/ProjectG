@@ -65,6 +65,9 @@ protected:
     int32 SoundCount = 0;
 
     UPROPERTY(EditDefaultsOnly, Category = "Mannequin Config")
+    int32 MaxSoundCount;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Mannequin Config")
     float RotationSpeed = 100.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Mannequin Config")

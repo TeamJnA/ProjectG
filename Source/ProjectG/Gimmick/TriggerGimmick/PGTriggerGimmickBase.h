@@ -21,6 +21,8 @@ public:
 	// Sets default values for this actor's properties
 	APGTriggerGimmickBase();
 
+	void InitSoundManager();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

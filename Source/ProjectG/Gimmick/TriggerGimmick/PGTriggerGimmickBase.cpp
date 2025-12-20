@@ -46,22 +46,7 @@ void APGTriggerGimmickBase::BeginPlay()
 	{
 		TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &APGTriggerGimmickBase::OnTriggerOverlap);
 
-		if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
-		{
-			SoundManager = GameModeSoundManagerInterface->GetSoundManager();
-			if (SoundManager)
-			{
-				UE_LOG(LogTemp, Log, TEXT("Init SoundManager Completely [%s]"), *GetNameSafe(this));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Init SoundManager Failed. Cannot find SoundManager in interface [%s]"), *GetNameSafe(this));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Init SoundManager Failed. Cannot find soundmanagerInterface [%s]"), *GetNameSafe(this));
-		}
+		InitSoundManager();
 	}
 }
 
@@ -113,5 +98,25 @@ void APGTriggerGimmickBase::Multicast_PlayLocalEffect_Implementation(AActor* Oth
 		{
 			LocalEffect(OtherActor, OtherComp);
 		}
+	}
+}
+
+void APGTriggerGimmickBase::InitSoundManager()
+{
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		SoundManager = GameModeSoundManagerInterface->GetSoundManager();
+		if (SoundManager)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Init SoundManager Completely [%s]"), *GetNameSafe(this));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Init SoundManager Failed. Cannot find SoundManager in interface [%s]"), *GetNameSafe(this));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Init SoundManager Failed. Cannot find soundmanagerInterface [%s]"), *GetNameSafe(this));
 	}
 }

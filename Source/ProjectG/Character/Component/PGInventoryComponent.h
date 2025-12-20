@@ -131,4 +131,8 @@ public:
 	FOnInventoryItemUpdate OnInventoryItemUpdate;
 
 	FOnCurrentSlotIndexChanged OnCurrentSlotIndexChanged;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName PickItemSound;
 };
