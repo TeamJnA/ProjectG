@@ -25,6 +25,7 @@ public:
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual void InteractionFailed() override;
 	//IInteractableActorInterface end
 	
 	void ToggleDoor(AActor* InteractInvestigator);
@@ -32,11 +33,15 @@ public:
 	bool IsOpen() const { return bIsOpen; }
 	bool IsLocked() const { return bIsLocked; }
 	void Lock() { bIsLocked = true; OnRep_LockState(); }
-	void UnLock() { bIsLocked = false; OnRep_LockState(); }
+	void UnLock();
+
+	void PlayDoorSound(const FName& SoundName);
 
 	void TEST_OpenDoorByAI(AActor* InteractInvestigator);
 
 protected:
+	virtual void BeginPlay() override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
 	TObjectPtr<USceneComponent> Root;
 
@@ -59,7 +64,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DoorState", meta = (AllowPrivateAccess = "true"), Replicated)
 	bool bIsOpen = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lock", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_LockState)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Lock", meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_LockState)
 	bool bIsLocked = false;
 
 	UFUNCTION()
@@ -71,4 +76,34 @@ protected:
 	void SetDoorState(bool _bIsOpen, AActor* InteractInvestigator);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DoorOpenSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DoorCloseSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DoorUnlockSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName LockedDoorSound;
+
+	// Door Shake
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> MIDDoor;
+
+	FTimerHandle ShakeEffectTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect", meta = (AllowPrivateAccess = "true"))
+	FName ShakeParameterName;
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_ActivateShakeEffect();
+
+	UFUNCTION()
+	void DisableShakeEffect();
+
+	UFUNCTION()
+	void ToggleShakeEffect(bool bToggle);
 };

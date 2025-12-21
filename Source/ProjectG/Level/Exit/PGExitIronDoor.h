@@ -50,9 +50,6 @@ private:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
-	
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_SetDoorBaseLocation();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_UnlockChains();
@@ -96,14 +93,9 @@ private:
 	/*
 	* Dynamic materials to make shake effect
 	*/
-	UPROPERTY(ReplicatedUsing = OnRep_InitMIDs)
-	bool bInitMIDs = false;
 
 	UFUNCTION()
 	void InitMIDs();
-
-	UFUNCTION()
-	void OnRep_InitMIDs();
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_ActivateShakeEffect();
@@ -172,7 +164,9 @@ private:
 
 	FTimerHandle ChainDropTimerHandle;
 
-	// Sound Managing
+	/*
+	Sound Managing
+	*/
 	TBitArray<FDefaultBitArrayAllocator> SoundPlayChecker;
 
 	void CleanSoundChecker();

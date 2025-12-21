@@ -5,8 +5,13 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 
+#include "GameFramework/GameModeBase.h"
+
 #include "AbilitySystemComponent.h"
 #include "Interact/Ability/GA_Interact_Door.h"
+
+#include "Sound/PGSoundManager.h"
+#include "Interface/SoundManagerInterface.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -55,6 +60,18 @@ APGDoor1::APGDoor1()
 	OpenedTransform_B = FTransform(OpenedRotation_B, OpenedLocation);
 
 	InteractAbility = UGA_Interact_Door::StaticClass();
+
+	DoorOpenSound = FName(TEXT("LEVEL_Door_Open"));
+	DoorCloseSound = FName(TEXT("LEVEL_Door_Close"));
+	DoorUnlockSound = FName(TEXT("LEVEL_Door_Unlock"));
+	LockedDoorSound = FName(TEXT("LEVEL_Door_Locked"));
+
+	ShakeParameterName = TEXT("WPOPower");
+}
+
+void APGDoor1::BeginPlay()
+{
+	MIDDoor = Mesh0->CreateDynamicMaterialInstance(0);
 }
 
 void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool InbIsLocked)
@@ -78,10 +95,19 @@ void APGDoor1::ToggleDoor(AActor* InteractInvestigator)
 
 void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 {
+	// Check door open sound twice.
+	// when enemy overlap door, door open called forcely.
+	const bool bOpenTwice = (bIsOpen && InbIsOpen);
+
 	bIsOpen = InbIsOpen;
 	if (bIsOpen)
 	{
 		Mesh0->SetCanEverAffectNavigation(true);
+
+		if (!bOpenTwice)
+		{
+			PlayDoorSound(DoorOpenSound);
+		}
 
 		if (InteractInvestigator)
 		{
@@ -98,6 +124,8 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 	}
 	else
 	{
+		PlayDoorSound(DoorCloseSound);
+
 		Mesh0->SetCanEverAffectNavigation(false);
 
 		DesiredTransform = ClosedTransform;
@@ -112,6 +140,45 @@ void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(APGDoor1, bIsOpen);
 	DOREPLIFETIME(APGDoor1, bIsLocked);
 	DOREPLIFETIME(APGDoor1, DesiredTransform);
+}
+
+void APGDoor1::Multicast_ActivateShakeEffect_Implementation()
+{
+	ToggleShakeEffect(true);
+
+	// 0.1초 후 DisableEffect 함수를 호출하도록 타이머 설정 (TimerHandle1 관리)
+	FTimerDelegate TimerDelegate;
+	TimerDelegate.BindUFunction(this, FName("DisableShakeEffect"));
+
+	GetWorldTimerManager().SetTimer(
+		ShakeEffectTimerHandle,
+		TimerDelegate,
+		0.1f,
+		false
+	);
+}
+
+void APGDoor1::DisableShakeEffect()
+{
+	ToggleShakeEffect(false);
+
+	GetWorldTimerManager().ClearTimer(ShakeEffectTimerHandle);
+}
+
+void APGDoor1::ToggleShakeEffect(bool bToggle)
+{
+	float TargetValue = bToggle ? 1.0f : 0.0f;
+
+	if (MIDDoor)
+	{
+		UE_LOG(LogTemp, Log, TEXT("ToggleShakeEffect PGDoor1 %f"), TargetValue);
+
+		MIDDoor->SetScalarParameterValue(ShakeParameterName, TargetValue);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PGDoor Cannot Find MIDDoor"));
+	}
 }
 
 /*
@@ -165,6 +232,13 @@ bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FTex
 	return true;
 }
 
+void APGDoor1::InteractionFailed()
+{
+	PlayDoorSound(LockedDoorSound);
+
+	Multicast_ActivateShakeEffect();
+}
+
 void APGDoor1::OnRep_DesiredTransform()
 {
 	DoorHinge->SetRelativeTransform(DesiredTransform);
@@ -174,6 +248,25 @@ void APGDoor1::OnRep_DesiredTransform()
 void APGDoor1::OnRep_LockState()
 {
 	UE_LOG(LogTemp, Log, TEXT("Door lock state changed: %s"), bIsLocked ? TEXT("Locked") : TEXT("Unlocked"));
+}
+
+void APGDoor1::UnLock()
+{
+	PlayDoorSound(DoorUnlockSound);
+
+	bIsLocked = false; 
+	OnRep_LockState();
+}
+
+void APGDoor1::PlayDoorSound(const FName& SoundName)
+{
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		{
+			SoundManager->PlaySoundWithNoise(SoundName, GetActorLocation());
+		}
+	}
 }
 
 void APGDoor1::TEST_OpenDoorByAI(AActor* InteractInvestigator)

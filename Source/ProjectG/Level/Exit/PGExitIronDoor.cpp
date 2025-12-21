@@ -65,7 +65,6 @@ void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
     DOREPLIFETIME(APGExitIronDoor, CurrentDoorHeight);
     DOREPLIFETIME(APGExitIronDoor, CurrentWheelQuat);
-    DOREPLIFETIME(APGExitIronDoor, bInitMIDs);
 }
 
 void APGExitIronDoor::HighlightOn() const
@@ -366,14 +365,10 @@ void APGExitIronDoor::BeginPlay()
 
     SetActorTickEnabled(false);
 
-    if (HasAuthority())
-    {
-        InitMIDs();
-        bInitMIDs = true;
-    }
+    InitMIDs();
 
     // set base start door location
-    Multicast_SetDoorBaseLocation();
+    DoorBaseLocation = IronDoorMesh->GetRelativeLocation();
 }
 
 void APGExitIronDoor::Tick(float DeltaSeconds)
@@ -419,11 +414,6 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
             CleanSoundChecker();
         }
     }
-}
-
-void APGExitIronDoor::Multicast_SetDoorBaseLocation_Implementation()
-{
-    DoorBaseLocation = IronDoorMesh->GetRelativeLocation();
 }
 
 void APGExitIronDoor::Multicast_UnlockChains_Implementation()
@@ -479,7 +469,7 @@ void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation()
 
     ToggleShakeEffect(true);
 
-    // 0.5초 후 DisableEffect 함수를 호출하도록 타이머 설정 (TimerHandle1 관리)
+    // 0.1초 후 DisableEffect 함수를 호출하도록 타이머 설정 (TimerHandle1 관리)
     FTimerDelegate TimerDelegate;
     TimerDelegate.BindUFunction(this, FName("DisableShakeEffect"));
 
@@ -579,11 +569,6 @@ void APGExitIronDoor::InitMIDs()
     }
 
     UE_LOG(LogPGExitPoint, Log, TEXT("InitMIDs : Chains(%d), Wheels(%d)"), ChainsToShake.Num(), WheelToShake.Num());
-}
-
-void APGExitIronDoor::OnRep_InitMIDs()
-{
-    InitMIDs();
 }
 
 void APGExitIronDoor::OnRep_CurrentDoorHeight()
