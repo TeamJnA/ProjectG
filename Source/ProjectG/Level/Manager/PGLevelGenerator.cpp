@@ -18,11 +18,13 @@
 #include "Level/Room/PGRoom2.h"
 #include "Level/Room/PGRoom3.h"
 #include "Level/Room/PGStairRoom1.h"
+#include "Level/Room/PGMirrorRoom.h"
 #include "Level/Misc/PGDoor1.h"
 #include "Level/Misc/PGWall.h"
 #include "Level/Misc/PGExitDoor.h"
 
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
+#include "Gimmick/TriggerGimmick/PGTriggerGimmickMannequin.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameMode.h"
@@ -47,7 +49,7 @@ APGLevelGenerator::APGLevelGenerator()
 	};
 
 	// max room spawn amount
-	RoomAmount = 20;
+	RoomAmount = 23;
 
 	// reload level if (elpased time > max generation time)
 	MaxGenerateTime = 8.0f;
@@ -56,6 +58,12 @@ APGLevelGenerator::APGLevelGenerator()
 	if (BlindCharacterRef.Class)
 	{
 		BlindCharacter = BlindCharacterRef.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<AActor> MannequinRef(TEXT("/Game/ProjectG/Gimmick/Trigger/Mannequin/BP_PGTriggerGimmickMannequin.BP_PGTriggerGimmickMannequin_C"));
+	if (MannequinRef.Succeeded())
+	{
+		MannequinClass = MannequinRef.Class;
 	}
 }
 
@@ -229,14 +237,18 @@ void APGLevelGenerator::SpawnNextRoom()
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	APGMasterRoom* NewRoom = nullptr;
-	if (RoomAmount > 14)
+	if (RoomAmount > 17)
 	{
 		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), SpawnTransform, spawnParams);
 	}
-	else
+	else if (RoomAmount > 3)
 	{
 		const TSubclassOf<APGMasterRoom>& NewRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
 		NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, spawnParams);
+	}
+	else
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGMirrorRoom::StaticClass(), SpawnTransform, spawnParams);
 	}
 
 	TWeakObjectPtr<APGLevelGenerator> WeakThis(this);
@@ -286,7 +298,10 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		}
 
 		ExitPointsList.Remove(InSelectedExitPoint);
-		DoorPointsList.Add(InSelectedExitPoint);
+		if (RoomAmount > 3)
+		{
+			DoorPointsList.Add(InSelectedExitPoint);
+		}
 
 		RoomAmount--;
 
@@ -306,6 +321,15 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 			const TArray<USceneComponent*>& ItemSpawnPoints = ItemSpawnPointFolder->GetAttachChildren();
 			ItemSpawnPointsList.Reserve(ItemSpawnPointsList.Num() + ItemSpawnPoints.Num());
 			ItemSpawnPointsList.Append(ItemSpawnPoints);
+		}
+
+		// MasterRoom.h
+		// virtual const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
+		if (const USceneComponent* MannequinSpawnPointFolder = RoomToCheck->GetMannequinSpawnPointsFolder())
+		{
+			const TArray<USceneComponent*>& MannequinSpawnPoints = MannequinSpawnPointFolder->GetAttachChildren();
+			MannequinSpawnPointsList.Reserve(MannequinSpawnPointsList.Num() + MannequinSpawnPoints.Num());
+			MannequinSpawnPointsList.Append(MannequinSpawnPoints);
 		}
 
 		if (RoomAmount > 0)
@@ -373,6 +397,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	CloseHoles();
 	SpawnDoors();
 	SpawnItems();
+	SpawnMannequins();
 	SpawnEnemy();
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
@@ -382,6 +407,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 
 	ExitPointsList.Empty();
 	DoorPointsList.Empty();
+	MannequinSpawnPointsList.Empty();
 	RoomsList.Empty();
 	RoomGraph.Empty();
 }
@@ -534,6 +560,35 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 	}));
 }
 
+void APGLevelGenerator::SpawnMannequins()
+{
+	UWorld* World = GetWorld();
+	if (!World || MannequinSpawnPointsList.IsEmpty())
+	{
+		return;
+	}
+
+	int32 MannequinAmount = MannequinSpawnPointsList.Num() * 0.5f;
+
+	while (MannequinAmount > 0 && !MannequinSpawnPointsList.IsEmpty())
+	{
+		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, MannequinSpawnPointsList.Num());
+		const TObjectPtr<USceneComponent> SelectedSpawnPoint = MannequinSpawnPointsList[RandomIndex];
+		MannequinSpawnPointsList.RemoveAt(RandomIndex);
+
+		if (SelectedSpawnPoint)
+		{
+			const FTransform SpawnTransform(SelectedSpawnPoint->GetComponentTransform());
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			World->SpawnActor<APGTriggerGimmickMannequin>(MannequinClass, SpawnTransform, SpawnParams);
+			MannequinAmount--;
+		}
+	}
+}
+
 /*
 * 모든 Room 생성 후 적대 AI 스폰
 * StartRoom 기준 중간 거리의 Room에 적대 AI 스폰
@@ -567,7 +622,7 @@ void APGLevelGenerator::SpawnEnemy()
 			SpawnedBlindCharacter->InitSoundManager(GM->GetSoundManager());
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("LG::SetupLevelEnvironment: Spawn enemy at room '%s'"), *BlindSpawnRoom->GetName());
+		UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn enemy at room '%s'"), *BlindSpawnRoom->GetName());
 	}
 
 	const APGMasterRoom* GhostSpawnRoom = FindFarthestRoom();
@@ -660,6 +715,11 @@ const APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 	int32 MaxDistance = -1;
 	for (const auto& Elem : Distances)
 	{
+		if (Elem.Key->IsA(APGMirrorRoom::StaticClass()))
+		{
+			continue;
+		}
+
 		if (Elem.Value > MaxDistance)
 		{
 			MaxDistance = Elem.Value;
@@ -707,7 +767,11 @@ const APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 		TObjectPtr<APGMasterRoom> CurrentRoom;
 		RoomsToVisit.Dequeue(CurrentRoom);
 		const int32 CurrentDistance = Distances[CurrentRoom];
-		MaxDistance = FMath::Max(MaxDistance, CurrentDistance);
+
+		if (!CurrentRoom->IsA(APGMirrorRoom::StaticClass()))
+		{
+			MaxDistance = FMath::Max(MaxDistance, CurrentDistance);
+		}
 
 		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
 		{
@@ -727,7 +791,7 @@ const APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 	TArray<TObjectPtr<APGMasterRoom>> MiddleDistanceRooms;
 	for (const auto& Elem : Distances)
 	{
-		if (Elem.Value == TargetDistance)
+		if (Elem.Value == TargetDistance && !Elem.Key->IsA(APGMirrorRoom::StaticClass()))
 		{
 			MiddleDistanceRooms.Add(Elem.Key);
 		}

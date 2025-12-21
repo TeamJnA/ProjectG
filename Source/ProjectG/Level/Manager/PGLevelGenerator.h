@@ -8,6 +8,7 @@
 
 class APGMasterRoom;
 class APGBlindCharacter;
+class APGTriggerGimmickMannequin;
 
 UCLASS()
 class PROJECTG_API APGLevelGenerator : public AActor
@@ -31,6 +32,7 @@ protected:
 	void CloseHoles();
 	void SpawnDoors();
 	void SpawnItems();
+	void SpawnMannequins();
 	void SpawnEnemy();
 	void SpawnSingleItem_Async(int32 ItemAmount);
 
@@ -48,15 +50,24 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> ExitPointsList;
+
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> DoorPointsList;
+
 	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> ItemSpawnPointsList;	
+	TArray<TObjectPtr<USceneComponent>> ItemSpawnPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
+
 	UPROPERTY()
 	TArray<TSubclassOf<class APGMasterRoom>> RoomsList;
 
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;
+
+	UPROPERTY()
+	TSubclassOf<APGTriggerGimmickMannequin> MannequinClass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;

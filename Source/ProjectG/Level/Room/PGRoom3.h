@@ -30,6 +30,36 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
 	TObjectPtr<UArrowComponent> ItemSpawnPoint3;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
+	TObjectPtr<UArrowComponent> ItemSpawnPoint4;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
+	TObjectPtr<UArrowComponent> MannequinSpawnPoint0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
+	TObjectPtr<UArrowComponent> MannequinSpawnPoint1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
+	TObjectPtr<UArrowComponent> MannequinSpawnPoint2;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
+	TObjectPtr<UArrowComponent> MannequinSpawnPoint3;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
+	TObjectPtr<UArrowComponent> MannequinSpawnPoint4;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
+	TObjectPtr<UChildActorComponent> WindowGimmick0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
+	TObjectPtr<UChildActorComponent> WindowGimmick1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
+	TObjectPtr<UChildActorComponent> WindowGimmick2;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
+	TObjectPtr<UChildActorComponent> WindowGimmick3;
 };

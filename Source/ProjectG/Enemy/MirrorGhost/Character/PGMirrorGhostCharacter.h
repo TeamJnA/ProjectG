@@ -43,7 +43,7 @@ protected:
 	float AttackDistance = 80.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
-	float StopAngleThreshold = 0.7f;
+	float StopAngleThreshold = 0.6f;
 
 	UPROPERTY(ReplicatedUsing = OnRep_IsFrozen)
 	bool bIsFrozen = false;

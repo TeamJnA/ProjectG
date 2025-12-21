@@ -8,6 +8,7 @@
 
 APGInteractableGimmickLever::APGInteractableGimmickLever()
 {
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
 	InteractAbility = UGA_Interact_Lever::StaticClass();
@@ -50,5 +51,27 @@ void APGInteractableGimmickLever::ActivateLever()
 		{
 			Room->SolveGimmick();
 		}
+
+		Multicast_ActivatePhysics();
 	}
+}
+
+void APGInteractableGimmickLever::Multicast_ActivatePhysics_Implementation()
+{
+	StaticMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	StaticMesh->SetSimulatePhysics(true);
+	StaticMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	StaticMesh->SetCollisionProfileName(TEXT("Item"));
+	StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	StaticMesh->AddImpulse(GetActorRightVector() * -100.0f, NAME_None, true);
+
+	TWeakObjectPtr<UStaticMeshComponent> WeakMesh(StaticMesh);
+	FTimerHandle FreezeTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(FreezeTimerHandle, [WeakMesh]()
+	{
+		if (WeakMesh.IsValid())
+		{
+			WeakMesh->SetSimulatePhysics(false);
+		}
+	}, 3.0f, false);
 }

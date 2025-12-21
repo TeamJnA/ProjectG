@@ -23,6 +23,7 @@ public:
 	virtual const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
 	virtual const USceneComponent* GetOverlapBoxFolder() const { return OverlapBoxFolder; }
 	virtual const USceneComponent* GetItemSpawnPointsFolder() const { return ItemSpawnPointsFolder; }
+	virtual const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
 	virtual FVector GetEnemySpawnLocation() const { return EnemySpawnPoint->GetComponentLocation(); }
 
 protected:
@@ -46,6 +47,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> ItemSpawnPointsFolder;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
+	TObjectPtr<USceneComponent> MannequinSpawnPointsFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "EnemySpawnPoint")
 	TObjectPtr<UArrowComponent> EnemySpawnPoint;

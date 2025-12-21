@@ -27,6 +27,9 @@ public:
 	void ActivateLever();
 
 private:
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ActivatePhysics();
+
 	UPROPERTY()
 	TWeakObjectPtr<APGMirrorRoom> MasterRoom;
 

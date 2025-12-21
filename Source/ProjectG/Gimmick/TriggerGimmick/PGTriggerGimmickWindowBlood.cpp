@@ -11,7 +11,7 @@
 
 APGTriggerGimmickWindowBlood::APGTriggerGimmickWindowBlood()
 {
-    ActivationChance = 0.5f;
+    ActivationChance = 0.2f;
     bIsOneShotEvent = true;
 
     if (StaticMesh)

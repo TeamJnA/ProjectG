@@ -39,6 +39,27 @@ APGStairRoom1::APGStairRoom1()
 	ItemSpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint2->bHiddenInGame = true;
 
+	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
+	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
+	MannequinSpawnPoint0->SetRelativeLocation(FVector(800.0f, 130.0f, 10.0f));
+	MannequinSpawnPoint0->SetRelativeRotation(FRotator(0.0f, 270.0f, 0.0f));
+	MannequinSpawnPoint0->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
+	MannequinSpawnPoint0->bHiddenInGame = true;
+
+	MannequinSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint1"));
+	MannequinSpawnPoint1->SetupAttachment(MannequinSpawnPointsFolder);
+	MannequinSpawnPoint1->SetRelativeLocation(FVector(930.0f, -190.0f, 10.0f));
+	MannequinSpawnPoint1->SetRelativeRotation(FRotator(0.0f, 105.0f, 0.0f));
+	MannequinSpawnPoint1->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
+	MannequinSpawnPoint1->bHiddenInGame = true;
+
+	MannequinSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint2"));
+	MannequinSpawnPoint2->SetupAttachment(MannequinSpawnPointsFolder);
+	MannequinSpawnPoint2->SetRelativeLocation(FVector(1460.0f, -660.0f, 420.0f));
+	MannequinSpawnPoint2->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	MannequinSpawnPoint2->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
+	MannequinSpawnPoint2->bHiddenInGame = true;
+
 	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 480.0f));
 	OverlapBox->SetRelativeScale3D(FVector(19.5f, 19.5f, 14.75f));
 
@@ -58,6 +79,9 @@ APGStairRoom1::APGStairRoom1()
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
-	Mesh->SetChildActorClass(MeshRef.Class);
+	if (MeshRef.Succeeded())
+	{
+		Mesh->SetChildActorClass(MeshRef.Class);
+	}
 	Mesh->SetRelativeLocation(FVector(951.5f, -300.1f, -25.1f));
 }

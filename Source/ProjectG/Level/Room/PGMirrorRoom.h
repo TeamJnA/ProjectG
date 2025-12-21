@@ -7,6 +7,7 @@
 #include "PGMirrorRoom.generated.h"
 
 class UBoxComponent;
+class UNavModifierComponent;
 class APGMirrorGhostCharacter;
 class APGInteractableGimmickLever;
 class APGPlayerCharacter;
@@ -48,10 +49,10 @@ private:
 	void Multicast_SetGateState(bool bLock);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gate")
-	FVector GateOpenRelativeLocation = FVector(15.0f, 0.0f, 305.0f);
+	FVector GateOpenRelativeLocation = FVector(15.0f, 0.0f, 320.0f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gate")
-	FVector GateClosedRelativeLocation = FVector(15.0f, 0.0f, -11.0f);
+	FVector GateClosedRelativeLocation = FVector(15.0f, 0.0f, 6.0f);
 
 	FVector GateStartLoc;
 	FVector GateTargetLoc;
@@ -60,7 +61,7 @@ private:
 	TArray<TObjectPtr<APGMirrorGhostCharacter>> SpawnedGhosts;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
-	TSubclassOf<APGMirrorGhostCharacter> GhostClass;
+	TSubclassOf<APGMirrorGhostCharacter> MirrorGhostClass;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trigger")
@@ -70,13 +71,28 @@ protected:
 	TObjectPtr<UStaticMeshComponent> GateMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
-	TObjectPtr<USceneComponent> GhostSpawnPointFolder;
+	TObjectPtr<USceneComponent> MirrorGhostSpawnPointFolder;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
+	TObjectPtr<UArrowComponent> MirrorGhostSpawnPoint0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
+	TObjectPtr<UArrowComponent> MirrorGhostSpawnPoint1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
+	TObjectPtr<UArrowComponent> MirrorGhostSpawnPoint2;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
+	TObjectPtr<UArrowComponent> MirrorGhostSpawnPoint3;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
 	TObjectPtr<UChildActorComponent> LeverComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Nav")
+	TObjectPtr<UNavModifierComponent> NavModifier;
 
 private:
 	FTimerHandle LockTriggerTimerHandle;

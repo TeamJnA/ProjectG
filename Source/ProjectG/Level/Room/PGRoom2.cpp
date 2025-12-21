@@ -10,6 +10,7 @@
 APGRoom2::APGRoom2()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionSmallCorridor.LI_MansionSmallCorridor_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);
@@ -41,6 +42,20 @@ APGRoom2::APGRoom2()
 	ItemSpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint2->bHiddenInGame = true;
 
+	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
+	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
+	MannequinSpawnPoint0->SetRelativeLocation(FVector(990.0f, -750.0f, 6.0f));
+	MannequinSpawnPoint0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+	MannequinSpawnPoint0->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
+	MannequinSpawnPoint0->bHiddenInGame = true;
+
+	MannequinSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint1"));
+	MannequinSpawnPoint1->SetupAttachment(MannequinSpawnPointsFolder);
+	MannequinSpawnPoint1->SetRelativeLocation(FVector(750.0f, -510.0f, 6.0f));
+	MannequinSpawnPoint1->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	MannequinSpawnPoint1->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
+	MannequinSpawnPoint1->bHiddenInGame = true;
+
 	EnemySpawnPoint->SetRelativeLocation(FVector(920.0f, 0.0f, 250.0f));
 
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
@@ -50,7 +65,24 @@ APGRoom2::APGRoom2()
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
-	Mesh->SetChildActorClass(MeshRef.Class);
+	if (MeshRef.Succeeded())
+	{
+		Mesh->SetChildActorClass(MeshRef.Class);
+	}
 	Mesh->SetRelativeLocation(FVector(923.0f, -286.94f, 0.0f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+
+	WindowGimmick0 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick0"));
+	WindowGimmick0->SetupAttachment(Root);
+	WindowGimmick0->SetRelativeLocation(FVector(743.3f, 264.0f, 66.0f));
+
+	WindowGimmick1 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick1"));
+	WindowGimmick1->SetupAttachment(Root);
+	WindowGimmick1->SetRelativeLocation(FVector(1057.0f, 264.0f, 66.0f));
+
+	if (WindowGimmickRef.Succeeded())
+	{
+		WindowGimmick0->SetChildActorClass(WindowGimmickRef.Class);
+		WindowGimmick1->SetChildActorClass(WindowGimmickRef.Class);
+	}
 }

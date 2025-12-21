@@ -17,6 +17,9 @@ APGMasterRoom::APGMasterRoom()
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
+	Root->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	Root->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	Root->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 
 	GeometryFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GeometryFolder"));
 	GeometryFolder->SetupAttachment(RootComponent);
@@ -36,9 +39,8 @@ APGMasterRoom::APGMasterRoom()
 	ItemSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSpawnPointsFolder"));
 	ItemSpawnPointsFolder->SetupAttachment(RootComponent);
 
-	Root->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	Root->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-	Root->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	MannequinSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("MannequinSpawnPointsFolder"));
+	MannequinSpawnPointsFolder->SetupAttachment(RootComponent);
 
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
 	RoomDir->SetRelativeScale3D(FVector(7.75f, 7.75f, 7.75f));

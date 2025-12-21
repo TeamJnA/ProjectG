@@ -3,17 +3,24 @@
 
 #include "Level/Room/PGMirrorRoom.h"
 #include "Components/BoxComponent.h"
+#include "Components/ChildActorComponent.h"
+#include "NavModifierComponent.h"
+#include "NavAreas/NavArea_Null.h"
+#include "NavAreas/NavArea_Default.h"
+
 #include "Enemy/MirrorGhost/Character/PGMirrorGhostCharacter.h"
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickLever.h"
-#include "Level/Misc/PGDoor1.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerState.h"
-#include "Components/ChildActorComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
 APGMirrorRoom::APGMirrorRoom()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionMirrorRoom.LI_MansionMirrorRoom_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> LeverRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Gimmick/Interact/Lever/BP_PGInteractableGimmickLever.BP_PGInteractableGimmickLever_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> MirrorGhostRef(TEXT("/Game/ProjectG/Enemy/MirrorGhost/Character/BP_PGMirrorGhostCharacter.BP_PGMirrorGhostCharacter_C"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> GateMeshRef(TEXT("/Game/Imports/ExitPoint/Fence/courtyard_hollowed_out_fence.courtyard_hollowed_out_fence"));
+	static ConstructorHelpers::FObjectFinder<UMaterialInstance> GateMeshMaterialRef(TEXT("/Game/Imports/Materials/RustyMaterials/rusty_metal_sheet_tjylcjvn_1k/MI_RustyMetalSheet.MI_RustyMetalSheet"));
 
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -24,25 +31,84 @@ APGMirrorRoom::APGMirrorRoom()
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(GeometryFolder);
-	Mesh->SetChildActorClass(MeshRef.Class);
-	Mesh->SetRelativeLocation(FVector(643.5f, 560.0f, -16.7f));
+	if (MeshRef.Succeeded())
+	{
+		Mesh->SetChildActorClass(MeshRef.Class);
+	}
+	Mesh->SetRelativeLocation(FVector(643.5f, 560.0f, 0.0f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 
 	EntryTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("EntryTrigger"));
 	EntryTrigger->SetupAttachment(Root);
-	EntryTrigger->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	EntryTrigger->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
+	EntryTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	EntryTrigger->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	EntryTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	EntryTrigger->SetRelativeLocation(FVector(650.0f, 600.0f, 165.0f));
+	EntryTrigger->SetRelativeScale3D(FVector(17.5f, 27.5f, 5.0f));
 
 	GateMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateMesh"));
 	GateMesh->SetupAttachment(Root);
+	if (GateMeshRef.Succeeded())
+	{
+		GateMesh->SetStaticMesh(GateMeshRef.Object);
+	}
+	if (GateMeshMaterialRef.Succeeded())
+	{
+		GateMesh->SetMaterial(0, GateMeshMaterialRef.Object);
+	}
 	GateMesh->SetCollisionProfileName(TEXT("BlockAll"));
-	GateMesh->SetRelativeLocation(FVector(15.0f, 0.0f, 305.0f));
+	GateMesh->SetRelativeLocation(FVector(15.0f, 0.0f, 320.0f));
 	GateMesh->SetRelativeScale3D(FVector(1.0f, 1.6f, 2.05f));
 
-	GhostSpawnPointFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GhostSpawnPoints"));
-	GhostSpawnPointFolder->SetupAttachment(Root);
+	MirrorGhostSpawnPointFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GhostSpawnPoints"));
+	MirrorGhostSpawnPointFolder->SetupAttachment(Root);
+
+	MirrorGhostSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("GhostSpawnPoint0"));
+	MirrorGhostSpawnPoint0->SetupAttachment(MirrorGhostSpawnPointFolder);
+	MirrorGhostSpawnPoint0->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
+	MirrorGhostSpawnPoint0->SetRelativeLocation(FVector(1000.0f, 1175.0f, 150.0f));
+	MirrorGhostSpawnPoint0->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	MirrorGhostSpawnPoint0->bHiddenInGame = true;
+
+	MirrorGhostSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("GhostSpawnPoint1"));
+	MirrorGhostSpawnPoint1->SetupAttachment(MirrorGhostSpawnPointFolder);
+	MirrorGhostSpawnPoint1->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
+	MirrorGhostSpawnPoint1->SetRelativeLocation(FVector(845.0f, 1175.0f, 150.0f));
+	MirrorGhostSpawnPoint1->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	MirrorGhostSpawnPoint1->bHiddenInGame = true;
+
+	MirrorGhostSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("GhostSpawnPoint2"));
+	MirrorGhostSpawnPoint2->SetupAttachment(MirrorGhostSpawnPointFolder);
+	MirrorGhostSpawnPoint2->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
+	MirrorGhostSpawnPoint2->SetRelativeLocation(FVector(630.0f, 1175.0f, 150.0f));
+	MirrorGhostSpawnPoint2->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	MirrorGhostSpawnPoint2->bHiddenInGame = true;
+
+	MirrorGhostSpawnPoint3 = CreateDefaultSubobject<UArrowComponent>(TEXT("GhostSpawnPoint3"));
+	MirrorGhostSpawnPoint3->SetupAttachment(MirrorGhostSpawnPointFolder);
+	MirrorGhostSpawnPoint3->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
+	MirrorGhostSpawnPoint3->SetRelativeLocation(FVector(440.0f, 1175.0f, 150.0f));
+	MirrorGhostSpawnPoint3->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	MirrorGhostSpawnPoint3->bHiddenInGame = true;
 
 	LeverComponent = CreateDefaultSubobject<UChildActorComponent>(TEXT("Lever"));
 	LeverComponent->SetupAttachment(Root);
+	if (LeverRef.Succeeded())
+	{
+		LeverComponent->SetChildActorClass(LeverRef.Class);
+	}
+	LeverComponent->SetRelativeLocation(FVector(1162.0f, 1313.0f, 216.0f));
+	LeverComponent->SetRelativeRotation(FRotator(0.0f, -65.0f, -3.0f));
+	LeverComponent->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
+
+	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
+	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
+
+	if (MirrorGhostRef.Succeeded())
+	{
+		MirrorGhostClass = MirrorGhostRef.Class;
+	}
 }
 
 void APGMirrorRoom::BeginPlay()
@@ -170,7 +236,7 @@ void APGMirrorRoom::StartGimmick()
 		return;
 	}
 
-	TArray<USceneComponent*> SpawnPoints = GhostSpawnPointFolder->GetAttachChildren();
+	TArray<USceneComponent*> SpawnPoints = MirrorGhostSpawnPointFolder->GetAttachChildren();
 	if (SpawnPoints.Num() == 0)
 	{
 		return;
@@ -195,7 +261,7 @@ void APGMirrorRoom::SpawnMirrorGhost(APGPlayerCharacter* Player, const FTransfor
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	APGMirrorGhostCharacter* NewGhost = GetWorld()->SpawnActor<APGMirrorGhostCharacter>(GhostClass, SpawnTransform, SpawnParams);
+	APGMirrorGhostCharacter* NewGhost = GetWorld()->SpawnActor<APGMirrorGhostCharacter>(MirrorGhostClass, SpawnTransform, SpawnParams);
 	if (NewGhost)
 	{
 		NewGhost->SetTargetPlayer(Player);
@@ -249,4 +315,6 @@ void APGMirrorRoom::SolveGimmick()
 		}
 	}
 	SpawnedGhosts.Empty();
+
+	NavModifier->SetAreaClass(UNavArea_Default::StaticClass());
 }
