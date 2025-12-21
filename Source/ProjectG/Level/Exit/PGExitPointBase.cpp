@@ -6,6 +6,8 @@
 #include "Player/PGPlayerState.h"
 #include "Game/PGGameMode.h"
 #include "Player/PGPlayerController.h"
+#include "Interface/SoundManagerInterface.h"
+#include "Sound/PGSoundManager.h"
 
 // Sets default values
 APGExitPointBase::APGExitPointBase()
@@ -38,6 +40,17 @@ bool APGExitPointBase::CanStartInteraction(UAbilitySystemComponent* InteractingA
 bool APGExitPointBase::Unlock()
 {
 	return true;
+}
+
+void APGExitPointBase::PlaySound(const FName& SoundName, const FVector& SoundLocation)
+{
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		{
+			SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, false);
+		}
+	}
 }
 
 void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor)

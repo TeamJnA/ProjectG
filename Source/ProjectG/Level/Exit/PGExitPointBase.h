@@ -29,6 +29,9 @@ public:
 
 protected:
 	UFUNCTION()
+	void PlaySound(const FName& SoundName, const FVector& SoundLocation);
+
+	UFUNCTION()
 	void OnEscapeStart(AActor* EscapeStartActor);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))

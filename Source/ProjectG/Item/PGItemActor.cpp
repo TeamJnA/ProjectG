@@ -5,6 +5,10 @@
 #include "Abilities/GameplayAbility.h"
 #include "Interact/Ability/GA_Interact_Item.h"
 
+#include "GameFramework/GameModeBase.h"
+#include "Sound/PGSoundManager.h"
+#include "Interface/SoundManagerInterface.h"
+
 // Sets default values
 APGItemActor::APGItemActor()
 {
@@ -19,6 +23,8 @@ APGItemActor::APGItemActor()
 	RootComponent = StaticMesh;
 
 	InteractAbility = UGA_Interact_Item::StaticClass();
+
+	ItemDropSound = FName(TEXT("ITEM_Drop"));
 }
 
 TSubclassOf<UGameplayAbility> APGItemActor::GetAbilityToInteract() const
@@ -118,5 +124,13 @@ void APGItemActor::StopItemOnGroundHit(UPrimitiveComponent* HitComponent, AActor
 	{
 		UE_LOG(LogTemp, Log, TEXT("Drop item hit on ground."));
 		StaticMesh->SetSimulatePhysics(false);
+
+		if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+		{
+			if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+			{
+				SoundManager->PlaySoundForAllPlayers(ItemDropSound, GetActorLocation());
+			}
+		}
 	}
 }

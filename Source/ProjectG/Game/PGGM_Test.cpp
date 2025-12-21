@@ -4,6 +4,7 @@
 #include "Game/PGGM_Test.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/PGCharacterBase.h"
+#include "Gimmick/TriggerGimmick/PGTriggerGimmickBase.h"
 #include "Sound/PGSoundManager.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -63,6 +64,19 @@ void APGGM_Test::InitSoundManagerToPlayers()
 		{
 			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s [2nd]"), *PGCB->GetName());
 			PGCB->InitSoundManager(SoundManager);
+		}
+	}
+
+	TArray<AActor*> AllGimmicks;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APGTriggerGimmickBase::StaticClass(), AllGimmicks);
+
+	for (AActor* Gmick : AllGimmicks)
+	{
+		APGTriggerGimmickBase* PGG = Cast<APGTriggerGimmickBase>(Gmick);
+		if (PGG)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Init sound manager to %s [2nd]"), *PGG->GetName());
+			PGG->InitSoundManager();
 		}
 	}
 }

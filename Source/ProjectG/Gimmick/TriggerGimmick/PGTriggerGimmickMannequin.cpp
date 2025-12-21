@@ -80,18 +80,9 @@ void APGTriggerGimmickMannequin::StartTracking(APGPlayerCharacter* Player)
         return;
     }
 
-    if (!SoundManager.IsValid())
-    {
-        SoundManager = Cast<APGSoundManager>(UGameplayStatics::GetActorOfClass(GetWorld(), APGSoundManager::StaticClass()));
-        if (!SoundManager.IsValid())
-        {
-            UE_LOG(LogTemp, Error, TEXT("Mannequin::StartTracking: No valid sound manager"));
-        }
-    }
-
     TargetPlayer = Player;
     bIsTracking = true;
-    SoundCount = 0;
+    SoundCount = MaxSoundCount - 2;
     CurrentSanityDamageApplied = 0.0f;
     if (EffectRangeSphere)
     {
@@ -124,7 +115,7 @@ void APGTriggerGimmickMannequin::StopTracking()
     }   
     TargetPlayer = nullptr;
     bIsTracking = false;
-    SoundCount = 0;
+    SoundCount = MaxSoundCount - 2;
     CurrentSanityDamageApplied = 0.0f;
 
     UE_LOG(LogTemp, Log, TEXT("Mannequin Tracking Stopped"));
@@ -185,15 +176,14 @@ void APGTriggerGimmickMannequin::ApplyContinuousEffect(APGPlayerCharacter* Playe
 
 void APGTriggerGimmickMannequin::PlaySoundLocal()
 {
-    APGSoundManager* SM = SoundManager.Get();
-    if (!SM)
+    if (!SoundManager)
     {
         return;
     }
 
-    if (SoundCount >= 5)
+    if (SoundCount >= MaxSoundCount)
     {
-        SM->PlaySoundForSelf(MannequinSoundName);
+        SoundManager->PlaySoundForSelf(MannequinSoundName);
         SoundCount = 0;
     }
     else

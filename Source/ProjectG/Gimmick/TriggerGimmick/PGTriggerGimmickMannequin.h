@@ -10,7 +10,6 @@
 class APGPlayerCharacter;
 class UAbilitySystemComponent;
 class USphereComponent;
-class APGSoundManager;
 
 /**
  * 
@@ -61,12 +60,12 @@ protected:
     UPROPERTY()
     TWeakObjectPtr<APGPlayerCharacter> TargetPlayer;
 
-    UPROPERTY()
-    TWeakObjectPtr<APGSoundManager> SoundManager;
-
     FTimerHandle TrackingTimerHandle;
 
     int32 SoundCount = 0;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Mannequin Config")
+    int32 MaxSoundCount;
 
     UPROPERTY(EditDefaultsOnly, Category = "Mannequin Config")
     float RotationSpeed = 100.0f;

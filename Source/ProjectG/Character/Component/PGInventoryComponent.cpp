@@ -11,6 +11,7 @@
 #include "Item/PGItemData.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 
 DEFINE_LOG_CATEGORY(LogInventory);
 
@@ -33,6 +34,8 @@ UPGInventoryComponent::UPGInventoryComponent()
 	{
 		ItemActor = ItemActorRef.Class;
 	}
+
+	PickItemSound = FName(TEXT("PLAYER_Interact_PickItem"));
 }
 
 void UPGInventoryComponent::BeginPlay()
@@ -87,9 +90,18 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(const int32 NewInventory
 	//Before changing item, Deactivate Current Item's Ability.
 	DeactivateItemAbility(CurrentInventoryIndex);
 
-	// Play HandAction with Change anim.
-	// After HandAction, activate new ability and change mesh on hand at PGPlayerCharacter::EquipCurrentInventoryItem.
-	PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Change);
+	// Current Inventory index나 New inventory index에 아이템이 있으면 액션 및 사운드 재생 ( 둘 다 비었을 경우 재생 X )
+	if (InventoryItems[CurrentInventoryIndex].ItemData || InventoryItems[NewInventoryIndex].ItemData)
+	{
+		// Play HandAction with Change anim.
+		// After HandAction, activate new ability and change mesh on hand at PGPlayerCharacter::EquipCurrentInventoryItem.
+		PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Change);
+
+		if (UPGSoundManagerComponent* SoundManagerComp = GetOwner()->FindComponentByClass<UPGSoundManagerComponent>())
+		{
+			SoundManagerComp->TriggerSoundWithNoise(PickItemSound, GetOwner()->GetActorLocation());
+		}
+	}
 
 	SetCurrentInventoryIndex(NewInventoryIndex);
 
@@ -158,6 +170,12 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 
 	// Broadcast to Inventory Widget
 	OnInventoryItemUpdate.Broadcast(InventoryItems);
+
+	// Play sound
+	if (UPGSoundManagerComponent* SoundManagerComp = GetOwner()->FindComponentByClass<UPGSoundManagerComponent>())
+	{
+		SoundManagerComp->TriggerSoundWithNoise(PickItemSound, GetOwner()->GetActorLocation());
+	}
 }
 
 /*
