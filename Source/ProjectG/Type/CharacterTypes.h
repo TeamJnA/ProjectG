@@ -24,3 +24,12 @@ enum class EGameTeam : uint8
 	Player	UMETA(DisplayName = "Player"),
 	AI		UMETA(DisplayName = "AI")
 };
+
+UENUM(BlueprintType)
+enum class EHandPoseType : uint8
+{
+	Default,
+	Grab,
+	Pinch,
+	Count UMETA(Hidden)
+};

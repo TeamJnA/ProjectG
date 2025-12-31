@@ -81,6 +81,7 @@ public:
 	UFUNCTION(Server, Unreliable)
 	void Server_CheckHeldItemChanged();
 
+	// Anim instance에서 구독 중. 이 스테이트가 변하면 HandIK 진행
 	UPROPERTY(BlueprintAssignable)
 	FOnItemHeldStateChanged OnItemHeldStateChanged;
 
