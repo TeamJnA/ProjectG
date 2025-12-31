@@ -21,11 +21,14 @@ class PROJECTG_API UPGConfirmWidget : public UUserWidget
 
 public:
 	void SetConfirmText(const FText& Message);
+	void SetReturnFocusWidget(UUserWidget* InWidget) { ReturnFocusWidget = InWidget; }
 
 	FOnConfirmClickedDelegate OnConfirmClicked;
 
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* YesButton;
@@ -41,4 +44,7 @@ protected:
 
 	UFUNCTION()
 	void OnNoButtonClicked();
+
+private:
+	TWeakObjectPtr<UUserWidget> ReturnFocusWidget;
 };

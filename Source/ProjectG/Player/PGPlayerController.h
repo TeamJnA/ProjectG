@@ -51,6 +51,9 @@ public:
 
 	virtual void OnRep_Pawn() override;
 
+	UFUNCTION(Client, Reliable)
+	void Client_DisplayJumpscare(UTexture2D* JumpscareTexture);
+
 protected:	
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;

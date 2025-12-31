@@ -7,7 +7,14 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "Components/AudioComponent.h"
+#include "Components/BoxComponent.h"
 #include "PGLogChannels.h"
+
+#include "Character/PGPlayerCharacter.h"
+#include "Game/PGGameMode.h"
+#include "Game/PGGameState.h"
+#include "Player/PGPlayerState.h"
+#include "Player/PGPlayerController.h"
 
 APGExitIronDoor::APGExitIronDoor()
 {
@@ -17,13 +24,25 @@ APGExitIronDoor::APGExitIronDoor()
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	PillarMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PillarMesh"));
-	PillarMesh->SetupAttachment(Root);
-	PillarMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	PillarMesh0 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PillarMesh0"));
+	PillarMesh0->SetupAttachment(Root);
+	PillarMesh0->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+
+    PillarMesh1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PillarMesh1"));
+    PillarMesh1->SetupAttachment(Root);
+    PillarMesh1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);	
+    
+    PillarMesh2 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PillarMesh2"));
+    PillarMesh2->SetupAttachment(Root);
+    PillarMesh2->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+    
+    PillarMesh3 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PillarMesh3"));
+    PillarMesh3->SetupAttachment(Root);
+    PillarMesh3->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
     // Chain Lock
 	IronChainMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IronChainMesh"));
-	IronChainMesh->SetupAttachment(PillarMesh);
+	IronChainMesh->SetupAttachment(PillarMesh0);
 	IronChainMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
     IronChain1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IronChain1"));
@@ -36,17 +55,28 @@ APGExitIronDoor::APGExitIronDoor()
 
     // Wheel Attach
 	HandWheelHole = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HandWheelHole"));
-	HandWheelHole->SetupAttachment(PillarMesh);
+	HandWheelHole->SetupAttachment(PillarMesh0);
 	HandWheelHole->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
     // Oil applied
 	HandWheelLubricantPoint = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HandWheelLubricantPoint"));
-	HandWheelLubricantPoint->SetupAttachment(PillarMesh);
+	HandWheelLubricantPoint->SetupAttachment(PillarMesh0);
 	HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
 	IronDoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IronDoorMesh"));
 	IronDoorMesh->SetupAttachment(Root);
 	IronDoorMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+    IronDoorMesh->bFillCollisionUnderneathForNavmesh = true;
+
+    // Escape Trigger Volume
+    EscapeTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("EscapeTriggerVolume"));
+    EscapeTriggerVolume->SetupAttachment(Root);
+    EscapeTriggerVolume->SetRelativeLocation(FVector(-69.0f, -154.0f, 153.0f));
+    EscapeTriggerVolume->SetBoxExtent(FVector(250.0f, 210.0f, 153.0f));
+    EscapeTriggerVolume->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+    EscapeTriggerVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
+    EscapeTriggerVolume->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    EscapeTriggerVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 	CurrentLockPhase = E_LockPhase::E_ChainLock;
 
@@ -369,6 +399,11 @@ void APGExitIronDoor::BeginPlay()
 
     // set base start door location
     DoorBaseLocation = IronDoorMesh->GetRelativeLocation();
+
+    if (HasAuthority())
+    {
+        EscapeTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &APGExitIronDoor::OnEscapeTriggerOverlap);
+    }
 }
 
 void APGExitIronDoor::Tick(float DeltaSeconds)
@@ -632,3 +667,31 @@ tick -> 높이 일정수치 미만이면 종료
 
 강제 오픈 함수 추가.
 */
+
+/*
+* 플레이어가 ExitDoor를 열고 트리거에 닿은 경우 종료처리
+*/
+void APGExitIronDoor::OnEscapeTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    if (CurrentLockPhase != E_LockPhase::E_Unlocked)
+    {
+        return;
+    }
+
+    if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(OtherActor))
+    {
+        // 컷신 -> 종료처리 -> 종료 카메라 뷰 변환 -> 스코어보드
+        if (APGPlayerState* PS = PlayerCharacter->GetPlayerState<APGPlayerState>(); PS && !PS->HasFinishedGame())
+        {
+            if (APGGameMode* GM = GetWorld()->GetAuthGameMode<APGGameMode>())
+            {
+                GM->HandlePlayerEscaping(PlayerCharacter);
+            }
+
+            if (APGPlayerController* PC = Cast<APGPlayerController>(PlayerCharacter->GetController()))
+            {
+                PC->Client_StartEscapeSequence();
+            }
+        }
+    }
+}

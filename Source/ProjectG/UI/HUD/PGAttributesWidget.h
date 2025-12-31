@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "PGAttributesWidget.generated.h"
 
+class UAbilitySystemComponent;
+
 /**
  * 
  */
@@ -18,6 +20,12 @@ public:
 	void BindToAttributes();
 
 protected:
+	virtual void NativeDestruct() override;
+	FDelegateHandle StaminaChangedHandle;
+	FDelegateHandle SanityChangedHandle;
+
+	TWeakObjectPtr<UAbilitySystemComponent> LastBoundASC;
+
 	UPROPERTY(BlueprintReadOnly)
 	float StaminaPercent;
 

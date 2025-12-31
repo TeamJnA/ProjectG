@@ -15,6 +15,7 @@
 #include "UI/HUD/PGMessageManagerWidget.h"
 #include "UI/HUD/PGCrosshairWidget.h"
 #include "UI/HUD/PGInteractionProgressWidget.h"
+#include "UI/Screen/PGJumpscareWidget.h"
 
 #include "Character/Component/PGInventoryComponent.h"
 
@@ -27,38 +28,67 @@ APGHUD::APGHUD()
 */
 void APGHUD::Init()
 {
-	AttributeWidget = CreateWidget<UPGAttributesWidget>(GetOwningPlayerController(), AttributeWidgetClass);
-	AttributeWidget->BindToAttributes();
-	AttributeWidget->AddToViewport();
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC)
+	{
+		return;
+	}
 
-	InventoryWidget = CreateWidget<UPGInventoryWidget>(GetOwningPlayerController(), InventoryWidgetClass);
-	if (InventoryWidget)
+	if (!AttributeWidget)
+	{
+		AttributeWidget = CreateWidget<UPGAttributesWidget>(PC, AttributeWidgetClass);
+	}
+
+	if (AttributeWidget && !AttributeWidget->IsInViewport())
+	{
+		AttributeWidget->BindToAttributes();
+		AttributeWidget->AddToViewport();
+	}
+
+	if (!InventoryWidget)
+	{
+		InventoryWidget = CreateWidget<UPGInventoryWidget>(PC, InventoryWidgetClass);
+	}
+
+	if (InventoryWidget && !InventoryWidget->IsInViewport())
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: InventoryWidget created successfully."));
 		InventoryWidget->AddToViewport();
-		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: InventoryWidget added to viewport."));
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("APGHUD::Init: Failed to create InventoryWidget! Check InventoryWidgetClass in HUD Blueprint."));
 	}
 
-	MessageManagerWidget = CreateWidget<UPGMessageManagerWidget>(GetOwningPlayerController(), MessageManagerWidgetClass);
-	if (MessageManagerWidget)
+	if (!MessageManagerWidget)
+	{
+		MessageManagerWidget = CreateWidget<UPGMessageManagerWidget>(PC, MessageManagerWidgetClass);
+	}
+
+	if (MessageManagerWidget && !MessageManagerWidget->IsInViewport())
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: MessageManagerWidget created successfully."));
 		MessageManagerWidget->AddToViewport();
-		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: MessageManagerWidget added to viewport."));
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("APGHUD::Init: Failed to create MessageManagerWidget! Check MessageManagerWidgetClass in HUD Blueprint."));
 	}
 
-	CrosshairWidget = CreateWidget<UPGCrosshairWidget>(GetOwningPlayerController(), CrosshairWidgetClass);
-	CrosshairWidget->AddToViewport();
+	if (!CrosshairWidget)
+	{
+		CrosshairWidget = CreateWidget<UPGCrosshairWidget>(PC, CrosshairWidgetClass);
+	}
 
-	InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(GetOwningPlayerController(), InteractionProgressWidgetClass);
+	if (CrosshairWidget && !CrosshairWidget->IsInViewport())
+	{
+		CrosshairWidget->AddToViewport();
+	}
+
+	if (!InteractionProgressWidget)
+	{
+		InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(PC, InteractionProgressWidgetClass);
+	}
 }
 
 /*
@@ -66,7 +96,7 @@ void APGHUD::Init()
 */
 void APGHUD::InitMainMenuWidget()
 {
-	if (!MainMenuWidgetClass || (MainMenuWidget && MainMenuWidget->IsInViewport()))
+	if (!MainMenuWidgetClass)
 	{
 		return;
 	}
@@ -77,14 +107,18 @@ void APGHUD::InitMainMenuWidget()
 		return;
 	}
 
-	MainMenuWidget = CreateWidget<UPGMainMenuWidget>(PC, MainMenuWidgetClass);
-	if (MainMenuWidget)
+	if (!MainMenuWidget)
 	{
-		MainMenuWidget->AddToViewport();
+		MainMenuWidget = CreateWidget<UPGMainMenuWidget>(PC, MainMenuWidgetClass);
+	}
 
+	if (MainMenuWidget && !MainMenuWidget->IsInViewport())
+	{
 		FInputModeUIOnly InputMode;
 		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = true;
+
+		MainMenuWidget->AddToViewport();
 	}
 }
 
@@ -93,7 +127,7 @@ void APGHUD::InitMainMenuWidget()
 */
 void APGHUD::InitLobbyWidget()
 {
-	if (!LobbyWidgetClass || (LobbyWidget && LobbyWidget->IsInViewport()))
+	if (!LobbyWidgetClass)
 	{
 		return;
 	}
@@ -107,24 +141,27 @@ void APGHUD::InitLobbyWidget()
 	if (MainMenuWidget && MainMenuWidget->IsInViewport())
 	{
 		MainMenuWidget->RemoveFromParent();
-		MainMenuWidget = nullptr;
 	}
 
-	LobbyWidget = CreateWidget<UPGLobbyWidget>(PC, LobbyWidgetClass);
-	if (LobbyWidget)
+	if (!LobbyWidget)
 	{
-		LobbyWidget->AddToViewport();
-		LobbyWidget->Init();
+		LobbyWidget = CreateWidget<UPGLobbyWidget>(PC, LobbyWidgetClass);
+	}
 
+	if (LobbyWidget && !LobbyWidget->IsInViewport())
+	{
 		FInputModeGameOnly InputMode;
 		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = false;
+
+		LobbyWidget->Init();
+		LobbyWidget->AddToViewport();
 	}
 }
 
 void APGHUD::InitSpectatorWidget()
 {
-	if (!SpectatorWidgetClass || (SpectatorWidget && SpectatorWidget->IsInViewport()))
+	if (!SpectatorWidgetClass)
 	{
 		return;
 	}
@@ -135,11 +172,15 @@ void APGHUD::InitSpectatorWidget()
 		return;
 	}
 
-	SpectatorWidget = CreateWidget<UPGSpectatorWidget>(PC, SpectatorWidgetClass);
-	if (SpectatorWidget)
+	if (!SpectatorWidget)
 	{
-		SpectatorWidget->AddToViewport();
+		SpectatorWidget = CreateWidget<UPGSpectatorWidget>(PC, SpectatorWidgetClass);
+	}
+
+	if (SpectatorWidget && !SpectatorWidget->IsInViewport())
+	{
 		SpectatorWidget->Init();
+		SpectatorWidget->AddToViewport();
 	}
 }
 
@@ -148,7 +189,7 @@ void APGHUD::InitSpectatorWidget()
 */
 void APGHUD::InitScoreBoardWidget()
 {
-	if (!ScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (ScoreBoardWidget && ScoreBoardWidget->IsInViewport()))
+	if (!ScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()))
 	{
 		return;
 	}
@@ -159,14 +200,17 @@ void APGHUD::InitScoreBoardWidget()
 		return;
 	}
 
-	PC->bShowMouseCursor = true;
-	PC->SetInputMode(FInputModeUIOnly());
-
-	ScoreBoardWidget = CreateWidget<UPGScoreBoardWidget>(PC, ScoreBoardWidgetClass);
-	if (ScoreBoardWidget)
+	if (!ScoreBoardWidget)
 	{
+		ScoreBoardWidget = CreateWidget<UPGScoreBoardWidget>(PC, ScoreBoardWidgetClass);
+	}
+
+	if (ScoreBoardWidget && !ScoreBoardWidget->IsInViewport())
+	{
+		PC->SetInputMode(FInputModeUIOnly());
+		PC->bShowMouseCursor = true;
+		ScoreBoardWidget->BindPlayerEntry();
 		ScoreBoardWidget->AddToViewport();
-		ScoreBoardWidget->BindPlayerEntry(PC);
 	}
 }
 
@@ -175,52 +219,58 @@ void APGHUD::InitScoreBoardWidget()
 */
 void APGHUD::InitFinalScoreBoardWidget()
 {
-	if (!FinalScoreBoardWidgetClass || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()))
+	if (!FinalScoreBoardWidgetClass)
 	{
 		return;
 	}
+
 	APlayerController* PC = GetOwningPlayerController();
 	if (!PC)
 	{
 		return;
 	}
 
-	if (UGameViewportClient* ViewPort = GetWorld()->GetGameViewport())
+	if (!FinalScoreBoardWidget)
 	{
-		ViewPort->RemoveAllViewportWidgets();
+		FinalScoreBoardWidget = CreateWidget<UPGFinalScoreBoardWidget>(PC, FinalScoreBoardWidgetClass);
 	}
 
-	FinalScoreBoardWidget = CreateWidget<UPGFinalScoreBoardWidget>(PC, FinalScoreBoardWidgetClass);
-	if (FinalScoreBoardWidget)
+	if (FinalScoreBoardWidget && !FinalScoreBoardWidget->IsInViewport())
 	{
-		PC->bShowMouseCursor = true;
-		PC->SetInputMode(FInputModeUIOnly());
+		ClearViewport();
 
+		PC->SetInputMode(FInputModeUIOnly());
+		PC->bShowMouseCursor = true;
+		FinalScoreBoardWidget->BindPlayerEntry();
 		FinalScoreBoardWidget->AddToViewport();
-		FinalScoreBoardWidget->BindPlayerEntry(PC);
 	}
 }
 
 void APGHUD::InitPauseMenuWidget()
 {
-	if (!PauseMenuWidgetClass || (MainMenuWidget && MainMenuWidget->IsInViewport()) || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()) || (PauseMenuWidget && PauseMenuWidget->IsInViewport()))
+	if (!PauseMenuWidgetClass || (MainMenuWidget && MainMenuWidget->IsInViewport()) ||
+		(ScoreBoardWidget && ScoreBoardWidget->IsInViewport()) || (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport()))
 	{
 		return;
 	}
+
 	APlayerController* PC = GetOwningPlayerController();
 	if (!PC)
 	{
 		return;
 	}
 
-	PauseMenuWidget = CreateWidget<UPGPauseMenuWidget>(PC, PauseMenuWidgetClass);
-	if (PauseMenuWidget)
+	if (!PauseMenuWidget)
 	{
-		PC->bShowMouseCursor = true;
+		PauseMenuWidget = CreateWidget<UPGPauseMenuWidget>(PC, PauseMenuWidgetClass);
+	}
+
+	if (PauseMenuWidget && !PauseMenuWidget->IsInViewport())
+	{
 		PC->SetInputMode(FInputModeUIOnly());
+		PC->bShowMouseCursor = true;
 
 		PauseMenuWidget->AddToViewport();
-		PauseMenuWidget->Init(PC);
 	}
 }
 
@@ -231,8 +281,7 @@ void APGHUD::UpdateInteractionProgress(float Progress)
 {
 	if (!InteractionProgressWidget)
 	{
-		UE_LOG(LogTemp, Error, TEXT("HUD::UpdateInteractionProgress: No valid InteractionProgressWidget"));
-		return;
+		InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(GetOwningPlayerController(), InteractionProgressWidgetClass);
 	}
 
 	if (Progress > 0.0f)
@@ -257,9 +306,33 @@ void APGHUD::UpdateInteractionProgress(float Progress)
 */
 void APGHUD::DisplayInteractionFailedMessage(const FText& Message, float Duration)
 {
+	if (!MessageManagerWidget)
+	{
+		MessageManagerWidget = CreateWidget<UPGMessageManagerWidget>(GetOwningPlayerController(), MessageManagerWidgetClass);
+	}
+
 	if (MessageManagerWidget)
 	{
 		MessageManagerWidget->ShowFailureMessage(Message, Duration);
+	}
+}
+
+void APGHUD::DisplayJumpscare(UTexture2D* JumpscareTexture)
+{
+	if (!GetOwningPlayerController() || !JumpscareWidgetClass || !JumpscareTexture)
+	{
+		return;
+	}
+
+	if (!JumpscareWidget)
+	{
+		JumpscareWidget = CreateWidget<UPGJumpscareWidget>(GetOwningPlayerController(), JumpscareWidgetClass);
+	}
+
+	if (JumpscareWidget && !JumpscareWidget->IsInViewport())
+	{
+		JumpscareWidget->Init(JumpscareTexture);
+		JumpscareWidget->AddToViewport(100);
 	}
 }
 

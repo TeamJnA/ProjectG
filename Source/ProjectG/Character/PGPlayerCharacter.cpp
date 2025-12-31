@@ -94,6 +94,7 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeadlightLight->SetVisibility(false);
 	HeadlightLight->SetIsReplicated(true);
 
+	HeadlightLight->SetIndirectLightingIntensity(0.0f);
 	HeadlightLight->SetVolumetricScatteringIntensity(5.0f);
 
 	// Create Components
@@ -226,41 +227,8 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 
 	UE_LOG(LogTemp, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
 
-	bool bIsHeadlightInitiallyOn = false;
-	if (HeadlightLight)
-	{
-		bIsHeadlightInitiallyOn = HeadlightLight->GetVisibleFlag();
-	}
-
 	// Remove all abilities.
 	AbilitySystemComponent->ClearAllAbilities();
-
-	// 1) Headlight가 켜져있는 경우 -> ClearAbility 이후 다시 키고 상태 유지
-	// 2) Headlight가 꺼져있는 경우 -> ClearAbility 이후 다시 키고 공격이 끝날 때 꺼줘야함. 이 과정이 다른 플레이어들에게 노출 x (local)
-	//	Server -> headlight가 replicated로 설정되어 ClientRPC로 꺼도 자동으로 replicate 됨 -> replicate 끄고 headlight 조작
-	//	Client -> ClientRPC로 꺼주면 됨
-	if (bIsHeadlightInitiallyOn)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Character::OnAttacked: [%s] Headlight was initially ON, re-active headlight."), *GetNameSafe(this));
-		MC_SetHeadlightState(true);
-		bIsHeadlightForcedOn = false;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Character::OnAttacked: [%s] Headlight was initially OFF, force ON."), *GetNameSafe(this));
-		bIsHeadlightForcedOn = true;
-		if (IsLocallyControlled()) // server
-		{
-			UE_LOG(LogTemp, Log, TEXT("Character::OnAttacked: [%s] Server player."), *GetNameSafe(this));
-			HeadlightLight->SetIsReplicated(false);
-			HeadlightLight->SetVisibility(true);
-		}
-		else // client
-		{
-			UE_LOG(LogTemp, Log, TEXT("Character::OnAttacked: [%s] Client player."), *GetNameSafe(this));
-			Client_SetHeadlightState(true);
-		}
-	}
 
 	// Stop character movement.
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -324,26 +292,6 @@ void APGPlayerCharacter::OnAttackFinished()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("OnAttackFinished function is must be called on server."));
 		return;
-	}
-
-	// 죽기 전 Headlight가 꺼져있던 경우 연출을 위해 켰던걸 다시 꺼줘야함
-	//	Server -> Headlight를 끄고 replicate 다시 켜기
-	//	Client -> ClientRPC를 통해 Headlight 끄기
-	if (bIsHeadlightForcedOn)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Character::OnAttackFinished: [%s] force headlight OFF."), *GetNameSafe(this));
-		if (IsLocallyControlled()) // server
-		{
-			UE_LOG(LogTemp, Log, TEXT("Character::OnAttackFinished: [%s] Server player."), *GetNameSafe(this));
-			HeadlightLight->SetVisibility(false);
-			HeadlightLight->SetIsReplicated(true);
-		}
-		else // client
-		{
-			UE_LOG(LogTemp, Log, TEXT("Character::OnAttackFinished: [%s] Client player."), *GetNameSafe(this));
-			Client_SetHeadlightState(false);
-		}
-		bIsHeadlightForcedOn = false;
 	}
 
 	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
@@ -437,14 +385,6 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 	FirstPersonCamera->Deactivate();
 
 	FollowCamera->Activate();
-	
-
-	// 2. 관전 버튼을 통해 관전 기능 추가.( Client )
-	//APGPlayerController* PGPC = Cast<APGPlayerController>(Controller);
-	//if (PGPC)
-	//{
-	//	PGPC->StartSpectate();
-	//}
 }
 
 // Make client character ragdoll.
@@ -484,6 +424,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 
 		if (HeadlightLight)
 		{
+			HeadlightLight->SetIndirectLightingIntensity(0.4f);
 			HeadlightLight->SetVolumetricScatteringIntensity(0.0f);
 		}
 	}
@@ -510,6 +451,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 
 		if (HeadlightLight)
 		{
+			HeadlightLight->SetIndirectLightingIntensity(0.4f);
 			HeadlightLight->SetVolumetricScatteringIntensity(0.0f);
 		}
 	}
@@ -751,9 +693,9 @@ void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(c
 	}
 }
 
-void APGPlayerCharacter::MC_SetHeadlightState(bool _bIsFlashlightOn)
+void APGPlayerCharacter::Multicast_SetHeadlightState(bool InbIsFlashlightOn)
 {
-	HeadlightLight->SetVisibility(_bIsFlashlightOn);
+	HeadlightLight->SetVisibility(InbIsFlashlightOn);
 }
 
 void APGPlayerCharacter::ToggleHeadLight()
@@ -769,17 +711,6 @@ void APGPlayerCharacter::ToggleHeadLight()
 			AbilitySystemComponent->CancelAbilities(&HeadLightTag);
 		}
 	}
-}
-
-void APGPlayerCharacter::Client_SetHeadlightState_Implementation(bool bIsVisible)
-{
-	if (!HeadlightLight)
-	{
-		return;
-	}
-
-	HeadlightLight->SetVisibility(bIsVisible);
-	UE_LOG(LogTemp, Log, TEXT("Character::Client_SetHeadlightState: [%s] Visibility set to: %s"), *GetNameSafe(this), bIsVisible ? TEXT("true") : TEXT("false"));
 }
 
 /*

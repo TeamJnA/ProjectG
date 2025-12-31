@@ -15,6 +15,7 @@
 
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerState.h"
+#include "Player/PGPlayerController.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -171,16 +172,44 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
         return;
     }
 
-    const FGameplayTag ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
-    const FGameplayTag AttackingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking"));
-    if (!AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(ChasingTag) || AbilitySystemComponent->HasMatchingGameplayTag(AttackingTag))
+    APGPlayerCharacter* TouchedPlayer = Cast<APGPlayerCharacter>(OtherActor);
+    if (!TouchedPlayer || TouchedPlayer->GetPlayerState() != TargetPlayerState)
     {
         return;
     }
 
-    APGPlayerCharacter* TouchedPlayer = Cast<APGPlayerCharacter>(OtherActor);
-    if (!TouchedPlayer || TouchedPlayer->GetPlayerState() != TargetPlayerState)
+    const FGameplayTag ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
+    const FGameplayTag AttackingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking"));
+    if (!AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(ChasingTag) || AbilitySystemComponent->HasMatchingGameplayTag(AttackingTag))
     {
+        // Chasing / Attacking 상태가 아닐때 Overlap 된 경우 타겟 Sanity 감소
+        const float CurrentTime = GetWorld()->GetTimeSeconds();
+        if (LastJumpscareTime > 0.0f && (CurrentTime - LastJumpscareTime) < JumpscareCooldown)
+        {
+            UE_LOG(LogTemp, Error, TEXT("[Ghost] Cool Time : %.2f"), (CurrentTime - LastJumpscareTime));
+            return;
+        }
+
+        LastJumpscareTime = CurrentTime;
+
+        if (APGPlayerController* TouchedPlayerPC = Cast<APGPlayerController>(TouchedPlayer->GetController()))
+        {
+            TouchedPlayerPC->Client_DisplayJumpscare(JumpscareTexture);
+        }
+
+        UAbilitySystemComponent* TargetASC = TouchedPlayer->GetAbilitySystemComponent();
+        if (TargetASC)
+        {
+            FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
+            ContextHandle.AddInstigator(this, this);
+
+            FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(SanityDecreaseEffectClass, 1.0f, ContextHandle);
+            if (SpecHandle.IsValid())
+            {
+                TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+            }
+        }
+
         return;
     }
 

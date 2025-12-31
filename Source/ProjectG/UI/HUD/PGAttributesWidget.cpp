@@ -10,27 +10,52 @@
 */
 void UPGAttributesWidget::BindToAttributes()
 {
-	const APGPlayerState* PS = Cast<APGPlayerState>(GetOwningPlayerState());
+	APGPlayerState* PS = Cast<APGPlayerState>(GetOwningPlayerState());
 	if (!PS) 
 	{
+		UE_LOG(LogTemp, Error, TEXT("[AttributeWidget] No valid PS"));
 		return;
 	}
 
 	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
-	const UPGAttributeSet* AS = PS->GetAttributeSet();
+	UPGAttributeSet* AS = PS->GetAttributeSet();
+	if (!ASC || !AS)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[AttributeWidget] No valid ASC or AS"));
+		return;
+	}
+
+	if (LastBoundASC.IsValid())
+	{
+		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetStaminaAttribute()).Remove(StaminaChangedHandle);
+		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).Remove(SanityChangedHandle);
+	}
 
 	// Initial Attribute
 	StaminaPercent = AS->GetStaminaAttribute().GetNumericValue(AS) / AS->GetMaxStaminaAttribute().GetNumericValue(AS);
 	SanityPercent = AS->GetSanityAttribute().GetNumericValue(AS) / AS->GetMaxSanityAttribute().GetNumericValue(AS);
 
 	// Attribute Changes
-	ASC->GetGameplayAttributeValueChangeDelegate(AS->GetStaminaAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
+	StaminaChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(AS->GetStaminaAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
 	{
 		StaminaPercent = Data.NewValue / AS->GetMaxStaminaAttribute().GetNumericValue(AS);
 	});
 
-	ASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
+	SanityChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
 	{
 		SanityPercent = Data.NewValue / AS->GetMaxSanityAttribute().GetNumericValue(AS);
 	});
+
+	LastBoundASC = ASC;
+}
+
+void UPGAttributesWidget::NativeDestruct()
+{
+	if (LastBoundASC.IsValid())
+	{
+		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetStaminaAttribute()).Remove(StaminaChangedHandle);
+		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetSanityAttribute()).Remove(SanityChangedHandle);
+	}
+
+	Super::NativeDestruct();
 }

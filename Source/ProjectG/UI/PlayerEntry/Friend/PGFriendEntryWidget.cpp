@@ -9,17 +9,29 @@
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
+void UPGFriendEntryWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	if (InviteButton)
+	{
+		InviteButton->OnClicked.AddDynamic(this, &UPGFriendEntryWidget::OnInviteButtonClicked);
+	}
+}
+
 void UPGFriendEntryWidget::SetupFriendEntry(const FText& InFriendName, UTexture2D* InAvatarTexture, bool bIsOnline, TSharedPtr<const FUniqueNetId> InFriendNetId)
 {
 	if (FriendNameText)
 	{
 		FriendNameText->SetText(InFriendName);
 	}
+
 	if (FriendAvatar && InAvatarTexture)
 	{
 		FriendAvatar->SetBrushFromTexture(InAvatarTexture);
 		FriendAvatar->SetVisibility(ESlateVisibility::Visible);
 	}
+
 	FriendNetId = InFriendNetId;
 
 	const float Opacity = bIsOnline ? 1.0f : 0.5f;
@@ -31,22 +43,11 @@ void UPGFriendEntryWidget::SetupFriendEntry(const FText& InFriendName, UTexture2
 	}
 }
 
-void UPGFriendEntryWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	GIRef = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-
-	if (InviteButton)
-	{
-		InviteButton->OnClicked.AddDynamic(this, &UPGFriendEntryWidget::OnInviteButtonClicked);
-	}
-}
-
 void UPGFriendEntryWidget::OnInviteButtonClicked()
 {
-	if (GIRef && FriendNetId.IsValid())
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (GI && FriendNetId.IsValid())
 	{
-		GIRef->InviteFriend(*FriendNetId);
+		GI->InviteFriend(*FriendNetId);
 	}
 }

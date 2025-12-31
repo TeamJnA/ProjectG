@@ -11,7 +11,7 @@ APGStartRoom::APGStartRoom()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionMainRoom.LI_MansionMainRoom_C'"));
 	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
-
+	static ConstructorHelpers::FClassFinder<AActor> ExitDoorRef(TEXT("/Game/ProjectG/Levels/Room/Exit/ExitIronDoor/BP_PGExitIronDoor.BP_PGExitIronDoor_C"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);
@@ -66,6 +66,15 @@ APGStartRoom::APGStartRoom()
 	}
 	Mesh->SetRelativeLocation(FVector(1018.0f, 0.0f, -66.1f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+
+	ExitDoor = CreateDefaultSubobject<UChildActorComponent>(TEXT("ExitDoor"));
+	ExitDoor->SetupAttachment(Root);
+	if (ExitDoorRef.Succeeded())
+	{
+		ExitDoor->SetChildActorClass(ExitDoorRef.Class);
+	}
+	ExitDoor->SetRelativeLocation(FVector(3217.0f, 392.0f, -397.0f));
+	ExitDoor->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 
 	WindowGimmick0 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick0"));
 	WindowGimmick0->SetupAttachment(Root);

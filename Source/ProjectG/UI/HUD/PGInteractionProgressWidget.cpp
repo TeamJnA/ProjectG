@@ -3,7 +3,7 @@
 
 #include "UI/HUD/PGInteractionProgressWidget.h"
 
-void UPGInteractionProgressWidget::SetProgress(float _Progress)
+void UPGInteractionProgressWidget::SetProgress(float InProgress)
 {
-	Progress = _Progress;
+	Progress = InProgress;
 }

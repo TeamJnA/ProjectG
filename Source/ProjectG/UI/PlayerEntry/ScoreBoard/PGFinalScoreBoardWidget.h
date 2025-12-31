@@ -6,11 +6,13 @@
 #include "Blueprint/UserWidget.h"
 #include "PGFinalScoreBoardWidget.generated.h"
 
-class APGGameState;
 class UPGPlayerEntryWidget;
 class APGPlayerCharacter;
 class UVerticalBox;
 class UButton;
+class UPGConfirmWidget;
+class UPGAdvancedFriendsGameInstance;
+class APGGameState;
 
 /**
  * 
@@ -21,21 +23,24 @@ class PROJECTG_API UPGFinalScoreBoardWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void BindPlayerEntry(APlayerController* _PC);
+	void BindPlayerEntry();
 
 	UFUNCTION()
 	void UpdatePlayerEntry();
 
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	UFUNCTION()
 	void OnReturnToMainMenuButtonClicked();
 
 	UFUNCTION()
-	void OnReturnToLobbyButtonClicked();
+	void ReturnToMainMenu();
 
-	TObjectPtr<APlayerController> PCRef;
+	UFUNCTION()
+	void OnReturnToLobbyButtonClicked();
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UVerticalBox> PlayerContainer;
@@ -48,4 +53,14 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> ReturnToLobbyButton;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UPGConfirmWidget> ConfirmWidgetInstance;
+
+private:
+	TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
+	TWeakObjectPtr<APGGameState> GSRef;
 };

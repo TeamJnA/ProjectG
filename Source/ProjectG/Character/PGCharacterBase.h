@@ -31,6 +31,8 @@ public:
 
 	virtual UPGAttributeSet* GetAttributeSet() const;
 
+	FORCEINLINE UPGSoundManagerComponent* GetSoundManagerComponent() const { return SoundManagerComponent; }
+
 protected:
 	void GiveDefaultAbilities();
 	void InitDefaultAttributes() const;

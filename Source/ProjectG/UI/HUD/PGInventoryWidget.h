@@ -24,9 +24,12 @@ public:
 	void BindInventorySlots(APGPlayerCharacter* PlayerCharacter);
 
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
-	TObjectPtr<UPGInventoryComponent> InventoryRef;
+	UPROPERTY()
+	TArray<TObjectPtr<UPGInventorySlotWidget>> InventorySlots;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UPGInventorySlotWidget> InventorySlot0;
@@ -43,8 +46,7 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UPGInventorySlotWidget> InventorySlot4;
 
-	UPROPERTY()
-	TArray<TObjectPtr<UPGInventorySlotWidget>> InventorySlots;
+	TWeakObjectPtr<UPGInventoryComponent> InventoryRef;
 
 	UFUNCTION()
 	void HandleOnInventoryUpdate(const TArray<FInventoryItem>& InventoryItems);

@@ -33,7 +33,7 @@ public:
 	void HighlightEntry();
 	void UnhighlightEntry();
 
-	const APlayerState* GetPlayerState() const { return PlayerStateRef; }
+	APlayerState* GetPlayerState() const { return PlayerStateRef.Get(); }
 
 protected:
 	UPROPERTY(meta = (BindWidget))
@@ -49,13 +49,12 @@ protected:
 	TObjectPtr<UBorder> HighlightBorder;
 
 private:
-	UPROPERTY()
-	TObjectPtr<APlayerState> PlayerStateRef;
-
 	UPROPERTY(EditAnywhere, Category = "UI")
 	FLinearColor HighlightColor = FLinearColor::White;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	FLinearColor DefaultColor = FLinearColor::Transparent;
 
+	UPROPERTY()
+	TWeakObjectPtr<APlayerState> PlayerStateRef;
 };

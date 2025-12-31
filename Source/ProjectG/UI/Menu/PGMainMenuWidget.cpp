@@ -20,50 +20,13 @@
 #include "Player/PGLobbyPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
-/*
-* 技记 浇吩 积己何
-* 技记 积己/Setup
-*/
-void UPGMainMenuWidget::AddSessionSlot(const FOnlineSessionSearchResult& SearchResult, int32 Index)
+void UPGMainMenuWidget::NativeOnInitialized()
 {
-	if (!SessionListContainer || !SessionSlotWidgetClass)
-	{
-		return;
-	}
-
-	UPGSessionSlotWidget* SessionSlot = CreateWidget<UPGSessionSlotWidget>(this, SessionSlotWidgetClass);
-	if (SessionSlot)
-	{
-		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
-		{
-			SessionSlot->Setup(SearchResult, Index, GI);
-		}
-		SessionListContainer->AddChild(SessionSlot);
-	}
-}
-
-/*
-* 技记 浇吩 牧抛捞呈 檬扁拳
-*/
-void UPGMainMenuWidget::ClearSessionList()
-{
-	if (SessionListContainer)
-	{
-		SessionListContainer->ClearChildren();
-	}
-}
-
-void UPGMainMenuWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	CachedPC = UGameplayStatics::GetPlayerController(this, 0);
-
 	if (HostButton)
 	{
 		HostButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnHostButtonClicked);
 	}
-	
+
 	if (JoinButton)
 	{
 		JoinButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnJoinButtonClicked);
@@ -83,7 +46,7 @@ void UPGMainMenuWidget::NativeConstruct()
 	{
 		OptionMenuCanvas_BackButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnBackButtonClicked);
 	}
-	
+
 	if (SessionListCanvas_BackButton)
 	{
 		SessionListCanvas_BackButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnBackButtonClicked);
@@ -96,6 +59,8 @@ void UPGMainMenuWidget::NativeConstruct()
 
 	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
+		GIRef = GI;
+
 		GI->OnSessionsFound.AddUObject(this, &UPGMainMenuWidget::OnSessionsFound);
 
 		GI->OnHostSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleHostSessionStarted);
@@ -105,36 +70,118 @@ void UPGMainMenuWidget::NativeConstruct()
 		GI->OnJoinSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleJoinSessionStarted);
 		GI->OnJoinSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleJoinSessionFinished);
 	}
+}
+
+void UPGMainMenuWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	bIsFocusable = true;
+	SetKeyboardFocus();
 
 	SetMainMenuButtonEnabled(true);	
 }
 
 void UPGMainMenuWidget::NativeDestruct()
 {
-	GetWorld()->GetTimerManager().ClearTimer(SessionStatusWidgetTimerHandle);
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(SessionStatusWidgetTimerHandle);
+	}
+
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
+	{
+		GI->OnSessionsFound.RemoveAll(this);
+		GI->OnHostSessionAttemptStarted.RemoveAll(this);
+		GI->OnHostSessionAttemptFinished.RemoveAll(this);
+		GI->OnFindSessionAttemptStarted.RemoveAll(this);
+		GI->OnFindSessionAttemptFinished.RemoveAll(this);
+		GI->OnJoinSessionAttemptStarted.RemoveAll(this);
+		GI->OnJoinSessionAttemptFinished.RemoveAll(this);
+	}
 
 	Super::NativeDestruct();
 }
 
+FReply UPGMainMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		const int32 CurrentIndex = WidgetSwitcher->GetActiveWidgetIndex();
+
+		if (CurrentIndex == 0)
+		{
+			OnExitButtonClicked();
+		}
+		else
+		{
+			OnBackButtonClicked();
+		}
+
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+/*
+* 技记 浇吩 积己何
+* 技记 积己/Setup
+*/
+void UPGMainMenuWidget::AddSessionSlot(const FOnlineSessionSearchResult& SearchResult, int32 Index)
+{
+	if (!SessionListContainer || !SessionSlotWidgetClass)
+	{
+		return;
+	}
+
+	UPGSessionSlotWidget* SessionSlot = CreateWidget<UPGSessionSlotWidget>(this, SessionSlotWidgetClass);
+	if (SessionSlot)
+	{
+		if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
+		{
+			SessionSlot->Setup(SearchResult, Index, GI);
+		}
+		SessionListContainer->AddChild(SessionSlot);
+	}
+}
+
+/*
+* 技记 浇吩 牧抛捞呈 檬扁拳
+*/
+void UPGMainMenuWidget::ClearSessionList()
+{
+	if (SessionListContainer)
+	{
+		SessionListContainer->ClearChildren();
+	}
+}
+
 void UPGMainMenuWidget::OnHostButtonClicked()
 {
+	if (!ConfirmWidgetClass)
+	{
+		return;
+	}
+
 	if (SessionStatusWidgetInstance && SessionStatusWidgetInstance->IsInViewport())
 	{
 		return;
 	}
 
-	if (ConfirmWidgetClass)
+	if (!ConfirmWidgetInstance)
 	{
-		if (ConfirmWidgetInstance && ConfirmWidgetInstance->IsInViewport())
-		{
-			ConfirmWidgetInstance->RemoveFromParent();
-		}
-		
 		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
-		if (ConfirmWidgetInstance)
+	}
+
+	if (ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Create Session?")));
+		ConfirmWidgetInstance->SetReturnFocusWidget(this);
+		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
+		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::StartHostSession);
+		if (!ConfirmWidgetInstance->IsInViewport())
 		{
-			ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Create Session?")));
-			ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::StartHostSession);
 			ConfirmWidgetInstance->AddToViewport();
 		}
 	}
@@ -142,17 +189,15 @@ void UPGMainMenuWidget::OnHostButtonClicked()
 
 void UPGMainMenuWidget::StartHostSession()
 {
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GI)
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
-		return;
+		GI->HostSession(NAME_GameSession, 4, false);
 	}
-	GI->HostSession(NAME_GameSession, 4, false);
 }
 
 void UPGMainMenuWidget::OnJoinButtonClicked()
 {
-	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
 		UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::OnJoinButtonClicked: Join button clicked"));
 		if (WidgetSwitcher)
@@ -167,23 +212,29 @@ void UPGMainMenuWidget::OnJoinButtonClicked()
 
 void UPGMainMenuWidget::OnExitButtonClicked()
 {
+	if (!ConfirmWidgetClass)
+	{
+		return;
+	}
+
 	if (SessionStatusWidgetInstance && SessionStatusWidgetInstance->IsInViewport())
 	{
 		return;
 	}
 
-	if (ConfirmWidgetClass)
+	if (!ConfirmWidgetInstance)
 	{
-		if (ConfirmWidgetInstance && ConfirmWidgetInstance->IsInViewport())
-		{
-			ConfirmWidgetInstance->RemoveFromParent();
-		}
-
 		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
-		if (ConfirmWidgetInstance)
+	}
+
+	if (ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Exit Game?")));
+		ConfirmWidgetInstance->SetReturnFocusWidget(this);
+		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
+		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::QuitGame);
+		if (!ConfirmWidgetInstance->IsInViewport())
 		{
-			ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Exit Game?")));
-			ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::QuitGame);
 			ConfirmWidgetInstance->AddToViewport();
 		}
 	}
@@ -191,11 +242,11 @@ void UPGMainMenuWidget::OnExitButtonClicked()
 
 void UPGMainMenuWidget::QuitGame()
 {
-	if (!CachedPC)
+	if (!GetOwningPlayer())
 	{
 		return;
 	}
-	UKismetSystemLibrary::QuitGame(this, CachedPC, EQuitPreference::Quit, true);
+	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, true);
 }
 
 void UPGMainMenuWidget::OnOptionButtonClicked()
@@ -208,7 +259,7 @@ void UPGMainMenuWidget::OnOptionButtonClicked()
 
 void UPGMainMenuWidget::OnRefreshButtonClicked()
 {
-	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
 		UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::OnRefreshButtonClicked: Refresh Button Clicked. Finding sessions..."));
 		ClearSessionList();
@@ -380,25 +431,19 @@ void UPGMainMenuWidget::ShowSessionStatusWidget(const FText& Message, bool bShow
 		return;
 	}
 
-	APlayerController* PC = GetOwningPlayer();
-	if (!PC)
-	{
-		return;
-	}
-
 	if (!SessionStatusWidgetInstance)
 	{
-		SessionStatusWidgetInstance = CreateWidget<UPGSessionStatusWidget>(PC, SessionStatusWidgetClass);
-		if (!SessionStatusWidgetInstance)
-		{
-			return;
-		}
+		SessionStatusWidgetInstance = CreateWidget<UPGSessionStatusWidget>(this, SessionStatusWidgetClass);
 	}
 
-	SessionStatusWidgetInstance->SetStatusMessage(Message, bShowCloseButton);
-	if (!SessionStatusWidgetInstance->IsInViewport())
+	if (SessionStatusWidgetInstance)
 	{
-		SessionStatusWidgetInstance->AddToViewport(10);
+		SessionStatusWidgetInstance->SetStatusMessage(Message, bShowCloseButton);
+		SessionStatusWidgetInstance->SetReturnFocusWidget(this);
+		if (!SessionStatusWidgetInstance->IsInViewport())
+		{
+			SessionStatusWidgetInstance->AddToViewport(10);
+		}
 	}
 }
 
@@ -417,7 +462,7 @@ void UPGMainMenuWidget::HideSessionStatusWidget(float Delay)
 		if (SessionStatusWidgetInstance && SessionStatusWidgetInstance->IsInViewport())
 		{
 			SessionStatusWidgetInstance->RemoveFromParent();
-			// SessionStatusWidgetInstance = nullptr;
+			SetKeyboardFocus();
 		}
 		GetWorld()->GetTimerManager().ClearTimer(SessionStatusWidgetTimerHandle);
 	}

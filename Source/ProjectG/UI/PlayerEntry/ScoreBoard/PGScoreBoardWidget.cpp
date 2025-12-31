@@ -13,33 +13,68 @@
 #include "Player/PGPlayerController.h"
 #include "Character/PGPlayerCharacter.h"
 
-/*
-* 로컬 플레이어에 ScoreBoardWidget 생성 이후 플레이어 목록 업데이트
-* GameState의 PlayerList 업데이트 시 전달되는 OnPlayerListUpdated 델리게이트에 업데이트 함수 바인드
-*/
-void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
-{
-	if (!InPC)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UPGScoreBoardWidget::BindPlayerEntry: InPlayerCharacter is NULL! Cannot bind delegate."));
-		return;
-	}
-	UE_LOG(LogTemp, Log, TEXT("UPGScoreBoardWidget::BindPlayerEntry: InPlayerCharacter is valid. Binding delegate."));
 
-	PCRef = InPC;
+void UPGScoreBoardWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	if (SpectateButton)
+	{
+		SpectateButton->OnClicked.AddDynamic(this, &UPGScoreBoardWidget::OnSpectateButtonClicked);
+	}
+
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		GIRef = GI;
+	}
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
+		GSRef = GS;
+		GS->OnPlayerArrayChanged.RemoveAll(this);
 		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
 
 		for (APlayerState* PS : GS->PlayerArray)
 		{
 			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 			{
+				PGPS->OnPlayerStateUpdated.RemoveAll(this);
 				PGPS->OnPlayerStateUpdated.AddDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
 			}
 		}
 	}
+}
+
+void UPGScoreBoardWidget::NativeDestruct()
+{
+	if (APGGameState* GS = GSRef.Get())
+	{
+		GS->OnPlayerArrayChanged.RemoveAll(this);
+
+		for (APlayerState* PS : GS->PlayerArray)
+		{
+			if (!IsValid(PS))
+			{
+				continue;
+			}
+
+			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+			{
+				PGPS->OnPlayerStateUpdated.RemoveAll(this);
+			}
+		}
+	}
+
+	Super::NativeDestruct();
+}
+
+/*
+* 로컬 플레이어에 ScoreBoardWidget 생성 이후 플레이어 목록 업데이트
+* GameState의 PlayerList 업데이트 시 전달되는 OnPlayerListUpdated 델리게이트에 업데이트 함수 바인드
+*/
+void UPGScoreBoardWidget::BindPlayerEntry()
+{
+	UE_LOG(LogTemp, Log, TEXT("UPGScoreBoardWidget::BindPlayerEntry: InPlayerCharacter is valid. Binding delegate."));
 
 	UpdatePlayerEntry();
 }
@@ -50,14 +85,9 @@ void UPGScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
 */
 void UPGScoreBoardWidget::UpdatePlayerEntry()
 {
-	if (!GetWorld())
-	{
-		return;
-	}
-
-	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GS || !GI)
+	UPGAdvancedFriendsGameInstance* GI = GIRef.Get();
+	APGGameState* GS = GSRef.Get();
+	if (!GI || !GS)
 	{
 		return;
 	}
@@ -85,31 +115,21 @@ void UPGScoreBoardWidget::UpdatePlayerEntry()
 	}
 }
 
-void UPGScoreBoardWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	if (SpectateButton)
-	{
-		SpectateButton->OnClicked.AddDynamic(this, &UPGScoreBoardWidget::OnSpectateButtonClicked);
-	}
-}
-
 /*
 * 관전 버튼 클릭 시 관전 모드 진입
 */
 void UPGScoreBoardWidget::OnSpectateButtonClicked()
 {
-	UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: Spectate button clicked"), *PCRef->GetName());
+	UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::OnSpectateButtonClicked: Spectate button clicked"), *GetOwningPlayer()->GetName());
 	
-	APGPlayerController* PGPC = Cast<APGPlayerController>(PCRef);
-	if (!PGPC)
+	APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer());
+	if (!PC)
 	{
 		return;
 	}
 
-	if (PGPC->IsLocalController())
+	if (PC->IsLocalController())
 	{
-		PGPC->StartSpectate();
+		PC->StartSpectate();
 	}
 }

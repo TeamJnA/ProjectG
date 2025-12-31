@@ -11,6 +11,7 @@
  * 
  */
 class USoundCue;
+class UBoxComponent;
 
 UENUM(BlueprintType)
 enum class E_LockPhase : uint8
@@ -64,7 +65,16 @@ private:
 	TObjectPtr<USceneComponent> Root;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMeshComponent> PillarMesh;
+	TObjectPtr<UStaticMeshComponent> PillarMesh0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> PillarMesh1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> PillarMesh2;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> PillarMesh3;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> IronDoorMesh;
@@ -83,6 +93,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> HandWheelLubricantPoint;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Trigger", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UBoxComponent> EscapeTriggerVolume;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMaterialInterface> HandWheelOiledMaterial;
@@ -218,4 +231,13 @@ private:
 
 	UFUNCTION()
 	void PlayChainDropSound();
+
+	// Escape
+	UFUNCTION()
+	void OnEscapeTriggerOverlap(UPrimitiveComponent* OverlappedComponent, 
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex, 
+		bool bFromSweep, 
+		const FHitResult& SweepResult);
 };

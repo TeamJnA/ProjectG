@@ -167,26 +167,26 @@ void APGLevelGenerator::SpawnStartRoom()
 
 	
 	// for test ~
-	APGItemActor* TestExitKey1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData3 = GI->GetItemDataByKey("ExitKey"))
+	APGItemActor* TestChainKey = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData3 = GI->GetItemDataByKey("ChainKey"))
 	{
-		TestExitKey1->InitWithData(ItemData3);
+		TestChainKey->InitWithData(ItemData3);
 	}
-	TestExitKey1->SetActorRelativeLocation(FVector(700.0f, 270.0f, 10.0f));
+	TestChainKey->SetActorRelativeLocation(FVector(700.0f, 270.0f, 30.0f));
 
-	APGItemActor* TestExitKey2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData4 = GI->GetItemDataByKey("ExitKey"))
+	APGItemActor* TestHandWheel = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData4 = GI->GetItemDataByKey("HandWheel"))
 	{
-		TestExitKey2->InitWithData(ItemData4);
+		TestHandWheel->InitWithData(ItemData4);
 	}
-	TestExitKey2->SetActorRelativeLocation(FVector(700.0f, 350.0f, 10.0f));
+	TestHandWheel->SetActorRelativeLocation(FVector(700.0f, 350.0f, 30.0f));
 
-	APGItemActor* TestExitKey3 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData5 = GI->GetItemDataByKey("ExitKey"))
+	APGItemActor* TestRustOil = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData5 = GI->GetItemDataByKey("RustOil"))
 	{
-		TestExitKey3->InitWithData(ItemData5);
+		TestRustOil->InitWithData(ItemData5);
 	}
-	TestExitKey3->SetActorRelativeLocation(FVector(700.0f, 430.0f, 10.0f));
+	TestRustOil->SetActorRelativeLocation(FVector(700.0f, 430.0f, 30.0f));
 
 	APGItemActor* TestReviveKit1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
 	if (UPGItemData* ItemData6 = GI->GetItemDataByKey("ReviveKit"))
@@ -491,7 +491,7 @@ void APGLevelGenerator::SpawnDoors()
 */
 void APGLevelGenerator::SpawnItems()
 {
-	const int32 ItemAmount = 24;
+	const int32 ItemAmount = 27;
 	SpawnSingleItem_Async(ItemAmount);
 }
 
@@ -520,15 +520,23 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 	}
 
 	FName ItemKeyToLoad;
-	if (ItemAmount >= 22)
+	if (ItemAmount > 25)
 	{
-		ItemKeyToLoad = FName("ExitKey");
+		ItemKeyToLoad = FName("ChainKey");
 	}
-	else if (ItemAmount >= 13)
+	else if (ItemAmount > 23)
+	{
+		ItemKeyToLoad = FName("HandWheel");
+	}
+	else if (ItemAmount > 21)
+	{
+		ItemKeyToLoad = FName("RustOil");
+	}
+	else if (ItemAmount > 13)
 	{
 		ItemKeyToLoad = FName("Brick");
 	}
-	else if (ItemAmount >= 5)
+	else if (ItemAmount > 5)
 	{
 		ItemKeyToLoad = FName("Key");
 	}

@@ -22,7 +22,8 @@ public:
 	void RefreshFriendList();
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
+	virtual void NativeDestruct() override;
 
 	UFUNCTION()
 	void OnFriendListUpdated();
@@ -34,5 +35,5 @@ protected:
 	TSubclassOf<UPGFriendEntryWidget> FriendEntryWidgetClass;
 
 private:
-	TObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
+	TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
 };

@@ -3,6 +3,7 @@
 
 #include "UI/PlayerEntry/ScoreBoard/PGFinalScoreBoardWidget.h"
 #include "UI/PlayerEntry/PGPlayerEntryWidget.h"
+#include "UI/Menu/PGConfirmWidget.h"
 #include "Components/VerticalBox.h"
 #include "Components/Button.h"
 
@@ -14,20 +15,59 @@
 
 #include "Kismet/GameplayStatics.h"
 
+
+void UPGFinalScoreBoardWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	if (ReturnToMainMenuButton)
+	{
+		ReturnToMainMenuButton->OnClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked);
+	}
+
+	if (ReturnToLobbyButton)
+	{
+		ReturnToLobbyButton->OnClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked);
+	}
+
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		GIRef = GI;
+	}
+
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		GSRef = GS;
+		GS->OnPlayerArrayChanged.RemoveAll(this);
+		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
+	}
+}
+
+void UPGFinalScoreBoardWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	bIsFocusable = true;
+	SetKeyboardFocus();
+}
+
+void UPGFinalScoreBoardWidget::NativeDestruct()
+{
+	if (APGGameState* GS = GSRef.Get())
+	{
+		GS->OnPlayerArrayChanged.RemoveAll(this);
+	}
+
+	Super::NativeDestruct();
+}
+
 /*
 * 로컬 플레이어에 FinalScoreBoardWidget 생성 이후 플레이어 목록 업데이트
 * GameState의 PlayerList 업데이트 시 전달되는 OnPlayerListUpdated 델리게이트에 업데이트 함수 바인드
 */
-void UPGFinalScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
+void UPGFinalScoreBoardWidget::BindPlayerEntry()
 {
-	if (!InPC)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UPGFinalScoreBoardWidget::BindPlayerEntry: InPC is NULL! Cannot bind delegate."));
-		return;
-	}
 	UE_LOG(LogTemp, Log, TEXT("UPGFinalScoreBoardWidget::BindPlayerEntry: InPC is valid. Binding delegate."));
-
-	PCRef = InPC;
 
 	UpdatePlayerEntry();
 }
@@ -38,14 +78,9 @@ void UPGFinalScoreBoardWidget::BindPlayerEntry(APlayerController* InPC)
 */
 void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 {
-	if (!GetWorld())
-	{
-		return;
-	}
-
-	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GS || !GI)
+	UPGAdvancedFriendsGameInstance* GI = GIRef.Get();
+	APGGameState* GS = GSRef.Get();
+	if (!GI || !GS)
 	{
 		return;
 	}
@@ -54,7 +89,7 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 
 	for (APlayerState* PS : GS->PlayerArray)
 	{
-		if (const APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
 			UPGPlayerEntryWidget* NewSlot = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
 			if (NewSlot)
@@ -73,28 +108,39 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 	}
 }
 
-void UPGFinalScoreBoardWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	if (ReturnToMainMenuButton)
-	{
-		ReturnToMainMenuButton->OnClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked);
-	}
-
-	if (ReturnToLobbyButton)
-	{
-		ReturnToLobbyButton->OnClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked);
-	}
-}
-
 /*
 * 메인 메뉴 버튼 -> 세션 종료 후 메인 메뉴로 이동
 */
 void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToMainMenuButtonClicked: Clicked"));
-	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+
+	if (!ConfirmWidgetClass)
+	{
+		return;
+	}
+
+	if (!ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
+	}
+
+	if (ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return To MainMenu?")));
+		ConfirmWidgetInstance->SetReturnFocusWidget(this);
+		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
+		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::ReturnToMainMenu);
+		if (!ConfirmWidgetInstance->IsInViewport())
+		{
+			ConfirmWidgetInstance->AddToViewport();
+		}
+	}
+}
+
+void UPGFinalScoreBoardWidget::ReturnToMainMenu()
+{
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
 		GI->LeaveSessionAndReturnToMainMenu();
 	}
@@ -112,19 +158,13 @@ void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()
 void UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: Clicked"));
-	if (PCRef)
+
+	if (APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer()))
 	{
-		if (APGPlayerController* PC = Cast<APGPlayerController>(PCRef))
-		{
-			PC->NotifyReadyToReturnLobby();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: PC Ref is not PG class"));
-		}
+		PC->NotifyReadyToReturnLobby();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: No PC Ref"));
+		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: PC Ref is not PG class"));
 	}
 }

@@ -23,7 +23,7 @@ public:
 	void SetupFriendEntry(const FText& InFriendName, UTexture2D* InAvatarTexture, bool bIsOnline, TSharedPtr<const FUniqueNetId> InFriendNetId);
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
 	UFUNCTION()
 	void OnInviteButtonClicked();
@@ -39,5 +39,4 @@ protected:
 
 private:
 	TSharedPtr<const FUniqueNetId> FriendNetId;
-	TObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
 };

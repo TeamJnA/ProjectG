@@ -32,7 +32,7 @@ public:
 	virtual float GetExplorationWaitTime() const override { return ExplorationWaitTime; }
 	// ~IPGAIExplorationInterface
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ghost|Animation")
 	TObjectPtr<UAnimMontage> AttackMontage;
 
 protected:
@@ -61,24 +61,6 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult) override;
 
-	UPROPERTY(Replicated)
-	TObjectPtr<APlayerState> TargetPlayerState;
-
-	UPROPERTY(ReplicatedUsing = OnRep_IsChasing)
-	bool bIsCurrentlyChasing = false;
-
-	UPROPERTY(ReplicatedUsing = OnRep_IsAttacking)
-	bool bIsCurrentlyAttacking = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float ExplorationRadius = 3000.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float ExplorationWaitTime = 5.0f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ghost Effect")
-	TObjectPtr<USphereComponent> LightExtinguishSphere;
-
 	UFUNCTION()
 	void OnLightExtinguishOverlapBegin(UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor, 
@@ -92,6 +74,35 @@ protected:
 
 	void TryBindLightEffectEvents();
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ghost|Effect")
+	TObjectPtr<USphereComponent> LightExtinguishSphere;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|Jumpscare")
+	TObjectPtr<UTexture2D> JumpscareTexture;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|Ability")
+	TSubclassOf<UGameplayEffect> SanityDecreaseEffectClass;
+
+	UPROPERTY(Replicated)
+	TObjectPtr<APlayerState> TargetPlayerState;
+
 	UPROPERTY()
 	TWeakObjectPtr<APlayerState> LocalPlayerStateCache;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ghost|AI", meta = (AllowPrivateAccess = "true"))
+	float ExplorationRadius = 3000.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ghost|AI", meta = (AllowPrivateAccess = "true"))
+	float ExplorationWaitTime = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|Jumpscare")
+	float JumpscareCooldown = 5.0f;
+
+	float LastJumpscareTime = -1.0f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsChasing)
+	bool bIsCurrentlyChasing = false;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsAttacking)
+	bool bIsCurrentlyAttacking = false;
 };

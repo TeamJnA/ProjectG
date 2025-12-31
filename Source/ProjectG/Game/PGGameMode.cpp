@@ -190,7 +190,7 @@ void APGGameMode::SpawnAllPlayers()
 			return;
 		}
 
-		const FTransform SpawnTransform(FRotator::ZeroRotator, FVector(920.0f, 0.0f + SpawnOffset, 100.0f));
+		const FTransform SpawnTransform(FRotator::ZeroRotator, FVector(2800.0f, 150.0f + SpawnOffset, -305.0f));
 		APGPlayerCharacter* NewPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform);
 		if (NewPawn)
 		{

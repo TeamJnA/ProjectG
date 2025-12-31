@@ -6,9 +6,9 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
 
-void UPGInventoryWidget::NativeConstruct()
+void UPGInventoryWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	// add inventory slots to InventorySlots array
 	InventorySlots.Add(InventorySlot0);
@@ -16,8 +16,22 @@ void UPGInventoryWidget::NativeConstruct()
 	InventorySlots.Add(InventorySlot2);
 	InventorySlots.Add(InventorySlot3);
 	InventorySlots.Add(InventorySlot4);
+}
 
+void UPGInventoryWidget::NativeConstruct()
+{
 	InventorySlot0->HighlightSlot();
+}
+
+void UPGInventoryWidget::NativeDestruct()
+{
+	if (UPGInventoryComponent* Inventory = InventoryRef.Get())
+	{
+		Inventory->OnInventoryItemUpdate.RemoveAll(this);
+		Inventory->OnCurrentSlotIndexChanged.RemoveAll(this);
+	}
+
+	Super::NativeDestruct();
 }
 
 /*
@@ -31,13 +45,15 @@ void UPGInventoryWidget::BindInventorySlots(APGPlayerCharacter* PlayerCharacter)
 		return;
 	}
 
-	InventoryRef = PlayerCharacter->GetInventoryComponent();
-	if (InventoryRef)
+	if (UPGInventoryComponent* Inventory = PlayerCharacter->GetInventoryComponent())
 	{
-		InventoryRef->OnInventoryItemUpdate.AddDynamic(this, &UPGInventoryWidget::HandleOnInventoryUpdate);
-		InventoryRef->OnCurrentSlotIndexChanged.AddDynamic(this, &UPGInventoryWidget::HandleOnCurrentSlotIndexChanged);
+		InventoryRef = Inventory;
+		
+		Inventory->OnInventoryItemUpdate.RemoveAll(this);
+		Inventory->OnInventoryItemUpdate.AddDynamic(this, &UPGInventoryWidget::HandleOnInventoryUpdate);
 
-		UE_LOG(LogTemp, Log, TEXT("UPGInventoryWidget::BindInventorySlots: Inventory component delegate binding complete"));
+		Inventory->OnCurrentSlotIndexChanged.RemoveAll(this);
+		Inventory->OnCurrentSlotIndexChanged.AddDynamic(this, &UPGInventoryWidget::HandleOnCurrentSlotIndexChanged);
 	}
 	else
 	{
@@ -53,11 +69,6 @@ void UPGInventoryWidget::BindInventorySlots(APGPlayerCharacter* PlayerCharacter)
 void UPGInventoryWidget::HandleOnInventoryUpdate(const TArray<FInventoryItem>& InventoryItems)
 {
 	UE_LOG(LogTemp, Log, TEXT("UPGInventoryWidget::HandleOnInventoryUpdate: Update Inventory slot"));
-	//InventorySlot0->UpdateSlot(InventoryItems[0].ItemData);
-	//InventorySlot1->UpdateSlot(InventoryItems[1].ItemData);
-	//InventorySlot2->UpdateSlot(InventoryItems[2].ItemData);
-	//InventorySlot3->UpdateSlot(InventoryItems[3].ItemData);
-	//InventorySlot4->UpdateSlot(InventoryItems[4].ItemData);
 
 	for (int32 i = 0; i < InventorySlots.Num(); ++i)
 	{

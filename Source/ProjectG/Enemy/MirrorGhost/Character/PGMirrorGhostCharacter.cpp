@@ -3,6 +3,7 @@
 
 #include "Enemy/MirrorGhost/Character/PGMirrorGhostCharacter.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Player/PGPlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbilitySystemComponent.h"
@@ -38,8 +39,11 @@ bool APGMirrorGhostCharacter::IsNetRelevantFor(const AActor* RealViewer, const A
 void APGMirrorGhostCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	UE_LOG(LogTemp, Log, TEXT("[MirrorGhost] BeginPlay"));
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	//UpdateVisibility();
 }
 
 void APGMirrorGhostCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -67,6 +71,24 @@ void APGMirrorGhostCharacter::SetTargetPlayer(APGPlayerCharacter* InTargetPlayer
 		UE_LOG(LogTemp, Log, TEXT("[MirrorGhost] complete"));
 		SetOwner(InTargetPlayer->GetController());
 	}
+
+	UpdateVisibility();
+}
+
+void APGMirrorGhostCharacter::UpdateVisibility()
+{
+	bool bShouldBeVisible = true;
+
+	if (HasAuthority())
+	{
+		const APlayerController* HostPC = GetWorld()->GetFirstPlayerController();
+		if (HostPC && TargetPlayer && HostPC != TargetPlayer->GetController())
+		{
+			bShouldBeVisible = false;
+		}
+	}
+
+	GetMesh()->SetVisibility(bShouldBeVisible);
 }
 
 void APGMirrorGhostCharacter::UpdateMovement(float DeltaTime)
@@ -131,10 +153,16 @@ bool APGMirrorGhostCharacter::IsPlayerLooking() const
 
 void APGMirrorGhostCharacter::JumpscareAndDestroy()
 {
-	if (!AttackEffectClass)
+	if (!TargetPlayer || !AttackEffectClass)
 	{
 		Destroy();
 		return;
+	}
+
+	APGPlayerController* TargetPC = Cast<APGPlayerController>(TargetPlayer->GetController());
+	if (TargetPC)
+	{
+		TargetPC->Client_DisplayJumpscare(MirrorGhostJumpscareTexture);
 	}
 
 	UAbilitySystemComponent* TargetASC = TargetPlayer->GetAbilitySystemComponent();

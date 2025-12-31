@@ -10,6 +10,7 @@ class UVerticalBox;
 class UPGPlayerEntryWidget;
 class APGSpectatorPawn;
 class UPGAdvancedFriendsGameInstance;
+class APGGameState;
 
 /**
  * 
@@ -23,6 +24,9 @@ public:
 	void Init();
 
 protected:	
+	virtual void NativeOnInitialized() override;
+	virtual void NativeDestruct() override;
+
 	UFUNCTION()
 	void UpdatePlayerList();
 
@@ -39,6 +43,7 @@ protected:
 	TSubclassOf<UPGPlayerEntryWidget> PlayerEntryWidgetClass;
 
 private:
-	TObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
-
+	TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
+	TWeakObjectPtr<APGGameState> GSRef;
+	TWeakObjectPtr<APGSpectatorPawn> SpectatorRef;
 };

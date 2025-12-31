@@ -204,6 +204,7 @@ void APGMirrorRoom::OnEntryTriggerEndOverlap(UPrimitiveComponent* OverlappedComp
 	}
 }
 
+// ´ÝÈ÷´Â ºÎºÐ
 void APGMirrorRoom::StartGimmick()
 {
 	if (bIsLocked || bIsSolved) 

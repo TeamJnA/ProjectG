@@ -20,6 +20,7 @@ class UPGSettingMenuWidget;
 class UWidgetSwitcher;
 
 class FOnlineSessionSearchResult;
+class UPGAdvancedFriendsGameInstance;
 
 /**
  * 
@@ -32,7 +33,7 @@ class PROJECTG_API UPGMainMenuWidget : public UUserWidget
 public:
 	void AddSessionSlot(const FOnlineSessionSearchResult& SearchResult, int32 Index);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	void ClearSessionList();
 
 	UPROPERTY(meta = (BindWidget))
@@ -46,9 +47,6 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> JoinButton;
-
-	UPROPERTY()
-	TObjectPtr<APlayerController> CachedPC;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGSessionSlotWidget> SessionSlotWidgetClass;
@@ -87,8 +85,10 @@ public:
 	TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
 
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	UFUNCTION()
 	void OnHostButtonClicked();
@@ -143,4 +143,7 @@ protected:
 	void HideSessionStatusWidget(float Delay = 0.0f);
 
 	FTimerHandle SessionStatusWidgetTimerHandle;
+
+private:
+	TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
 };

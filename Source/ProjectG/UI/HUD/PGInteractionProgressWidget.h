@@ -15,7 +15,7 @@ class PROJECTG_API UPGInteractionProgressWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void SetProgress(float _Progress);
+	void SetProgress(float InProgress);
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")

@@ -7,13 +7,20 @@
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "OnlineSessionSettings.h"
 
+void UPGSessionSlotWidget::NativeOnInitialized()
+{
+	if (JoinButton)
+	{
+		JoinButton->OnClicked.AddDynamic(this, &UPGSessionSlotWidget::OnJoinClicked);
+	}
+}
+
 /*
 * 技记 浇吩 Setup 备泅何
 */
 void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult, int32 SessionIndex, UPGAdvancedFriendsGameInstance* GI)
 {
 	Index = SessionIndex;
-	GameInstanceRef = GI;
 
 	if (SessionNameText)
 	{
@@ -46,11 +53,6 @@ void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult,
 		FText Ping = FText::FromString(FString::Printf(TEXT("%d ms"), SearchResult.PingInMs));
 		PingText->SetText(Ping);
 	}
-
-	if (JoinButton)
-	{
-		JoinButton->OnClicked.AddDynamic(this, &UPGSessionSlotWidget::OnJoinClicked);
-	}
 }
 
 /*
@@ -58,9 +60,12 @@ void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult,
 */
 void UPGSessionSlotWidget::OnJoinClicked()
 {
-	if (GameInstanceRef)
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
 	{
-		UE_LOG(LogTemp, Log, TEXT("SessionSlotWidget::OnJoinClicked: Session Slot Join Button Clicked for index %d."), Index);
-		GameInstanceRef->JoinFoundSession(Index);
+		return;
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("SessionSlotWidget::OnJoinClicked: Session Slot Join Button Clicked for index %d."), Index);
+	GI->JoinFoundSession(Index);
 }

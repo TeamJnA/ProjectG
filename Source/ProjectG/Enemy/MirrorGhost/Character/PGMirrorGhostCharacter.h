@@ -29,12 +29,17 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	void UpdateVisibility();
+
 	void UpdateMovement(float DeltaTime);
 	bool IsPlayerLooking() const;
 	void JumpscareAndDestroy();
 
 	UPROPERTY()
 	TObjectPtr<APGPlayerCharacter> TargetPlayer;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> MirrorGhostJumpscareTexture;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability")
 	TSubclassOf<UGameplayEffect> AttackEffectClass;

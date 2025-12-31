@@ -10,29 +10,89 @@
 #include "Player/PGPlayerState.h"
 #include "Character/PGSpectatorPawn.h"
 
-void UPGSpectatorWidget::Init()
+void UPGSpectatorWidget::NativeOnInitialized()
 {
-	GIRef = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	Super::NativeOnInitialized();
+
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
-		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
+		GIRef = GI;
 	}
 
-	APGSpectatorPawn* Spectator = GetOwningPlayerPawn<APGSpectatorPawn>();
-	if (!Spectator)
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SpectatorWidget::Init: No valid spectator pawn"));
+		GSRef = GS;
+		GS->OnPlayerArrayChanged.RemoveAll(this);
+		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
+
+		for (APlayerState* PS : GS->PlayerArray)
+		{
+			if (PS == GetOwningPlayerState())
+			{
+				continue;
+			}
+
+			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+			{
+				PGPS->OnPlayerStateUpdated.RemoveAll(this);
+				PGPS->OnPlayerStateUpdated.AddDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
+			}
+		}
+	}
+
+	if (APGSpectatorPawn* Spectator = GetOwningPlayerPawn<APGSpectatorPawn>())
+	{
+		SpectatorRef = Spectator;
+		Spectator->OnSpectateTargetChanged.RemoveAll(this);
+		Spectator->OnSpectateTargetChanged.AddDynamic(this, &UPGSpectatorWidget::HandleSpectateTargetChanged);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SpectatorWidget::NativeOnInitialized: No valid spectator pawn"));
 		return;
 	}
-	Spectator->OnSpectateTargetChanged.AddUniqueDynamic(this, &UPGSpectatorWidget::HandleSpectateTargetChanged);
+}
+
+void UPGSpectatorWidget::NativeDestruct()
+{
+	if (APGGameState* GS = GSRef.Get())
+	{
+		GS->OnPlayerArrayChanged.RemoveAll(this);
+
+		for (APlayerState* PS : GS->PlayerArray)
+		{
+			if (!IsValid(PS))
+			{
+				continue;
+			}
+
+			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+			{
+				PGPS->OnPlayerStateUpdated.RemoveAll(this);
+			}
+		}
+	}
+
+	if (APGSpectatorPawn* Spectator = SpectatorRef.Get())
+	{
+		Spectator->OnSpectateTargetChanged.RemoveAll(this);
+	}
+
+	Super::NativeDestruct();
+}
+
+void UPGSpectatorWidget::Init()
+{
+	UE_LOG(LogTemp, Warning, TEXT("SpectatorWidget::Init"));
 
 	UpdatePlayerList();
 }
 
 void UPGSpectatorWidget::UpdatePlayerList()
 {
-	const APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	if (!GS || !PlayerListContainer || !PlayerEntryWidgetClass)
+	UPGAdvancedFriendsGameInstance* GI = GIRef.Get();
+	APGGameState* GS = GSRef.Get();
+	if (!GI || !GS || !PlayerListContainer || !PlayerEntryWidgetClass)
 	{
 		return;
 	}
@@ -49,19 +109,15 @@ void UPGSpectatorWidget::UpdatePlayerList()
 
 		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			if (!PGPS->OnPlayerStateUpdated.IsAlreadyBound(this, &UPGSpectatorWidget::UpdatePlayerList))
-			{
-				PGPS->OnPlayerStateUpdated.AddDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
-			}
-
 			UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);
 			if (NewPlayerEntry)
 			{
 				UTexture2D* AvatarTexture = nullptr;
 				if (PGPS->GetUniqueId().IsValid())
 				{
-					AvatarTexture = GIRef->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
+					AvatarTexture = GI->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
 				}
+
 				NewPlayerEntry->SetupEntry(PGPS, AvatarTexture, EPlayerEntryContext::Spectator);
 				PlayerListContainer->AddChildToVerticalBox(NewPlayerEntry);
 				PlayerEntries.Add(NewPlayerEntry);
@@ -69,30 +125,30 @@ void UPGSpectatorWidget::UpdatePlayerList()
 		}
 	}
 
-	const APlayerController* PC = GetOwningPlayer();
-	if (PC)
+	APGSpectatorPawn* Spectator = SpectatorRef.Get();
+	if (!Spectator)
 	{
-		if (const APGSpectatorPawn* Spectator = PC->GetPawn<APGSpectatorPawn>())
-		{
-			HandleSpectateTargetChanged(Spectator->GetSpectateTargetPlayerState());
-		}
+		return;
 	}
+	HandleSpectateTargetChanged(Spectator->GetSpectateTargetPlayerState());
 }
 
 void UPGSpectatorWidget::HandleSpectateTargetChanged(const APlayerState* NewPlayerState)
 {
 	for (UPGPlayerEntryWidget* Entry : PlayerEntries)
 	{
-		if (Entry)
+		if (!Entry)
 		{
-			if (Entry->GetPlayerState() == NewPlayerState)
-			{
-				Entry->HighlightEntry();
-			}
-			else
-			{
-				Entry->UnhighlightEntry();
-			}
+			continue;
+		}
+
+		if (Entry->GetPlayerState() == NewPlayerState)
+		{
+			Entry->HighlightEntry();
+		}
+		else
+		{
+			Entry->UnhighlightEntry();
 		}
 	}
 }

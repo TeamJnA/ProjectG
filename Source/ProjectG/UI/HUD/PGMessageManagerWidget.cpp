@@ -20,8 +20,9 @@ void UPGMessageManagerWidget::BindMessageEntry(APGPlayerCharacter* PlayerCharact
 	}
 	UE_LOG(LogTemp, Log, TEXT("UPGMessageManagerWidget::BindMessageEntry: InPlayerCharacter is valid. Binding delegate."));
 
-	PlayerRef = PlayerCharacter;
-	PlayerRef->OnStareTargetUpdate.AddDynamic(this, &UPGMessageManagerWidget::HandleOnStareTargetUpdate);
+	CharacterRef = PlayerCharacter;
+	PlayerCharacter->OnStareTargetUpdate.RemoveAll(this);
+	PlayerCharacter->OnStareTargetUpdate.AddDynamic(this, &UPGMessageManagerWidget::HandleOnStareTargetUpdate);
 }
 
 void UPGMessageManagerWidget::ShowFailureMessage(const FText& Message, float Duration)
@@ -30,6 +31,16 @@ void UPGMessageManagerWidget::ShowFailureMessage(const FText& Message, float Dur
 	{
 		FailureMessageEntry->SetMessage(Message, Duration);
 	}
+}
+
+void UPGMessageManagerWidget::NativeDestruct()
+{
+	if (APGPlayerCharacter* Character = CharacterRef.Get())
+	{
+		Character->OnStareTargetUpdate.RemoveAll(this);
+	}
+
+	Super::NativeDestruct();
 }
 
 void UPGMessageManagerWidget::HandleOnStareTargetUpdate(AActor* TargetActor)

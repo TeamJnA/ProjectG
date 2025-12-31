@@ -280,15 +280,14 @@ protected:
 
 // ------------ HeadLight --------------------
 public:
-	void MC_SetHeadlightState(bool _bIsFlashlightOn);
+	void Multicast_SetHeadlightState(bool InbIsFlashlightOn);
+	FORCEINLINE FName GetHeadlightSoundName() const { return HeadlightSoundName; }
 
 protected:
 	void ToggleHeadLight();
-	
-	UFUNCTION(Client, Reliable)
-	void Client_SetHeadlightState(bool bIsVisible);
 
-	bool bIsHeadlightForcedOn = false;
+	UPROPERTY(EditDefaultsOnly, Category = "Sound | Headlight")
+	FName HeadlightSoundName = FName("SFX_Headlight");
 
 ///
 ///********* Item system ******************

@@ -6,9 +6,9 @@
 #include "Components/Button.h"
 #include "Components/Throbber.h"
 
-void UPGSessionStatusWidget::NativeConstruct()
+void UPGSessionStatusWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	if (CloseButton)
 	{
@@ -16,8 +16,29 @@ void UPGSessionStatusWidget::NativeConstruct()
 	}
 }
 
+void UPGSessionStatusWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	bIsFocusable = true;
+	SetKeyboardFocus();
+}
+
+FReply UPGSessionStatusWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (bClosable && InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		OnCloseButtonClicked();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
 void UPGSessionStatusWidget::SetStatusMessage(const FText& Message, bool bShowCloseButton)
 {
+	bClosable = bShowCloseButton;
+
 	if (StatusText)
 	{
 		StatusText->SetText(Message);
@@ -36,5 +57,9 @@ void UPGSessionStatusWidget::SetStatusMessage(const FText& Message, bool bShowCl
 
 void UPGSessionStatusWidget::OnCloseButtonClicked()
 {
+	if (UUserWidget* ParentWidget = ReturnFocusWidget.Get())
+	{
+		ParentWidget->SetKeyboardFocus();
+	}
 	RemoveFromParent();
 }

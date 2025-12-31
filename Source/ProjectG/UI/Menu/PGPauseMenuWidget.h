@@ -20,11 +20,10 @@ class PROJECTG_API UPGPauseMenuWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
-public:
-	void Init(APlayerController* PC);
-
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	UFUNCTION()
 	void OnResumeButtonClicked();
@@ -39,10 +38,22 @@ protected:
 	void OnMainMenuButtonClicked();
 
 	UFUNCTION()
+	void ReturnToMainMenu();
+
+	UFUNCTION()
 	void OnDesktopButtonClicked();
 
 	UFUNCTION()
+	void ReturnToDesktop();
+
+	UFUNCTION()
 	void OnBackButtonClicked();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UPGConfirmWidget> ConfirmWidgetInstance;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
@@ -70,8 +81,4 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> BackButton_InviteMenuCanvas;
-
-private:
-	TObjectPtr<APlayerController> OwningPC;
-
 };

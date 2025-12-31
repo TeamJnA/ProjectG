@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "Character/Ability/Task/AT_PGWaitGameplayTagReAdded.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 
 UGA_Headlight::UGA_Headlight()
 {
@@ -30,7 +31,15 @@ void UGA_Headlight::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	{
 		if (APGPlayerCharacter* Character = Cast<APGPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()))
 		{
-			Character->MC_SetHeadlightState(true);
+			Character->Multicast_SetHeadlightState(true);
+			
+			if (UPGSoundManagerComponent* SoundComp = Character->GetSoundManagerComponent())
+			{
+				const FName SoundName = Character->GetHeadlightSoundName();
+				const FVector Location = Character->GetActorLocation();
+
+				SoundComp->TriggerSoundForAllPlayers(SoundName, Location);
+			}
 		}
 	}
 }
@@ -41,7 +50,15 @@ void UGA_Headlight::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 	{
 		if (APGPlayerCharacter* Character = Cast<APGPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()))
 		{
-			Character->MC_SetHeadlightState(false);
+			Character->Multicast_SetHeadlightState(false);
+
+			if (UPGSoundManagerComponent* SoundComp = Character->GetSoundManagerComponent())
+			{
+				const FName SoundName = Character->GetHeadlightSoundName();
+				const FVector Location = Character->GetActorLocation();
+
+				SoundComp->TriggerSoundForAllPlayers(SoundName, Location);
+			}
 		}
 	}
 

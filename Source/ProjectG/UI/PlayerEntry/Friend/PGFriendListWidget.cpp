@@ -8,15 +8,25 @@
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
 
-void UPGFriendListWidget::NativeConstruct()
+void UPGFriendListWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
-	GIRef = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (GIRef)
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
-		GIRef->OnFriendListUpdated.AddDynamic(this, &UPGFriendListWidget::OnFriendListUpdated);
+		GIRef = GI;
+		GI->OnFriendListUpdated.AddDynamic(this, &UPGFriendListWidget::OnFriendListUpdated);
 	}
+}
+
+void UPGFriendListWidget::NativeDestruct()
+{
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
+	{
+		GI->OnFriendListUpdated.RemoveAll(this);
+	}
+
+	Super::NativeDestruct();
 }
 
 void UPGFriendListWidget::RefreshFriendList()
@@ -26,33 +36,40 @@ void UPGFriendListWidget::RefreshFriendList()
 		FriendListContainer->ClearChildren();
 	}
 
-	if (GIRef)
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
-		GIRef->ReadSteamFriends();
+		GI->ReadSteamFriends();
 	}
 }
 
 void UPGFriendListWidget::OnFriendListUpdated()
 {
-	if (GIRef && FriendListContainer && FriendEntryWidgetClass)
+	if (!FriendListContainer || !FriendEntryWidgetClass)
 	{
-		FriendListContainer->ClearChildren();
+		return;
+	}
 
-		TArray<FSteamFriendInfo> Friends = GIRef->CachedFriends;
+	UPGAdvancedFriendsGameInstance* GI = GIRef.Get();
+	if (!GI)
+	{
+		return;
+	}
 
-		Friends.Sort([](const FSteamFriendInfo& A, const FSteamFriendInfo& B)
+	FriendListContainer->ClearChildren();
+
+	TArray<FSteamFriendInfo> Friends = GI->CachedFriends;
+	Friends.Sort([](const FSteamFriendInfo& A, const FSteamFriendInfo& B)
+	{
+		return A.bIsOnline > B.bIsOnline;
+	});
+
+	for (const FSteamFriendInfo& FriendInfo : Friends)
+	{
+		UPGFriendEntryWidget* NewEntry = CreateWidget<UPGFriendEntryWidget>(this, FriendEntryWidgetClass);
+		if (NewEntry)
 		{
-			return A.bIsOnline > B.bIsOnline;
-		});
-
-		for (const FSteamFriendInfo& FriendInfo : Friends)
-		{
-			UPGFriendEntryWidget* NewEntry = CreateWidget<UPGFriendEntryWidget>(this, FriendEntryWidgetClass);
-			if (NewEntry)
-			{
-				NewEntry->SetupFriendEntry(FText::FromString(FriendInfo.DisplayName), FriendInfo.Avatar, FriendInfo.bIsOnline, FriendInfo.NetId);
-				FriendListContainer->AddChildToVerticalBox(NewEntry);
-			}
+			NewEntry->SetupFriendEntry(FText::FromString(FriendInfo.DisplayName), FriendInfo.Avatar, FriendInfo.bIsOnline, FriendInfo.NetId);
+			FriendListContainer->AddChildToVerticalBox(NewEntry);
 		}
 	}
 }

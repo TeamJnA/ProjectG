@@ -22,6 +22,8 @@ public:
 	void ShowFailureMessage(const FText& Message, float Duration);
 	
 protected:
+	virtual void NativeDestruct() override;
+
 	UFUNCTION()
 	void HandleOnStareTargetUpdate(AActor* TargetActor);
 		
@@ -31,5 +33,6 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UPGMessageEntryWidget> FailureMessageEntry;
 
-	TObjectPtr<APGPlayerCharacter> PlayerRef;
+private:
+	TWeakObjectPtr<APGPlayerCharacter> CharacterRef;
 };

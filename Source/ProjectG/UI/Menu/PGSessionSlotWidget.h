@@ -28,6 +28,8 @@ public:
 	TObjectPtr<UButton> JoinButton;
 
 protected:
+	virtual void NativeOnInitialized() override;
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> SessionNameText;
 
@@ -42,5 +44,4 @@ protected:
 
 private:
 	int32 Index;
-	TObjectPtr<UPGAdvancedFriendsGameInstance> GameInstanceRef;
 };

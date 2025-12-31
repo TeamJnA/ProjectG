@@ -128,6 +128,17 @@ void APGPlayerController::OnRep_Pawn()
 	}
 }
 
+void APGPlayerController::Client_DisplayJumpscare_Implementation(UTexture2D* JumpscareTexture)
+{
+	if (IsLocalController())
+	{
+		if (APGHUD* HUD = GetHUD<APGHUD>())
+		{
+			HUD->DisplayJumpscare(JumpscareTexture);
+		}
+	}
+}
+
 void APGPlayerController::ReplaceInputMappingContext(const APawn* PawnType)
 {
 	if (!PawnType)
@@ -339,7 +350,7 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation()
 		OnEscapeMovementFinished();
 		return;
 	}
-	const FVector Destination = FVector(2060.0f, 310.0f, 0.0f);
+	const FVector Destination = FVector(3380.0f, 320.0f, -320.0f);
 
 	PlayerCharacter->DisableInput(this);
 	PlayerCharacter->OnAutomatedMovementCompleted.AddUniqueDynamic(this, &APGPlayerController::OnEscapeMovementFinished);

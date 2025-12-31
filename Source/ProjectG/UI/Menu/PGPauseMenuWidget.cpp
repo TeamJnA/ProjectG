@@ -12,14 +12,9 @@
 
 #include "Kismet/GameplayStatics.h"
 
-void UPGPauseMenuWidget::Init(APlayerController* PC)
+void UPGPauseMenuWidget::NativeOnInitialized()
 {
-	OwningPC = PC;	
-}
-
-void UPGPauseMenuWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	if (ResumeButton)
 	{
@@ -29,12 +24,6 @@ void UPGPauseMenuWidget::NativeConstruct()
 	if (InviteFriendButton)
 	{
 		InviteFriendButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnInviteFriendButtonClicked);
-
-		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-		if (GS && GS->GetCurrentGameState() != EGameState::Lobby)
-		{
-			InviteFriendButton->SetVisibility(ESlateVisibility::Collapsed);
-		}
 	}
 
 	if (OptionButton)
@@ -55,7 +44,6 @@ void UPGPauseMenuWidget::NativeConstruct()
 	if (BackButton_OptionMenuCanvas)
 	{
 		BackButton_OptionMenuCanvas->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnBackButtonClicked);
-
 	}
 
 	if (BackButton_InviteMenuCanvas)
@@ -64,16 +52,53 @@ void UPGPauseMenuWidget::NativeConstruct()
 	}
 }
 
+void UPGPauseMenuWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	bIsFocusable = true;
+	SetKeyboardFocus();
+
+	if (InviteFriendButton)
+	{
+		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+		if (GS && GS->GetCurrentGameState() != EGameState::Lobby)
+		{
+			InviteFriendButton->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+}
+
+FReply UPGPauseMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		const int32 CurrentIndex = WidgetSwitcher->GetActiveWidgetIndex();
+		if (CurrentIndex == 0)
+		{
+			OnResumeButtonClicked();
+		}
+		else
+		{
+			OnBackButtonClicked();
+		}
+
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
 /*
 * Resume game
 */
 void UPGPauseMenuWidget::OnResumeButtonClicked()
 {
-	if (OwningPC)
+	if (GetOwningPlayer())
 	{
-		OwningPC->bShowMouseCursor = false;
-		OwningPC->SetInputMode(FInputModeGameOnly());
-
+		GetOwningPlayer()->bShowMouseCursor = false;
+		GetOwningPlayer()->SetInputMode(FInputModeGameOnly());
+		
 		RemoveFromParent();
 	}
 }
@@ -105,14 +130,39 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::OnMainMenuButtonClicked: Clicked"));
 
-	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (!ConfirmWidgetClass)
+	{
+		return;
+	}
+
+	if (!ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
+	}
+
+	if (ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return To MainMenu?")));
+		ConfirmWidgetInstance->SetReturnFocusWidget(this);
+		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
+		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToMainMenu);
+		if (!ConfirmWidgetInstance->IsInViewport())
+		{
+			ConfirmWidgetInstance->AddToViewport();
+		}
+	}
+}
+
+void UPGPauseMenuWidget::ReturnToMainMenu()
+{
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (GI)
 	{
 		GI->LeaveSessionAndReturnToMainMenu();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::OnMainMenuButtonClicked: Failed to get GI"));
+		UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::ReturnToMainMenu: Failed to get GI"));
 	}
 }
 
@@ -123,8 +173,33 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::OnDesktopButtonClicked: Clicked"));
 
+	if (!ConfirmWidgetClass)
+	{
+		return;
+	}
+
+	if (!ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
+	}
+
+	if (ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Exit Game?")));
+		ConfirmWidgetInstance->SetReturnFocusWidget(this);
+		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
+		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToDesktop);
+		if (!ConfirmWidgetInstance->IsInViewport())
+		{
+			ConfirmWidgetInstance->AddToViewport();
+		}
+	}
+}
+
+void UPGPauseMenuWidget::ReturnToDesktop()
+{
 	// Leave session
-	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(UGameplayStatics::GetGameInstance(this));
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (GI)
 	{
 		GI->LeaveSessionAndReturnToMainMenu();
@@ -135,9 +210,9 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 	}
 
 	// Exit game
-	if (OwningPC)
+	if (GetOwningPlayer())
 	{
-		UKismetSystemLibrary::QuitGame(this, OwningPC, EQuitPreference::Quit, true);
+		UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, true);
 	}
 }
 

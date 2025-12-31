@@ -20,9 +20,12 @@ class PROJECTG_API UPGSessionStatusWidget : public UUserWidget
 	
 public:
 	void SetStatusMessage(const FText& Message, bool bShowCloseButton = true);
+	void SetReturnFocusWidget(UUserWidget* InWidget) { ReturnFocusWidget = InWidget; }
 
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> StatusText;
@@ -35,4 +38,10 @@ protected:
 
 	UFUNCTION()
 	void OnCloseButtonClicked();
+
+private:
+	UPROPERTY()
+	TWeakObjectPtr<UUserWidget> ReturnFocusWidget;
+
+	bool bClosable = false;
 };

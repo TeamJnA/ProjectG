@@ -7,9 +7,10 @@
 #include "PGScoreBoardWidget.generated.h"
 
 class UPGPlayerEntryWidget;
-class APGPlayerCharacter;
 class UVerticalBox;
 class UButton;
+class UPGAdvancedFriendsGameInstance;
+class APGGameState;
 
 /**
  * 
@@ -19,15 +20,14 @@ class PROJECTG_API UPGScoreBoardWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
-	void BindPlayerEntry(APlayerController* _PC);
+	void BindPlayerEntry();
 
 	UFUNCTION()
 	void UpdatePlayerEntry();
 
 protected:
-	virtual void NativeConstruct() override;
-
-	TObjectPtr<APlayerController> PCRef;
+	virtual void NativeOnInitialized() override;
+	virtual void NativeDestruct() override;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UVerticalBox> PlayerContainer;
@@ -40,4 +40,8 @@ protected:
 
 	UFUNCTION()
 	void OnSpectateButtonClicked();
+
+private:
+	TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
+	TWeakObjectPtr<APGGameState> GSRef;
 };
