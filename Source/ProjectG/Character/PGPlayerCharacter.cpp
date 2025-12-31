@@ -33,6 +33,7 @@
 
 // Interface
 #include "Interface/InteractableActorInterface.h"
+#include "Interface/CharacterAnimationInterface.h"
 #include "Interact/Ability/GA_Interact_Revive.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -876,15 +877,22 @@ void APGPlayerCharacter::RemoveItemFromInventory()
 void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 {
 	
-	TObjectPtr<UPGItemData> ItemMeshToAttach = InventoryComponent->GetCurrentItemMesh();
-	if (!ItemMeshToAttach)
+	TObjectPtr<UPGItemData> ItemDataToAttach = InventoryComponent->GetCurrentItemMesh();
+	if (!ItemDataToAttach)
 	{
 		EquippedItemMesh->SetStaticMesh(nullptr);
 		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
 		return;
 	}
-	EquippedItemMesh->SetRelativeTransform(ItemMeshToAttach->ItemSocketOffset);
-	EquippedItemMesh->SetStaticMesh(ItemMeshToAttach->ItemMesh);
+	EquippedItemMesh->SetRelativeTransform(ItemDataToAttach->ItemSocketOffset);
+	EquippedItemMesh->SetStaticMesh(ItemDataToAttach->ItemMesh);
+
+	// Item에 따른 손 모양 전환
+	if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
+	{
+		AnimInterface->SetHandPose(ItemDataToAttach->HandPoseType);
+	}
+
 }
 
 void APGPlayerCharacter::SetRightHandIK()

@@ -353,6 +353,8 @@ void UPGInventoryComponent::Server_CheckHeldItemChanged_Implementation()
 	{
 		bPrevHeldItemFlag = false;
 		OnItemHeldStateChanged.Broadcast(false);
+
+		UE_LOG(LogTemp, Log, TEXT("BroadCast  %s"), GetOwner()->HasAuthority() ? TEXT("True") : TEXT("False"));
 	}
 	else if ( !bPrevHeldItemFlag && InventoryItems[CurrentInventoryIndex].ItemData)
 	{

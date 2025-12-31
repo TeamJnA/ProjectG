@@ -6,6 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
 #include "Abilities/GameplayAbility.h"
+#include "Type/CharacterTypes.h"
 #include "PGItemData.generated.h"
 
 /**
@@ -35,4 +36,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	FTransform ItemSocketOffset;
+
+	UPROPERTY(EditDefaultsOnly)
+	EHandPoseType HandPoseType = EHandPoseType::Default;
 };
