@@ -13,6 +13,8 @@
 #include "Sound/PGSoundManager.h"
 #include "Interface/SoundManagerInterface.h"
 
+#include "GenericTeamAgentInterface.h"
+
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -98,6 +100,11 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 	// Check door open sound twice.
 	// when enemy overlap door, door open called forcely.
 	const bool bOpenTwice = (bIsOpen && InbIsOpen);
+
+	// Player play sound(Door open sound) for both player and enemy. Enemy sound for only player.
+	// Player ID : 0, Enemy ID : 1
+	IGenericTeamAgentInterface* TeamCheckInterface = Cast<IGenericTeamAgentInterface>(InteractInvestigator);
+	bool bIsPlayer = !(TeamCheckInterface->GetGenericTeamId().GetId());
 
 	bIsOpen = InbIsOpen;
 	if (bIsOpen)
