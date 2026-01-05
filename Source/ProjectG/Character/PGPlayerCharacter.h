@@ -213,6 +213,10 @@ public:
 
 	FORCEINLINE FGameplayTagContainer GetInteractTag() const { return InteractTag; }
 
+	FORCEINLINE FName GetStandToCrouchSoundName() const { return StandToCrouchSoundName; }
+
+	FORCEINLINE FName GetCrouchToStandSoundName() const { return CrouchToStandSoundName; }
+
 	void ActivateAbilityByTag(const FGameplayTagContainer Tag);
 
 private:
@@ -238,6 +242,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability | Tags")
 	FGameplayTagContainer MouseRightTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FName StandToCrouchSoundName = FName("");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FName CrouchToStandSoundName = FName("");
 
 	UFUNCTION(Server, Reliable)
 	void AddTagToCharacter(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
@@ -281,13 +291,20 @@ protected:
 // ------------ HeadLight --------------------
 public:
 	void Multicast_SetHeadlightState(bool InbIsFlashlightOn);
-	FORCEINLINE FName GetHeadlightSoundName() const { return HeadlightSoundName; }
+
+	FORCEINLINE FName GetHeadlightOnSoundName() const { return HeadlightOnSoundName; }
+
+	FORCEINLINE FName GetHeadlightOffSoundName() const { return HeadlightOffSoundName; }
+
 
 protected:
 	void ToggleHeadLight();
 
-	UPROPERTY(EditDefaultsOnly, Category = "Sound | Headlight")
-	FName HeadlightSoundName = FName("SFX_Headlight");
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FName HeadlightOnSoundName = FName("SFX_Headlight");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FName HeadlightOffSoundName = FName("SFX_Headlight");
 
 ///
 ///********* Item system ******************

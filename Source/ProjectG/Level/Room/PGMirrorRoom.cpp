@@ -14,6 +14,10 @@
 #include "Player/PGPlayerState.h"
 #include "Kismet/KismetMathLibrary.h"
 
+#include "GameFramework/GameModeBase.h"
+#include "Sound/PGSoundManager.h"
+#include "Interface/SoundManagerInterface.h"
+
 APGMirrorRoom::APGMirrorRoom()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionMirrorRoom.LI_MansionMirrorRoom_C'"));
@@ -109,6 +113,8 @@ APGMirrorRoom::APGMirrorRoom()
 	{
 		MirrorGhostClass = MirrorGhostRef.Class;
 	}
+
+	DoorCloseSound = FName(TEXT("LEVEL_MirrorRoom_DoorClose"));
 }
 
 void APGMirrorRoom::BeginPlay()
@@ -244,6 +250,15 @@ void APGMirrorRoom::StartGimmick()
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[MirrorRoom] StartGimmick"));
+
+	//Play Gate Close Sound
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		{
+			SoundManager->PlaySoundForAllPlayers(DoorCloseSound, GateMesh->GetComponentLocation());
+		}
+	}
 
 	bIsLocked = true;
 	Multicast_SetGateState(true);

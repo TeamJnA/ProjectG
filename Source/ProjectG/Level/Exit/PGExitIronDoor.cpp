@@ -68,6 +68,9 @@ APGExitIronDoor::APGExitIronDoor()
 	IronDoorMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
     IronDoorMesh->bFillCollisionUnderneathForNavmesh = true;
 
+    IronDoorSoundPlayOffset = CreateDefaultSubobject<USceneComponent>(TEXT("IronDoorSoundPlayOffset"));
+    IronDoorSoundPlayOffset->SetupAttachment(Root);
+
     // Escape Trigger Volume
     EscapeTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("EscapeTriggerVolume"));
     EscapeTriggerVolume->SetupAttachment(Root);
@@ -290,7 +293,7 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
 
             if (NowIndex % 4 == 0 && NowIndex != 20)
             {
-                PlaySound(IronDoorMeshRustySound, IronDoorMesh->GetComponentLocation());
+                PlaySound(IronDoorMeshRustySound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
 
             if (NowIndex % 2 == 0 && NowIndex != 20)
@@ -425,7 +428,7 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
             SoundPlayChecker[NowIndex] = true;
             if (NowIndex % 2 == 0 && NowIndex != 0)
             {
-                PlaySound(IronDoorMeshBaseSound, NewDoorLocation);
+                PlaySound(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
         }
 
@@ -435,11 +438,11 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
 
             if (DoorAutoCloseSpeed > 10)
             {
-                PlaySound(DoorClosedSound, IronDoorMesh->GetComponentLocation());
+                PlaySound(DoorClosedSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
             else
             {
-                PlaySound(IronDoorMeshBaseSound, IronDoorMesh->GetComponentLocation());
+                PlaySound(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
 
             CurrentDoorHeight = 0;
@@ -626,7 +629,7 @@ void APGExitIronDoor::DoorForceClose()
 
     Multicast_StopCloseCountSound();
 
-    PlaySound(DoorCloseStartSound, IronDoorMesh->GetComponentLocation());
+    PlaySound(DoorCloseStartSound, IronDoorSoundPlayOffset->GetComponentLocation());
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Start Door force close."));
 }

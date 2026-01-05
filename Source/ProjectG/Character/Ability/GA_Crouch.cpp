@@ -5,6 +5,9 @@
 
 #include "GameFramework/Character.h"
 
+#include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
+
 #include "AbilitySystemComponent.h"
 
 DEFINE_LOG_CATEGORY(LogAbility_Crouch);
@@ -41,13 +44,27 @@ void UGA_Crouch::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	{
 		FGameplayEffectSpecHandle CrouchSpeedEffectSpecHandle = MakeOutgoingGameplayEffectSpec(CrouchMovementSpeedEffect);
 		ActiveCrouchSpeedEffectHandle = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, CrouchSpeedEffectSpecHandle);
+
+		//TODO Crouch start sound
 	}
 
 	// Character Movement : Crouch
-	if (ACharacter* AvatarActor = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	if (APGPlayerCharacter* AvatarActor = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo()))
 	{
 		AvatarActor->Crouch();
-		UE_LOG(LogAbility_Crouch, Log, TEXT("Make AvatarActor Crouch true"));
+
+		if (HasAuthority(&CurrentActivationInfo))
+		{
+			if (UPGSoundManagerComponent* SoundComp = AvatarActor->GetSoundManagerComponent())
+			{
+				const FName SoundName = AvatarActor->GetStandToCrouchSoundName();
+				const FVector Location = AvatarActor->GetActorLocation();
+
+				SoundComp->TriggerSoundForAllPlayers(SoundName, Location);
+			}
+		}
+
+		UE_LOG(LogAbility_Crouch, Log, TEXT("Make AvatarActor Stand to Crouch"));
 	}
 }
 
@@ -62,12 +79,25 @@ void UGA_Crouch::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 				ASC->RemoveActiveGameplayEffect(ActiveCrouchSpeedEffectHandle);
 			}
 		}
+
 	}
 
-	if (ACharacter* AvatarActor = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	if (APGPlayerCharacter* AvatarActor = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo()))
 	{
 		AvatarActor->UnCrouch();
-		UE_LOG(LogAbility_Crouch, Log, TEXT("Make AvatarActor Crouch false"));
+
+		if (HasAuthority(&CurrentActivationInfo))
+		{
+			if (UPGSoundManagerComponent* SoundComp = AvatarActor->GetSoundManagerComponent())
+			{
+				const FName SoundName = AvatarActor->GetCrouchToStandSoundName();
+				const FVector Location = AvatarActor->GetActorLocation();
+
+				SoundComp->TriggerSoundForAllPlayers(SoundName, Location);
+			}
+		}
+
+		UE_LOG(LogAbility_Crouch, Log, TEXT("Make AvatarActor Crouch To Stand"));
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

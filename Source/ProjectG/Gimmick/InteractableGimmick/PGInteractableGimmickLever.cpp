@@ -6,12 +6,18 @@
 #include "Gimmick/InteractableGimmick/Ability/GA_Interact_Lever.h"
 #include "Net/UnrealNetwork.h"
 
+#include "GameFramework/GameModeBase.h"
+#include "Sound/PGSoundManager.h"
+#include "Interface/SoundManagerInterface.h"
+
 APGInteractableGimmickLever::APGInteractableGimmickLever()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
 	InteractAbility = UGA_Interact_Lever::StaticClass();
+
+	FrameFallSound = FName(TEXT("LEVEL_MirrorRoom_FrameFall"));
 }
 
 void APGInteractableGimmickLever::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -44,6 +50,17 @@ FInteractionInfo APGInteractableGimmickLever::GetInteractionInfo() const
 
 void APGInteractableGimmickLever::ActivateLever()
 {
+	//Play Sound
+	
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		{
+			FVector SoundPlayLocation = GetActorLocation() - FVector::ZAxisVector * ( - 200);
+			SoundManager->PlaySoundForAllPlayers(FrameFallSound, SoundPlayLocation);
+		}
+	}
+
 	if (HasAuthority() && !bIsActivated)
 	{
 		bIsActivated = true;

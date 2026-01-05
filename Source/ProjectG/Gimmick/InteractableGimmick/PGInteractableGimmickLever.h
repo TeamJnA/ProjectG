@@ -30,6 +30,9 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ActivatePhysics();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName FrameFallSound;
+
 	UPROPERTY()
 	TWeakObjectPtr<APGMirrorRoom> MasterRoom;
 

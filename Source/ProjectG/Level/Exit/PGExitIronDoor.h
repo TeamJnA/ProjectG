@@ -94,6 +94,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> HandWheelLubricantPoint;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> IronDoorSoundPlayOffset;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Trigger", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UBoxComponent> EscapeTriggerVolume;
 

@@ -113,7 +113,14 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 
 		if (!bOpenTwice)
 		{
-			PlayDoorSound(DoorOpenSound);
+			if (bIsPlayer)
+			{
+				PlayDoorSound(DoorOpenSound);
+			}
+			else
+			{
+				PlayDoorSound(DoorOpenSound, false);
+			}
 		}
 
 		if (InteractInvestigator)
@@ -265,13 +272,20 @@ void APGDoor1::UnLock()
 	OnRep_LockState();
 }
 
-void APGDoor1::PlayDoorSound(const FName& SoundName)
+void APGDoor1::PlayDoorSound(const FName& SoundName, const bool IsEnemyHear)
 {
 	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
 	{
 		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
 		{
-			SoundManager->PlaySoundWithNoise(SoundName, GetActorLocation());
+			if (IsEnemyHear)
+			{
+				SoundManager->PlaySoundWithNoise(SoundName, GetActorLocation());
+			}
+			else
+			{
+				SoundManager->PlaySoundForAllPlayers(SoundName, GetActorLocation());
+			}
 		}
 	}
 }
