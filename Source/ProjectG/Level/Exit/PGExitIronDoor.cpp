@@ -98,6 +98,7 @@ void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
     DOREPLIFETIME(APGExitIronDoor, CurrentDoorHeight);
     DOREPLIFETIME(APGExitIronDoor, CurrentWheelQuat);
+    DOREPLIFETIME(APGExitIronDoor, CurrentLockPhase);
 }
 
 void APGExitIronDoor::HighlightOn() const
@@ -328,6 +329,7 @@ bool APGExitIronDoor::Unlock()
 
             PlaySound(UnlockChainSound, IronChainMesh->GetComponentLocation());
 
+            // Play drop chain sound
             FTimerDelegate TimerDelegate;
             TimerDelegate.BindUFunction(this, FName("PlayChainDropSound"));
 
@@ -363,9 +365,6 @@ bool APGExitIronDoor::Unlock()
         }
         case E_LockPhase::E_Unlocked:
         {
-            ///
-            /// TODO : Open Door Completed and stop
-            /// NeedSound : 10초의 철컹철컹 타이머
             StopHoldProress();
 
             FTimerManager& TimerManager = GetWorldTimerManager();
@@ -472,9 +471,9 @@ void APGExitIronDoor::Multicast_UnlockChains_Implementation()
 
     bIsChain = false;
 
-    UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
+    HighlightOff();
 
-    // NeedSound  : 자물쇠 해제 소리, 0.2 초 후 철소리( 체인 떨어지는 소리 ), 멀티캐스트 함수 내부라서 개인실행 해야 할듯?
+    UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
 }
 
 void APGExitIronDoor::Multicast_AttachWheel_Implementation()
@@ -484,7 +483,7 @@ void APGExitIronDoor::Multicast_AttachWheel_Implementation()
     HandWheelLubricantPoint->SetVisibility(true);
     HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
-    // // NeedSound  : 대충 끼는 소리
+    HighlightOff();
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
 }
@@ -495,6 +494,10 @@ void APGExitIronDoor::Multicast_SetWheelMaterialOiled_Implementation()
     {
         HandWheelLubricantPoint->SetMaterial(0, HandWheelOiledMaterial);
     }
+
+    HighlightOff();
+
+    UE_LOG(LogPGExitPoint, Log, TEXT("Wheel Oil Applied"));
 }
 
 void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation()

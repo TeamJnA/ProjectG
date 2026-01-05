@@ -103,8 +103,8 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMaterialInterface> HandWheelOiledMaterial;
 
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Lock", meta = (AllowPrivateAccess = "true"))
 	E_LockPhase CurrentLockPhase;
-
 
 	/*
 	* Dynamic materials to make shake effect
