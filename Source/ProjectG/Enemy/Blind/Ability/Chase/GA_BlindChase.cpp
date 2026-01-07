@@ -81,27 +81,16 @@ void UGA_BlindChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 
 void UGA_BlindChase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
-	if (!OwnerPawn)
+	if (APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot find OwnerPawn in UGA_BlindChase::EndAbility"));
-		return;
+		if (AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController()))
+		{
+			if (UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent())
+			{
+				Blackboard->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
+			}
+		}
 	}
-
-	AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
-	if (!AIController)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot find AIController in UGA_BlindChase"));
-		return;
-	}
-
-	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
-	if (!Blackboard)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot find Blackboard in UGA_BlindChase"));
-		return;
-	}
-	Blackboard->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
 
 	GetAbilitySystemComponentFromActorInfo()->
 		RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing")));

@@ -38,8 +38,8 @@ public:
 	FORCEINLINE virtual float GetExplorationWaitTime() const override { return ExplorationWaitTime; }
 	// ~IPGAIExplorationInterface
 
-	FORCEINLINE float GetNoiseLevelThreshold() const { return NoiseLevelThreshold; }
-	FORCEINLINE float GetNoiseMaxThreshold() const { return NoiseMaxThreshold; }
+	FORCEINLINE int32 GetNoiseLevelThreshold() const { return NoiseLevelThreshold; }
+	FORCEINLINE int32 GetNoiseMaxThreshold() const { return NoiseMaxThreshold; }
 
 	FORCEINLINE EBlindHuntLevel GetHuntLevel() const { return HuntLevel; }
 	void SetHuntLevel(EBlindHuntLevel newHuntLevel);
@@ -79,8 +79,8 @@ private:
 
 	//아래는 detect Noise 관련
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float NoiseLevelThreshold = 1000.f;
+	int32 NoiseLevelThreshold = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	float NoiseMaxThreshold = 2000.f;
+	int32 NoiseMaxThreshold = 3;
 };

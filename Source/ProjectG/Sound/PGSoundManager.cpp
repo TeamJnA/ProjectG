@@ -91,7 +91,9 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 	// When bIntensedSound is true, the sound power increases but the range remains the same.
 	const float SoundPowerLevel = SoundData->SoundLevel + (bIntensedSound ? 1 : 0);
 
-	const float SoundRange = 200 * SoundPowerLevel * SoundPowerLevel;
+	// 실제 Sound Range = 200 * SoundPowerLevel * SoundPowerLevel. 
+	// 여기서 Loudness를 나누어야 한다. Sound Range * Loudness만큼 소리가 들리는 범위임.
+	const float SoundRange = 200 * SoundPowerLevel; // 200 * SoundPowerLevel * SoundPowerLevel / SoundPowerLevel(Loudness)
 
 	UE_LOG(LogSoundManager, Log, TEXT("Make Noise Level %f. [ Location : %s ], [ Range : %f ]"), SoundPowerLevel, *SoundLocation.ToString(), SoundRange);
 
@@ -116,7 +118,7 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 		{
 			float StrongSoundRange = 200 * (SoundPowerLevel - 1) * (SoundPowerLevel - 1);
 			DrawDebugSphere(GetWorld(), SoundLocation, StrongSoundRange, 8, FColor::Red, false, 3.0f, 0U, 3.0f);
-			DrawDebugSphere(GetWorld(), SoundLocation, SoundRange, 8, FColor::Yellow, false, 3.0f, 0U, 3.0f);
+			DrawDebugSphere(GetWorld(), SoundLocation, SoundRange * SoundPowerLevel, 8, FColor::Yellow, false, 3.0f, 0U, 3.0f);
 		}
 	}
 #endif
