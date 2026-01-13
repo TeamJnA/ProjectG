@@ -211,7 +211,8 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 bool APGPlayerCharacter::IsValidAttackableTarget() const
 {
 	// Check player is valid by checking gameplay tag.
-	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
+	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"))
+		|| AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.OnAttacked")))
 	{
 		return false;
 	}
@@ -227,6 +228,10 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
+
+	FGameplayTag AttackedTag = FGameplayTag::RequestGameplayTag("Player.State.OnAttacked");
+	AbilitySystemComponent->AddLooseGameplayTag(AttackedTag);
+	AbilitySystemComponent->AddReplicatedLooseGameplayTag(AttackedTag);
 
 	// Remove all abilities.
 	AbilitySystemComponent->ClearAllAbilities();
@@ -258,6 +263,10 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 
 	// Notify client to replicate server-side attack handling
 	Client_OnAttacked(GetActorLocation(), GetActorRotation());
+
+	// 3초 후에 자동으로 OnAttackFinished(사망 처리)가 호출되도록 안전장치 설정
+	// Enemy가 OnAttackFinished를 호출하지 않더라도 3초 뒤엔 확정 사망
+	GetWorld()->GetTimerManager().SetTimer(DeathTimerHandle, this, &APGPlayerCharacter::OnAttackFinished, 4.0f, false);
 }
 
 void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, FRotator NewRotation)
@@ -295,11 +304,17 @@ void APGPlayerCharacter::OnAttackFinished()
 		return;
 	}
 
+	GetWorld()->GetTimerManager().ClearTimer(DeathTimerHandle);
+
 	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s already dead, but OnAttacked."), *GetNameSafe(this));
 		return;
 	}
+
+	FGameplayTag AttackedTag = FGameplayTag::RequestGameplayTag("Player.State.OnAttacked");
+	AbilitySystemComponent->RemoveLooseGameplayTag(AttackedTag);
+	AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(AttackedTag);
 
 	// Add Player.State.Dead Tag to Server and Client. It makes player state dead.
 	AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));

@@ -200,6 +200,7 @@ public:
 protected:
 	UPROPERTY(Replicated)
 	TObjectPtr<APlayerState> DeadPlayerState;
+	FTimerHandle DeathTimerHandle;
 
 	UFUNCTION()
 	void OnRep_IsRagdoll();
