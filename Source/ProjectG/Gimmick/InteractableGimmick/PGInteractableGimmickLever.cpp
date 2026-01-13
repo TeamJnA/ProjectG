@@ -80,15 +80,5 @@ void APGInteractableGimmickLever::Multicast_ActivatePhysics_Implementation()
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	StaticMesh->SetCollisionProfileName(TEXT("Item"));
 	StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-	StaticMesh->AddImpulse(GetActorRightVector() * -100.0f, NAME_None, true);
-
-	TWeakObjectPtr<UStaticMeshComponent> WeakMesh(StaticMesh);
-	FTimerHandle FreezeTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(FreezeTimerHandle, [WeakMesh]()
-	{
-		if (WeakMesh.IsValid())
-		{
-			WeakMesh->SetSimulatePhysics(false);
-		}
-	}, 3.0f, false);
+	StaticMesh->AddImpulse(GetActorRightVector() * -200.0f, NAME_None, true);
 }

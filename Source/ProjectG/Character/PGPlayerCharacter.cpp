@@ -362,7 +362,7 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 		AnimInstance->StopAllMontages(0.1f);
 	}
 
-	// TODO : 플레이어 아이템들 드랍 [ Server ]
+	//플레이어 아이템들 드랍 [ Server ]
 	InventoryComponent->DropAllItems(GetActorLocation());
 
 	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
@@ -400,6 +400,8 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 		GetMesh()->SetSimulatePhysics(true);
 		
 		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+		SetItemMesh(false);
 	}
 }
 
@@ -878,21 +880,24 @@ void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 {
 	
 	TObjectPtr<UPGItemData> ItemDataToAttach = InventoryComponent->GetCurrentItemMesh();
-	if (!ItemDataToAttach)
+	if (!ItemDataToAttach || !bIsVisible)
 	{
 		EquippedItemMesh->SetStaticMesh(nullptr);
 		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
-		return;
+		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
+		{
+			AnimInterface->SetHandPose(EHandPoseType::Default);
+		}
 	}
-	EquippedItemMesh->SetRelativeTransform(ItemDataToAttach->ItemSocketOffset);
-	EquippedItemMesh->SetStaticMesh(ItemDataToAttach->ItemMesh);
-
-	// Item에 따른 손 모양 전환
-	if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
+	else
 	{
-		AnimInterface->SetHandPose(ItemDataToAttach->HandPoseType);
+		EquippedItemMesh->SetRelativeTransform(ItemDataToAttach->ItemSocketOffset);
+		EquippedItemMesh->SetStaticMesh(ItemDataToAttach->ItemMesh);
+		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
+		{
+			AnimInterface->SetHandPose(ItemDataToAttach->HandPoseType);
+		}
 	}
-
 }
 
 void APGPlayerCharacter::SetRightHandIK()

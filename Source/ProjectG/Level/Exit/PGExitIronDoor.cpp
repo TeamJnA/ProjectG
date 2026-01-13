@@ -15,6 +15,7 @@
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
 #include "Player/PGPlayerController.h"
+#include "Camera/CameraComponent.h"
 
 APGExitIronDoor::APGExitIronDoor()
 {
@@ -472,6 +473,10 @@ void APGExitIronDoor::Multicast_UnlockChains_Implementation()
     bIsChain = false;
 
     HighlightOff();
+    if (IsLocalPlayerLookingThis())
+    {
+        HighlightOn();
+    }
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
 }
@@ -484,6 +489,10 @@ void APGExitIronDoor::Multicast_AttachWheel_Implementation()
     HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
     HighlightOff();
+    if (IsLocalPlayerLookingThis())
+    {
+        HighlightOn();
+    }
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
 }
@@ -496,8 +505,66 @@ void APGExitIronDoor::Multicast_SetWheelMaterialOiled_Implementation()
     }
 
     HighlightOff();
+    if (IsLocalPlayerLookingThis())
+    {
+        HighlightOn();
+    }
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Wheel Oil Applied"));
+}
+
+bool APGExitIronDoor::IsLocalPlayerLookingThis() const
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return false;
+    }
+    APlayerController* PC = World->GetFirstPlayerController();
+    if (!PC || !PC->IsLocalController())
+    {
+        return false;
+    }
+    APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(PC->GetPawn());
+    if (!PGPC)
+    {
+        return false;
+    }
+
+    UCameraComponent* Camera = nullptr;
+
+    if (!Camera && PGPC)
+    {
+        Camera = PGPC->GetFirstPersonCamera();
+    }
+
+    if (!Camera) return false;
+
+    // 라인 트레이스 설정
+    FVector Start = Camera->GetComponentLocation();
+    FVector ForwardVector = Camera->GetForwardVector();
+    FVector End = Start + (ForwardVector * 250.0f); // 길이 250 : Interaction Range
+
+    FHitResult HitResult;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(PGPC); // 자기 자신(플레이어)은 무시
+
+    // 라인 트레이스 실행 (ECC_Visibility 채널 사용)
+    bool bHit = World->LineTraceSingleByChannel(
+        HitResult,
+        Start,
+        End,
+        ECC_Visibility,
+        Params
+    );
+
+    // 결과 확인: 트레이스에 걸린 액터가 '이 액터(this)'인지 확인
+    if (bHit && HitResult.GetActor() == this)
+    {
+        return true;
+    }
+
+    return false;
 }
 
 void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation()

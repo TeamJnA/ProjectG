@@ -61,6 +61,9 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetWheelMaterialOiled();
 
+	UFUNCTION()
+	bool IsLocalPlayerLookingThis() const;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;
 
