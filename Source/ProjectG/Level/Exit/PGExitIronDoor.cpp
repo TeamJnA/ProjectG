@@ -473,9 +473,9 @@ void APGExitIronDoor::Multicast_UnlockChains_Implementation()
     bIsChain = false;
 
     HighlightOff();
-    if (IsLocalPlayerLookingThis())
+    if (HasAuthority())
     {
-        HighlightOn();
+        OnRep_CurrentLockPhase();
     }
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
@@ -489,9 +489,9 @@ void APGExitIronDoor::Multicast_AttachWheel_Implementation()
     HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
     HighlightOff();
-    if (IsLocalPlayerLookingThis())
+    if (HasAuthority())
     {
-        HighlightOn();
+        OnRep_CurrentLockPhase();
     }
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
@@ -505,9 +505,9 @@ void APGExitIronDoor::Multicast_SetWheelMaterialOiled_Implementation()
     }
 
     HighlightOff();
-    if (IsLocalPlayerLookingThis())
+    if (HasAuthority())
     {
-        HighlightOn();
+        OnRep_CurrentLockPhase();
     }
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Wheel Oil Applied"));
@@ -623,6 +623,14 @@ void APGExitIronDoor::ToggleShakeEffect(bool bToggle)
                 TargetMID->SetScalarParameterValue(TargetParameterName, TargetValue);
             }
         }
+    }
+}
+
+void APGExitIronDoor::OnRep_CurrentLockPhase()
+{
+    if (IsLocalPlayerLookingThis())
+    {
+        HighlightOn();
     }
 }
 
