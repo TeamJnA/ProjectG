@@ -16,6 +16,8 @@
 #include "Enemy/Blind/Ability/Chase/GA_BlindChase.h"
 #include "Enemy/Blind/Ability/Bite/GA_BlindBite.h"
 
+#include "PGLogChannels.h"
+
 APGBlindAIController::APGBlindAIController(FObjectInitializer const& ObjectInitializer) :
 	APGEnemyAIControllerBase{ ObjectInitializer }
 {
@@ -55,7 +57,7 @@ void APGBlindAIController::SetHearingEnabled(bool Enable)
 void APGBlindAIController::ResetHuntLevel()
 {
 	UE_LOG(LogEnemyCharacter, Log, TEXT("APGBlindAIController::ResetHuntLevel"));
-	GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
+	GetBlackboardComponent()->SetValueAsInt("DetectedMaxNoiseMagnitude", -1);
 	OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
 	OwnerPawn->SetHuntLevel(EBlindHuntLevel::Exploration);
 }
@@ -126,15 +128,14 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	int32 DistanceIntoLevel = FMath::FloorToInt(FMath::Sqrt(Distance * 0.005f));
 	int32 CurNoiseSoundLevel = INoise - DistanceIntoLevel;
 
-	UE_LOG(LogTemp, Log, TEXT("BlindAIController Current Noise Level %d"), DistanceIntoLevel);
-	UE_LOG(LogTemp, Log, TEXT("BlindAIController Current Noise Level %d"), CurNoiseSoundLevel);
+	UE_LOG(LogPGEnemyBlind, Log, TEXT("BlindAIController Current Noise Level %d"), CurNoiseSoundLevel);
 
 	//MaxThreshold = 이 정도 기준값 이상이면 그냥 최대소리로 인식.
 	int32 NoiseMaxThreshold = OwnerPawn->GetNoiseMaxThreshold(); //캐릭터에서 가져오고
 
 	// DetectedMaxNoiseMagnitude = 현재 감지되어있는, 가장 큰 소리 레벨. 
 	// 해당 값은 블랙보드에서 관리함. 그래서 블랙보드에서 가져옴.
-	float DetectedMaxNoiseMagnitude = GetBlackboardComponent()->GetValueAsFloat("DetectedMaxNoiseMagnitude");
+	float DetectedMaxNoiseMagnitude = GetBlackboardComponent()->GetValueAsInt("DetectedMaxNoiseMagnitude");
 
 	// While in HuntLevel Chase, keep chasing the target that is making noise
 	//방금 들린 소리가 최대 소리라면, 
@@ -143,11 +144,12 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	// if 문이 있는 이유가 상대방이 뛰어갈때 쫓아갈 수 있게 갱신하기 위한 if문
 	if ((CurNoiseSoundLevel >= NoiseMaxThreshold) && (OwnerPawn->GetHuntLevel()==EBlindHuntLevel::Chase))
 	{
-		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoiseSoundLevel);
+		GetBlackboardComponent()->SetValueAsInt("DetectedMaxNoiseMagnitude", CurNoiseSoundLevel);
 		//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("MaxThreshold")));
 
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", SourceLocation);
 
+		UE_LOG(LogPGEnemyBlind, Log, TEXT("PGBlind chase new max noise."));
 		
 		return;
 	}
@@ -156,6 +158,8 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 	//-> 얘를 쫓아가게 바꿔줘야대
 	if (DetectedMaxNoiseMagnitude <= CurNoiseSoundLevel)
 	{
+		UE_LOG(LogPGEnemyBlind, Log, TEXT("DetectedMaxNoise : %d || CurNoiseSoundLevel : %d"), int32(DetectedMaxNoiseMagnitude), CurNoiseSoundLevel);
+
 		// If now hunt level is 0, open all doors around character.
 		if (OwnerPawn->GetHuntLevel() == EBlindHuntLevel::Exploration)
 		{
@@ -163,7 +167,7 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 		}
 
 		//갱신하기
-		GetBlackboardComponent()->SetValueAsFloat("DetectedMaxNoiseMagnitude", CurNoiseSoundLevel);
+		GetBlackboardComponent()->SetValueAsInt("DetectedMaxNoiseMagnitude", CurNoiseSoundLevel);
 		
 		//targetlocation도 블랙보드에서 관리. 바꿔줌.
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", SourceLocation);
@@ -176,12 +180,16 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 			//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Strong Clue")));
 			//강한단서니깐, chase ability를 실행시킨다
 			OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindChase::StaticClass(), true);
+
+			UE_LOG(LogPGEnemyBlind, Log, TEXT("PGBlind Chase Start by current noise"));
 		}
 		//이건 약한단서 
 		else if(OwnerPawn->GetNoiseLevelThreshold() >= CurNoiseSoundLevel)
 		{
 			//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Weak Clue")));
 			OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_BlindInvestigate::StaticClass(), true);
+
+			UE_LOG(LogPGEnemyBlind, Log, TEXT("PGBlind Invesigate Start by current noise"));
 		}
 
 		// flipsign 변수는, behavior tree의 "Detect State Change" Blackboard Decorator 에서,

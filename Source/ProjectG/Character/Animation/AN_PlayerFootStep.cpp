@@ -31,7 +31,7 @@ void UAN_PlayerFootStep::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 		// Player sound is need noise, but Enemy sound only spread to players.
 		if (bIsPlayer)
 		{
-			SoundManagerComp->TriggerSoundWithNoise(FootStepName, OwnerActor->GetActorLocation());
+			SoundManagerComp->TriggerSoundWithNoise(FootStepName, OwnerActor->GetActorLocation(), true);
 		}
 		else
 		{

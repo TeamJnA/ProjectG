@@ -88,21 +88,26 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 		return;
 	}
 	
-	// When bIntensedSound is true, the sound power increases but the range remains the same.
-	const float SoundPowerLevel = SoundData->SoundLevel + (bIntensedSound ? 1 : 0);
+	const float BaseLoudness = SoundData->SoundLevel;
+	const float BaseMaxRange = 200.0f * BaseLoudness;
+
+	const float TargetTotalRange = BaseLoudness * BaseMaxRange;
+
+	const float FinalLoudness = bIntensedSound ? (BaseLoudness + 1.0f) : BaseLoudness;
 
 	// 실제 Sound Range = 200 * SoundPowerLevel * SoundPowerLevel. 
-	// 여기서 Loudness를 나누어야 한다. Sound Range * Loudness만큼 소리가 들리는 범위임.
-	const float SoundRange = 200 * SoundPowerLevel; // 200 * SoundPowerLevel * SoundPowerLevel / SoundPowerLevel(Loudness)
+	// When report Noise, Range will be Loudness * Range.
+	// 따라서 bIntensedSound일 때, 강도(+1)를 높이는 대신, 범위를 역으로 줄여 총합(L*R) 유지
+	const float FinalMaxRange = TargetTotalRange / FinalLoudness;
 
-	UE_LOG(LogSoundManager, Log, TEXT("Make Noise Level %f. [ Location : %s ], [ Range : %f ]"), SoundPowerLevel, *SoundLocation.ToString(), SoundRange);
+	UE_LOG(LogSoundManager, Log, TEXT("Make Noise Level %f. [ Location : %s ], [ Range : %f ]"), BaseLoudness, *SoundLocation.ToString(), TargetTotalRange);
 
 	UAISense_Hearing::ReportNoiseEvent(
         GetWorld(),    
 		SoundLocation,
-		SoundPowerLevel,
+		FinalLoudness,
         this, 
-		SoundRange,
+		FinalMaxRange,
 		SoundName
     );
 
@@ -112,13 +117,13 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 	{
 		if (bIntensedSound)
 		{
-			DrawDebugSphere(GetWorld(), SoundLocation, SoundRange, 8, FColor::Red, false, 3.0f, 0U, 3.0f);
+			DrawDebugSphere(GetWorld(), SoundLocation, TargetTotalRange, 8, FColor::Red, false, 3.0f, 0U, 3.0f);
 		}
 		else
 		{
-			float StrongSoundRange = 200 * (SoundPowerLevel - 1) * (SoundPowerLevel - 1);
+			float StrongSoundRange = 200 * (BaseLoudness - 1) * (BaseLoudness - 1);
 			DrawDebugSphere(GetWorld(), SoundLocation, StrongSoundRange, 8, FColor::Red, false, 3.0f, 0U, 3.0f);
-			DrawDebugSphere(GetWorld(), SoundLocation, SoundRange * SoundPowerLevel, 8, FColor::Yellow, false, 3.0f, 0U, 3.0f);
+			DrawDebugSphere(GetWorld(), SoundLocation, BaseMaxRange * BaseLoudness, 8, FColor::Yellow, false, 3.0f, 0U, 3.0f);
 		}
 	}
 #endif

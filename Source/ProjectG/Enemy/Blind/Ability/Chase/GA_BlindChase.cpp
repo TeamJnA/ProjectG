@@ -87,7 +87,7 @@ void UGA_BlindChase::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 		{
 			if (UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent())
 			{
-				Blackboard->SetValueAsFloat("DetectedMaxNoiseMagnitude", -1.f);
+				Blackboard->SetValueAsInt("DetectedMaxNoiseMagnitude", -1);
 			}
 		}
 	}
