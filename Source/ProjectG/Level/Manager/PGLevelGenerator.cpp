@@ -24,6 +24,7 @@
 #include "Level/Misc/PGExitDoor.h"
 
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
+#include "Enemy/Charger/Character/PGChargerCharacter.h"
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickMannequin.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
@@ -58,6 +59,12 @@ APGLevelGenerator::APGLevelGenerator()
 	if (BlindCharacterRef.Class)
 	{
 		BlindCharacter = BlindCharacterRef.Class;
+	}	
+	
+	static ConstructorHelpers::FClassFinder<AActor> ChargerCharacterRef(TEXT("/Game/ProjectG/Enemy/Charger/Character/BP_PGChargerCharacter.BP_PGChargerCharacter_C"));
+	if (ChargerCharacterRef.Class)
+	{
+		ChargerCharacter = ChargerCharacterRef.Class;
 	}
 
 	static ConstructorHelpers::FClassFinder<AActor> MannequinRef(TEXT("/Game/ProjectG/Gimmick/Trigger/Mannequin/BP_PGTriggerGimmickMannequin.BP_PGTriggerGimmickMannequin_C"));
@@ -631,6 +638,39 @@ void APGLevelGenerator::SpawnEnemy()
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn enemy at room '%s'"), *BlindSpawnRoom->GetName());
+	}
+
+	const int32 MaxRetries = 5;
+	const APGMasterRoom* ChargerSpawnRoom = nullptr;
+	for (int32 i = 0; i < MaxRetries; i++)
+	{
+		const APGMasterRoom* CandidateRoom = FindMiddleDistanceRoom();
+		if (CandidateRoom == nullptr || CandidateRoom == BlindSpawnRoom)
+		{
+			continue;
+		}
+
+		ChargerSpawnRoom = CandidateRoom;
+		break;
+	}
+
+	if (ChargerSpawnRoom)
+	{
+		const FTransform ChargerSpawnTransform(FRotator::ZeroRotator, ChargerSpawnRoom->GetEnemySpawnLocation());
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		APGChargerCharacter* SpawnedCharger = World->SpawnActor<APGChargerCharacter>(ChargerCharacter, ChargerSpawnTransform, SpawnParams);
+		if (SpawnedCharger)
+		{
+			SpawnedCharger->InitSoundManager(GM->GetSoundManager());
+			UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn Charger at room '%s'"), *ChargerSpawnRoom->GetName());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Failed to find valid room for Charger (Duplicate with Blind or No Room)."));
 	}
 
 	const APGMasterRoom* GhostSpawnRoom = FindFarthestRoom();

@@ -8,6 +8,7 @@
 
 class APGMasterRoom;
 class APGBlindCharacter;
+class APGChargerCharacter;
 class APGTriggerGimmickMannequin;
 
 UCLASS()
@@ -65,6 +66,9 @@ private:
 
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;
+
+	UPROPERTY()
+	TSubclassOf<APGChargerCharacter> ChargerCharacter;
 
 	UPROPERTY()
 	TSubclassOf<APGTriggerGimmickMannequin> MannequinClass;

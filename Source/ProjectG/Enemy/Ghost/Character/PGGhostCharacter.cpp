@@ -182,7 +182,7 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
     const FGameplayTag AttackingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking"));
     if (!AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(ChasingTag) || AbilitySystemComponent->HasMatchingGameplayTag(AttackingTag))
     {
-        // Chasing / Attacking 상태가 아닐때 Overlap 된 경우 타겟 Sanity 감소
+        // Chasing / Attacking 상태가 아닐때 Overlap 된 경우 Jumpscare 혹은 화면 효과 + 타겟 Sanity 감소
         const float CurrentTime = GetWorld()->GetTimeSeconds();
         if (LastJumpscareTime > 0.0f && (CurrentTime - LastJumpscareTime) < JumpscareCooldown)
         {
@@ -223,9 +223,9 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
             UAISense_Touch::ReportTouchEvent(GetWorld(), this, OtherActor, OtherActor->GetActorLocation());
             AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation(), 160.0f);
         }
-    }
 
-    AbilitySystemComponent->TryActivateAbilityByClass(UGA_GhostAttack::StaticClass(), true);
+        AbilitySystemComponent->TryActivateAbilityByClass(UGA_GhostAttack::StaticClass(), true);
+    }
 }
 
 void APGGhostCharacter::OnLightExtinguishOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
