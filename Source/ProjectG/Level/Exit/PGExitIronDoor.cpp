@@ -15,6 +15,7 @@
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
 #include "Player/PGPlayerController.h"
+#include "Camera/CameraComponent.h"
 
 APGExitIronDoor::APGExitIronDoor()
 {
@@ -68,6 +69,9 @@ APGExitIronDoor::APGExitIronDoor()
 	IronDoorMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
     IronDoorMesh->bFillCollisionUnderneathForNavmesh = true;
 
+    IronDoorSoundPlayOffset = CreateDefaultSubobject<USceneComponent>(TEXT("IronDoorSoundPlayOffset"));
+    IronDoorSoundPlayOffset->SetupAttachment(Root);
+
     // Escape Trigger Volume
     EscapeTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("EscapeTriggerVolume"));
     EscapeTriggerVolume->SetupAttachment(Root);
@@ -95,6 +99,7 @@ void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
     DOREPLIFETIME(APGExitIronDoor, CurrentDoorHeight);
     DOREPLIFETIME(APGExitIronDoor, CurrentWheelQuat);
+    DOREPLIFETIME(APGExitIronDoor, CurrentLockPhase);
 }
 
 void APGExitIronDoor::HighlightOn() const
@@ -290,7 +295,7 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
 
             if (NowIndex % 4 == 0 && NowIndex != 20)
             {
-                PlaySound(IronDoorMeshRustySound, IronDoorMesh->GetComponentLocation());
+                PlaySound(IronDoorMeshRustySound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
 
             if (NowIndex % 2 == 0 && NowIndex != 20)
@@ -325,6 +330,7 @@ bool APGExitIronDoor::Unlock()
 
             PlaySound(UnlockChainSound, IronChainMesh->GetComponentLocation());
 
+            // Play drop chain sound
             FTimerDelegate TimerDelegate;
             TimerDelegate.BindUFunction(this, FName("PlayChainDropSound"));
 
@@ -360,9 +366,6 @@ bool APGExitIronDoor::Unlock()
         }
         case E_LockPhase::E_Unlocked:
         {
-            ///
-            /// TODO : Open Door Completed and stop
-            /// NeedSound : 10초의 철컹철컹 타이머
             StopHoldProress();
 
             FTimerManager& TimerManager = GetWorldTimerManager();
@@ -425,7 +428,7 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
             SoundPlayChecker[NowIndex] = true;
             if (NowIndex % 2 == 0 && NowIndex != 0)
             {
-                PlaySound(IronDoorMeshBaseSound, NewDoorLocation);
+                PlaySound(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
         }
 
@@ -435,11 +438,11 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
 
             if (DoorAutoCloseSpeed > 10)
             {
-                PlaySound(DoorClosedSound, IronDoorMesh->GetComponentLocation());
+                PlaySound(DoorClosedSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
             else
             {
-                PlaySound(IronDoorMeshBaseSound, IronDoorMesh->GetComponentLocation());
+                PlaySound(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
 
             CurrentDoorHeight = 0;
@@ -469,9 +472,13 @@ void APGExitIronDoor::Multicast_UnlockChains_Implementation()
 
     bIsChain = false;
 
-    UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
+    HighlightOff();
+    if (HasAuthority())
+    {
+        OnRep_CurrentLockPhase();
+    }
 
-    // NeedSound  : 자물쇠 해제 소리, 0.2 초 후 철소리( 체인 떨어지는 소리 ), 멀티캐스트 함수 내부라서 개인실행 해야 할듯?
+    UE_LOG(LogPGExitPoint, Log, TEXT("Unlock chain"));
 }
 
 void APGExitIronDoor::Multicast_AttachWheel_Implementation()
@@ -481,7 +488,11 @@ void APGExitIronDoor::Multicast_AttachWheel_Implementation()
     HandWheelLubricantPoint->SetVisibility(true);
     HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
-    // // NeedSound  : 대충 끼는 소리
+    HighlightOff();
+    if (HasAuthority())
+    {
+        OnRep_CurrentLockPhase();
+    }
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Attach Wheel"));
 }
@@ -492,6 +503,68 @@ void APGExitIronDoor::Multicast_SetWheelMaterialOiled_Implementation()
     {
         HandWheelLubricantPoint->SetMaterial(0, HandWheelOiledMaterial);
     }
+
+    HighlightOff();
+    if (HasAuthority())
+    {
+        OnRep_CurrentLockPhase();
+    }
+
+    UE_LOG(LogPGExitPoint, Log, TEXT("Wheel Oil Applied"));
+}
+
+bool APGExitIronDoor::IsLocalPlayerLookingThis() const
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return false;
+    }
+    APlayerController* PC = World->GetFirstPlayerController();
+    if (!PC || !PC->IsLocalController())
+    {
+        return false;
+    }
+    APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(PC->GetPawn());
+    if (!PGPC)
+    {
+        return false;
+    }
+
+    UCameraComponent* Camera = nullptr;
+
+    if (!Camera && PGPC)
+    {
+        Camera = PGPC->GetFirstPersonCamera();
+    }
+
+    if (!Camera) return false;
+
+    // 라인 트레이스 설정
+    FVector Start = Camera->GetComponentLocation();
+    FVector ForwardVector = Camera->GetForwardVector();
+    FVector End = Start + (ForwardVector * 250.0f); // 길이 250 : Interaction Range
+
+    FHitResult HitResult;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(PGPC); // 자기 자신(플레이어)은 무시
+
+    // 라인 트레이스 실행 (ECC_Visibility 채널 사용)
+    bool bHit = World->LineTraceSingleByChannel(
+        HitResult,
+        Start,
+        End,
+        ECC_Visibility,
+        Params
+    );
+
+    // 결과 확인: 트레이스에 걸린 액터가 '이 액터(this)'인지 확인
+    if (bHit && HitResult.GetActor() == this)
+    {
+        return true;
+    }
+
+    return false;
 }
 
 void APGExitIronDoor::Multicast_ActivateShakeEffect_Implementation()
@@ -550,6 +623,14 @@ void APGExitIronDoor::ToggleShakeEffect(bool bToggle)
                 TargetMID->SetScalarParameterValue(TargetParameterName, TargetValue);
             }
         }
+    }
+}
+
+void APGExitIronDoor::OnRep_CurrentLockPhase()
+{
+    if (IsLocalPlayerLookingThis())
+    {
+        HighlightOn();
     }
 }
 
@@ -626,7 +707,7 @@ void APGExitIronDoor::DoorForceClose()
 
     Multicast_StopCloseCountSound();
 
-    PlaySound(DoorCloseStartSound, IronDoorMesh->GetComponentLocation());
+    PlaySound(DoorCloseStartSound, IronDoorSoundPlayOffset->GetComponentLocation());
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Start Door force close."));
 }

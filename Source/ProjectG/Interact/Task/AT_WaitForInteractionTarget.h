@@ -24,7 +24,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Task", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
 	static UAT_WaitForInteractionTarget* WaitForInteractionTarget(UGameplayAbility* OwningAbility, UCameraComponent* CameraComponent, bool ShowDebug = false
-																	,float TraceRate = 0.1f, float TraceRange = 1000.0);
+																	,float TraceRate = 0.1f, float TraceRange = 250.0);
 
 	virtual void Activate() override;
 

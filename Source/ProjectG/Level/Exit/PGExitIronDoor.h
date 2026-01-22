@@ -61,6 +61,9 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetWheelMaterialOiled();
 
+	UFUNCTION()
+	bool IsLocalPlayerLookingThis() const;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;
 
@@ -94,15 +97,20 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Interact|Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> HandWheelLubricantPoint;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> IronDoorSoundPlayOffset;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Trigger", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UBoxComponent> EscapeTriggerVolume;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMaterialInterface> HandWheelOiledMaterial;
 
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentLockPhase, BlueprintReadOnly, Category = "Lock", meta = (AllowPrivateAccess = "true"))
 	E_LockPhase CurrentLockPhase;
 
-
+	UFUNCTION()
+	void OnRep_CurrentLockPhase();
 	/*
 	* Dynamic materials to make shake effect
 	*/

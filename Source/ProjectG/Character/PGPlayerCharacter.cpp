@@ -211,7 +211,8 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 bool APGPlayerCharacter::IsValidAttackableTarget() const
 {
 	// Check player is valid by checking gameplay tag.
-	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
+	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"))
+		|| AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.OnAttacked")))
 	{
 		return false;
 	}
@@ -227,6 +228,10 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
+
+	FGameplayTag AttackedTag = FGameplayTag::RequestGameplayTag("Player.State.OnAttacked");
+	AbilitySystemComponent->AddLooseGameplayTag(AttackedTag);
+	AbilitySystemComponent->AddReplicatedLooseGameplayTag(AttackedTag);
 
 	// Remove all abilities.
 	AbilitySystemComponent->ClearAllAbilities();
@@ -258,6 +263,10 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 
 	// Notify client to replicate server-side attack handling
 	Client_OnAttacked(GetActorLocation(), GetActorRotation());
+
+	// 3초 후에 자동으로 OnAttackFinished(사망 처리)가 호출되도록 안전장치 설정
+	// Enemy가 OnAttackFinished를 호출하지 않더라도 3초 뒤엔 확정 사망
+	GetWorld()->GetTimerManager().SetTimer(DeathTimerHandle, this, &APGPlayerCharacter::OnAttackFinished, 4.0f, false);
 }
 
 void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, FRotator NewRotation)
@@ -295,11 +304,17 @@ void APGPlayerCharacter::OnAttackFinished()
 		return;
 	}
 
+	GetWorld()->GetTimerManager().ClearTimer(DeathTimerHandle);
+
 	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s already dead, but OnAttacked."), *GetNameSafe(this));
 		return;
 	}
+
+	FGameplayTag AttackedTag = FGameplayTag::RequestGameplayTag("Player.State.OnAttacked");
+	AbilitySystemComponent->RemoveLooseGameplayTag(AttackedTag);
+	AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(AttackedTag);
 
 	// Add Player.State.Dead Tag to Server and Client. It makes player state dead.
 	AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"));
@@ -362,7 +377,7 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 		AnimInstance->StopAllMontages(0.1f);
 	}
 
-	// TODO : 플레이어 아이템들 드랍 [ Server ]
+	//플레이어 아이템들 드랍 [ Server ]
 	InventoryComponent->DropAllItems(GetActorLocation());
 
 	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
@@ -400,6 +415,8 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 		GetMesh()->SetSimulatePhysics(true);
 		
 		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+		SetItemMesh(false);
 	}
 }
 
@@ -878,21 +895,24 @@ void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 {
 	
 	TObjectPtr<UPGItemData> ItemDataToAttach = InventoryComponent->GetCurrentItemMesh();
-	if (!ItemDataToAttach)
+	if (!ItemDataToAttach || !bIsVisible)
 	{
 		EquippedItemMesh->SetStaticMesh(nullptr);
 		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
-		return;
+		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
+		{
+			AnimInterface->SetHandPose(EHandPoseType::Default);
+		}
 	}
-	EquippedItemMesh->SetRelativeTransform(ItemDataToAttach->ItemSocketOffset);
-	EquippedItemMesh->SetStaticMesh(ItemDataToAttach->ItemMesh);
-
-	// Item에 따른 손 모양 전환
-	if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
+	else
 	{
-		AnimInterface->SetHandPose(ItemDataToAttach->HandPoseType);
+		EquippedItemMesh->SetRelativeTransform(ItemDataToAttach->ItemSocketOffset);
+		EquippedItemMesh->SetStaticMesh(ItemDataToAttach->ItemMesh);
+		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
+		{
+			AnimInterface->SetHandPose(ItemDataToAttach->HandPoseType);
+		}
 	}
-
 }
 
 void APGPlayerCharacter::SetRightHandIK()

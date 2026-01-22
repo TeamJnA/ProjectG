@@ -35,7 +35,7 @@ void UGA_Headlight::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 			
 			if (UPGSoundManagerComponent* SoundComp = Character->GetSoundManagerComponent())
 			{
-				const FName SoundName = Character->GetHeadlightSoundName();
+				const FName SoundName = Character->GetHeadlightOnSoundName();
 				const FVector Location = Character->GetActorLocation();
 
 				SoundComp->TriggerSoundForAllPlayers(SoundName, Location);
@@ -54,7 +54,7 @@ void UGA_Headlight::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 
 			if (UPGSoundManagerComponent* SoundComp = Character->GetSoundManagerComponent())
 			{
-				const FName SoundName = Character->GetHeadlightSoundName();
+				const FName SoundName = Character->GetHeadlightOffSoundName();
 				const FVector Location = Character->GetActorLocation();
 
 				SoundComp->TriggerSoundForAllPlayers(SoundName, Location);

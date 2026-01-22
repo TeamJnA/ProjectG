@@ -95,6 +95,12 @@ protected:
 	TObjectPtr<UNavModifierComponent> NavModifier;
 
 private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DoorCloseSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DoorOpenSound;
+
 	FTimerHandle LockTriggerTimerHandle;
 	FTimerHandle GateMoveTimerHandle;
 

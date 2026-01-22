@@ -61,7 +61,7 @@ protected:
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> ArrivedPlayers;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = true))
 	TObjectPtr<APGSoundManager> SoundManager;
 
 	UPROPERTY(EditDefaultsOnly)

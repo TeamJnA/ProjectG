@@ -35,7 +35,7 @@ public:
 	void Lock() { bIsLocked = true; OnRep_LockState(); }
 	void UnLock();
 
-	void PlayDoorSound(const FName& SoundName);
+	void PlayDoorSound(const FName& SoundName, const bool IsEnemyHear = true);
 
 	void TEST_OpenDoorByAI(AActor* InteractInvestigator);
 

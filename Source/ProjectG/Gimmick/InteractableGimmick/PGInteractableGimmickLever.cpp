@@ -6,12 +6,18 @@
 #include "Gimmick/InteractableGimmick/Ability/GA_Interact_Lever.h"
 #include "Net/UnrealNetwork.h"
 
+#include "GameFramework/GameModeBase.h"
+#include "Sound/PGSoundManager.h"
+#include "Interface/SoundManagerInterface.h"
+
 APGInteractableGimmickLever::APGInteractableGimmickLever()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
 	InteractAbility = UGA_Interact_Lever::StaticClass();
+
+	FrameFallSound = FName(TEXT("LEVEL_MirrorRoom_FrameFall"));
 }
 
 void APGInteractableGimmickLever::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -44,6 +50,17 @@ FInteractionInfo APGInteractableGimmickLever::GetInteractionInfo() const
 
 void APGInteractableGimmickLever::ActivateLever()
 {
+	//Play Sound
+	
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		{
+			FVector SoundPlayLocation = GetActorLocation() - FVector::ZAxisVector * ( - 200);
+			SoundManager->PlaySoundForAllPlayers(FrameFallSound, SoundPlayLocation);
+		}
+	}
+
 	if (HasAuthority() && !bIsActivated)
 	{
 		bIsActivated = true;
@@ -63,15 +80,5 @@ void APGInteractableGimmickLever::Multicast_ActivatePhysics_Implementation()
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	StaticMesh->SetCollisionProfileName(TEXT("Item"));
 	StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-	StaticMesh->AddImpulse(GetActorRightVector() * -100.0f, NAME_None, true);
-
-	TWeakObjectPtr<UStaticMeshComponent> WeakMesh(StaticMesh);
-	FTimerHandle FreezeTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(FreezeTimerHandle, [WeakMesh]()
-	{
-		if (WeakMesh.IsValid())
-		{
-			WeakMesh->SetSimulatePhysics(false);
-		}
-	}, 3.0f, false);
+	StaticMesh->AddImpulse(GetActorRightVector() * -200.0f, NAME_None, true);
 }

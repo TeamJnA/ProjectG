@@ -119,8 +119,17 @@ void UGA_Item_Throw::MouseRight()
 	MontageTask->ReadyForActivation();
 
 	// Draw throw prediction line. on client
-	PredictThrowableTrajectory = UAT_PGPredictThrowableTrajectory::DrawTrajectory(this, InitialSpeed);
-	PredictThrowableTrajectory->ReadyForActivation();
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		if (APawn* Pawn = Cast<APawn>(Avatar))
+		{
+			if (Pawn && Pawn->IsLocallyControlled())
+			{
+				PredictThrowableTrajectory = UAT_PGPredictThrowableTrajectory::DrawTrajectory(this, InitialSpeed);
+				PredictThrowableTrajectory->ReadyForActivation();
+			}
+		}
+	}
 
 	// Wait for tag removed : Right Input.
 	// Play anim montage to return hand to default position.

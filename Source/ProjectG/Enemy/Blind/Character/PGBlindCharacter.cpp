@@ -6,6 +6,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Components/BoxComponent.h"
 
+#include "PGLogChannels.h"
+
 
 APGBlindCharacter::APGBlindCharacter()
 {
@@ -63,6 +65,8 @@ void APGBlindCharacter::SetHuntLevel(EBlindHuntLevel newHuntLevel)
         }
     }
     HuntLevel = newHuntLevel;
+
+    UE_LOG(LogPGEnemyBlind, Log, TEXT("Set Hund Level [%d]"), int32(HuntLevel));
 }
 
 void APGBlindCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
