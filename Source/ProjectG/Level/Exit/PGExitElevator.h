@@ -7,8 +7,6 @@
 #include "Components/TimelineComponent.h"
 #include "PGExitElevator.generated.h"
 
-class UCurveFloat;
-
 /**
  * 
  */
@@ -18,7 +16,13 @@ class PROJECTG_API APGExitElevator : public APGExitPointBase
 	GENERATED_BODY()
 	
 public:
-	APGExitElevator();
+	APGExitElevator(); 
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaTime) override;
 
 	// IInteractableActorInterface~
 	virtual void HighlightOn() const override;
@@ -55,10 +59,39 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fuse", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UAnimSequence>> FuseStatusAnim;
 
+	UPROPERTY(ReplicatedUsing = OnRep_FuseState, BlueprintReadOnly, Category = "Fuse", meta = (AllowPrivateAccess = "true"))
 	int32 FuseState;
+
+	UFUNCTION()
+	void OnRep_FuseState();
 
 	///
 	///		Door Close Timeline and functions
 	/// 
+	void ExecuteEscapeSequence();
+
+	UFUNCTION()
+	void DoorCloseProgress(float Value);
+
+	UFUNCTION()
+	void DoorCloseFinished();
+
+	UPROPERTY(EditAnywhere, Category = "Timeline", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCurveFloat> DoorCloseCurveFloat;
+
 	FTimeline DoorCloseTimeline;
+
+	bool bInnerDoorClosed;
+
+	FVector BaseInnerFenceLocation;
+
+	FVector BaseOuterFenceLocation;
+
+	// 문이 닫히는 X좌표를 블루프린트에서 수정 가능하게.
+	UPROPERTY(EditAnywhere, Category = "Timeline", meta = (AllowPrivateAccess = "true"))
+	float InnerFenceClosedX = 142.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Timeline", meta = (AllowPrivateAccess = "true"))
+	float OuterFenceClosedX = 126.0f;
+
 };

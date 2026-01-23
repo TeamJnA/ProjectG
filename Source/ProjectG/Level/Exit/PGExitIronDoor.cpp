@@ -739,17 +739,6 @@ void APGExitIronDoor::Multicast_StopCloseCountSound_Implementation()
 }
 
 /*
-oiled unlock -> StopHoldProgress true
-hold to unhold -> StopHoldProgress true
-
-hold progress -> bDoorAutoClose false
-
-tick -> 높이 일정수치 미만이면 종료
-
-강제 오픈 함수 추가.
-*/
-
-/*
 * 플레이어가 ExitDoor를 열고 트리거에 닿은 경우 종료처리
 */
 void APGExitIronDoor::OnEscapeTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

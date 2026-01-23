@@ -3,10 +3,16 @@
 
 #include "Level/Exit/PGExitElevator.h"
 #include "AbilitySystemComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "PGLogChannels.h"
 
 APGExitElevator::APGExitElevator()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	SetActorTickEnabled(false);
+
+	bReplicates = true;
+
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
@@ -35,11 +41,56 @@ APGExitElevator::APGExitElevator()
 	OuterFenceDoor->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
 	FuseState = 0;
+
+	bInnerDoorClosed = false;
+}
+
+void APGExitElevator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APGExitElevator, FuseState);
+}
+
+void APGExitElevator::BeginPlay()
+{
+	Super::BeginPlay();
+
+	BaseInnerFenceLocation = InnerFenceDoor->GetRelativeLocation();
+	BaseOuterFenceLocation = OuterFenceDoor->GetRelativeLocation();
+
+	// Set door Close timeline
+	if (DoorCloseCurveFloat)
+	{
+		FOnTimelineFloat ProgressUpdate;
+		ProgressUpdate.BindUFunction(this, FName("DoorCloseProgress"));
+
+		FOnTimelineEvent FinishedEvent;
+		FinishedEvent.BindUFunction(this, FName("DoorCloseFinished"));
+
+		DoorCloseTimeline.AddInterpFloat(DoorCloseCurveFloat, ProgressUpdate);
+		DoorCloseTimeline.SetTimelineFinishedFunc(FinishedEvent);
+
+		DoorCloseTimeline.SetLooping(false);
+	}
+}
+
+void APGExitElevator::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (DoorCloseTimeline.IsPlaying())
+	{
+		DoorCloseTimeline.TickTimeline(DeltaTime);
+	}
 }
 
 void APGExitElevator::HighlightOn() const
 {
-	FusePanel->SetRenderCustomDepth(true);
+	if(FuseState <= 2)
+	{
+		FusePanel->SetRenderCustomDepth(true);
+	}
 }
 
 void APGExitElevator::HighlightOff() const
@@ -83,18 +134,75 @@ void APGExitElevator::InteractionFailed()
 // true : remove item from inventory / false : do not remove item
 bool APGExitElevator::Unlock()
 {
-	if (FuseStatusAnim.IsValidIndex(FuseState) && FuseStatusAnim[FuseState])
+	UE_LOG(LogPGExitPoint, Log, TEXT("APGExitElevator::Unlock. Current FuseState : [%d]"), FuseState);
+
+	FuseState++;
+	OnRep_FuseState();
+
+	if (FuseState == 1 || FuseState == 2)
 	{
-		FusePanel->SetAnimation(FuseStatusAnim[FuseState]);
-		FusePanel->Play(false);
-
-		FuseState++;
-
-		if (FuseState == 1 || FuseState == 2)
-		{
-			return true;
-		}
+		return true;
 	}
 
 	return false;
+}
+
+void APGExitElevator::OnRep_FuseState()
+{
+	const int32 FuseIndex = FuseState - 1;
+
+	if (FuseStatusAnim.IsValidIndex(FuseIndex) && FuseStatusAnim[FuseIndex])
+	{
+		FusePanel->SetAnimation(FuseStatusAnim[FuseIndex]);
+		FusePanel->Play(false);
+
+		if (FuseIndex == 2)
+		{
+			HighlightOff();
+
+			ExecuteEscapeSequence();
+		}
+	}
+}
+
+void APGExitElevator::ExecuteEscapeSequence()
+{
+	SetActorTickEnabled(true);
+	DoorCloseTimeline.PlayFromStart();
+}
+
+void APGExitElevator::DoorCloseProgress(float Value)
+{
+	if(!bInnerDoorClosed)
+	{
+		float NewDoorX = (InnerFenceClosedX - BaseInnerFenceLocation.X) * Value;
+		FVector NewDoorLocation = BaseInnerFenceLocation;
+		NewDoorLocation.X = BaseInnerFenceLocation.X + NewDoorX;
+
+		InnerFenceDoor->SetRelativeLocation(NewDoorLocation);
+	}
+	else
+	{
+		float NewDoorX = (OuterFenceClosedX - BaseOuterFenceLocation.X) * Value;
+		FVector NewDoorLocation = BaseOuterFenceLocation;
+		NewDoorLocation.X = BaseOuterFenceLocation.X + NewDoorX;
+
+		OuterFenceDoor->SetRelativeLocation(NewDoorLocation);
+	}
+}
+
+void APGExitElevator::DoorCloseFinished()
+{
+	UE_LOG(LogPGExitPoint, Log, TEXT("APGExitElevator::DoorCloseFinished. InnerDoorClosed : [%d]"), bInnerDoorClosed);
+	if (!bInnerDoorClosed)
+	{
+		bInnerDoorClosed = true;
+		DoorCloseTimeline.PlayFromStart();
+	}
+	// All door closed
+	else
+	{
+		// TODO : Elevator go down gogo
+		SetActorTickEnabled(false);
+	}
 }
