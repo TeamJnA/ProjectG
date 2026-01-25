@@ -442,8 +442,8 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 
 		if (HeadlightLight)
 		{
-			HeadlightLight->SetIndirectLightingIntensity(0.4f);
-			HeadlightLight->SetVolumetricScatteringIntensity(0.0f);
+			HeadlightLight->SetIndirectLightingIntensity(1.0f);
+			HeadlightLight->SetVolumetricScatteringIntensity(0.4f);
 		}
 	}
 }
@@ -469,8 +469,8 @@ void APGPlayerCharacter::OnRep_PlayerState()
 
 		if (HeadlightLight)
 		{
-			HeadlightLight->SetIndirectLightingIntensity(0.4f);
-			HeadlightLight->SetVolumetricScatteringIntensity(0.0f);
+			HeadlightLight->SetIndirectLightingIntensity(1.0f);
+			HeadlightLight->SetVolumetricScatteringIntensity(0.4f);
 		}
 	}
 }

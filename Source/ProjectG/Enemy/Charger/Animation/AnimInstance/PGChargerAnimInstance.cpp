@@ -61,22 +61,7 @@ void UPGChargerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
         const FVector HeadLoc = HeadTransform.GetLocation();
         const FVector ActualForward = HeadTransform.GetUnitAxis(EAxis::Y);
         const FVector ActualLookDir = HeadLoc + (ActualForward * 500.0f);
-        DrawDebugLine(GetWorld(), HeadLoc, ActualLookDir, FColor::Green, false, -1.f, 0, 2.0f);
-
-        if (!LookAtLocation.IsZero() && !LookAtLocation.ContainsNaN())
-        {
-            DrawDebugSphere(GetWorld(), LookAtLocation, 30.0f, 12, FColor::Red, false, -1.0f, 0, 1.0f);
-
-        }
-        else
-        {
-            if (GEngine)
-            {
-                GEngine->AddOnScreenDebugMessage(101, 0.0f, FColor::Yellow,
-                    FString::Printf(TEXT("LookAt Invalid! Zero: %s, NaN: %s"),
-                        LookAtLocation.IsZero() ? TEXT("Yes") : TEXT("No"),
-                        LookAtLocation.ContainsNaN() ? TEXT("Yes") : TEXT("No")));
-            }
-        }
+        //DrawDebugLine(GetWorld(), HeadLoc, ActualLookDir, FColor::Green, false, -1.f, 0, 2.0f);
+		//DrawDebugSphere(GetWorld(), LookAtLocation, 30.0f, 12, FColor::Red, false, -1.0f, 0, 1.0f);
 	}
 }
