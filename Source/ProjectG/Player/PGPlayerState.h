@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
+#include "Type/PGGameTypes.h"
 #include "PGPlayerState.generated.h"
 
 class UPGAbilitySystemComponent;
@@ -24,20 +25,23 @@ public:
 
 	virtual UPGAttributeSet* GetAttributeSet() const;
 	
-	bool IsHost() const { return bIsHost; }
+	FORCEINLINE bool IsHost() const { return bIsHost; }
 	void SetHost(bool bInIsHost) { bIsHost = bInIsHost; OnRep_PlayerStateUpdated(); }
 
-	bool HasFinishedGame() const { return bHasFinishedGame; }
+	FORCEINLINE bool HasFinishedGame() const { return bHasFinishedGame; }
 	void SetHasFinishedGame(bool bInHasFinishedGame) { bHasFinishedGame = bInHasFinishedGame; OnRep_PlayerStateUpdated(); }
 
-	bool IsDead() const { return bIsDead; }
+	FORCEINLINE bool IsDead() const { return bIsDead; }
 	void SetIsDead(bool bInIsDead) { bIsDead = bInIsDead; OnRep_PlayerStateUpdated(); }
 
-	bool IsReadyToReturnLobby() const { return bIsReadyToReturnLobby; }
+	FORCEINLINE bool IsReadyToReturnLobby() const { return bIsReadyToReturnLobby; }
 	void SetReadyToReturnLobby(bool bInIsReadyToReturnLobby) { bIsReadyToReturnLobby = bInIsReadyToReturnLobby; OnRep_PlayerStateUpdated(); }
 
-	bool IsEscaping() const { return bIsEscaping; }
-	void SetIsEscaping(bool bInIsEscaping) { bIsEscaping = bInIsEscaping; }
+	FORCEINLINE bool IsEscaping() const { return bIsEscaping; }
+	FORCEINLINE void SetIsEscaping(bool bInIsEscaping) { bIsEscaping = bInIsEscaping; }
+
+	FORCEINLINE EExitPointType GetExitPoint() const {return ExitPoint;}
+	FORCEINLINE void SetExitPoint(EExitPointType _InExitPoint) {ExitPoint = _InExitPoint ; }
 
 	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
 
@@ -65,6 +69,9 @@ protected:
 
 	UPROPERTY(Replicated)
 	bool bIsEscaping = false;
+
+	UPROPERTY(Replicated)
+	EExitPointType ExitPoint = EExitPointType::None;
 
 	UFUNCTION()
 	void OnRep_PlayerStateUpdated();

@@ -4,7 +4,8 @@
 #include "Level/Exit/PGExitElevator.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "PGLogChannels.h"
+#include "Components/BoxComponent.h"
+#include "Character/PGPlayerCharacter.h"
 
 APGExitElevator::APGExitElevator()
 {
@@ -12,9 +13,6 @@ APGExitElevator::APGExitElevator()
 	SetActorTickEnabled(false);
 
 	bReplicates = true;
-
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
 
 	ElevatorBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ElevatorBody"));
 	ElevatorBody->SetupAttachment(Root);
@@ -40,9 +38,18 @@ APGExitElevator::APGExitElevator()
 	OuterFenceDoor->SetupAttachment(Root);
 	OuterFenceDoor->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
+	FusePanelCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("FusePanelCollision"));
+	FusePanelCollision->SetupAttachment(FusePanel);
+
+	ElevatorBodyCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ElevatorBodyCollision"));
+	ElevatorBodyCollision->SetupAttachment(ElevatorBody);
+	
+
 	FuseState = 0;
 
 	bInnerDoorClosed = false;
+
+	ExitPointType = EExitPointType::Elevator;
 }
 
 void APGExitElevator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -59,7 +66,7 @@ void APGExitElevator::BeginPlay()
 	BaseInnerFenceLocation = InnerFenceDoor->GetRelativeLocation();
 	BaseOuterFenceLocation = OuterFenceDoor->GetRelativeLocation();
 
-	// Set door Close timeline
+	// Set timelines
 	if (DoorCloseCurveFloat)
 	{
 		FOnTimelineFloat ProgressUpdate;
@@ -73,6 +80,20 @@ void APGExitElevator::BeginPlay()
 
 		DoorCloseTimeline.SetLooping(false);
 	}
+
+	if (ElevatorDescentCurveFloat)
+	{
+		FOnTimelineFloat ProgressUpdate;
+		ProgressUpdate.BindUFunction(this, FName("ElevatorDescentProgress"));
+
+		FOnTimelineEvent FinishedEvent;
+		FinishedEvent.BindUFunction(this, FName("ElevatorDescentFinished"));
+
+		ElevatorDescentTimeline.AddInterpFloat(ElevatorDescentCurveFloat, ProgressUpdate);
+		ElevatorDescentTimeline.SetTimelineFinishedFunc(FinishedEvent);
+
+		ElevatorDescentTimeline.SetLooping(false);
+	}
 }
 
 void APGExitElevator::Tick(float DeltaTime)
@@ -82,6 +103,11 @@ void APGExitElevator::Tick(float DeltaTime)
 	if (DoorCloseTimeline.IsPlaying())
 	{
 		DoorCloseTimeline.TickTimeline(DeltaTime);
+	}
+
+	if (ElevatorDescentTimeline.IsPlaying())
+	{
+		ElevatorDescentTimeline.TickTimeline(DeltaTime);
 	}
 }
 
@@ -158,6 +184,7 @@ void APGExitElevator::OnRep_FuseState()
 
 		if (FuseIndex == 2)
 		{
+			FusePanelCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 			HighlightOff();
 
 			ExecuteEscapeSequence();
@@ -169,6 +196,29 @@ void APGExitElevator::ExecuteEscapeSequence()
 {
 	SetActorTickEnabled(true);
 	DoorCloseTimeline.PlayFromStart();
+	ElevatorDescentTimeline.PlayFromStart();
+
+	GetWorldTimerManager().SetTimer(EscapeTimerHandle, this, &APGExitElevator::EscapePlayers, 6.0f, false);
+}
+
+void APGExitElevator::EscapePlayers()
+{
+	if (!ElevatorBodyCollision) return;
+
+	// 콜리전 내의 APGPlayerCharacter들을 담을 배열
+	TArray<AActor*> OverlappingActors;
+
+	// APGPlayerCharacter 클래스를 상속받은 액터들만 필터링하여 수집
+	ElevatorBodyCollision->GetOverlappingActors(OverlappingActors, APGPlayerCharacter::StaticClass());
+
+	for (AActor* Actor : OverlappingActors)
+	{
+		APGPlayerCharacter* TargetPlayer = Cast<APGPlayerCharacter>(Actor);
+		if (TargetPlayer)
+		{
+			OnEscapeStart(TargetPlayer, ExitPointType);
+		}
+	}
 }
 
 void APGExitElevator::DoorCloseProgress(float Value)
@@ -199,10 +249,15 @@ void APGExitElevator::DoorCloseFinished()
 		bInnerDoorClosed = true;
 		DoorCloseTimeline.PlayFromStart();
 	}
-	// All door closed
-	else
-	{
-		// TODO : Elevator go down gogo
-		SetActorTickEnabled(false);
-	}
+}
+
+void APGExitElevator::ElevatorDescentProgress(float Value)
+{
+	float NewElevatorZ = ElevatorDescentTargetZ * Value * (-1);
+	ElevatorBody->SetRelativeLocation(FVector( 0.0f, 0.0f, NewElevatorZ));
+}
+
+void APGExitElevator::ElevatorDescentFinished()
+{
+	SetActorTickEnabled(false);
 }

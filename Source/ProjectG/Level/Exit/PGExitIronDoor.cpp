@@ -8,7 +8,6 @@
 #include "Sound/SoundCue.h"
 #include "Components/AudioComponent.h"
 #include "Components/BoxComponent.h"
-#include "PGLogChannels.h"
 
 #include "Character/PGPlayerCharacter.h"
 #include "Game/PGGameMode.h"
@@ -21,9 +20,6 @@ APGExitIronDoor::APGExitIronDoor()
 {
     PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
-
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
 
 	PillarMesh0 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PillarMesh0"));
 	PillarMesh0->SetupAttachment(Root);
@@ -91,6 +87,8 @@ APGExitIronDoor::APGExitIronDoor()
     bIsChain = true;
 
     SoundPlayChecker.Init(false, 21);
+
+    ExitPointType = EExitPointType::IronDoor;
 }
 
 void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -739,10 +737,12 @@ void APGExitIronDoor::Multicast_StopCloseCountSound_Implementation()
 }
 
 /*
-* 플레이어가 ExitDoor를 열고 트리거에 닿은 경우 종료처리
+* Server에서만 진행. 플레이어가 ExitDoor를 열고 트리거에 닿은 경우 종료처리
 */
 void APGExitIronDoor::OnEscapeTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+    ensure(HasAuthority());
+
     if (CurrentLockPhase != E_LockPhase::E_Unlocked)
     {
         return;
@@ -760,7 +760,7 @@ void APGExitIronDoor::OnEscapeTriggerOverlap(UPrimitiveComponent* OverlappedComp
 
             if (APGPlayerController* PC = Cast<APGPlayerController>(PlayerCharacter->GetController()))
             {
-                PC->Client_StartEscapeSequence();
+                PC->Client_StartEscapeSequence(ExitPointType, true, FVector(3380.0f, 320.0f, -320.0f));
             }
         }
     }

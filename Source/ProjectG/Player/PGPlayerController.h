@@ -7,6 +7,8 @@
 
 #include "Blueprint/UserWidget.h"
 
+#include "Type/PGGameTypes.h"
+
 #include "PGPlayerController.generated.h"
 
 class APGSpectatorPawn;
@@ -39,9 +41,9 @@ public:
 	void Client_ForceReturnToLobby();
 
 	UFUNCTION(Client, Reliable)
-	void Client_StartEscapeSequence();
+	void Client_StartEscapeSequence(const EExitPointType ExitPoint, const bool bNeedAutomove = false, const FVector AutomoveLocation = FVector::ZeroVector);
 
-	void SetSpectateEscapeCamera();
+	void SetSpectateEscapeCamera(EExitPointType ExitPointType);
 	void SetSpectateNewTarget(const AActor* NewTarget, const APlayerState* NewTargetPlayerState);
 
 	const APlayerState* GetCurrentSpectateTargetPlayerState() const;

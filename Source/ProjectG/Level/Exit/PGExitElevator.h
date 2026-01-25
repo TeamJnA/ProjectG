@@ -7,6 +7,7 @@
 #include "Components/TimelineComponent.h"
 #include "PGExitElevator.generated.h"
 
+class UBoxComponent;
 /**
  * 
  */
@@ -35,8 +36,6 @@ public:
 	virtual bool Unlock() override;
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USceneComponent> Root;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> ElevatorBody;
@@ -56,6 +55,12 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMeshComponent> FusePanel;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Collision", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UBoxComponent> FusePanelCollision;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Collision", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UBoxComponent> ElevatorBodyCollision;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fuse", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UAnimSequence>> FuseStatusAnim;
 
@@ -65,11 +70,15 @@ private:
 	UFUNCTION()
 	void OnRep_FuseState();
 
+	void ExecuteEscapeSequence();
+
+	void EscapePlayers();
+
+	FTimerHandle EscapeTimerHandle;
+
 	///
 	///		Door Close Timeline and functions
 	/// 
-	void ExecuteEscapeSequence();
-
 	UFUNCTION()
 	void DoorCloseProgress(float Value);
 
@@ -94,4 +103,20 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Timeline", meta = (AllowPrivateAccess = "true"))
 	float OuterFenceClosedX = 126.0f;
 
+	///
+	/// Elevator Descent Timeline and functions
+	/// 
+	UFUNCTION()
+	void ElevatorDescentProgress(float Value);
+
+	UFUNCTION()
+	void ElevatorDescentFinished();
+
+	UPROPERTY(EditAnywhere, Category = "Timeline", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCurveFloat> ElevatorDescentCurveFloat;
+
+	FTimeline ElevatorDescentTimeline;
+
+	UPROPERTY(EditAnywhere, Category = "Timeline", meta = (AllowPrivateAccess = "true"))
+	float ElevatorDescentTargetZ = -1200.0f;
 };

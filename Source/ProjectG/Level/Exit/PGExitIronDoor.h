@@ -64,9 +64,6 @@ private:
 	UFUNCTION()
 	bool IsLocalPlayerLookingThis() const;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USceneComponent> Root;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> PillarMesh0;
 

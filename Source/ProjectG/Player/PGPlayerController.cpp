@@ -256,20 +256,21 @@ void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 * 탈출하려는 플레이어를 관전 중인 경우
 * 해당 플레이어가 탈출을 시작하면 Escape 카메라를 찾아 SetSpectateTarget
 */
-void APGPlayerController::SetSpectateEscapeCamera()
+void APGPlayerController::SetSpectateEscapeCamera(EExitPointType ExitPoint)
 {
 	if (!HasAuthority())
 	{
 		return;
 	}
-
+	/*
 	TArray<AActor*> FoundCameras;
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
 	ACameraActor* TargetCamera = FoundCameras.Num() > 0 ? Cast<ACameraActor>(FoundCameras[0]) : nullptr;
 
-	APlayerState* EscapingPlayerState = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? SpectateTargetList[CurrentSpectateIndex] : nullptr;
 	if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
 	{
+		APlayerState* EscapingPlayerState = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? SpectateTargetList[CurrentSpectateIndex] : nullptr;
+
 		if (TargetCamera && EscapingPlayerState)
 		{
 			Spectator->SetSpectateTarget(TargetCamera, EscapingPlayerState);
@@ -279,6 +280,69 @@ void APGPlayerController::SetSpectateEscapeCamera()
 			UE_LOG(LogTemp, Warning, TEXT("PGPC::ForceEscapeSpectate: EscapeCutsceneCamera not found! Switching to next target as a fallback."));
 			Server_ChangeSpectateTarget(true);
 		}
+	}
+	////////
+	if (APGPlayerState* NewTargetPS = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? Cast<APGPlayerState>(SpectateTargetList[CurrentSpectateIndex]) : nullptr)
+	{
+		EExitPointType ExitPoint =	NewTargetPS->GetExitPoint();
+		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+		GS->GetExitCameraByEnum(ExitPoint);
+
+		if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
+		{
+			Spectator->SetSpectateTarget(GS->GetExitCameraByEnum(ExitPoint), NewTargetPS);
+		}
+	}
+	*/
+
+
+	//////// 유효성 검사
+	
+	// Get Player State
+	APGPlayerState* NewTargetPS = SpectateTargetList.IsValidIndex(CurrentSpectateIndex)	? Cast<APGPlayerState>(SpectateTargetList[CurrentSpectateIndex])	: nullptr;
+	if (!NewTargetPS)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ForceEscapeSpectate: NewTargetPS is invalid at index %d"), CurrentSpectateIndex);
+		Server_ChangeSpectateTarget(true);
+		return;
+	}
+
+	// Cast GetPawn to SpectatorPawn
+	APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>();
+	if (!Spectator)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ForceEscapeSpectate: Spectator Pawn not found!"));
+		return;
+	}
+
+	// Cast PGGameState
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ForceEscapeSpectate: World is null!"));
+		return;
+	}
+
+	APGGameState* GS = World->GetGameState<APGGameState>();
+	if (!GS)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ForceEscapeSpectate: GameState is null!"));
+		return;
+	}
+	///////// 유효성 검사 끝
+	
+	// Get Camera and Start Spectate
+	AActor* ExitCamera = GS->GetExitCameraByEnum(ExitPoint);
+
+	if (ExitCamera)
+	{
+		Spectator->SetSpectateTarget(ExitCamera, NewTargetPS);
+		UE_LOG(LogTemp, Log, TEXT("ForceEscapeSpectate: Success. ExitPoint: %d"), (int32)ExitPoint);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ForceEscapeSpectate: ExitCamera not found for ExitPoint: %d"), (int32)ExitPoint);
+		Server_ChangeSpectateTarget(true);
 	}
 }
 
@@ -333,7 +397,7 @@ void APGPlayerController::Client_OnRevive_Implementation()
 /*
 * 플레이어 탈출 -> 플레이어 입력 비활성화 -> 목표 지점으로 이동 -> Escape 카메라로 시점 변환
 */
-void APGPlayerController::Client_StartEscapeSequence_Implementation()
+void APGPlayerController::Client_StartEscapeSequence_Implementation(const EExitPointType ExitPoint, const bool bNeedAutomove, const FVector AutomoveLocation)
 {
 	APGPlayerCharacter* PlayerCharacter = GetPawn<APGPlayerCharacter>();
 	if (!PlayerCharacter)
@@ -341,23 +405,49 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation()
 		return;
 	}
 
-	TArray<AActor*> FoundCameras;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
-	ACameraActor* TargetCamera = FoundCameras.Num() > 0 ? Cast<ACameraActor>(FoundCameras[0]) : nullptr;
-	if (!TargetCamera)
+	//////// 유효성 검사
+	// Cast PGGameState
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ForceEscapeSpectate: World is null!"));
+		return;
+	}
+
+	APGGameState* GS = World->GetGameState<APGGameState>();
+	if (!GS)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ForceEscapeSpectate: GameState is null!"));
+		return;
+	}
+	///////// 유효성 검사 끝
+
+	// Get Camera and Start Spectate
+	AActor* ExitCamera = GS->GetExitCameraByEnum(ExitPoint);
+
+	if (!ExitCamera)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Escape sequence actors not found. Requesting immediate escape."));
 		OnEscapeMovementFinished();
 		return;
 	}
-	const FVector Destination = FVector(3380.0f, 320.0f, -320.0f);
 
-	PlayerCharacter->DisableInput(this);
-	PlayerCharacter->OnAutomatedMovementCompleted.AddUniqueDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
-	PlayerCharacter->StartAutomatedMovement(Destination);
+	if (bNeedAutomove)
+	{
+		const FVector Destination = AutomoveLocation;
+
+		PlayerCharacter->DisableInput(this);
+		PlayerCharacter->OnAutomatedMovementCompleted.AddUniqueDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
+		PlayerCharacter->StartAutomatedMovement(Destination);
+	}
+	else
+	{
+		OnEscapeMovementFinished();
+	}
+
 	//SetViewTargetWithBlend(TargetCamera, 0.2f);	
-	SetViewTarget(TargetCamera);
-	SetControlRotation(TargetCamera->GetActorRotation());
+	SetViewTarget(ExitCamera);
+	SetControlRotation(ExitCamera->GetActorRotation());
 }
 
 /*
@@ -500,11 +590,29 @@ void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 
 	if (NewTargetPS->IsEscaping())
 	{
-		TArray<AActor*> FoundCameras;
-		UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
-		if (FoundCameras.Num() > 0)
+		//////// 유효성 검사
+		// Cast PGGameState
+		UWorld* World = GetWorld();
+		if (!World)
 		{
-			Spectator->SetSpectateTarget(FoundCameras[0], NewTargetPS);
+			UE_LOG(LogTemp, Error, TEXT("ForceEscapeSpectate: World is null!"));
+			return;
+		}
+
+		APGGameState* GS = World->GetGameState<APGGameState>();
+		if (!GS)
+		{
+			UE_LOG(LogTemp, Error, TEXT("ForceEscapeSpectate: GameState is null!"));
+			return;
+		}
+		///////// 유효성 검사 끝
+
+		EExitPointType TargetExitPoint = NewTargetPS->GetExitPoint();
+
+		AActor* ExitCamera = GS->GetExitCameraByEnum(TargetExitPoint);
+		if (ExitCamera)
+		{
+			Spectator->SetSpectateTarget(ExitCamera, NewTargetPS);
 		}
 	}
 	else
