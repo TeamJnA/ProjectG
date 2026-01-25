@@ -7,9 +7,8 @@
 #include "Interface/InteractableActorInterface.h"
 #include "Type/PGGameTypes.h"
 #include "PGLogChannels.h"
+#include "Camera/CameraComponent.h"
 #include "PGExitPointBase.generated.h"
-
-class UCameraComponent;
 
 UCLASS()
 class PROJECTG_API APGExitPointBase : public AActor, public IInteractableActorInterface
@@ -32,6 +31,9 @@ public:
 
 	// If true, remove item from inventory
 	virtual bool Unlock();
+
+	FORCEINLINE FVector GetCameraLocation() const { return ExitCamera->GetComponentLocation(); }
+	FORCEINLINE FRotator GetCameraRoation() const { return ExitCamera->GetComponentRotation(); }
 
 protected:
 	UFUNCTION()

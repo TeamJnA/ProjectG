@@ -8,7 +8,6 @@
 #include "Player/PGPlayerController.h"
 #include "Interface/SoundManagerInterface.h"
 #include "Sound/PGSoundManager.h"
-#include "Camera/CameraComponent.h"
 #include "Game/PGGameState.h"
 
 // Sets default values

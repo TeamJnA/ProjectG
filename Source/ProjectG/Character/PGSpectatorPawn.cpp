@@ -10,7 +10,8 @@
 #include "InputActionValue.h"
 
 #include "Character/PGPlayerCharacter.h"
-#include "Camera/CameraActor.h"
+
+#include "Level/Exit/PGExitPointBase.h"
 
 #include "EngineUtils.h" 
 #include "Net/UnrealNetwork.h"
@@ -126,14 +127,14 @@ void APGSpectatorPawn::OnRep_TargetToOrbit()
 {
 	if (IsLocallyControlled())
 	{
-		if (Cast<ACameraActor>(TargetToOrbit))
+		if (APGExitPointBase* ExitPoint = Cast<APGExitPointBase>(TargetToOrbit))
 		{
 			bCanOrbit = false;
 			SetActorTickEnabled(false);
-			SetActorLocation(TargetToOrbit->GetActorLocation());
+			SetActorLocation(ExitPoint->GetCameraLocation());
 			if (APlayerController* PC = Cast<APlayerController>(GetController()))
 			{
-				PC->SetControlRotation(TargetToOrbit->GetActorRotation());
+				PC->SetControlRotation(ExitPoint->GetCameraRoation());
 			}
 		}
 		else if (IsValid(TargetToOrbit))

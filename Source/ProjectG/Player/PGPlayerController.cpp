@@ -9,7 +9,8 @@
 #include "Player/PGPlayerState.h"
 #include "Character/PGSpectatorPawn.h"
 #include "Character/PGPlayerCharacter.h"
-#include "Camera/CameraActor.h"
+
+#include "Level/Exit/PGExitPointBase.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -282,27 +283,16 @@ void APGPlayerController::SetSpectateEscapeCamera(EExitPointType ExitPoint)
 		}
 	}
 	////////
-	if (APGPlayerState* NewTargetPS = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? Cast<APGPlayerState>(SpectateTargetList[CurrentSpectateIndex]) : nullptr)
-	{
-		EExitPointType ExitPoint =	NewTargetPS->GetExitPoint();
-		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-		GS->GetExitCameraByEnum(ExitPoint);
-
-		if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
-		{
-			Spectator->SetSpectateTarget(GS->GetExitCameraByEnum(ExitPoint), NewTargetPS);
-		}
-	}
 	*/
 
 
 	//////// 유효성 검사
 	
 	// Get Player State
-	APGPlayerState* NewTargetPS = SpectateTargetList.IsValidIndex(CurrentSpectateIndex)	? Cast<APGPlayerState>(SpectateTargetList[CurrentSpectateIndex])	: nullptr;
-	if (!NewTargetPS)
+	APGPlayerState* EscapingPlayerState = SpectateTargetList.IsValidIndex(CurrentSpectateIndex)	? Cast<APGPlayerState>(SpectateTargetList[CurrentSpectateIndex])	: nullptr;
+	if (!EscapingPlayerState)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ForceEscapeSpectate: NewTargetPS is invalid at index %d"), CurrentSpectateIndex);
+		UE_LOG(LogTemp, Warning, TEXT("ForceEscapeSpectate: EscapingPlayerState is invalid at index %d"), CurrentSpectateIndex);
 		Server_ChangeSpectateTarget(true);
 		return;
 	}
@@ -336,7 +326,7 @@ void APGPlayerController::SetSpectateEscapeCamera(EExitPointType ExitPoint)
 
 	if (ExitCamera)
 	{
-		Spectator->SetSpectateTarget(ExitCamera, NewTargetPS);
+		Spectator->SetSpectateTarget(ExitCamera, EscapingPlayerState);
 		UE_LOG(LogTemp, Log, TEXT("ForceEscapeSpectate: Success. ExitPoint: %d"), (int32)ExitPoint);
 	}
 	else
@@ -445,9 +435,10 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation(const EExitP
 		OnEscapeMovementFinished();
 	}
 
-	//SetViewTargetWithBlend(TargetCamera, 0.2f);	
+	APGExitPointBase* ExitPointActor = Cast<APGExitPointBase>(ExitCamera);
+
 	SetViewTarget(ExitCamera);
-	SetControlRotation(ExitCamera->GetActorRotation());
+	SetControlRotation(ExitPointActor->GetCameraRoation());
 }
 
 /*
