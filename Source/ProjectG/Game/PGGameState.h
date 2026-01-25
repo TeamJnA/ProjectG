@@ -7,6 +7,7 @@
 
 #include "Net/UnrealNetwork.h"
 #include "Type/CharacterTypes.h"
+#include "Type/PGGameTypes.h"
 
 #include "PGGameState.generated.h"
 
@@ -51,6 +52,20 @@ public:
 	void NotifyPlayerArrayUpdated();
 	// ----- Player List ---------
 
+	FORCEINLINE void RegisterExitCamera(EExitPointType Type, AActor* CameraActor)
+	{
+		ExitCameraMap.Add(Type, CameraActor);
+	}
+
+	FORCEINLINE AActor* GetExitCameraByEnum(EExitPointType Type) const
+	{
+		if (const TObjectPtr<AActor>* FoundCamera = ExitCameraMap.Find(Type))
+		{
+			return FoundCamera->Get();
+		}
+		return nullptr;
+	}
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
@@ -75,4 +90,6 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "GameState")
 	EGameState CurrentGameState;
 
+	UPROPERTY()
+	TMap<EExitPointType, TObjectPtr<AActor>> ExitCameraMap;
 };

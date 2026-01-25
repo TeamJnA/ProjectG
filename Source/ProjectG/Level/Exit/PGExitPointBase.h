@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interface/InteractableActorInterface.h"
+#include "Type/PGGameTypes.h"
+#include "PGLogChannels.h"
+#include "Camera/CameraComponent.h"
 #include "PGExitPointBase.generated.h"
 
 UCLASS()
@@ -15,6 +18,8 @@ class PROJECTG_API APGExitPointBase : public AActor, public IInteractableActorIn
 public:	
 	// Sets default values for this actor's properties
 	APGExitPointBase();
+
+	virtual void BeginPlay() override;
 
 	// IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
@@ -27,13 +32,27 @@ public:
 	// If true, remove item from inventory
 	virtual bool Unlock();
 
+	FORCEINLINE FVector GetCameraLocation() const { return ExitCamera->GetComponentLocation(); }
+	FORCEINLINE FRotator GetCameraRoation() const { return ExitCamera->GetComponentRotation(); }
+
 protected:
 	UFUNCTION()
 	void PlaySound(const FName& SoundName, const FVector& SoundLocation);
 
 	UFUNCTION()
-	void OnEscapeStart(AActor* EscapeStartActor);
+	void OnEscapeStart(AActor* EscapeStartActor, EExitPointType ExitPointType = EExitPointType::IronDoor);
+
+	void RegisterExitCamera();
+	int32 RegistrationRetries = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> Root;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraComponent> ExitCamera;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
+
+	EExitPointType ExitPointType;
 };

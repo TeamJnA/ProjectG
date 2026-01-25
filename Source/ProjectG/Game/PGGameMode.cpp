@@ -24,6 +24,7 @@
 #include "Sound/PGSoundManager.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
 
+
 APGGameMode::APGGameMode()
 {
 	bStartPlayersAsSpectators = true;
@@ -304,8 +305,10 @@ APGSoundManager* APGGameMode::GetSoundManager()
 * 탈출하는 플레이어 상태 설정
 * 탈출하는 플레이어를 관전 중인 플레이어가 있다면 Escape 카메라로 관전 시점 변경
 */
-void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer)
+void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer, EExitPointType ExitPointType)
 {
+	ensure(HasAuthority());
+
 	if (!EscapingPlayer)
 	{
 		return;
@@ -317,6 +320,7 @@ void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer)
 		return;
 	}
 	EscapingPlayerPS->SetIsEscaping(true);
+	EscapingPlayerPS->SetExitPoint(ExitPointType);
 
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; It++)
 	{
@@ -328,7 +332,7 @@ void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer)
 
 		if (SpectatorPC->GetCurrentSpectateTargetPlayerState() == EscapingPlayerPS)
 		{
-			SpectatorPC->SetSpectateEscapeCamera();
+			SpectatorPC->SetSpectateEscapeCamera(ExitPointType);
 		}
 	}
 }

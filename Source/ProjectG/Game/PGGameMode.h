@@ -6,6 +6,7 @@
 #include "GameFramework/GameMode.h"
 
 #include "Interface/SoundManagerInterface.h"
+#include "Type/PGGameTypes.h"
 
 #include "PGGameMode.generated.h"
 
@@ -31,7 +32,7 @@ public:
 
 	void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
 
-	void HandlePlayerEscaping(ACharacter* EscapingPlayer);
+	void HandlePlayerEscaping(ACharacter* EscapingPlayer, EExitPointType ExitPointType = EExitPointType::IronDoor);
 	
 	void RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform);
 
