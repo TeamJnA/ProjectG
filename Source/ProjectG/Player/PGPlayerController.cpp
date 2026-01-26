@@ -414,7 +414,6 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation(const EExitP
 
 	// Get Camera and Start Spectate
 	AActor* ExitCamera = GS->GetExitCameraByEnum(ExitPoint);
-
 	if (!ExitCamera)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Escape sequence actors not found. Requesting immediate escape."));
@@ -422,6 +421,7 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation(const EExitP
 		return;
 	}
 
+	PlayerCharacter->ClearCharacterAbility();
 	if (bNeedAutomove)
 	{
 		const FVector Destination = AutomoveLocation;

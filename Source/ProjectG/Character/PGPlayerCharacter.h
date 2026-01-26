@@ -219,6 +219,7 @@ public:
 	FORCEINLINE FName GetCrouchToStandSoundName() const { return CrouchToStandSoundName; }
 
 	void ActivateAbilityByTag(const FGameplayTagContainer Tag);
+	void ClearCharacterAbility();
 
 private:
 	void InitAbilitySystemComponent();

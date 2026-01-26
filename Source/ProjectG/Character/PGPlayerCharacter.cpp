@@ -552,8 +552,6 @@ void APGPlayerCharacter::StartAutomatedMovement(const FVector& TargetLocation)
 {
 	bIsMovingAutomated = true;
 	AutomatedMoveTarget = TargetLocation;
-	
-	AbilitySystemComponent->ClearAllAbilities();
 
 	GetWorld()->GetTimerManager().SetTimer(AutomatedMoveTimer, this, &APGPlayerCharacter::UpdateAutomatedMovement, GetWorld()->GetDeltaSeconds(), true);
 }
@@ -826,6 +824,11 @@ void APGPlayerCharacter::ActivateAbilityByTag(const FGameplayTagContainer Tag)
 	{
 		AbilitySystemComponent->TryActivateAbilitiesByTag(Tag, true);
 	}
+}
+
+void APGPlayerCharacter::ClearCharacterAbility()
+{
+	AbilitySystemComponent->ClearAllAbilities();
 }
 
 void APGPlayerCharacter::CacheInteractionTarget(AActor* CacheInteractTarget)
