@@ -19,6 +19,7 @@
 #include "Level/Room/PGRoom3.h"
 #include "Level/Room/PGStairRoom1.h"
 #include "Level/Room/PGMirrorRoom.h"
+#include "Level/Room/PGElevatorRoom.h"
 #include "Level/Misc/PGDoor1.h"
 #include "Level/Misc/PGWall.h"
 #include "Level/Misc/PGExitDoor.h"
@@ -50,7 +51,7 @@ APGLevelGenerator::APGLevelGenerator()
 	};
 
 	// max room spawn amount
-	RoomAmount = 23;
+	RoomAmount = 24;
 
 	// reload level if (elpased time > max generation time)
 	MaxGenerateTime = 8.0f;
@@ -215,6 +216,20 @@ void APGLevelGenerator::SpawnStartRoom()
 		TestReviveKit3->InitWithData(ItemData8);
 	}
 	TestReviveKit3->SetActorRelativeLocation(FVector(900.0f, 430.0f, 10.0f));
+
+	APGItemActor* TestFuse0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData9 = GI->GetItemDataByKey("Fuse"))
+	{
+		TestFuse0->InitWithData(ItemData9);
+	}
+	TestFuse0->SetActorRelativeLocation(FVector(1200.0f, 270.0f, 10.0f));
+
+	APGItemActor* TestFuse1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData10 = GI->GetItemDataByKey("Fuse"))
+	{
+		TestFuse1->InitWithData(ItemData10);
+	}
+	TestFuse1->SetActorRelativeLocation(FVector(1200.0f, 350.0f, 10.0f));
 	// ~ for test
 
 	//APGExitDoor* ExitDoor = World->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), SpawnParams);
@@ -244,18 +259,22 @@ void APGLevelGenerator::SpawnNextRoom()
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	APGMasterRoom* NewRoom = nullptr;
-	if (RoomAmount > 17)
+	if (RoomAmount > 14)
 	{
 		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), SpawnTransform, spawnParams);
 	}
-	else if (RoomAmount > 3)
+	else if (RoomAmount > 4)
 	{
 		const TSubclassOf<APGMasterRoom>& NewRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
 		NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, spawnParams);
 	}
-	else
+	else if(RoomAmount > 1)
 	{
 		NewRoom = World->SpawnActor<APGMasterRoom>(APGMirrorRoom::StaticClass(), SpawnTransform, spawnParams);
+	}
+	else
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGElevatorRoom::StaticClass(), SpawnTransform, spawnParams);
 	}
 
 	TWeakObjectPtr<APGLevelGenerator> WeakThis(this);
@@ -305,7 +324,7 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		}
 
 		ExitPointsList.Remove(InSelectedExitPoint);
-		if (RoomAmount > 3)
+		if (RoomAmount > 4 || RoomAmount == 1)
 		{
 			DoorPointsList.Add(InSelectedExitPoint);
 		}
@@ -640,13 +659,14 @@ void APGLevelGenerator::SpawnEnemy()
 		UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn enemy at room '%s'"), *BlindSpawnRoom->GetName());
 	}
 
-	const int32 MaxRetries = 5;
+	const int32 MaxRetries = 8;
 	const APGMasterRoom* ChargerSpawnRoom = nullptr;
 	for (int32 i = 0; i < MaxRetries; i++)
 	{
 		const APGMasterRoom* CandidateRoom = FindMiddleDistanceRoom();
 		if (CandidateRoom == nullptr || CandidateRoom == BlindSpawnRoom)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Blind already spawned here"));
 			continue;
 		}
 
@@ -835,7 +855,7 @@ const APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 	}
 
 	// find middle distance room
-	const int32 TargetDistance = MaxDistance / 2;
+	const int32 TargetDistance = MaxDistance / 2 + 1;
 	TArray<TObjectPtr<APGMasterRoom>> MiddleDistanceRooms;
 	for (const auto& Elem : Distances)
 	{

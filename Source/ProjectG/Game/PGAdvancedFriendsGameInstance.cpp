@@ -63,6 +63,7 @@ void UPGAdvancedFriendsGameInstance::Init()
 	ItemDataMap.Add("ChainKey", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/ChainKey/DA_Exit_ChainKey.DA_Exit_ChainKey")));
 	ItemDataMap.Add("HandWheel", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/HandWheel/DA_Exit_HandWheel.DA_Exit_HandWheel")));
 	ItemDataMap.Add("RustOil", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/WheelOil/DA_Exit_RustOil.DA_Exit_RustOil")));
+	ItemDataMap.Add("Fuse", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/Fuse/DA_Exit_Fuse.DA_Exit_Fuse")));
 }
 
 // ---------- Session ---------
