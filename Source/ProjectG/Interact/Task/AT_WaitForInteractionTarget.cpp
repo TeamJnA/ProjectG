@@ -21,6 +21,7 @@ UAT_WaitForInteractionTarget* UAT_WaitForInteractionTarget::WaitForInteractionTa
 
 void UAT_WaitForInteractionTarget::Activate()
 {
+	bIsPreviousTargetValid = false;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::TraceToFindInteractable, InteractTraceRate, true);
 }
 
@@ -65,12 +66,14 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 		//if (InteractInterface && (!PreviousTargetActor.IsValid() || PreviousTargetActor != HitResult.GetActor()) )
 		if (InteractInterface)
 		{
+			bIsPreviousTargetValid = true;
 			PreviousTargetActor = HitResult.GetActor();
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());
 		}
 		// If the new actor doesn't have InteractInterface, broadcast NullPtr.
 		else if (!InteractInterface)
 		{
+			bIsPreviousTargetValid = false;
 			PreviousTargetActor.Reset();
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());
 		}
@@ -78,8 +81,9 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 	// If there's no HitResult but task has previous actor, broadcast NullPtr.
 	else
 	{
-		if (PreviousTargetActor.IsValid())
+		if (bIsPreviousTargetValid)
 		{
+			bIsPreviousTargetValid = false;
 			PreviousTargetActor.Reset();
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());
 		}

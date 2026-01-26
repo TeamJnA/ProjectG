@@ -43,4 +43,6 @@ protected:
 	virtual void OnDestroy(bool AbilityIsEnding) override;
 
 	TWeakObjectPtr<AActor> PreviousTargetActor;
+
+	bool bIsPreviousTargetValid;
 };
