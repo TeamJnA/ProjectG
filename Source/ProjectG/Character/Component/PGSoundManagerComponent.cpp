@@ -13,11 +13,13 @@ UPGSoundManagerComponent::UPGSoundManagerComponent()
 	// PrimaryComponentTick.bCanEverTick = true;
 
 	// ...
+	SetIsReplicatedByDefault(true);
 }
 
 void UPGSoundManagerComponent::SetSoundManager(APGSoundManager* InSoundManager)
 {
 	SoundManager = InSoundManager;
+	UE_LOG(LogTemp, Log, TEXT("SetSoundManager Completely"));
 }
 
 void UPGSoundManagerComponent::TriggerSoundForSelf(FName InSoundName)
@@ -28,6 +30,16 @@ void UPGSoundManagerComponent::TriggerSoundForSelf(FName InSoundName)
 		return;
 	}
 	SoundManager->PlaySoundForSelf(InSoundName);
+}
+
+void UPGSoundManagerComponent::TriggerSoundLocally(FName InSoundName, FVector SoundLocation)
+{
+	if (!SoundManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *InSoundName.ToString());
+		return;
+	}
+	SoundManager->PlaySoundLocally(InSoundName, SoundLocation);
 }
 
 void UPGSoundManagerComponent::TriggerSoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation)

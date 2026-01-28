@@ -26,28 +26,17 @@ APGSoundManager::APGSoundManager()
 	static ConstructorHelpers::FObjectFinder<UDataTable> SoundDataTableRef(TEXT("/Game/ProjectG/Sound/PGSoundDataTable.PGSoundDataTable"));
 	if (SoundDataTableRef.Object)
 	{
-		UDataTable* SoundDataTable = SoundDataTableRef.Object;
+		SoundDataTable = SoundDataTableRef.Object;
+	}
+}
 
-		// Get a map of all the rows in the DataTable as a pointer to the row data (uint8*)
-		const TMap<FName, uint8*>& DataTableRows = SoundDataTable->GetRowMap();
+void APGSoundManager::BeginPlay()
+{
+	Super::BeginPlay();
 
-		for (const TPair<FName, uint8*>& DataTableRow : DataTableRows)
-		{
-			FName RowName = DataTableRow.Key;
-
-			// Cast the data from pointer(uint8*) to PGSoundPlayData
-			FPGSoundPlayData* RowData = reinterpret_cast<FPGSoundPlayData*>(DataTableRow.Value);
-
-			if (RowData && RowData->SoundAsset)
-			{
-				UE_LOG(LogSoundManager, Log, TEXT("Add SoundData to SoundDataMap : %s"), *RowName.ToString());
-				SoundDataMap.Add(RowName, FPGSoundPlayData(RowData->SoundAsset, RowData->SoundLevel, RowData->SoundStartTime));
-			}
-			else
-			{
-				ensureMsgf(false, TEXT("Invalid row or missing soundasset in SoundDataTable."));
-			}
-		}
+	if (SoundDataTable)
+	{
+		InitSoundDateTable();
 	}
 }
 
@@ -61,6 +50,11 @@ void APGSoundManager::PlaySoundForSelf(const FName& SoundName)
 	}
 
 	UGameplayStatics::PlaySound2D(GetWorld(), SoundData->SoundAsset, 1.0f, 1.0f, SoundData->SoundStartTime);
+}
+
+void APGSoundManager::PlaySoundLocally(const FName& SoundName, const FVector& SoundLocation)
+{
+	PGPlaySound(SoundName, SoundLocation);
 }
 
 void APGSoundManager::PlaySoundForAllPlayers_Implementation(const FName& SoundName, const FVector& SoundLocation)
@@ -131,6 +125,11 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 
 void APGSoundManager::PlaySoundMulticast_Implementation(const FName& SoundName, const FVector& SoundLocation)
 {
+	PGPlaySound(SoundName, SoundLocation);
+}
+
+void APGSoundManager::PGPlaySound(const FName& SoundName, const FVector& SoundLocation)
+{
 	FPGSoundPlayData* SoundData = SoundDataMap.Find(SoundName);
 	if (!SoundData)
 	{
@@ -142,13 +141,38 @@ void APGSoundManager::PlaySoundMulticast_Implementation(const FName& SoundName, 
 	const float SoundPowerLevel = SoundData->SoundLevel;
 
 	const float AttenuationExtentRange = 200 * SoundPowerLevel * SoundPowerLevel;
-	const float AttenuationFalloffDistance = 200 * (SoundPowerLevel - 1) * (SoundPowerLevel - 1);
+	// const float AttenuationFalloffDistance = 200 * (SoundPowerLevel - 1) * (SoundPowerLevel - 1);
 
 	// AttenuationShapeExtents.X is the sphere radius of attenuation.
-	BaseSoundAttenuation->Attenuation.AttenuationShapeExtents.X = AttenuationExtentRange;
-	BaseSoundAttenuation->Attenuation.FalloffDistance = AttenuationFalloffDistance;
+	// AttenuationShapeExtents.X : 사운드가 감쇠 없이 100% 들리는 범위
+	// FalloffDistance : 위 범위 이후로 점점줄어들면서 어디까지 줄어드는 범위
+	BaseSoundAttenuation->Attenuation.AttenuationShapeExtents.X = AttenuationExtentRange * 0.1f;
+	BaseSoundAttenuation->Attenuation.FalloffDistance = AttenuationExtentRange * 0.9f;
 
 	UE_LOG(LogSoundManager, Log, TEXT("Play sound %s in PlaySoundMulticast"), *SoundName.ToString());
 	UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundData->SoundAsset, SoundLocation, 1.0f, 1.0f, SoundData->SoundStartTime, BaseSoundAttenuation);
 }
 
+void APGSoundManager::InitSoundDateTable()
+{
+	// Get a map of all the rows in the DataTable as a pointer to the row data (uint8*)
+	const TMap<FName, uint8*>& DataTableRows = SoundDataTable->GetRowMap();
+
+	for (const TPair<FName, uint8*>& DataTableRow : DataTableRows)
+	{
+		FName RowName = DataTableRow.Key;
+
+		// Cast the data from pointer(uint8*) to PGSoundPlayData
+		FPGSoundPlayData* RowData = reinterpret_cast<FPGSoundPlayData*>(DataTableRow.Value);
+
+		if (RowData && RowData->SoundAsset)
+		{
+			UE_LOG(LogSoundManager, Log, TEXT("Add SoundData to SoundDataMap : %s"), *RowName.ToString());
+			SoundDataMap.Add(RowName, FPGSoundPlayData(RowData->SoundAsset, RowData->SoundLevel, RowData->SoundStartTime));
+		}
+		else
+		{
+			ensureMsgf(false, TEXT("Invalid row or missing soundasset in SoundDataTable."));
+		}
+	}
+}

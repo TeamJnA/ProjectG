@@ -75,4 +75,5 @@ void APGCharacterBase::GiveAndActivatePassiveEffects()
 void APGCharacterBase::InitSoundManager(APGSoundManager* SoundManagerRef)
 {
 	SoundManagerComponent->SetSoundManager(SoundManagerRef);
+	UE_LOG(LogTemp, Log, TEXT("InitSoundManager"));
 }
