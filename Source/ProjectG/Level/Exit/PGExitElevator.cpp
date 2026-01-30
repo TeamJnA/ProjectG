@@ -167,8 +167,13 @@ bool APGExitElevator::Unlock()
 
 	if (FuseState == 1 || FuseState == 2)
 	{
+		PlaySound(FuseAttachSound, FusePanel->GetComponentLocation());
 		return true;
 	}
+
+	PlaySound(FuseLeverSound, FusePanel->GetComponentLocation());
+	PlaySoundPlayers(ElevatorDescentSound, ElevatorBody->GetComponentLocation());
+	PlaySoundPlayers(ElevatorDoorCloseSound, InnerFenceDoor->GetComponentLocation());
 
 	return false;
 }

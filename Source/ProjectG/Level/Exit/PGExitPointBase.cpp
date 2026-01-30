@@ -69,6 +69,17 @@ void APGExitPointBase::PlaySound(const FName& SoundName, const FVector& SoundLoc
 	}
 }
 
+void APGExitPointBase::PlaySoundPlayers(const FName& SoundName, const FVector& SoundLocation)
+{
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		{
+			SoundManager->PlaySoundForAllPlayers(SoundName, SoundLocation);
+		}
+	}
+}
+
 void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType InExitPoint)
 {
 	if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(EscapeStartActor))
