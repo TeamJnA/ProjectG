@@ -112,4 +112,22 @@ protected:
 	void OnSpectateNext(const FInputActionValue& Value);
 	void OnSpectatePrev(const FInputActionValue& Value);
 	void OnShowPauseMenu(const FInputActionValue& Value);
+
+
+	///
+	///		Audio comp. Sound parts
+	///
+public:
+	void InitializeGameplayBGM();
+
+	void PlayGameplayBGM();
+
+	void StopGameplayBGM();
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Audio")
+	TObjectPtr<USoundBase> GameplayBGMSound;
+	
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> GameplayBGMPlayer;
 };
