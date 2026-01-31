@@ -17,8 +17,13 @@ class PROJECTG_API APGSoundManager : public AActor
 public:	
 	APGSoundManager();
 
+	virtual void BeginPlay() override;
+
 	// Play sound for a only client who called this function. 
 	void 	PlaySoundForSelf(const FName& SoundName);
+
+	// Play sound for a only client and Locally to make location sound
+	void 	PlaySoundLocally(const FName& SoundName, const FVector& SoundLocation);
 
 	// Play sound for all players.
 	UFUNCTION(Server, Reliable)
@@ -32,6 +37,8 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void PlaySoundMulticast(const FName& SoundName, const FVector& SoundLocation);
 
+	void PGPlaySound(const FName& SoundName, const FVector& SoundLocation);
+
 	UPROPERTY()
 	TMap<FName, FPGSoundPlayData> SoundDataMap;
 
@@ -40,4 +47,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug", meta = (AllowPrivateAccess = true))
 	bool bDebugSoundRange;
+
+	UPROPERTY()
+	TObjectPtr<UDataTable> SoundDataTable;
+
+	void InitSoundDateTable();
 };

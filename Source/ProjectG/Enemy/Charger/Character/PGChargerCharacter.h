@@ -92,4 +92,10 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "AI|State")
 	E_PGChargerState CurrentState;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName HeadRotate180Name;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName HeadRotateStareName;
 };

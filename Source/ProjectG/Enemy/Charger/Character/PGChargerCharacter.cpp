@@ -13,6 +13,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 
 APGChargerCharacter::APGChargerCharacter()
 {
@@ -111,6 +112,7 @@ void APGChargerCharacter::RotateHeadYaw()
 			}
 			HeadYaw -= 360.0f;
 		}
+		SoundManagerComponent->TriggerSoundForAllPlayers(HeadRotate180Name, GetActorLocation());
 
 		HeadYaw += 180.0f;
 	}
@@ -133,6 +135,11 @@ void APGChargerCharacter::SetCurrentState(E_PGChargerState NewState)
 		else if (CurrentState == E_PGChargerState::Attacking)
 		{
 			SetMovementSpeed(ChargeSpeed);
+		}
+		else if(CurrentState == E_PGChargerState::Staring)
+		{
+			SoundManagerComponent->TriggerSoundForAllPlayers(HeadRotateStareName, GetActorLocation());
+			SetMovementSpeed(PatrolSpeed);
 		}
 		else
 		{

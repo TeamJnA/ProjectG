@@ -20,9 +20,12 @@
 
 #include "UI/Manager/PGHUD.h"
 
+#include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "Net/UnrealNetwork.h"
+
+#include "PGLogChannels.h"
 
 APGPlayerController::APGPlayerController()
 {
@@ -55,6 +58,13 @@ APGPlayerController::APGPlayerController()
 	{
 		SpectatePrevAction = SpectatePrevActionObj.Object;
 	}
+
+	//     /Script/Engine.SoundCue'/Game/ProjectG/Sound/BGMSoundCues/Sound_GamePlayBGM.Sound_GamePlayBGM'
+	static ConstructorHelpers::FObjectFinder<USoundBase> GameplayBGMAssetRef(TEXT("/Game/ProjectG/Sound/BGMSoundCues/Sound_GamePlayBGM.Sound_GamePlayBGM"));
+	if (GameplayBGMAssetRef.Succeeded())
+	{
+		GameplayBGMSound = GameplayBGMAssetRef.Object;
+	}
 }
 
 void APGPlayerController::BeginPlay()
@@ -68,6 +78,8 @@ void APGPlayerController::BeginPlay()
 
 	UE_LOG(LogTemp, Log, TEXT("CLIENT/SERVER: %s BeginPlay. IsLocalController: %d, Role: %s"),
 		*GetName(), IsLocalController(), *UEnum::GetValueAsString(GetLocalRole()));
+
+	InitializeGameplayBGM();
 }
 
 void APGPlayerController::SetupInputComponent()
@@ -263,28 +275,6 @@ void APGPlayerController::SetSpectateEscapeCamera(EExitPointType ExitPoint)
 	{
 		return;
 	}
-	/*
-	TArray<AActor*> FoundCameras;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
-	ACameraActor* TargetCamera = FoundCameras.Num() > 0 ? Cast<ACameraActor>(FoundCameras[0]) : nullptr;
-
-	if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
-	{
-		APlayerState* EscapingPlayerState = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? SpectateTargetList[CurrentSpectateIndex] : nullptr;
-
-		if (TargetCamera && EscapingPlayerState)
-		{
-			Spectator->SetSpectateTarget(TargetCamera, EscapingPlayerState);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PGPC::ForceEscapeSpectate: EscapeCutsceneCamera not found! Switching to next target as a fallback."));
-			Server_ChangeSpectateTarget(true);
-		}
-	}
-	////////
-	*/
-
 
 	//////// 유효성 검사
 	
@@ -673,5 +663,32 @@ void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
 	{
 		HUD->InitPauseMenuWidget();
+	}
+}
+
+void APGPlayerController::InitializeGameplayBGM()
+{
+	if (!GameplayBGMSound)
+	{
+		UE_LOG(LogPGController, Warning, TEXT("Cannot find BGM"));
+		return;
+	}
+	GameplayBGMPlayer = UGameplayStatics::CreateSound2D(this, GameplayBGMSound, 1.0f, 1.0f, 0.0f, nullptr, false);
+	GameplayBGMPlayer->bIsUISound = true;
+}
+
+void APGPlayerController::PlayGameplayBGM()
+{
+	if (GameplayBGMPlayer && GameplayBGMPlayer->GetSound() && !GameplayBGMPlayer->IsPlaying())
+	{
+		GameplayBGMPlayer->Play();
+	}
+}
+
+void APGPlayerController::StopGameplayBGM()
+{
+	if (GameplayBGMPlayer && GameplayBGMPlayer->IsPlaying())
+	{
+		GameplayBGMPlayer->FadeOut(1.5f, 0.0f);
 	}
 }

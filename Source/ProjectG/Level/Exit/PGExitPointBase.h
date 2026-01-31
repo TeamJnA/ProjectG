@@ -40,6 +40,9 @@ protected:
 	void PlaySound(const FName& SoundName, const FVector& SoundLocation);
 
 	UFUNCTION()
+	void PlaySoundPlayers(const FName& SoundName, const FVector& SoundLocation);
+
+	UFUNCTION()
 	void OnEscapeStart(AActor* EscapeStartActor, EExitPointType ExitPointType = EExitPointType::IronDoor);
 
 	void RegisterExitCamera();

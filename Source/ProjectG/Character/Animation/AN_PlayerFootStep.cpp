@@ -4,6 +4,7 @@
 #include "Character/Animation/AN_PlayerFootStep.h"
 
 #include "Character/Component/PGSoundManagerComponent.h"
+#include "Character/PGCharacterBase.h"
 
 UAN_PlayerFootStep::UAN_PlayerFootStep()
 {
@@ -21,21 +22,27 @@ void UAN_PlayerFootStep::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 		return;
 	}
 
+	APGCharacterBase* PGCB = Cast<APGCharacterBase>(OwnerActor);
+	if (!PGCB)
+	{
+		return;
+	}
+
 	if (!OwnerActor->HasAuthority())
 	{
 		return;
 	}
 
-	if (UPGSoundManagerComponent* SoundManagerComp = OwnerActor->FindComponentByClass<UPGSoundManagerComponent>())
+	if (UPGSoundManagerComponent* PGSMComp = PGCB->GetSoundManagerComponent())
 	{
 		// Player sound is need noise, but Enemy sound only spread to players.
 		if (bIsPlayer)
 		{
-			SoundManagerComp->TriggerSoundWithNoise(FootStepName, OwnerActor->GetActorLocation(), true);
+			PGSMComp->TriggerSoundWithNoise(FootStepName, OwnerActor->GetActorLocation(), true);
 		}
 		else
 		{
-			SoundManagerComp->TriggerSoundForAllPlayers(FootStepName, OwnerActor->GetActorLocation());
+			PGSMComp->TriggerSoundForAllPlayers(FootStepName, OwnerActor->GetActorLocation());
 		}
 	}
 
