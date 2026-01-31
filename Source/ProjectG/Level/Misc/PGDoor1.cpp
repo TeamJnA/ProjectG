@@ -73,7 +73,21 @@ APGDoor1::APGDoor1()
 
 void APGDoor1::BeginPlay()
 {
+	Super::BeginPlay();
+
 	MIDDoor = Mesh0->CreateDynamicMaterialInstance(0);
+
+	FString NetModeStr = (GetNetMode() == NM_Client) ? TEXT("Client") :
+		(GetNetMode() == NM_DedicatedServer) ? TEXT("DedicatedServer") :
+		(GetNetMode() == NM_ListenServer) ? TEXT("ListenServer") : TEXT("Standalone");
+
+	FString AuthStr = HasAuthority() ? TEXT("TRUE") : TEXT("FALSE");
+
+	UE_LOG(LogTemp, Warning, TEXT("[DOOR_CHECK] Name: %s | NetMode: %s | HasAuthority: %s | Location: %s"),
+		*GetName(),
+		*NetModeStr,
+		*AuthStr,
+		*GetActorLocation().ToString());
 }
 
 void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool InbIsLocked)

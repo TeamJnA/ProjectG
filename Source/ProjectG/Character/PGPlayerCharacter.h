@@ -55,6 +55,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = LocalMesh, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USkeletalMeshComponent> LocalBodyMesh;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Headlight, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> HeadlightMesh;
 

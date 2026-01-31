@@ -34,11 +34,12 @@ protected:
 	void SpawnDoors();
 	void SpawnItems();
 	void SpawnMannequins();
-	void SpawnEnemy();
+	bool SpawnEnemy();
 	void SpawnSingleItem_Async(int32 ItemAmount);
 
-	void StartLevelGenerateTimer() const;
-	void CheckLevelGenerateTimeOut() const;
+	void StartLevelGenerateTimer();
+	void CheckLevelGenerateTimeOut();
+	void ReGenerateLevel();
 
 	const APGMasterRoom* FindFarthestRoom() const;
 	const APGMasterRoom* FindMiddleDistanceRoom() const;
@@ -62,7 +63,7 @@ private:
 	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
 
 	UPROPERTY()
-	TArray<TSubclassOf<class APGMasterRoom>> RoomsList;
+	TArray<TSubclassOf<APGMasterRoom>> RoomsList;
 
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;
@@ -86,4 +87,6 @@ private:
 	float MaxGenerateTime;
 	int32 SeedValue = -1;
 	int32 RoomAmount;
+
+	bool bIsGenerationStopped = false;
 };

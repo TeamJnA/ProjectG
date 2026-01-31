@@ -389,6 +389,20 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 */
 void UPGAdvancedFriendsGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)
 {
+	UE_LOG(LogTemp, Error, TEXT("GI::HandleNetworkFailure: %s"), *ErrorString);
+
+	FString DisplayMessage = TEXT("Network Error");
+	SetPendingNetworkFailureMessage(DisplayMessage);
+
+	if (SessionInterface.IsValid())
+	{
+		FNamedOnlineSession* ExistingSession = SessionInterface->GetNamedSession(NAME_GameSession);
+		if (ExistingSession)
+		{
+			SessionInterface->DestroySession(NAME_GameSession);
+		}
+	}
+
 	ForceReturnToMainMenu();
 }
 
@@ -398,6 +412,24 @@ void UPGAdvancedFriendsGameInstance::HandleTravelFailure(UWorld* World, ETravelF
 */
 void UPGAdvancedFriendsGameInstance::HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString)
 {
+	UE_LOG(LogTemp, Error, TEXT("GI::HandleTravelFailure: %s"), *ErrorString);
+
+	FString DisplayMessage = TEXT("Network Error");
+	if (ErrorString.Contains(TEXT("Game Started")))
+	{
+		DisplayMessage = TEXT("Game Started");
+	}
+	SetPendingNetworkFailureMessage(DisplayMessage);
+
+	if (SessionInterface.IsValid())
+	{
+		FNamedOnlineSession* ExistingSession = SessionInterface->GetNamedSession(NAME_GameSession);
+		if (ExistingSession)
+		{
+			SessionInterface->DestroySession(NAME_GameSession);
+		}
+	}
+
 	ForceReturnToMainMenu();
 }
 

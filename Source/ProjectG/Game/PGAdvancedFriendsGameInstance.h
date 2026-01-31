@@ -83,13 +83,17 @@ public:
 	// 로비로 돌아온 경우 세션에 다시 참가할 수 있도록 세팅
 	void OpenSession();
 
-	const TArray<FUniqueNetIdRepl>& GetExpectedPlayersForTravel() const { return ExpectedPlayersForTravel; }
+	FORCEINLINE const TArray<FUniqueNetIdRepl>& GetExpectedPlayersForTravel() const { return ExpectedPlayersForTravel; }
 	void SetExpectedPlayersForTravel(const TArray<TObjectPtr<APlayerState>>& InPlayerArray);
 	void ClearExpectedPlayersForTravel();
 
 	void KickPlayerFromSession(const FUniqueNetId& PlayerToKickId);
 
 	void UpdateSessionPlayerCount(int32 CurrentPlayers);
+
+	FORCEINLINE void SetPendingNetworkFailureMessage(const FString& Message) { PendingNetworkFailureMessage = Message; }
+	FORCEINLINE const FString& GetPendingNetworkFailureMessage() const { return PendingNetworkFailureMessage; }
+	FORCEINLINE void ClearPendingNetworkFailureMessage() { PendingNetworkFailureMessage.Empty(); }
 
 	FOnSessionsFoundDelegate OnSessionsFound;
 	FOnHostSessionAttemptStartedDelegate OnHostSessionAttemptStarted;
@@ -137,11 +141,11 @@ public:
 protected:
 	virtual void Init() override;
 
-	// -------- Handl Failure --------
+	// -------- Handle Failure --------
 	// void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
 	void HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString);
 	void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
-	// -------- Handl Failure --------
+	// -------- Handle Failure --------
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
 	int32 MaxInventorySize = 5;
@@ -186,6 +190,7 @@ private:
 
 	bool bIsHostingAfterDestroy;
 
+	FString PendingNetworkFailureMessage;
 	FName PendingSessionName;
 	int32 PendingMaxPlayers;
 	bool bIsPendingSessionPrivate;

@@ -245,6 +245,12 @@ void APGLevelGenerator::SpawnStartRoom()
 */
 void APGLevelGenerator::SpawnNextRoom()
 {
+	if (bIsGenerationStopped)
+	{
+		UE_LOG(LogTemp, Log, TEXT("LG::SpawnNextRoom: Generation stopped"));
+		return;
+	}
+
 	UWorld* World = GetWorld();
 	if (!World || ExitPointsList.IsEmpty())
 	{
@@ -308,6 +314,16 @@ void APGLevelGenerator::SpawnNextRoom()
 */
 void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck)
 {	
+	if (bIsGenerationStopped)
+	{
+		UE_LOG(LogTemp, Log, TEXT("LG::CheckOverlap: Generation stopped"));
+		if (RoomToCheck)
+		{
+			RoomToCheck->Destroy();
+		}
+		return;
+	}
+
 	if (IsLatestRoomOverlapping(RoomToCheck))
 	{
 		RoomToCheck->Destroy();
@@ -418,13 +434,34 @@ bool APGLevelGenerator::IsLatestRoomOverlapping(const APGMasterRoom* RoomToCheck
 */
 void APGLevelGenerator::SetupLevelEnvironment()
 {
+	if (bIsGenerationStopped)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Generation stopped by Timeout."));
+		return;
+	}
+	bIsGenerationStopped = true;
 	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 
 	CloseHoles();
 	SpawnDoors();
 	SpawnItems();
 	SpawnMannequins();
-	SpawnEnemy();
+	if (!SpawnEnemy())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Enemy spawn failed. Restarting Level..."));
+		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+
+		FTimerHandle TravelStartTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(
+			TravelStartTimerHandle,
+			this,
+			&APGLevelGenerator::ReGenerateLevel,
+			1.0f,
+			false
+		);
+
+		return;
+	}
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
@@ -526,8 +563,8 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 	UWorld* World = GetWorld();
 	if (!World || ItemAmount <= 0 || ItemSpawnPointsList.IsEmpty())
 	{
-		return;
 		ItemSpawnPointsList.Empty();
+		return;
 	}
 
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
@@ -602,7 +639,7 @@ void APGLevelGenerator::SpawnMannequins()
 		return;
 	}
 
-	int32 MannequinAmount = MannequinSpawnPointsList.Num() * 0.5f;
+	int32 MannequinAmount = MannequinSpawnPointsList.Num() * 0.4f;
 
 	while (MannequinAmount > 0 && !MannequinSpawnPointsList.IsEmpty())
 	{
@@ -627,18 +664,18 @@ void APGLevelGenerator::SpawnMannequins()
 * 모든 Room 생성 후 적대 AI 스폰
 * StartRoom 기준 중간 거리의 Room에 적대 AI 스폰
 */
-void APGLevelGenerator::SpawnEnemy()
+bool APGLevelGenerator::SpawnEnemy()
 {
 	UWorld* World = GetWorld();
 	if (!World)
 	{
-		return;
+		return false;
 	}
 
 	APGGameMode* GM = World->GetAuthGameMode<APGGameMode>();
 	if (!GM)
 	{
-		return;
+		return false;
 	}
 
 	//APGMasterRoom* EnemySpawnRoom = FindFarthestRoom();
@@ -655,8 +692,18 @@ void APGLevelGenerator::SpawnEnemy()
 		{
 			SpawnedBlindCharacter->InitSoundManager(GM->GetSoundManager());
 		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Failed to spawn blind"));
+			return false;
+		}
 
 		UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn enemy at room '%s'"), *BlindSpawnRoom->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Failed to spawn blind"));
+		return false;
 	}
 
 	const int32 MaxRetries = 8;
@@ -687,32 +734,39 @@ void APGLevelGenerator::SpawnEnemy()
 			SpawnedCharger->InitSoundManager(GM->GetSoundManager());
 			UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn Charger at room '%s'"), *ChargerSpawnRoom->GetName());
 		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Failed to spawn charger"));
+			return false;
+		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Failed to find valid room for Charger (Duplicate with Blind or No Room)."));
+		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Failed to spawn charger"));
+		return false;
 	}
 
 	const APGMasterRoom* GhostSpawnRoom = FindFarthestRoom();
 	if (GhostSpawnRoom)
 	{
 		const FTransform SpawnTransform(FRotator::ZeroRotator, GhostSpawnRoom->GetEnemySpawnLocation());
-
 		UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn ghost. (Room: %s, Location: %s)"), *GhostSpawnRoom->GetName(), *SpawnTransform.GetLocation().ToString());
-
 		GM->SpawnGhost(SpawnTransform);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: failed find farthestroom."));
+		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Failed to spawn ghost"));
+		return false;
 	}
+
+	return true;
 }
 
 /*
 * ExitPoint가 부족하여 더이상 Room을 생성할 수 없는 상황을 방지하기 위해 타이머 체크
 * MaxGenerateTime(8초) 이후에도 레벨 생성 중이라면 재생성
 */
-void APGLevelGenerator::StartLevelGenerateTimer() const
+void APGLevelGenerator::StartLevelGenerateTimer()
 {
 	FTimerHandle LevelGenerateTimer;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -728,16 +782,36 @@ void APGLevelGenerator::StartLevelGenerateTimer() const
 /*
 * elapsed time 체크
 */
-void APGLevelGenerator::CheckLevelGenerateTimeOut() const
+void APGLevelGenerator::CheckLevelGenerateTimeOut()
 {
+	if (bIsGenerationStopped)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::CheckLevelGenerateTimeOut: Level generation already successed"));
+		return;
+	}
+
 	const float ElapsedTime = GetWorld()->GetTimeSeconds() - GenerationStartTime;
 	if (ElapsedTime >= MaxGenerateTime)
 	{
+		bIsGenerationStopped = true;
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 
 		UE_LOG(LogTemp, Log, TEXT("LG::CheckLevelGenerateTimeout: Timeout. re-open level"));
-		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
+		FTimerHandle TravelStartTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(
+			TravelStartTimerHandle,
+			this,
+			&APGLevelGenerator::ReGenerateLevel,
+			1.0f,
+			false
+		);
 	}
+}
+
+void APGLevelGenerator::ReGenerateLevel()
+{
+	UE_LOG(LogTemp, Log, TEXT("LG::ReGenerateLevel: ServerTravel."));
+	GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 }
 
 /*

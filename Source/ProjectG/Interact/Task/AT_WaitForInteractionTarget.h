@@ -23,26 +23,32 @@ public:
 	FInteractionTargetDelegate InteractionTarget;
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Task", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UAT_WaitForInteractionTarget* WaitForInteractionTarget(UGameplayAbility* OwningAbility, UCameraComponent* CameraComponent, bool ShowDebug = false
-																	,float TraceRate = 0.1f, float TraceRange = 250.0);
+	static UAT_WaitForInteractionTarget* WaitForInteractionTarget(UGameplayAbility* OwningAbility,
+		UCameraComponent* CameraComponent,
+		APawn* InAvatarPawn,
+		bool ShowDebug = false,
+		float TraceRate = 0.1f,
+		float TraceRange = 250.0);
 
 	virtual void Activate() override;
 
 protected:
 	void TraceToFindInteractable();
+	virtual void OnDestroy(bool AbilityIsEnding) override;
 
-	bool ShowDebug;
+	UPROPERTY()
+	TObjectPtr<UCameraComponent> CameraComponent;
+
+	UPROPERTY()
+	TObjectPtr<APawn> AvatarPawn;
+
+	FTimerHandle TimerHandle;
+
+	TWeakObjectPtr<AActor> PreviousTargetActor;
 
 	float InteractTraceRate;
 	float InteractTraceRange;
 
-	TObjectPtr<UCameraComponent> CameraComponent;
-
-	FTimerHandle TimerHandle;
-
-	virtual void OnDestroy(bool AbilityIsEnding) override;
-
-	TWeakObjectPtr<AActor> PreviousTargetActor;
-
+	bool ShowDebug;
 	bool bIsPreviousTargetValid;
 };

@@ -3,7 +3,6 @@
 
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
 #include "Enemy/Ghost/AI/Controllers/PGGhostAIController.h"
-#include "Perception/AISense_Touch.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "AbilitySystem/PGAbilitySystemComponent.h"
@@ -220,7 +219,6 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
         if (AttackableInterface->IsValidAttackableTarget() && OtherActor != CachedAttackedTarget)
         {
             CachedAttackedTarget = OtherActor;
-            UAISense_Touch::ReportTouchEvent(GetWorld(), this, OtherActor, OtherActor->GetActorLocation());
             AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation(), 160.0f);
         }
 
@@ -272,7 +270,6 @@ void APGGhostCharacter::TryBindLightEffectEvents()
         LightExtinguishSphere->OnComponentBeginOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapBegin);
         LightExtinguishSphere->OnComponentEndOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapEnd);
 
-        LightExtinguishSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
         LightExtinguishSphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
         LightExtinguishSphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
         LightExtinguishSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);

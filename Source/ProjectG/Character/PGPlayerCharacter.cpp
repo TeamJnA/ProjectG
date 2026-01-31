@@ -30,6 +30,7 @@
 #include "UI/HUD/PGInventoryWidget.h"
 #include "UI/PlayerEntry/ScoreBoard/PGScoreBoardWidget.h"
 #include "Components/SpotLightComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 
 // Interface
 #include "Interface/InteractableActorInterface.h"
@@ -63,6 +64,9 @@ APGPlayerCharacter::APGPlayerCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
+	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->bCastHiddenShadow = true;
+
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -79,6 +83,12 @@ APGPlayerCharacter::APGPlayerCharacter()
 	FirstPersonCamera->SetupAttachment(GetMesh(), TEXT("head"));
 	FirstPersonCamera->SetIsReplicated(true);
 
+	LocalBodyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("LocalBodyMesh"));
+	LocalBodyMesh->SetupAttachment(GetMesh());
+	LocalBodyMesh->SetOnlyOwnerSee(true);
+	LocalBodyMesh->SetCastShadow(false);
+	LocalBodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
 	EquippedItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EquippedItemMesh"));
@@ -89,6 +99,7 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeadlightMesh->SetupAttachment(FirstPersonCamera);
 	HeadlightMesh->SetVisibility(true);
 	HeadlightMesh->SetOwnerNoSee(true);
+	HeadlightMesh->bCastHiddenShadow = true;
 
 	HeadlightLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("HeadlightLight"));
 	HeadlightLight->SetupAttachment(FirstPersonCamera);

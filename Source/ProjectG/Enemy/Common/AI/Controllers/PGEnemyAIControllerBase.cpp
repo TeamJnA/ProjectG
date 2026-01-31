@@ -6,10 +6,29 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
+#include "Type/CharacterTypes.h"
 #include "AbilitySystemComponent.h"
 
 APGEnemyAIControllerBase::APGEnemyAIControllerBase(FObjectInitializer const& ObjectInitializer)
 {
+}
+
+FGenericTeamId APGEnemyAIControllerBase::GetGenericTeamId() const
+{
+	if (const IGenericTeamAgentInterface* PawnInterface = Cast<const IGenericTeamAgentInterface>(GetPawn()))
+	{
+		return PawnInterface->GetGenericTeamId();
+	}
+	return FGenericTeamId((uint8)EGameTeam::AI);
+}
+
+ETeamAttitude::Type APGEnemyAIControllerBase::GetTeamAttitudeTowards(const AActor& Other) const
+{
+	if (const APGEnemyCharacterBase* MyPawn = Cast<APGEnemyCharacterBase>(GetPawn()))
+	{
+		return MyPawn->GetTeamAttitudeTowards(Other);
+	}
+	return ETeamAttitude::Neutral;
 }
 
 void APGEnemyAIControllerBase::OnPossess(APawn* InPawn)

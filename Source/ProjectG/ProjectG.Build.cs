@@ -12,7 +12,7 @@ public class ProjectG : ModuleRules
 															"GameplayAbilities", "GameplayTags", "GameplayTasks",
                                                             "UMG", "Slate", "SlateCore",
                                                             "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam", 
-                                                            "AIModule", "NavigationSystem" });
+                                                            "AIModule", "NavigationSystem", "NetCore" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Networking", "Steamworks" });
 

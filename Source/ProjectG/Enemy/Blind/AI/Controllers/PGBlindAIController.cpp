@@ -74,8 +74,8 @@ void APGBlindAIController::SetupPerceptionSystem()
 	{
 		HearingConfig->HearingRange = 3000.f;
 		HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
-		HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
-		HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+		HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
+		HearingConfig->DetectionByAffiliation.bDetectNeutrals = false;
 		GetPerceptionComponent()->ConfigureSense(*HearingConfig);
 
 	}
@@ -84,8 +84,8 @@ void APGBlindAIController::SetupPerceptionSystem()
 	if (TouchConfig)
 	{
 		TouchConfig->DetectionByAffiliation.bDetectEnemies = true;
-		TouchConfig->DetectionByAffiliation.bDetectFriendlies = true;
-		TouchConfig->DetectionByAffiliation.bDetectNeutrals = true;
+		TouchConfig->DetectionByAffiliation.bDetectFriendlies = false;
+		TouchConfig->DetectionByAffiliation.bDetectNeutrals = false;
 		GetPerceptionComponent()->ConfigureSense(*TouchConfig);
 	}
 

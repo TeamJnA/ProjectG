@@ -18,6 +18,8 @@ class PROJECTG_API APGEnemyAIControllerBase : public AAIController
 public:
 	explicit APGEnemyAIControllerBase(FObjectInitializer const& ObjectInitializer);
 
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;

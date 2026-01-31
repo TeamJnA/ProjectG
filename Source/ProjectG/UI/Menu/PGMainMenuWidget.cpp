@@ -79,7 +79,16 @@ void UPGMainMenuWidget::NativeConstruct()
 	bIsFocusable = true;
 	SetKeyboardFocus();
 
-	SetMainMenuButtonEnabled(true);	
+	SetMainMenuButtonEnabled(true);
+
+	FTimerHandle CheckErrorMsgTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		CheckErrorMsgTimerHandle,
+		this,
+		&UPGMainMenuWidget::CheckPendingNetworkFailure,
+		0.3f,
+		false
+	);
 }
 
 void UPGMainMenuWidget::NativeDestruct()
@@ -357,6 +366,25 @@ void UPGMainMenuWidget::HandleJoinSessionFinished(bool bWasSuccessful, const FTe
 		SetMainMenuButtonEnabled(true);
 		SetSessionListButtonEnabled(true);
 	}
+}
+
+void UPGMainMenuWidget::CheckPendingNetworkFailure()
+{
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		FString ErrorMessage = GI->GetPendingNetworkFailureMessage();
+		if (!ErrorMessage.IsEmpty())
+		{
+			HandleNetworkFailure(FText::FromString(ErrorMessage));
+			GI->ClearPendingNetworkFailureMessage();
+		}
+	}
+}
+
+void UPGMainMenuWidget::HandleNetworkFailure(const FText& ErrorMessage)
+{
+	ShowSessionStatusWidget(ErrorMessage, true);
+	HideSessionStatusWidget(5.0f);
 }
 
 void UPGMainMenuWidget::SetMainMenuButtonEnabled(bool bEnabled)

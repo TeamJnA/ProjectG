@@ -12,9 +12,6 @@
 
 class APGPlayerController;
 class APGSoundManager;
-
-// TEST TO REMOVE
-class APGBlindCharacter;
 class APGGhostCharacter;
 
 /**
@@ -44,6 +41,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	// virtual void PostLogin(APlayerController* NewPlayer) override;
 	// virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
 	// virtual void Logout(AController* Exiting) override;
@@ -59,6 +57,8 @@ protected:
 
 	void UpdateSpectatorsTarget(const ACharacter* RevivedCharacter, const APlayerState* RevivedPlayerState);
 
+	void InitSoundManagerToPlayers();
+
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> ArrivedPlayers;
 
@@ -72,6 +72,4 @@ protected:
 	TSubclassOf<APGGhostCharacter> GhostCharacterClass;
 
 	float SpawnOffset = 0.0f;
-
-	void InitSoundManagerToPlayers();
 };

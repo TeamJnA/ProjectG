@@ -6,12 +6,16 @@
 #include "Camera/CameraComponent.h"
 #include "AbilitySystemComponent.h"
 
-UAT_WaitForInteractionTarget* UAT_WaitForInteractionTarget::WaitForInteractionTarget
-(UGameplayAbility* OwningAbility, UCameraComponent* ActorCameraComponent, bool ShowDebug
-, float TraceRate, float TraceRange)
+UAT_WaitForInteractionTarget* UAT_WaitForInteractionTarget::WaitForInteractionTarget(UGameplayAbility* OwningAbility, 
+	UCameraComponent* ActorCameraComponent,
+	APawn* InAvatarPawn,
+	bool ShowDebug,
+	float TraceRate,
+	float TraceRange)
 {
 	UAT_WaitForInteractionTarget* MyObj = NewAbilityTask<UAT_WaitForInteractionTarget>(OwningAbility);
 	MyObj->CameraComponent = ActorCameraComponent;
+	MyObj->AvatarPawn = InAvatarPawn;
 	MyObj->InteractTraceRate = TraceRate;
 	MyObj->InteractTraceRange = TraceRange;
 	MyObj->ShowDebug = ShowDebug;
@@ -32,21 +36,20 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 	*/
 
 	// Add avatar actor not to trace
-	AActor* AvatarActor = Ability->GetCurrentActorInfo()->AvatarActor.Get();
-	if (!AvatarActor)
+	if (!AvatarPawn)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot found avatar actor in WaitForInteractionTarget"));
 		return;
 	}
+
 	FCollisionQueryParams TraceParams;
-	TraceParams.AddIgnoredActor(AvatarActor);
+	TraceParams.AddIgnoredActor(AvatarPawn);
 
 	const FVector TraceStartLocation = CameraComponent->GetComponentLocation();
-	const FVector TraceStartDirection = CameraComponent->GetForwardVector();
-	const FVector TraceEndLocation = TraceStartLocation + TraceStartDirection * InteractTraceRange;
+	const FVector TraceDirection = AvatarPawn->GetControlRotation().Vector();
+	const FVector TraceEndLocation = TraceStartLocation + (TraceDirection * InteractTraceRange);
 
 	FHitResult HitResult;
-
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, TraceParams);
 
 #if WITH_EDITOR
@@ -71,7 +74,7 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 			InteractionTarget.Broadcast(PreviousTargetActor.Get());
 		}
 		// If the new actor doesn't have InteractInterface, broadcast NullPtr.
-		else if (!InteractInterface)
+		else
 		{
 			bIsPreviousTargetValid = false;
 			PreviousTargetActor.Reset();
@@ -79,14 +82,11 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 		}
 	}
 	// If there's no HitResult but task has previous actor, broadcast NullPtr.
-	else
+	else if (bIsPreviousTargetValid)
 	{
-		if (bIsPreviousTargetValid)
-		{
-			bIsPreviousTargetValid = false;
-			PreviousTargetActor.Reset();
-			InteractionTarget.Broadcast(PreviousTargetActor.Get());
-		}
+		bIsPreviousTargetValid = false;
+		PreviousTargetActor.Reset();
+		InteractionTarget.Broadcast(PreviousTargetActor.Get());
 	}
 }
 

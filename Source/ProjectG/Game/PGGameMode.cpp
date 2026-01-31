@@ -71,8 +71,8 @@ void APGGameMode::BeginPlay()
 		return;
 	}
 
+	GI->CloseSession();
 	GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
-
 	SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
 	if (!SoundManager) 
 	{
@@ -87,6 +87,36 @@ void APGGameMode::BeginPlay()
 		5.0f,
 		false
 	);
+}
+
+void APGGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+	if (!ErrorMessage.IsEmpty())
+	{
+		return;
+	}
+
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (GI)
+	{
+		const TArray<FUniqueNetIdRepl>& ExpectedPlayers = GI->GetExpectedPlayersForTravel();
+		bool bIsExpected = false;
+		for (const FUniqueNetIdRepl& ExpectedUser : ExpectedPlayers)
+		{
+			if (ExpectedUser == UniqueId)
+			{
+				bIsExpected = true;
+				break;
+			}
+		}
+
+		if (!bIsExpected)
+		{
+			ErrorMessage = TEXT("Game Started");
+			//UE_LOG(LogTemp, Warning, TEXT("[PreLogin] Rejected unexpected player: %s"), *UniqueId.ToString());
+		}
+	}
 }
 
 /*
@@ -132,7 +162,6 @@ void APGGameMode::CheckAllPlayersArrived()
 	if (!ArrivedPlayers.IsEmpty())
 	{
 		SpawnLevelGenerator();
-		GI->CloseSession();
 	}
 }
 

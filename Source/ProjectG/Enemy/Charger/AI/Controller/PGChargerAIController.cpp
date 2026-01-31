@@ -39,9 +39,9 @@ void APGChargerAIController::SetupPerceptionSystem()
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 	if (SightConfig)
 	{
-		SightConfig->SightRadius = 1200.0f;
-		SightConfig->LoseSightRadius = 1600.0f;
-		SightConfig->PeripheralVisionAngleDegrees = 70.0f;
+		SightConfig->SightRadius = 2000.0f;
+		SightConfig->LoseSightRadius = 2400.0f;
+		SightConfig->PeripheralVisionAngleDegrees = 80.0f;
 
 		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 		SightConfig->DetectionByAffiliation.bDetectFriendlies = false;

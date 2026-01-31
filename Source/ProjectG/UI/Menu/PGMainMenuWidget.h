@@ -134,6 +134,9 @@ protected:
 	UFUNCTION()
 	void HandleJoinSessionFinished(bool bWasSuccessful, const FText& ErrorMessage);
 
+	void CheckPendingNetworkFailure();
+	void HandleNetworkFailure(const FText& ErrorMessage);
+
 	void SetMainMenuButtonEnabled(bool bEnabled);
 	void SetSessionListButtonEnabled(bool bEnabled);
 

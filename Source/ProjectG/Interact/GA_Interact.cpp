@@ -36,14 +36,14 @@ void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		UE_LOG(LogTemp, Error, TEXT("GA_Interact::ActivateAbility: No valid character or camera"));
 		return;
 	}
-	UCameraComponent* LinetraceStartPosition = PlayerCharacter->GetFirstPersonCamera();
 
 	if (UPGInventoryComponent* Inventory = PlayerCharacter->GetInventoryComponent())
 	{
 		Inventory->OnCurrentSlotIndexChanged.AddDynamic(this, &UGA_Interact::OnInventorySlotChanged);
 	}
 
-	WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, true);
+	UCameraComponent* LinetraceStartPosition = PlayerCharacter->GetFirstPersonCamera();
+	WaitForInteractionTarget = UAT_WaitForInteractionTarget::WaitForInteractionTarget(this, LinetraceStartPosition, PlayerCharacter, true);
 	WaitForInteractionTarget->InteractionTarget.AddDynamic(this, &UGA_Interact::WaitInteractionInput);
 	WaitForInteractionTarget->ReadyForActivation();
 }
