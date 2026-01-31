@@ -15,7 +15,7 @@ enum class EPGANSoundType : uint8
 };
 
 /**
- * 
+ * When with AllPlayers enum, it makes sound locally by replicated local anim.
  */
 UCLASS()
 class PROJECTG_API UAN_PGCharacterPlaySound : public UAnimNotify

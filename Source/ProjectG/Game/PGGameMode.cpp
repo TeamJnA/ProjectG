@@ -196,6 +196,7 @@ void APGGameMode::SpawnAllPlayers()
 		if (NewPawn)
 		{
 			PC->Possess(NewPawn);
+			PC->PlayGameplayBGM();
 		}
 
 		SpawnOffset += 50;

@@ -80,7 +80,6 @@ void APGPlayerController::BeginPlay()
 		*GetName(), IsLocalController(), *UEnum::GetValueAsString(GetLocalRole()));
 
 	InitializeGameplayBGM();
-	PlayGameplayBGM();
 }
 
 void APGPlayerController::SetupInputComponent()
@@ -276,28 +275,6 @@ void APGPlayerController::SetSpectateEscapeCamera(EExitPointType ExitPoint)
 	{
 		return;
 	}
-	/*
-	TArray<AActor*> FoundCameras;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("EscapeCutsceneCamera"), FoundCameras);
-	ACameraActor* TargetCamera = FoundCameras.Num() > 0 ? Cast<ACameraActor>(FoundCameras[0]) : nullptr;
-
-	if (APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
-	{
-		APlayerState* EscapingPlayerState = SpectateTargetList.IsValidIndex(CurrentSpectateIndex) ? SpectateTargetList[CurrentSpectateIndex] : nullptr;
-
-		if (TargetCamera && EscapingPlayerState)
-		{
-			Spectator->SetSpectateTarget(TargetCamera, EscapingPlayerState);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PGPC::ForceEscapeSpectate: EscapeCutsceneCamera not found! Switching to next target as a fallback."));
-			Server_ChangeSpectateTarget(true);
-		}
-	}
-	////////
-	*/
-
 
 	//////// 유효성 검사
 	
