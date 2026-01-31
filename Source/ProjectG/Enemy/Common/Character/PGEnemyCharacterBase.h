@@ -36,13 +36,10 @@ public:
 
 	//주변 감지용 collider
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")
-	UBoxComponent* TouchCollider;
+	TObjectPtr<UBoxComponent> TouchCollider;
 
 	// Notify target actor that attack is finished
 	void NotifyAttackEnded();
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
-	TObjectPtr<UBoxComponent> DoorDetectCollider;
 
 	// IGenericTeamAgentInterface~
 	virtual FGenericTeamId GetGenericTeamId() const override;
@@ -70,15 +67,15 @@ protected:
 		int32 OtherBodyIndex,
 		bool bFromSweep,
 		const FHitResult& SweepResult);
-public:
-	UFUNCTION()
-	void OnOpenDoorColliderOverlapBegin(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult);
+
+	virtual void OnPlayerOverlapped(AActor* OverlapPlayer);
+
+	virtual void OnDoorOverlapped(AActor* OverlapDoor);
+
+	FORCEINLINE void SetDoorBreak(bool NewDoorOpen) { bDoorBreakOpen = NewDoorOpen; }
+
+	bool bDoorBreakOpen;
+
 public:
 	void ForceOpenDoorsAroundCharacter();
 

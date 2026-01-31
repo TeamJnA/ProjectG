@@ -35,10 +35,12 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 	TouchCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("TouchCollider"));
 	TouchCollider->SetupAttachment(RootComponent);
 	TouchCollider->SetBoxExtent(FVector(50.f)); // 기본 크기 (BP에서 조정 가능)
-	TouchCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	TouchCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TouchCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	TouchCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	TouchCollider->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 	
+	bDoorBreakOpen = false;
 
 	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
 }
@@ -105,7 +107,9 @@ void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* Ove
 	}
 
 	if (!OtherActor || OtherActor == this)
+	{
 		return;
+	}
 
 	// If the other actor can attackable.
 	// TODO TARRAY 들어오면 담고 나가면 빼. 죽일때 빼. 공격이 끝났을때 -> 껐다키는거랑 똑같은데?  array 가 비었는지 확인하고 안비면 다시 루프돎. 
@@ -115,17 +119,51 @@ void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* Ove
 	// 
 	if (IAttackableTarget* AttackableInterface= Cast<IAttackableTarget>(OtherActor))
 	{
+		UE_LOG(LogTemp, Log, TEXT("Player was detected by %s"), *GetNameSafe(this));
+		OnPlayerOverlapped(OtherActor);
+		return;
+	}
+
+	// Door detected
+	if (APGDoor1* OverlappedDoor = Cast<APGDoor1>(OtherActor))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Door was detected by %s"), *GetNameSafe(this));
+		OnDoorOverlapped(OtherActor);
+		return;
+	}
+}
+
+void APGEnemyCharacterBase::OnPlayerOverlapped(AActor* OverlapPlayer)
+{
+	if (IAttackableTarget* AttackableInterface = Cast<IAttackableTarget>(OverlapPlayer))
+	{
 		// Check if the target is valid. ( check already dead or broken ).
 		// And to prevent duplicate, check otheractor is not CachedAttackedTarget.
-		if (AttackableInterface->IsValidAttackableTarget() && OtherActor != CachedAttackedTarget)
+		if (AttackableInterface->IsValidAttackableTarget() && OverlapPlayer != CachedAttackedTarget)
 		{
 			// Caching actor to notify the target that the attack has finished.
-			CachedAttackedTarget = OtherActor;
+			CachedAttackedTarget = OverlapPlayer;
 
 			UE_LOG(LogEnemyCharacter, Log, TEXT("[%s] find attackable target."), *GetNameSafe(this));
-			UAISense_Touch::ReportTouchEvent(GetWorld(), this, OtherActor, OtherActor->GetActorLocation());
+			UAISense_Touch::ReportTouchEvent(GetWorld(), this, OverlapPlayer, OverlapPlayer->GetActorLocation());
 
 			AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation());
+		}
+	}
+}
+
+void APGEnemyCharacterBase::OnDoorOverlapped(AActor* OverlapDoor)
+{
+	if (APGDoor1* OverlappedDoor = Cast<APGDoor1>(OverlapDoor))
+	{
+		if (bDoorBreakOpen == true)
+		{
+			// TODO : Make door break hear
+			OverlappedDoor->TEST_OpenDoorByAI(this);
+		}
+		else
+		{
+			OverlappedDoor->TEST_OpenDoorByAI(this);
 		}
 	}
 }
@@ -170,7 +208,7 @@ void APGEnemyCharacterBase::GetOwnedGameplayTags(FGameplayTagContainer& TagConta
 void APGEnemyCharacterBase::ForceOpenDoorsAroundCharacter()
 {
 	TArray<AActor*> OverlappedActors;
-	DoorDetectCollider->GetOverlappingActors(OverlappedActors);
+	TouchCollider->GetOverlappingActors(OverlappedActors);
 	for (AActor* OverlappedActor : OverlappedActors)
 	{
 		APGDoor1* OverlappedDoor = Cast<APGDoor1>(OverlappedActor);
@@ -179,18 +217,5 @@ void APGEnemyCharacterBase::ForceOpenDoorsAroundCharacter()
 			UE_LOG(LogTemp, Log, TEXT("Door around EnemyCharacterBase was detected"));
 			OverlappedDoor->TEST_OpenDoorByAI(this);
 		}
-	}
-}
-
-void APGEnemyCharacterBase::OnOpenDoorColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// if other actor is door, break the door!
-	UE_LOG(LogEnemyCharacter, Log, TEXT("OtherActor was detected by BlindCharacter Door Collision"));
-
-	APGDoor1* OverlappedDoor = Cast<APGDoor1>(OtherActor);
-	if (OverlappedDoor)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Door was detected by EnemyCharacterBase"));
-		OverlappedDoor->TEST_OpenDoorByAI(this);
 	}
 }

@@ -123,18 +123,22 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 	bIsOpen = InbIsOpen;
 	if (bIsOpen)
 	{
+		// If door already opened, do not change transform by enemy
+		if (bOpenTwice)
+		{
+			return;
+		}
+
 		Mesh0->SetCanEverAffectNavigation(true);
 
-		if (!bOpenTwice)
+		if (bIsPlayer)
 		{
-			if (bIsPlayer)
-			{
-				PlayDoorSound(DoorOpenSound);
-			}
-			else
-			{
-				PlayDoorSound(DoorOpenSound, false);
-			}
+			PlayDoorSound(DoorOpenSound);
+		}
+		else
+		{
+			PlayDoorSound(DoorOpenSound, false);
+			bIsLocked = false;
 		}
 
 		if (InteractInvestigator)
