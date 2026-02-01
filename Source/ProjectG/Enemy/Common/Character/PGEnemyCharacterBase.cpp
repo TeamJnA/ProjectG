@@ -35,7 +35,7 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 	TouchCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("TouchCollider"));
 	TouchCollider->SetupAttachment(RootComponent);
 	TouchCollider->SetBoxExtent(FVector(50.f)); // 기본 크기 (BP에서 조정 가능)
-	TouchCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TouchCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	TouchCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	TouchCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	TouchCollider->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
