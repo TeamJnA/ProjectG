@@ -77,9 +77,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ghost|Effect")
 	TObjectPtr<USphereComponent> LightExtinguishSphere;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ghost|Jumpscare")
-	TObjectPtr<UTexture2D> JumpscareTexture;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Ghost|Ability")
 	TSubclassOf<UGameplayEffect> SanityDecreaseEffectClass;
 

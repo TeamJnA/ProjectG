@@ -390,4 +390,45 @@ public:
 
 	UFUNCTION(Server, Unreliable)
 	void Server_ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectClass);
+
+// Glitch
+public:
+	UFUNCTION(Client, Reliable)
+	void Client_TriggerGhostGlitch();
+
+protected:
+	void InitPostProcessMaterial();
+
+	void OnSanityChanged(const FOnAttributeChangeData& Data);
+
+	void UpdateSanityPostProcessEffect(float CurrentSanity, float MaxSanity);
+
+	void ScheduleNextGlitch();
+	void StartGlitch();
+	void StopGlitch();
+
+	void StartGhostGlitchFadeOut();
+	void UpdateGhostGlitchFadeOut();
+
+	UPROPERTY(EditDefaultsOnly, Category = "PostProcess")
+	TObjectPtr<UMaterialInterface> SanityNoiseMaterialClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> SanityNoiseMID;
+
+	FDelegateHandle SanityChangedDelegateHandle;
+
+	FTimerHandle GlitchIntervalTimerHandle;
+
+	FTimerHandle GlitchDurationTimerHandle;
+
+	FTimerHandle GhostGlitchTimerHandle;
+
+	float BaseNoiseIntensity = 0.0f;
+	float GlitchThresholdSanity = 60.0f;
+
+	float CurrentGhostGlitchIntensity = 1.0f;
+
+	bool bIsGlitching = false;
+	bool bIsGhostGlitching = false;
 };

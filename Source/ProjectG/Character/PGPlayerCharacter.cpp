@@ -221,6 +221,11 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 bool APGPlayerCharacter::IsValidAttackableTarget() const
 {
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Player::IsValidAttackableTarget: no ASC"));
+		return false;
+	}
 	// Check player is valid by checking gameplay tag.
 	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"))
 		|| AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.OnAttacked")))
@@ -426,6 +431,7 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 		GetMesh()->SetSimulatePhysics(true);
 		
 		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+		LocalBodyMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 		SetItemMesh(false);
 	}
@@ -444,6 +450,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
+		InitPostProcessMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
 		FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.Dead"));
@@ -454,7 +461,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 		if (HeadlightLight)
 		{
 			HeadlightLight->SetIndirectLightingIntensity(1.0f);
-			HeadlightLight->SetVolumetricScatteringIntensity(0.4f);
+			HeadlightLight->SetVolumetricScatteringIntensity(0.2f);
 		}
 	}
 }
@@ -471,6 +478,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
+		InitPostProcessMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
 		FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.Dead"));
@@ -481,7 +489,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 		if (HeadlightLight)
 		{
 			HeadlightLight->SetIndirectLightingIntensity(1.0f);
-			HeadlightLight->SetVolumetricScatteringIntensity(0.4f);
+			HeadlightLight->SetVolumetricScatteringIntensity(0.2f);
 		}
 	}
 }
@@ -518,6 +526,13 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 		AttributeSet->GetMovementSpeedAttribute()
 	);
 	MovementSpeedChangedDelegateHandle = OnMovementSpeedChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnMovementSpeedChanged);
+
+	FOnGameplayAttributeValueChange& OnSanityChangedDelegate = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		AttributeSet->GetSanityAttribute()
+	);
+	SanityChangedDelegateHandle = OnSanityChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnSanityChanged);
+
+	UpdateSanityPostProcessEffect(AttributeSet->GetSanity(), AttributeSet->GetMaxSanity());
 }
 
 /*
@@ -1054,5 +1069,252 @@ void APGPlayerCharacter::Server_Debug_DecreaseSanity_Implementation()
 	{
 		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		UE_LOG(LogTemp, Log, TEXT("Character::Server_Debug_DecreaseSanity: Applied Sanity Decrease Effect to %s"), *GetNameSafe(this));
+	}
+}
+
+void APGPlayerCharacter::InitPostProcessMaterial()
+{
+	if (!SanityNoiseMaterialClass)
+	{
+		return;
+	}
+
+	SanityNoiseMID = UMaterialInstanceDynamic::Create(SanityNoiseMaterialClass, this);
+
+	if (SanityNoiseMID)
+	{
+		if (FirstPersonCamera)
+		{
+			FirstPersonCamera->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.0f, SanityNoiseMID));
+		}
+
+		if (FollowCamera)
+		{
+			FollowCamera->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.0f, SanityNoiseMID));
+		}
+	}
+}
+
+void APGPlayerCharacter::OnSanityChanged(const FOnAttributeChangeData& Data)
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	const float CurrentSanity = Data.NewValue;
+	float MaxSanity = 100.0f;
+	if (AttributeSet)
+	{
+		MaxSanity = AttributeSet->GetMaxSanity();
+	}
+
+	UpdateSanityPostProcessEffect(CurrentSanity, MaxSanity);
+}
+
+void APGPlayerCharacter::UpdateSanityPostProcessEffect(float CurrentSanity, float MaxSanity)
+{
+	if (!SanityNoiseMID)
+	{
+		return;
+	}
+
+	if (MaxSanity <= 0.0f)
+	{
+		MaxSanity = 100.0f;
+	}
+
+	const float SanityRatio = FMath::Clamp(CurrentSanity / MaxSanity, 0.0f, 1.0f);
+	const float InvertedRatio = 1.0f - SanityRatio;
+	const float CurveExponent = 2.0f;
+	const float CurvedIntensity = FMath::Pow(InvertedRatio, CurveExponent);
+	BaseNoiseIntensity = CurvedIntensity * 0.2f;
+
+	if (bIsGhostGlitching)
+	{
+		return;
+	}
+
+	// Threshold == 60.0f
+	// Sanity가 Threshold보다 높은 경우 Glitch x / 일반 Noise는 존재
+	// Glitching 중 Sanity 회복되어 Threshold보다 높아질 경우 Glitching 중단
+	if (CurrentSanity > GlitchThresholdSanity)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(GlitchIntervalTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(GlitchDurationTimerHandle);
+		bIsGlitching = false;
+
+		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), BaseNoiseIntensity);
+		return;
+	}
+
+	// Glitching 중이라면 NoiseIntensity 수정 x (Glitch용 NoiseIntensity 사용)
+	if (bIsGlitching)
+	{
+		return;
+	}
+	
+	// 일반상태
+	SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), BaseNoiseIntensity);
+	
+	// Glitching 타이머 안도는 경우에만 Scheduling
+	if (!GlitchIntervalTimerHandle.IsValid())
+	{
+		ScheduleNextGlitch();
+	}
+}
+
+void APGPlayerCharacter::ScheduleNextGlitch()
+{
+	float CurrentSanity = 100.0f;
+	if (AttributeSet)
+	{
+		CurrentSanity = AttributeSet->GetSanity();
+	}
+
+	if (CurrentSanity > GlitchThresholdSanity)
+	{
+		return;
+	}
+
+	float Interval = FMath::GetMappedRangeValueClamped(
+		FVector2D(0.0f, GlitchThresholdSanity),
+		FVector2D(3.0f, 10.0f),
+		CurrentSanity
+	);
+	Interval += FMath::RandRange(-0.5f, 0.5f);
+	if (Interval < 0.1f)
+	{
+		Interval = 0.1f;
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(GlitchIntervalTimerHandle, this, &APGPlayerCharacter::StartGlitch, Interval, false);
+}
+
+void APGPlayerCharacter::StartGlitch()
+{
+	if (!SanityNoiseMID) 
+	{
+		return;
+	}
+
+	// GhostGlitching 중 일반 Glitch 차단
+	if (bIsGhostGlitching)
+	{
+		return;
+	}
+
+	bIsGlitching = true;
+
+	const float GlitchIntensity = FMath::RandRange(0.8f, 1.0f);
+	SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), GlitchIntensity);
+
+	// Glitch sound?
+
+	const float Duration = FMath::RandRange(0.1f, 0.2f);
+	GetWorld()->GetTimerManager().SetTimer(GlitchDurationTimerHandle, this, &APGPlayerCharacter::StopGlitch, Duration, false);
+}
+
+void APGPlayerCharacter::StopGlitch()
+{
+	if (!SanityNoiseMID) 
+	{
+		return;
+	}
+
+	// GhostGlitching 중 일반 Glitch 차단
+	if (bIsGhostGlitching)
+	{
+		return;
+	}
+
+	bIsGlitching = false;
+
+	SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), BaseNoiseIntensity);
+
+	ScheduleNextGlitch();
+}
+
+// Ghost Glitch + Film Grain
+void APGPlayerCharacter::Client_TriggerGhostGlitch_Implementation()
+{
+	if (!SanityNoiseMID)
+	{
+		return;
+	}
+
+	bIsGhostGlitching = true;
+	bIsGlitching = true;
+
+	GetWorld()->GetTimerManager().ClearTimer(GlitchIntervalTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(GlitchDurationTimerHandle);
+
+	SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), 1.5f);
+
+	if (FirstPersonCamera)
+	{
+		FirstPersonCamera->PostProcessSettings.bOverride_FilmGrainIntensity = true;
+		FirstPersonCamera->PostProcessSettings.FilmGrainIntensity = 1.5f;
+	}
+	if (FollowCamera)
+	{
+		FollowCamera->PostProcessSettings.bOverride_FilmGrainIntensity = true;
+		FollowCamera->PostProcessSettings.FilmGrainIntensity = 1.5f;
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(GhostGlitchTimerHandle, this, &APGPlayerCharacter::StartGhostGlitchFadeOut, 1.5f, false);
+
+	UE_LOG(LogTemp, Log, TEXT("PlayerCharacter::GhostGlitch"));
+}
+
+void APGPlayerCharacter::StartGhostGlitchFadeOut()
+{
+	CurrentGhostGlitchIntensity = 1.5f;
+	GetWorld()->GetTimerManager().SetTimer(GhostGlitchTimerHandle, this, &APGPlayerCharacter::UpdateGhostGlitchFadeOut, 0.05f, true, 0.5f);
+}
+
+void APGPlayerCharacter::UpdateGhostGlitchFadeOut()
+{
+	if (!SanityNoiseMID)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(GhostGlitchTimerHandle);
+		return;
+	}
+
+	CurrentGhostGlitchIntensity -= 0.05f;
+	if (CurrentGhostGlitchIntensity <= BaseNoiseIntensity)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(GhostGlitchTimerHandle);
+		bIsGhostGlitching = false;
+		bIsGlitching = false;
+		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), BaseNoiseIntensity);
+
+		if (FirstPersonCamera)
+		{
+			FirstPersonCamera->PostProcessSettings.bOverride_FilmGrainIntensity = false;
+		}
+		if (FollowCamera)
+		{
+			FollowCamera->PostProcessSettings.bOverride_FilmGrainIntensity = false;
+		}
+
+		if (AttributeSet)
+		{
+			UpdateSanityPostProcessEffect(AttributeSet->GetSanity(), AttributeSet->GetMaxSanity());
+		}
+	}
+	else
+	{
+		const float GrainIntensity = FMath::Clamp(CurrentGhostGlitchIntensity, 0.2f, 1.5f);
+		if (FirstPersonCamera)
+		{
+			FirstPersonCamera->PostProcessSettings.FilmGrainIntensity = GrainIntensity;
+		}
+		if (FollowCamera)
+		{
+			FollowCamera->PostProcessSettings.FilmGrainIntensity = GrainIntensity;
+		}
+
+		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), CurrentGhostGlitchIntensity);
 	}
 }

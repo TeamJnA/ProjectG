@@ -7,11 +7,11 @@
 
 UPGManagedEmissiveComponent::UPGManagedEmissiveComponent()
 {
-	SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	SetCollisionResponseToAllChannels(ECR_Ignore);
-	SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
-	SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
+	SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
+	
 	SetGenerateOverlapEvents(true);
 
 	SphereRadius = 100.0f;

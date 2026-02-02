@@ -181,7 +181,7 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
     const FGameplayTag AttackingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking"));
     if (!AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(ChasingTag) || AbilitySystemComponent->HasMatchingGameplayTag(AttackingTag))
     {
-        // Chasing / Attacking 상태가 아닐때 Overlap 된 경우 Jumpscare 혹은 화면 효과 + 타겟 Sanity 감소
+        // Chasing / Attacking 상태가 아닐때 Overlap 된 경우 화면 Glitch 효과 + 타겟 Sanity 감소
         const float CurrentTime = GetWorld()->GetTimeSeconds();
         if (LastJumpscareTime > 0.0f && (CurrentTime - LastJumpscareTime) < JumpscareCooldown)
         {
@@ -191,10 +191,7 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
 
         LastJumpscareTime = CurrentTime;
 
-        if (APGPlayerController* TouchedPlayerPC = Cast<APGPlayerController>(TouchedPlayer->GetController()))
-        {
-            TouchedPlayerPC->Client_DisplayJumpscare(JumpscareTexture);
-        }
+        TouchedPlayer->Client_TriggerGhostGlitch();
 
         UAbilitySystemComponent* TargetASC = TouchedPlayer->GetAbilitySystemComponent();
         if (TargetASC)
@@ -270,7 +267,6 @@ void APGGhostCharacter::TryBindLightEffectEvents()
         LightExtinguishSphere->OnComponentBeginOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapBegin);
         LightExtinguishSphere->OnComponentEndOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapEnd);
 
-        LightExtinguishSphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
         LightExtinguishSphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
         LightExtinguishSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         LightExtinguishSphere->SetGenerateOverlapEvents(true);
