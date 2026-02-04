@@ -4,6 +4,7 @@
 #include "AbilitySystemComponent.h"
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
+#include "PGLogChannels.h"
 
 UPGAttributeSet::UPGAttributeSet()
 {
