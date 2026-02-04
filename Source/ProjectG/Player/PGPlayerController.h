@@ -120,7 +120,9 @@ protected:
 public:
 	void InitializeGameplayBGM();
 
-	void PlayGameplayBGM();
+	UFUNCTION(Client, Reliable)
+
+	void Client_PlayGameplayBGM();
 
 	void StopGameplayBGM();
 

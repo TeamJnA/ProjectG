@@ -9,25 +9,6 @@
 APGDeafCharacter::APGDeafCharacter()
 {
     DeafAttributeSet = CreateDefaultSubobject<UPGDeafAttributeSet>("DeafAttributeSet");
-
-    DoorDetectCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("DoorDetectCollider"));
-    DoorDetectCollider->SetupAttachment(RootComponent);
-    DoorDetectCollider->SetBoxExtent(FVector(50.f));
-    DoorDetectCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    DoorDetectCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-    DoorDetectCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-
-    /*static ConstructorHelpers::FObjectFinder<UAnimMontage> BiteMontageRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/Animation/Fight/AM_BlindBite.AM_BlindBite"));
-    if (BiteMontageRef.Succeeded())
-    {
-        BiteMontage = BiteMontageRef.Object;
-    }
-
-    static ConstructorHelpers::FObjectFinder<UAnimMontage> RoarMontageRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/Animation/Other/AM_BlindRoar.AM_BlindRoar"));
-    if (RoarMontageRef.Succeeded())
-    {
-        RoarMontage = RoarMontageRef.Object;
-    }*/
 }
 
 float APGDeafCharacter::GetExplorationRadius() const
@@ -54,7 +35,7 @@ void APGDeafCharacter::SetHuntLevel(EDeafHuntLevel newHuntLevel)
     //TODO : delegate로 수정하기.
     const bool canDoorBreakBefore = ((huntLevel == EDeafHuntLevel::Chase));
     const bool canDoorBreakAfter = ((newHuntLevel == EDeafHuntLevel::Chase));
-
+    /*
     if (canDoorBreakBefore != canDoorBreakAfter)
     {//TODO : 임시로 두 상황 똑같이 문을 열도록 되어있음. 부수는 함수 추가되면 로직 수정 필요 + log 내부도.
         if (canDoorBreakAfter)
@@ -72,6 +53,7 @@ void APGDeafCharacter::SetHuntLevel(EDeafHuntLevel newHuntLevel)
         }
     }
     huntLevel = newHuntLevel;
+    */
 }
 
 

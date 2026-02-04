@@ -72,6 +72,22 @@ void APGCharacterBase::GiveAndActivatePassiveEffects()
 	}
 }
 
+void APGCharacterBase::ClearPassiveEffects()
+{
+	if (!HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	for (TSubclassOf<UGameplayEffect> GameplayEffect : PassiveEffects)
+	{
+		if (GameplayEffect)
+		{
+			AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(GameplayEffect, AbilitySystemComponent.Get(), -1);
+		}
+	}
+}
+
 void APGCharacterBase::InitSoundManager(APGSoundManager* SoundManagerRef)
 {
 	SoundManagerComponent->SetSoundManager(SoundManagerRef);

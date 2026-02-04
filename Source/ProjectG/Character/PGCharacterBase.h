@@ -37,6 +37,7 @@ protected:
 	void GiveDefaultAbilities();
 	void InitDefaultAttributes() const;
 	void GiveAndActivatePassiveEffects();
+	void ClearPassiveEffects();
 
 	UPROPERTY()
 	TObjectPtr<UPGAbilitySystemComponent> AbilitySystemComponent;

@@ -13,13 +13,6 @@ APGBlindCharacter::APGBlindCharacter()
 {
     BlindAttributeSet = CreateDefaultSubobject<UPGBlindAttributeSet>("BlindAttributeSet");
 
-    DoorDetectCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("DoorDetectCollider"));
-    DoorDetectCollider->SetupAttachment(RootComponent);
-    DoorDetectCollider->SetBoxExtent(FVector(50.f));
-    DoorDetectCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    DoorDetectCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-    DoorDetectCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-        
     static ConstructorHelpers::FObjectFinder<UAnimMontage> BiteMontageRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/Animation/Fight/AM_BlindBite.AM_BlindBite"));
     if (BiteMontageRef.Succeeded())
     {
@@ -49,21 +42,21 @@ void APGBlindCharacter::SetHuntLevel(EBlindHuntLevel newHuntLevel)
     const bool canDoorBreakBefore = ((HuntLevel == EBlindHuntLevel::Investigation) || (HuntLevel == EBlindHuntLevel::Chase));
     const bool canDoorBreakAfter = ((newHuntLevel == EBlindHuntLevel::Investigation) || (newHuntLevel == EBlindHuntLevel::Chase));
 
+    
     if (canDoorBreakBefore != canDoorBreakAfter)
     {//TODO : 임시로 두 상황 똑같이 문을 열도록 되어있음. 부수는 함수 추가되면 로직 수정 필요 + log 내부도..
         if (canDoorBreakAfter)
         {
-            UE_LOG(LogTemp, Log, TEXT("%s : Add OnOpenDoorColliderOverlapBegin"), *UEnum::GetValueAsString(newHuntLevel));
-            DoorDetectCollider->OnComponentBeginOverlap.Clear();
-            DoorDetectCollider->OnComponentBeginOverlap.AddDynamic(this, &APGEnemyCharacterBase::OnOpenDoorColliderOverlapBegin);
+            UE_LOG(LogPGEnemyBlind, Log, TEXT("Set OnOpenDoorColliderOverlapBegin %d"), int32(bDoorBreakOpen));
+            SetDoorBreak(true);
         }
         else
         {
-            UE_LOG(LogTemp, Log, TEXT("%s : Add OnOpenDoorColliderOverlapBegin"), *UEnum::GetValueAsString(newHuntLevel));
-            DoorDetectCollider->OnComponentBeginOverlap.Clear();
-            DoorDetectCollider->OnComponentBeginOverlap.AddDynamic(this, &APGEnemyCharacterBase::OnOpenDoorColliderOverlapBegin);
+            UE_LOG(LogPGEnemyBlind, Log, TEXT("Set OnOpenDoorColliderOverlapBegin %d"), int32(bDoorBreakOpen));
+            SetDoorBreak(false);
         }
     }
+    
     HuntLevel = newHuntLevel;
 
     UE_LOG(LogPGEnemyBlind, Log, TEXT("Set Hund Level [%d]"), int32(HuntLevel));

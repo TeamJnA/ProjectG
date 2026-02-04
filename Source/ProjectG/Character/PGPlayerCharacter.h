@@ -222,6 +222,7 @@ public:
 	FORCEINLINE FName GetCrouchToStandSoundName() const { return CrouchToStandSoundName; }
 
 	void ActivateAbilityByTag(const FGameplayTagContainer Tag);
+
 	void ClearCharacterAbility();
 
 private:
@@ -264,6 +265,17 @@ protected:
 protected:
 	//Movement speed changed delegate
 	FDelegateHandle MovementSpeedChangedDelegateHandle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio | Stamina", Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAudioComponent> StaminaBreathAudioComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio | Stamina", Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAudioComponent> HeartBeatAudioComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability | Stamina", Meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> StaminaExhaustedEffect;
+
+	void OnStaminaChanged(const FOnAttributeChangeData& Data);
 
 public:
 	//Bind with MovementSpeedChangedDelegateHandle. 

@@ -31,6 +31,7 @@
 #include "UI/PlayerEntry/ScoreBoard/PGScoreBoardWidget.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/AudioComponent.h"
 
 // Interface
 #include "Interface/InteractableActorInterface.h"
@@ -113,6 +114,12 @@ APGPlayerCharacter::APGPlayerCharacter()
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
 
 	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
+
+	StaminaBreathAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("BreathAudioComponent"));
+	StaminaBreathAudioComponent->bAutoActivate = false;
+
+	HeartBeatAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("HeartBeatAudioComponent"));
+	HeartBeatAudioComponent->bAutoActivate = false;
 
 	// Set hand actions anim montages
 	HandActionMontageType = EHandActionMontageType::Pick;;
@@ -251,6 +258,7 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 
 	// Remove all abilities.
 	AbilitySystemComponent->ClearAllAbilities();
+	ClearPassiveEffects();
 
 	// Stop character movement.
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -309,6 +317,12 @@ void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, F
 
 	// TODO : Play attacked anim
 
+
+	// Stop Audio
+	if (HeartBeatAudioComponent)
+	{
+		HeartBeatAudioComponent->Stop();
+	}
 }
 
 // Called on the server when the enemy's attack has ended.
@@ -494,6 +508,50 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	}
 }
 
+void APGPlayerCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
+{
+	//TODO Meta Sound ... ?
+	// StaminaExhaustedEffect 채우기.
+	// Server : 0일 때, Apply Gameplay Effect
+	// 중복 적용 방지 방안 생각하기....
+	if (HasAuthority())
+	{
+		if (Data.NewValue <= 0.1f)
+		{
+			if (AbilitySystemComponent && !AbilitySystemComponent->HasMatchingGameplayTag(
+				FGameplayTag::RequestGameplayTag(FName("Gameplay.State.Exhausted"))))
+			{
+				Server_ApplyGameplayEffectToSelf(StaminaExhaustedEffect);
+			}
+		}
+	}
+	
+	if(IsLocallyControlled())
+	{
+		if (!StaminaBreathAudioComponent || !StaminaBreathAudioComponent->GetSound())
+		{
+			return;
+		}
+
+		if ((Data.NewValue <= 80.0f) && !StaminaBreathAudioComponent->IsPlaying())
+		{
+			StaminaBreathAudioComponent->SetFloatParameter(FName("InStamina"), Data.NewValue);
+			// StaminaBreathAudioComponent->Activate();
+			StaminaBreathAudioComponent->Play();
+		}
+
+		// Client : 60이하일 때, Apply Meta Sound
+		if (Data.NewValue <= 0.1f && Data.OldValue >= 0.1f)
+		{
+			if (!HeartBeatAudioComponent || !HeartBeatAudioComponent->GetSound())
+			{
+				return;
+			}
+			HeartBeatAudioComponent->Play();
+		}
+	}
+}
+
 void APGPlayerCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
 {
 	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
@@ -533,6 +591,9 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 	SanityChangedDelegateHandle = OnSanityChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnSanityChanged);
 
 	UpdateSanityPostProcessEffect(AttributeSet->GetSanity(), AttributeSet->GetMaxSanity());
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetStaminaAttribute())
+		.AddUObject(this, &APGPlayerCharacter::OnStaminaChanged);
 }
 
 /*
