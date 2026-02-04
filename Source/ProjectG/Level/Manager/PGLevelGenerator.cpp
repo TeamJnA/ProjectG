@@ -230,6 +230,20 @@ void APGLevelGenerator::SpawnStartRoom()
 		TestFuse1->InitWithData(ItemData10);
 	}
 	TestFuse1->SetActorRelativeLocation(FVector(1200.0f, 350.0f, 10.0f));
+
+	APGItemActor* TestMatch0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData11 = GI->GetItemDataByKey("Match"))
+	{
+		TestMatch0->InitWithData(ItemData11);
+	}
+	TestMatch0->SetActorRelativeLocation(FVector(1400.0f, 270.0f, 10.0f));
+
+	APGItemActor* TestMatch1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ItemData12 = GI->GetItemDataByKey("Match"))
+	{
+		TestMatch1->InitWithData(ItemData12);
+	}
+	TestMatch1->SetActorRelativeLocation(FVector(1400.0f, 350.0f, 10.0f));
 	// ~ for test
 
 	//APGExitDoor* ExitDoor = World->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), SpawnParams);

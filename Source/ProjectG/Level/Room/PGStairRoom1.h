@@ -47,4 +47,7 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Bonfire")
+	TObjectPtr<UChildActorComponent> Bonfire;
 };

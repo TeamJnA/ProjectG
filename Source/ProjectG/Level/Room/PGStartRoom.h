@@ -38,11 +38,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
-	TObjectPtr<UChildActorComponent> WindowGimmick0;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDoor")
 	TObjectPtr<UChildActorComponent> ExitDoor;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
+	TObjectPtr<UChildActorComponent> WindowGimmick0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
 	TObjectPtr<UChildActorComponent> WindowGimmick1;
@@ -55,4 +55,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
 	TObjectPtr<UChildActorComponent> WindowGimmick4;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Bonfire")
+	TObjectPtr<UChildActorComponent> Bonfire;
 };

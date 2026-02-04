@@ -2,7 +2,6 @@
 
 
 #include "Item/Ability/Consumable/GA_DoorKey.h"
-#include "AbilitySystemComponent.h"
 
 UGA_DoorKey::UGA_DoorKey()
 {

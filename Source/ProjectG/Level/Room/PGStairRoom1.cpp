@@ -10,6 +10,7 @@
 APGStairRoom1::APGStairRoom1()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionBigRoom.LI_MansionBigRoom_C'"));
+	static ConstructorHelpers::FClassFinder<AActor> BonfireRef(TEXT("/Game/ProjectG/Gimmick/Interact/Bonfire/BP_PGInteractableGimmickBonfire.BP_PGInteractableGimmickBonfire_C"));
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);
@@ -84,4 +85,13 @@ APGStairRoom1::APGStairRoom1()
 		Mesh->SetChildActorClass(MeshRef.Class);
 	}
 	Mesh->SetRelativeLocation(FVector(951.5f, -300.1f, -25.1f));
+
+	Bonfire = CreateDefaultSubobject<UChildActorComponent>(TEXT("Bonfire"));
+	Bonfire->SetupAttachment(Root);
+	Bonfire->SetRelativeLocation(FVector(1808.0f, -793.0f, 433.0f));
+	Bonfire->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+	if (BonfireRef.Succeeded())
+	{
+		Bonfire->SetChildActorClass(BonfireRef.Class);
+	}
 }

@@ -58,6 +58,7 @@ void UPGAdvancedFriendsGameInstance::Init()
 	ItemDataMap.Add("Brick", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick")));
 	ItemDataMap.Add("Key", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/Key/DA_Consumable_Key.DA_Consumable_Key")));
 	ItemDataMap.Add("ReviveKit", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/ReviveKit/DA_Consumable_ReviveKit.DA_Consumable_ReviveKit")));
+	ItemDataMap.Add("Match", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/Match/DA_Consumable_Match.DA_Consumable_Match")));
 
 	// Escape
 	ItemDataMap.Add("ChainKey", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/ChainKey/DA_Exit_ChainKey.DA_Exit_ChainKey")));
