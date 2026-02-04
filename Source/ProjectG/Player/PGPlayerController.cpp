@@ -677,7 +677,7 @@ void APGPlayerController::InitializeGameplayBGM()
 	GameplayBGMPlayer->bIsUISound = true;
 }
 
-void APGPlayerController::PlayGameplayBGM()
+void APGPlayerController::Client_PlayGameplayBGM_Implementation()
 {
 	if (GameplayBGMPlayer && GameplayBGMPlayer->GetSound() && !GameplayBGMPlayer->IsPlaying())
 	{
