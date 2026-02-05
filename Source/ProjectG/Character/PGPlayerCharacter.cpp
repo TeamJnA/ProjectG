@@ -44,7 +44,7 @@
 APGPlayerCharacter::APGPlayerCharacter()
 {
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(52.0f, 96.0f);
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -83,6 +83,16 @@ APGPlayerCharacter::APGPlayerCharacter()
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCamera->SetupAttachment(GetMesh(), TEXT("head"));
 	FirstPersonCamera->SetIsReplicated(true);
+
+	HitCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("EnemyOverlapCapsule"));
+	HitCapsule->SetupAttachment(RootComponent);
+	HitCapsule->InitCapsuleSize(40.0f, 96.0f);
+	HitCapsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	HitCapsule->SetCollisionObjectType(ECC_Pawn);
+	HitCapsule->SetCollisionResponseToAllChannels(ECR_Ignore);
+	HitCapsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
+	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
 
 	LocalBodyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("LocalBodyMesh"));
 	LocalBodyMesh->SetupAttachment(GetMesh());

@@ -27,6 +27,7 @@ class UPGInventoryComponent;
 class USpotLightComponent;
 
 class APGTriggerGimmickMannequin;
+class USphereComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
@@ -42,6 +43,9 @@ class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttacka
 	
 public:
 	APGPlayerCharacter();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
+	TObjectPtr<UCapsuleComponent> HitCapsule;
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
