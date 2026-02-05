@@ -90,7 +90,7 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HitCapsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	HitCapsule->SetCollisionObjectType(ECC_Pawn);
 	HitCapsule->SetCollisionResponseToAllChannels(ECR_Ignore);
-	HitCapsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	HitCapsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
 	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
 
