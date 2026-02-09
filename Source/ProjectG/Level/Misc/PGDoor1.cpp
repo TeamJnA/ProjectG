@@ -4,7 +4,7 @@
 #include "Level/Misc/PGDoor1.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-
+#include "Physics/PGChaosCacheManager.h"
 #include "GameFramework/GameModeBase.h"
 
 #include "AbilitySystemComponent.h"
@@ -69,6 +69,20 @@ APGDoor1::APGDoor1()
 	LockedDoorSound = FName(TEXT("LEVEL_Door_Locked"));
 
 	ShakeParameterName = TEXT("WPOPower");
+
+	bDoorBrokened = false;
+
+	static ConstructorHelpers::FClassFinder<APGChaosCacheManager> CCM_Closed_BP(TEXT("/Game/ProjectG/Levels/Room/Misc/DoorDestruction/BP_CCM_DoorClosed.BP_CCM_DoorClosed_C"));
+	if (CCM_Closed_BP.Succeeded())
+	{
+		BP_PG_CCMClosed = CCM_Closed_BP.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<APGChaosCacheManager> CCM_Opened_BP(TEXT("/Game/ProjectG/Levels/Room/Misc/DoorDestruction/BP_CCM_DoorOpened.BP_CCM_DoorOpened_C"));
+	if (CCM_Opened_BP.Succeeded())
+	{
+		BP_PG_CCMOpened = CCM_Opened_BP.Class;
+	}
 }
 
 void APGDoor1::BeginPlay()
@@ -93,9 +107,31 @@ void APGDoor1::BeginPlay()
 void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool InbIsLocked)
 {
 	APGDoor1* NewDoor = World->SpawnActor<APGDoor1>(StaticClass(), Transform, SpawnParams);
+
 	if (NewDoor)
 	{
 		NewDoor->bIsLocked = InbIsLocked;
+
+		// Spawn Chaos Cache Managers
+		TSubclassOf<APGChaosCacheManager> CCMOpenToSpawn = GetDefault<APGDoor1>()->BP_PG_CCMOpened;
+
+		APGChaosCacheManager* SpawnedOpenCCM = World->SpawnActor<APGChaosCacheManager>(CCMOpenToSpawn, Transform, SpawnParams);
+
+		if (SpawnedOpenCCM)
+		{
+			UE_LOG(LogTemp, Log, TEXT("APGDoor1 Succesfully Spawned APGChaosCacheManager : OpenCCM"));
+			NewDoor->CCMOpened = SpawnedOpenCCM;
+		}
+
+		TSubclassOf<APGChaosCacheManager> CCMCloseToSpawn = GetDefault<APGDoor1>()->BP_PG_CCMClosed;
+
+		APGChaosCacheManager* SpawnedCloseCCM = World->SpawnActor<APGChaosCacheManager>(CCMCloseToSpawn, Transform, SpawnParams);
+
+		if (SpawnedCloseCCM)
+		{
+			UE_LOG(LogTemp, Log, TEXT("APGDoor1 Succesfully Spawned APGChaosCacheManager : SpawnedCloseCCM"));
+			NewDoor->CCMClosed = SpawnedCloseCCM;
+		}
 	}
 }
 

@@ -7,6 +7,8 @@
 
 APGChaosCacheManager::APGChaosCacheManager()
 {
+	SetReplicates(true);
+
 	PrimaryActorTick.bCanEverTick = true;
 	SetActorTickEnabled(false);
 

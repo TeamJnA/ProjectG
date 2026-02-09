@@ -9,6 +9,8 @@
 
 #include "PGDoor1.generated.h"
 
+class APGChaosCacheManager;
+
 UCLASS()
 class PROJECTG_API APGDoor1 : public AActor, public IInteractableActorInterface
 {
@@ -106,4 +108,22 @@ protected:
 
 	UFUNCTION()
 	void ToggleShakeEffect(bool bToggle);
+
+	// 
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Chaos")
+	TSubclassOf<APGChaosCacheManager> BP_PG_CCMOpened;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Chaos")
+	TSubclassOf<APGChaosCacheManager> BP_PG_CCMClosed;
+
+protected:
+	bool bDoorBrokened;
+
+	UPROPERTY()
+	TObjectPtr<APGChaosCacheManager> CCMOpened;
+
+	UPROPERTY()
+	TObjectPtr<APGChaosCacheManager> CCMClosed;
+
 };
