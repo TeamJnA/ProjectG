@@ -2,15 +2,15 @@
 
 
 #include "Level/Room/PGStairRoom1.h"
-#include "Components/ArrowComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Level/Misc/PGWall.h"
 #include "Components/BoxComponent.h"
-#include "Components/ChildActorComponent.h"
 
 APGStairRoom1::APGStairRoom1()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionBigRoom.LI_MansionBigRoom_C'"));
 	static ConstructorHelpers::FClassFinder<AActor> BonfireRef(TEXT("/Game/ProjectG/Gimmick/Interact/Bonfire/BP_PGInteractableGimmickBonfire.BP_PGInteractableGimmickBonfire_C"));
+	
+	WallClass = APGWall::StaticClass();
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);

@@ -20,11 +20,12 @@ public:
 	// Sets default values for this actor's properties
 	APGMasterRoom();
 
-	virtual const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
-	virtual const USceneComponent* GetOverlapBoxFolder() const { return OverlapBoxFolder; }
-	virtual const USceneComponent* GetItemSpawnPointsFolder() const { return ItemSpawnPointsFolder; }
-	virtual const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
-	virtual FVector GetEnemySpawnLocation() const { return EnemySpawnPoint->GetComponentLocation(); }
+	FORCEINLINE const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
+	FORCEINLINE const USceneComponent* GetOverlapBoxFolder() const { return OverlapBoxFolder; }
+	FORCEINLINE const USceneComponent* GetItemSpawnPointsFolder() const { return ItemSpawnPointsFolder; }
+	FORCEINLINE const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
+	FORCEINLINE FVector GetEnemySpawnLocation() const { return EnemySpawnPoint->GetComponentLocation(); }
+	FORCEINLINE TSubclassOf<AActor> GetWallClass() const { return WallClass; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
@@ -53,4 +54,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "EnemySpawnPoint")
 	TObjectPtr<UArrowComponent> EnemySpawnPoint;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LevelGeneration")
+	TSubclassOf<AActor> WallClass;
 };

@@ -2,15 +2,15 @@
 
 
 #include "Level/Room/PGRoom3.h"
-#include "Components/ArrowComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Level/Misc/PGWall_Brown.h"
 #include "Components/BoxComponent.h"
-#include "Components/ChildActorComponent.h"
 
 APGRoom3::APGRoom3()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionBedroom.LI_MansionBedroom_C'"));
 	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
+
+	WallClass = APGWall_Brown::StaticClass();
 
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
@@ -49,38 +49,24 @@ APGRoom3::APGRoom3()
 
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint0->SetRelativeLocation(FVector(210.0f, 1100.0f, 6.0f));
-	MannequinSpawnPoint0->SetRelativeRotation(FRotator(0.0f, -10.0f, 0.0f));
+	MannequinSpawnPoint0->SetRelativeLocation(FVector(960.0f, 580.0f, 6.0f));
+	MannequinSpawnPoint0->SetRelativeRotation(FRotator(0.0f, 260.0f, 0.0f));
 	MannequinSpawnPoint0->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
 	MannequinSpawnPoint0->bHiddenInGame = true;
 
 	MannequinSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint1"));
 	MannequinSpawnPoint1->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint1->SetRelativeLocation(FVector(210.0f, 990.0f, 6.0f));
-	MannequinSpawnPoint1->SetRelativeRotation(FRotator(0.0f, -50.0f, 0.0f));
+	MannequinSpawnPoint1->SetRelativeLocation(FVector(434.0f, 1369.0f, 6.0f));
+	MannequinSpawnPoint1->SetRelativeRotation(FRotator(0.0f, -70.0f, 0.0f));
 	MannequinSpawnPoint1->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
 	MannequinSpawnPoint1->bHiddenInGame = true;
 
 	MannequinSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint2"));
 	MannequinSpawnPoint2->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint2->SetRelativeLocation(FVector(370.0f, 1030.0f, 6.0f));
-	MannequinSpawnPoint2->SetRelativeRotation(FRotator(0.0f, 40.0f, 0.0f));
+	MannequinSpawnPoint2->SetRelativeLocation(FVector(754.0f, -134.0f, 6.0f));
+	MannequinSpawnPoint2->SetRelativeRotation(FRotator(0.0f, -50.0f, 0.0f));
 	MannequinSpawnPoint2->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
 	MannequinSpawnPoint2->bHiddenInGame = true;
-
-	MannequinSpawnPoint3 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint3"));
-	MannequinSpawnPoint3->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint3->SetRelativeLocation(FVector(440.0f, 1300.0f, 6.0f));
-	MannequinSpawnPoint3->SetRelativeRotation(FRotator(0.0f, -70.0f, 0.0f));
-	MannequinSpawnPoint3->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint3->bHiddenInGame = true;
-
-	MannequinSpawnPoint4 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint4"));
-	MannequinSpawnPoint4->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint4->SetRelativeLocation(FVector(300.0f, 1220.0f, 6.0f));
-	MannequinSpawnPoint4->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-	MannequinSpawnPoint4->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint4->bHiddenInGame = true;
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(670.0f, 840.0f, 250.0f));
 

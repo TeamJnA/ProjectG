@@ -2,8 +2,7 @@
 
 
 #include "Level/Room/PGMasterRoom.h"
-#include "Components/SceneComponent.h"
-#include "Components/ArrowComponent.h"
+#include "Level/Misc/PGWall.h"
 #include "Components/BoxComponent.h"
 
 // Sets default values
@@ -60,4 +59,6 @@ APGMasterRoom::APGMasterRoom()
 	EnemySpawnPoint->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	EnemySpawnPoint->SetRelativeScale3D(FVector(2.0f, 2.0f, 2.0f));
 	EnemySpawnPoint->bHiddenInGame = true;
+
+	WallClass = APGWall::StaticClass();
 }

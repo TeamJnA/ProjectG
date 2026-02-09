@@ -42,12 +42,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
 	TObjectPtr<UArrowComponent> MannequinSpawnPoint2;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
-	TObjectPtr<UArrowComponent> MannequinSpawnPoint3;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
-	TObjectPtr<UArrowComponent> MannequinSpawnPoint4;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
 

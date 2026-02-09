@@ -2,15 +2,15 @@
 
 
 #include "Level/Room/PGRoom2.h"
-#include "Components/ArrowComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Level/Misc/PGWall.h"
 #include "Components/BoxComponent.h"
-#include "Components/ChildActorComponent.h"
 
 APGRoom2::APGRoom2()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionSmallCorridor.LI_MansionSmallCorridor_C'"));
 	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
+
+	WallClass = APGWall::StaticClass();
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);

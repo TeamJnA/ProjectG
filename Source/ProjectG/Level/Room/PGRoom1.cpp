@@ -2,20 +2,20 @@
 
 
 #include "Level/Room/PGRoom1.h"
-#include "Components/ArrowComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Level/Misc/PGWall.h"
 #include "Components/BoxComponent.h"
-#include "Components/ChildActorComponent.h"
 
 APGRoom1::APGRoom1()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionCorridor.LI_MansionCorridor_C'"));
 		
+	WallClass = APGWall::StaticClass();
+
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);
 	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
 	ExitDir0->SetRelativeLocation(FVector(1571.95f, -411.0f, 0.0f));
-	ExitDir0->SetRelativeRotation(FRotator(0.0f, 270.f, 0.0f));
+	ExitDir0->SetRelativeRotation(FRotator(0.0f, 270.0f, 0.0f));
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->bHiddenInGame = true;
 
@@ -39,7 +39,7 @@ APGRoom1::APGRoom1()
 	ExitDir3->SetupAttachment(ExitPointsFolder);
 	ExitDir3->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
 	ExitDir3->SetRelativeLocation(FVector(2171.95f, 407.0f, 0.0f));
-	ExitDir3->SetRelativeRotation(FRotator(0.0f, 90.f, 0.0f));
+	ExitDir3->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	ExitDir3->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir3->bHiddenInGame = true;
 
@@ -47,7 +47,7 @@ APGRoom1::APGRoom1()
 	ExitDir4->SetupAttachment(ExitPointsFolder);
 	ExitDir4->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
 	ExitDir4->SetRelativeLocation(FVector(971.95f, 407.0f, 0.0f));
-	ExitDir4->SetRelativeRotation(FRotator(0.0f, 90.f, 0.0f));
+	ExitDir4->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	ExitDir4->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir4->bHiddenInGame = true;
 
@@ -67,14 +67,14 @@ APGRoom1::APGRoom1()
 
 	MannequinSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint1"));
 	MannequinSpawnPoint1->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint1->SetRelativeLocation(FVector(790.0f, -300.0f, 6.0f));
+	MannequinSpawnPoint1->SetRelativeLocation(FVector(1280.0f, -300.0f, 6.0f));
 	MannequinSpawnPoint1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	MannequinSpawnPoint1->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
 	MannequinSpawnPoint1->bHiddenInGame = true;
 
 	MannequinSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint2"));
 	MannequinSpawnPoint2->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint2->SetRelativeLocation(FVector(1900.0f, 300.0f, 6.0f));
+	MannequinSpawnPoint2->SetRelativeLocation(FVector(2460.0f, 300.0f, 6.0f));
 	MannequinSpawnPoint2->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 	MannequinSpawnPoint2->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
 	MannequinSpawnPoint2->bHiddenInGame = true;

@@ -2,16 +2,16 @@
 
 
 #include "Level/Room/PGElevatorRoom.h"
-#include "Components/ArrowComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Level/Misc/PGWall.h"
 #include "Components/BoxComponent.h"
-#include "Components/ChildActorComponent.h"
 
 APGElevatorRoom::APGElevatorRoom()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionElevatorRoom.LI_MansionElevatorRoom_C"));
 	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
 	static ConstructorHelpers::FClassFinder<AActor> ExitElevatorRef(TEXT("/Game/ProjectG/Levels/Room/Exit/ExitElevator/BP_ExitElevator.BP_ExitElevator_C"));
+
+	WallClass = APGWall::StaticClass();
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);

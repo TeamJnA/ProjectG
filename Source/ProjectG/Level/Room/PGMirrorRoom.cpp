@@ -2,6 +2,7 @@
 
 
 #include "Level/Room/PGMirrorRoom.h"
+#include "Level/Misc/PGWall_Brown.h"
 #include "Components/BoxComponent.h"
 #include "Components/ChildActorComponent.h"
 #include "NavModifierComponent.h"
@@ -27,6 +28,8 @@ APGMirrorRoom::APGMirrorRoom()
 	static ConstructorHelpers::FObjectFinder<UMaterialInstance> GateMeshMaterialRef(TEXT("/Game/Imports/Materials/RustyMaterials/rusty_metal_sheet_tjylcjvn_1k/MI_RustyMetalSheet.MI_RustyMetalSheet"));
 
 	PrimaryActorTick.bCanEverTick = false;
+
+	WallClass = APGWall_Brown::StaticClass();
 
 	RoomDir->SetRelativeLocation(FVector(370.0f, 0.0f, 130.0f));
 

@@ -2,10 +2,8 @@
 
 
 #include "Level/Room/PGStartRoom.h"
-#include "Components/ArrowComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Level/Misc/PGWall.h"
 #include "Components/BoxComponent.h"
-#include "Components/ChildActorComponent.h"
 
 APGStartRoom::APGStartRoom()
 {
@@ -13,6 +11,8 @@ APGStartRoom::APGStartRoom()
 	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
 	static ConstructorHelpers::FClassFinder<AActor> ExitDoorRef(TEXT("/Game/ProjectG/Levels/Room/Exit/ExitIronDoor/BP_PGExitIronDoor.BP_PGExitIronDoor_C"));
 	static ConstructorHelpers::FClassFinder<AActor> BonfireRef(TEXT("/Game/ProjectG/Gimmick/Interact/Bonfire/BP_PGInteractableGimmickBonfire.BP_PGInteractableGimmickBonfire_C"));
+	
+	WallClass = APGWall::StaticClass();
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);

@@ -20,6 +20,16 @@
 #include "Level/Room/PGStairRoom1.h"
 #include "Level/Room/PGMirrorRoom.h"
 #include "Level/Room/PGElevatorRoom.h"
+#include "Level/Room/PGBarrelRoom.h"
+#include "Level/Room/PGChargerRoom.h"
+#include "Level/Room/PGCorridor_Dark.h"
+#include "Level/Room/PGCorridor_Simple.h"
+#include "Level/Room/PGLibraryRoom.h"
+#include "Level/Room/PGSmallCorridor_Bonfire.h"
+#include "Level/Room/PGSmallCorridor_Dark.h"
+#include "Level/Room/PGSmallCorridor_Mannequin.h"
+#include "Level/Room/PGStairRoom_Simple.h"
+
 #include "Level/Misc/PGDoor1.h"
 #include "Level/Misc/PGWall.h"
 #include "Level/Misc/PGExitDoor.h"
@@ -51,10 +61,10 @@ APGLevelGenerator::APGLevelGenerator()
 	};
 
 	// max room spawn amount
-	RoomAmount = 24;
+	RoomAmount = 26;
 
 	// reload level if (elpased time > max generation time)
-	MaxGenerateTime = 8.0f;
+	MaxGenerateTime = 10.0f;
 
 	static ConstructorHelpers::FClassFinder<AActor> BlindCharacterRef(TEXT("/Game/ProjectG/Enemy/Blind/Character/BP_BlindCharacter.BP_BlindCharacter_C"));
 	if (BlindCharacterRef.Class)
@@ -279,22 +289,100 @@ void APGLevelGenerator::SpawnNextRoom()
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	APGMasterRoom* NewRoom = nullptr;
-	if (RoomAmount > 14)
+	// Corridor 3
+	if (RoomAmount > 23)
 	{
 		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), SpawnTransform, spawnParams);
 	}
+	// Coddidor_Dark 2
+	else if (RoomAmount > 21)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGCorridor_Dark::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// Corridor_Simple 1
+	else if (RoomAmount > 20)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGCorridor_Simple::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// BedRoom 2
+	else if (RoomAmount > 18)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom3::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// SmallCorridor_Mannequin 1
+	else if (RoomAmount > 17)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGSmallCorridor_Mannequin::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// Library 1
+	else if (RoomAmount > 16)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGLibraryRoom::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// SmallCorridor 2
+	else if (RoomAmount > 14)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom2::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// Corridor 1
+	else if (RoomAmount > 13)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// SmallCorridor_Dark 2
+	else if (RoomAmount > 11)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGSmallCorridor_Dark::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// Corridor_Dark 1
+	else if (RoomAmount > 10)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGCorridor_Dark::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// StairRoom_Simple 2
+	else if (RoomAmount > 8)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGStairRoom_Simple::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// Corridor_Simple 1
+	else if (RoomAmount > 7)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGCorridor_Simple::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// StairRoom 1
+	else if (RoomAmount > 6)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGStairRoom1::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// SmallCorridor_Bonfire 1
+	else if (RoomAmount > 5)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGSmallCorridor_Bonfire::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// SmallCorridor_Mannequin 1
 	else if (RoomAmount > 4)
 	{
-		const TSubclassOf<APGMasterRoom>& NewRoomClass = RoomsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, RoomsList.Num())];
-		NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, spawnParams);
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGSmallCorridor_Mannequin::StaticClass(), SpawnTransform, spawnParams);
 	}
-	else if(RoomAmount > 1)
+	// BarrelRoom 1
+	else if (RoomAmount > 3)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGMirrorRoom::StaticClass(), SpawnTransform, spawnParams);
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGBarrelRoom::StaticClass(), SpawnTransform, spawnParams);
 	}
-	else
+	// ChargerRoom 1
+	else if (RoomAmount > 2)
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGChargerRoom::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// ElevatorRoom 1
+	else if (RoomAmount > 1)
 	{
 		NewRoom = World->SpawnActor<APGMasterRoom>(APGElevatorRoom::StaticClass(), SpawnTransform, spawnParams);
+	}
+	// MirrorRoom 1
+	else
+	{
+		NewRoom = World->SpawnActor<APGMasterRoom>(APGMirrorRoom::StaticClass(), SpawnTransform, spawnParams);
 	}
 
 	TWeakObjectPtr<APGLevelGenerator> WeakThis(this);
@@ -354,7 +442,7 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		}
 
 		ExitPointsList.Remove(InSelectedExitPoint);
-		if (RoomAmount > 4 || RoomAmount == 1)
+		if (RoomAmount > 1)
 		{
 			DoorPointsList.Add(InSelectedExitPoint);
 		}
@@ -500,8 +588,13 @@ void APGLevelGenerator::CloseHoles()
 		return;
 	}
 
-	for (const TObjectPtr<USceneComponent> ExitPoint : ExitPointsList)
+	for (USceneComponent* ExitPoint : ExitPointsList)
 	{
+		if (!ExitPoint)
+		{
+			continue;
+		}
+
 		const FVector SpawnLocation = ExitPoint->GetComponentLocation();
 		FRotator SpawnRotation = ExitPoint->GetComponentRotation();
 		SpawnRotation.Yaw += 90.0f;
@@ -511,7 +604,16 @@ void APGLevelGenerator::CloseHoles()
 		SpawnParams.Owner = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		World->SpawnActor<APGWall>(APGWall::StaticClass(), SpawnTransform, SpawnParams);
+		APGMasterRoom* OwnerRoom = Cast<APGMasterRoom>(ExitPoint->GetOwner());
+		if (OwnerRoom && OwnerRoom->GetWallClass())
+		{
+			TSubclassOf<AActor> WallClass = OwnerRoom->GetWallClass();
+			World->SpawnActor<AActor>(WallClass, SpawnTransform, SpawnParams);
+		}
+		else
+		{
+			World->SpawnActor<APGWall>(APGWall::StaticClass(), SpawnTransform, SpawnParams);
+		}
 	}
 }
 
@@ -568,7 +670,7 @@ void APGLevelGenerator::SpawnDoors()
 */
 void APGLevelGenerator::SpawnItems()
 {
-	const int32 ItemAmount = 27;
+	const int32 ItemAmount = 24;
 	SpawnSingleItem_Async(ItemAmount);
 }
 
@@ -597,11 +699,11 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 	}
 
 	FName ItemKeyToLoad;
-	if (ItemAmount > 25)
+	if (ItemAmount > 23)
 	{
 		ItemKeyToLoad = FName("ChainKey");
 	}
-	else if (ItemAmount > 23)
+	else if (ItemAmount > 22)
 	{
 		ItemKeyToLoad = FName("HandWheel");
 	}
