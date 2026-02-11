@@ -4,6 +4,7 @@
 #include "Physics/PGChaosCacheManager.h"
 #include "GeometryCollection/GeometryCollectionComponent.h"
 #include "Chaos/CacheCollection.h"
+#include "Physics/PhysicsInterfaceCore.h" 
 
 APGChaosCacheManager::APGChaosCacheManager()
 {
@@ -18,7 +19,6 @@ APGChaosCacheManager::APGChaosCacheManager()
 
 void APGChaosCacheManager::PlayCached()
 {
-	SetActorTickEnabled(true);
 
 	for (FObservedComponent& Observed : GetObservedComponents())
 	{
@@ -26,10 +26,23 @@ void APGChaosCacheManager::PlayCached()
 		Observed.bIsSimulating = false;
 	}
 
-	TriggerComponentByCache(PlayCacheName);
+	if (UWorld* World = GetWorld())
+	{
+		if (FPhysScene* Scene = World->GetPhysicsScene())
+		{
+			Scene->WaitPhysScenes();
+		}
+	}
 
+	BeginEvaluate();
+
+	SetActorHiddenInGame(false);
+
+	TriggerComponentByCache(PlayCacheName);
+	
 	if (DissolveCurve)
 	{
+		SetActorTickEnabled(true);
 		DissolveTimeline.PlayFromStart();
 	}
 }
@@ -46,7 +59,9 @@ void APGChaosCacheManager::OnDissolveFinished()
 
 void APGChaosCacheManager::BeginPlay()
 {
-	Super::BeginPlay();
+	using namespace Chaos;
+
+	AActor::BeginPlay();
 
 	if (DissolveCurve)
 	{

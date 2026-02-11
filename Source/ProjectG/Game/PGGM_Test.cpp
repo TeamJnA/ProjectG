@@ -8,6 +8,8 @@
 #include "Sound/PGSoundManager.h"
 #include "Kismet/GameplayStatics.h"
 
+#include "Level/Misc/PGDoor1.h"
+
 #include "GameFramework/GameState.h"
 #include "Player/PGPlayerState.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
@@ -24,6 +26,20 @@ APGGM_Test::APGGM_Test()
 APGSoundManager* APGGM_Test::GetSoundManager()
 {
 	return SoundManager;
+}
+
+void APGGM_Test::SpawnDoorTEST(FVector InLocation, FRotator InRotator)
+{
+	const FVector SpawnLocation = InLocation;
+	const FRotator SpawnRotation = InRotator;
+	const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.bNoFail = true;
+
+	APGDoor1::SpawnDoor(GetWorld(), SpawnTransform, SpawnParams, false);
 }
 
 void APGGM_Test::BeginPlay()

@@ -11,6 +11,14 @@
 
 class APGChaosCacheManager;
 
+UENUM(BlueprintType)
+enum class EDoorOpenType : uint8
+{
+	Closed,
+	Opened_A,
+	Opened_B
+};
+
 UCLASS()
 class PROJECTG_API APGDoor1 : public AActor, public IInteractableActorInterface
 {
@@ -117,13 +125,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Chaos")
 	TSubclassOf<APGChaosCacheManager> BP_PG_CCMClosed;
 
+	UFUNCTION()
+	void BreakDoorByEnemy(AActor* InteractInvestigator);
+
 protected:
 	bool bDoorBrokened;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	TObjectPtr<APGChaosCacheManager> CCMOpened;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	TObjectPtr<APGChaosCacheManager> CCMClosed;
 
+private:
+	UPROPERTY(Replicated)
+	EDoorOpenType DoorOpenType;
 };

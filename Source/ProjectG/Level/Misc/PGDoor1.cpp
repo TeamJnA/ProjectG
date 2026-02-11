@@ -83,6 +83,8 @@ APGDoor1::APGDoor1()
 	{
 		BP_PG_CCMOpened = CCM_Opened_BP.Class;
 	}
+
+	DoorOpenType = EDoorOpenType::Closed;
 }
 
 void APGDoor1::BeginPlay()
@@ -142,6 +144,8 @@ TSubclassOf<UGameplayAbility> APGDoor1::GetAbilityToInteract() const
 
 void APGDoor1::ToggleDoor(AActor* InteractInvestigator)
 {
+	BreakDoorByEnemy(InteractInvestigator);
+
 	SetDoorState(!bIsOpen, InteractInvestigator);
 }
 
@@ -183,11 +187,21 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 			const FVector DoorForwardVector = GetActorForwardVector();
 			const float DotProduct = FVector::DotProduct(DoorForwardVector, DoorToCharacter);
 
-			DesiredTransform = (DotProduct < 0.0f) ? OpenedTransform_A : OpenedTransform_B;
+			if (DotProduct < 0.0f)
+			{
+				DesiredTransform = OpenedTransform_A;
+				DoorOpenType = EDoorOpenType::Opened_A;
+			}
+			else
+			{
+				DesiredTransform = OpenedTransform_B;
+				DoorOpenType = EDoorOpenType::Opened_B;
+			}
 		}
 		else
 		{
 			DesiredTransform = OpenedTransform_A;
+			DoorOpenType = EDoorOpenType::Opened_A;
 		}
 	}
 	else
@@ -197,7 +211,10 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 		Mesh0->SetCanEverAffectNavigation(false);
 
 		DesiredTransform = ClosedTransform;
+		DoorOpenType = EDoorOpenType::Closed;
+
 	}
+
 
 	OnRep_DesiredTransform();
 }
@@ -208,6 +225,9 @@ void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(APGDoor1, bIsOpen);
 	DOREPLIFETIME(APGDoor1, bIsLocked);
 	DOREPLIFETIME(APGDoor1, DesiredTransform);
+	DOREPLIFETIME(APGDoor1, CCMOpened);
+	DOREPLIFETIME(APGDoor1, CCMClosed);
+	DOREPLIFETIME(APGDoor1, DoorOpenType);
 }
 
 void APGDoor1::Multicast_ActivateShakeEffect_Implementation()
@@ -246,6 +266,95 @@ void APGDoor1::ToggleShakeEffect(bool bToggle)
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PGDoor Cannot Find MIDDoor"));
+	}
+}
+
+void APGDoor1::BreakDoorByEnemy(AActor* InteractInvestigator)
+{
+	if (!CCMOpened || !CCMClosed)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot find chaos cache manager in PGDoor1"));
+		SetDoorState(true, InteractInvestigator);
+		return;
+	}
+
+	// Set door hidden and un interactable
+	bDoorBrokened = true;
+	SetActorHiddenInGame(true);
+
+	// Set ChaosDestruction Start Transform
+	FTransform TargetDoorTransform = Mesh0->GetComponentTransform();
+
+	CCMClosed->SetActorTransform(TargetDoorTransform);
+	CCMOpened->SetActorTransform(TargetDoorTransform);
+	
+	if (DoorOpenType == EDoorOpenType::Closed)
+	{
+		const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
+		const FVector DoorForwardVector = GetActorForwardVector();
+		const float DotProduct = FVector::DotProduct(DoorForwardVector, DoorToCharacter);
+
+		if (DotProduct > 0.0f)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot+"));
+			// 정방향
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot-"));
+
+			// 1. 필요한 월드 값들을 가져옵니다.
+			FTransform ActorW = GetActorTransform();            // 액터의 월드 트랜스폼 (중심)
+			FTransform MeshW = Mesh0->GetComponentTransform();  // 메쉬의 현재 월드 트랜스폼 (오른쪽 아래 피벗)
+
+			// 2. 액터 중심 기준의 '180도 회전 행렬'을 만듭니다.
+			FQuat Rotation180 = FQuat(FRotator(0.f, 180.f, 0.f));
+
+			// 3. 메쉬의 월드 트랜스폼을 액터 기준의 로컬 공간으로 옮깁니다.
+			// 이 작업이 "액터 중심을 기준으로 삼겠다"는 선언과 같습니다.
+			FTransform MeshRelativeInActor = MeshW.GetRelativeTransform(ActorW);
+
+			// 4. 로컬 공간에서 회전을 적용합니다.
+			// 메쉬의 위치(Location)와 회전(Rotation) 모두 액터 중심을 기준으로 180도 돌아갑니다.
+			FTransform RotatedRelative;
+			RotatedRelative.SetLocation(Rotation180.RotateVector(MeshRelativeInActor.GetLocation()));
+			RotatedRelative.SetRotation(Rotation180 * MeshRelativeInActor.GetRotation());
+
+			// 5. 다시 월드 좌표로 변환하여 최종 타겟을 구합니다.
+			FTransform FinalTargetW = RotatedRelative * ActorW;
+
+			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot-"));
+			CCMClosed->SetActorTransform(FinalTargetW);
+		}
+
+		CCMClosed->PlayCached();
+	}
+	else if(DoorOpenType == EDoorOpenType::Opened_A)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened A"));
+
+		FTransform ActorW = GetActorTransform(); 
+		FTransform MeshW = Mesh0->GetComponentTransform();
+
+		FQuat Rotation180 = FQuat(FRotator(0.f, 180.f, 0.f));
+
+		FTransform MeshRelativeInActor = MeshW.GetRelativeTransform(ActorW);
+
+		FTransform RotatedRelative;
+		RotatedRelative.SetLocation(Rotation180.RotateVector(MeshRelativeInActor.GetLocation()));
+		RotatedRelative.SetRotation(Rotation180 * MeshRelativeInActor.GetRotation());
+
+		FTransform FinalTargetW = RotatedRelative * ActorW;
+
+		CCMOpened->SetActorTransform(FinalTargetW);
+
+		CCMOpened->PlayCached();
+	}
+	else // DoorOpenType == EDoorOpenType::Opened_B
+	{
+		UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened B"));
+
+		CCMOpened->PlayCached();
 	}
 }
 

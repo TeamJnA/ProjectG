@@ -27,6 +27,9 @@ public:
 	virtual APGSoundManager* GetSoundManager() override;
 	// ~ISoundManagerInterface
 
+	UFUNCTION(BlueprintCallable)
+	void SpawnDoorTEST(FVector InLocation, FRotator InRotator);
+
 protected:
 	virtual void BeginPlay() override;
 
