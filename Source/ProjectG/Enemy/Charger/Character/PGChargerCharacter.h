@@ -49,13 +49,7 @@ public:
 	FORCEINLINE UAnimMontage* GetKillMontage() const { return KillMontage; }
 
 protected:
-	virtual void OnTouchColliderOverlapBegin(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult) override;
+	virtual void OnPlayerOverlapped(AActor* OverlapPlayer) override;
 
 	UFUNCTION()
 	void OnRep_HeadYaw(float OldValue);

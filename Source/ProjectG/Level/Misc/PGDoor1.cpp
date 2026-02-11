@@ -144,13 +144,16 @@ TSubclassOf<UGameplayAbility> APGDoor1::GetAbilityToInteract() const
 
 void APGDoor1::ToggleDoor(AActor* InteractInvestigator)
 {
-	BreakDoorByEnemy(InteractInvestigator);
-
 	SetDoorState(!bIsOpen, InteractInvestigator);
 }
 
 void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 {
+	if (bDoorBroken.bIsBroken)
+	{
+		return;
+	}
+
 	// Check door open sound twice.
 	// when enemy overlap door, door open called forcely.
 	const bool bOpenTwice = (bIsOpen && InbIsOpen);
@@ -168,8 +171,6 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 		{
 			return;
 		}
-
-		Mesh0->SetCanEverAffectNavigation(true);
 
 		if (bIsPlayer)
 		{
@@ -207,8 +208,6 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 	else
 	{
 		PlayDoorSound(DoorCloseSound);
-
-		Mesh0->SetCanEverAffectNavigation(false);
 
 		DesiredTransform = ClosedTransform;
 		DoorOpenType = EDoorOpenType::Closed;
@@ -272,6 +271,11 @@ void APGDoor1::ToggleShakeEffect(bool bToggle)
 void APGDoor1::BreakDoorByEnemy(AActor* InteractInvestigator)
 {
 	check(HasAuthority());
+
+	if (bDoorBroken.bIsBroken)
+	{
+		return;
+	}
 	
 	const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
 	const FVector DoorForwardVector = GetActorForwardVector();
@@ -294,8 +298,10 @@ void APGDoor1::OnRep_DoorBroken()
 		return;
 	}
 
-	// Set door hidden and un interactable
+	// Set door hidden and uninteractable
 	SetActorHiddenInGame(true);
+
+	Mesh0->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// Set ChaosDestruction Start Transform
 	FTransform TargetDoorTransform = Mesh0->GetComponentTransform();
@@ -417,6 +423,11 @@ bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FTex
 
 		return false;
 	}
+	else if (bDoorBroken.bIsBroken)
+	{
+		OutFailureMessage = FText::FromString(TEXT(""));
+		return false;
+	}
 
 	return true;
 }
@@ -441,6 +452,11 @@ void APGDoor1::OnRep_LockState()
 
 void APGDoor1::UnLock()
 {
+	if (bDoorBroken.bIsBroken)
+	{
+		return;
+	}
+
 	PlayDoorSound(DoorUnlockSound);
 
 	bIsLocked = false; 
@@ -465,7 +481,7 @@ void APGDoor1::PlayDoorSound(const FName& SoundName, const bool IsEnemyHear)
 	}
 }
 
-void APGDoor1::TEST_OpenDoorByAI(AActor* InteractInvestigator)
+void APGDoor1::OpenDoorByEnemy(AActor* InteractInvestigator)
 {
 	UE_LOG(LogTemp, Log, TEXT("OpenDoor by AI"));
 	SetDoorState(true, InteractInvestigator);

@@ -131,19 +131,23 @@ void APGChargerCharacter::SetCurrentState(E_PGChargerState NewState)
 		if (CurrentState == E_PGChargerState::Adjusting)
 		{
 			SetMovementSpeed(AdjustSpeed);
+			SetDoorBreak(true);
 		}
 		else if (CurrentState == E_PGChargerState::Attacking)
 		{
 			SetMovementSpeed(ChargeSpeed);
+			SetDoorBreak(true);
 		}
 		else if(CurrentState == E_PGChargerState::Staring)
 		{
 			SoundManagerComponent->TriggerSoundForAllPlayers(HeadRotateStareName, GetActorLocation());
 			SetMovementSpeed(PatrolSpeed);
+			SetDoorBreak(true);
 		}
 		else
 		{
 			SetMovementSpeed(PatrolSpeed);
+			SetDoorBreak(false);
 		}
 	}
 }
@@ -159,23 +163,13 @@ void APGChargerCharacter::OnRep_HeadYaw(float OldValue)
 	}
 }
 
-void APGChargerCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void APGChargerCharacter::OnPlayerOverlapped(AActor* OverlapPlayer)
 {
-	if (!HasAuthority())
+	if (IAttackableTarget* AttackableInterface = Cast<IAttackableTarget>(OverlapPlayer))
 	{
-		return;
-	}
-
-	if (!OtherActor || OtherActor == this)
-	{
-		return;
-	}
-
-	if (IAttackableTarget* AttackableInterface = Cast<IAttackableTarget>(OtherActor))
-	{
-		if (AttackableInterface->IsValidAttackableTarget() && OtherActor != CachedAttackedTarget)
+		if (AttackableInterface->IsValidAttackableTarget() && OverlapPlayer != CachedAttackedTarget)
 		{
-			CachedAttackedTarget = OtherActor;
+			CachedAttackedTarget = OverlapPlayer;
 
 			if (APGChargerAIController* AIC = Cast<APGChargerAIController>(GetController()))
 			{
@@ -192,7 +186,7 @@ void APGChargerCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overl
 			{
 				FGameplayEventData Payload;
 				Payload.Instigator = this;
-				Payload.Target = OtherActor;
+				Payload.Target = OverlapPlayer;
 
 				FGameplayTag KillTag = FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior.Attack"));
 

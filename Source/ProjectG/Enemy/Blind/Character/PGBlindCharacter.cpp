@@ -44,15 +44,14 @@ void APGBlindCharacter::SetHuntLevel(EBlindHuntLevel newHuntLevel)
 
     
     if (canDoorBreakBefore != canDoorBreakAfter)
-    {//TODO : 임시로 두 상황 똑같이 문을 열도록 되어있음. 부수는 함수 추가되면 로직 수정 필요 + log 내부도..
+    {
+        UE_LOG(LogPGEnemyBlind, Log, TEXT("Set OnOpenDoorColliderOverlapBegin %d"), int32(bDoorBreakOpen));
         if (canDoorBreakAfter)
         {
-            UE_LOG(LogPGEnemyBlind, Log, TEXT("Set OnOpenDoorColliderOverlapBegin %d"), int32(bDoorBreakOpen));
             SetDoorBreak(true);
         }
         else
         {
-            UE_LOG(LogPGEnemyBlind, Log, TEXT("Set OnOpenDoorColliderOverlapBegin %d"), int32(bDoorBreakOpen));
             SetDoorBreak(false);
         }
     }

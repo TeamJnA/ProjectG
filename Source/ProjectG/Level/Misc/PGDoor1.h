@@ -60,7 +60,7 @@ public:
 
 	void PlayDoorSound(const FName& SoundName, const bool IsEnemyHear = true);
 
-	void TEST_OpenDoorByAI(AActor* InteractInvestigator);
+	void OpenDoorByEnemy(AActor* InteractInvestigator);
 
 protected:
 	virtual void BeginPlay() override;
