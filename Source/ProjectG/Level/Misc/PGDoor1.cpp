@@ -70,7 +70,7 @@ APGDoor1::APGDoor1()
 
 	ShakeParameterName = TEXT("WPOPower");
 
-	bDoorBrokened = false;
+	bDoorBroken.bIsBroken = false;
 
 	static ConstructorHelpers::FClassFinder<APGChaosCacheManager> CCM_Closed_BP(TEXT("/Game/ProjectG/Levels/Room/Misc/DoorDestruction/BP_CCM_DoorClosed.BP_CCM_DoorClosed_C"));
 	if (CCM_Closed_BP.Succeeded())
@@ -215,7 +215,6 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 
 	}
 
-
 	OnRep_DesiredTransform();
 }
 
@@ -228,6 +227,7 @@ void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(APGDoor1, CCMOpened);
 	DOREPLIFETIME(APGDoor1, CCMClosed);
 	DOREPLIFETIME(APGDoor1, DoorOpenType);
+	DOREPLIFETIME(APGDoor1, bDoorBroken);
 }
 
 void APGDoor1::Multicast_ActivateShakeEffect_Implementation()
@@ -271,15 +271,30 @@ void APGDoor1::ToggleShakeEffect(bool bToggle)
 
 void APGDoor1::BreakDoorByEnemy(AActor* InteractInvestigator)
 {
+	check(HasAuthority());
+	
+	const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
+	const FVector DoorForwardVector = GetActorForwardVector();
+	const float DotProduct = FVector::DotProduct(DoorForwardVector, DoorToCharacter);
+	bool bIsForward = (DotProduct > 0.0f);
+
+	FDoorBreakStatus NewStatus = bDoorBroken;
+	NewStatus.bIsBroken = true;
+	NewStatus.bForward = bIsForward;
+
+	bDoorBroken = NewStatus;
+	OnRep_DoorBroken();
+}
+
+void APGDoor1::OnRep_DoorBroken()
+{
 	if (!CCMOpened || !CCMClosed)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot find chaos cache manager in PGDoor1"));
-		SetDoorState(true, InteractInvestigator);
 		return;
 	}
 
 	// Set door hidden and un interactable
-	bDoorBrokened = true;
 	SetActorHiddenInGame(true);
 
 	// Set ChaosDestruction Start Transform
@@ -287,14 +302,11 @@ void APGDoor1::BreakDoorByEnemy(AActor* InteractInvestigator)
 
 	CCMClosed->SetActorTransform(TargetDoorTransform);
 	CCMOpened->SetActorTransform(TargetDoorTransform);
-	
+
 	if (DoorOpenType == EDoorOpenType::Closed)
 	{
-		const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
-		const FVector DoorForwardVector = GetActorForwardVector();
-		const float DotProduct = FVector::DotProduct(DoorForwardVector, DoorToCharacter);
 
-		if (DotProduct > 0.0f)
+		if (bDoorBroken.bForward)
 		{
 			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot+"));
 			// Á¤¹æÇâ
@@ -329,11 +341,11 @@ void APGDoor1::BreakDoorByEnemy(AActor* InteractInvestigator)
 
 		CCMClosed->PlayCached();
 	}
-	else if(DoorOpenType == EDoorOpenType::Opened_A)
+	else if (DoorOpenType == EDoorOpenType::Opened_A)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened A"));
 
-		FTransform ActorW = GetActorTransform(); 
+		FTransform ActorW = GetActorTransform();
 		FTransform MeshW = Mesh0->GetComponentTransform();
 
 		FQuat Rotation180 = FQuat(FRotator(0.f, 180.f, 0.f));

@@ -19,6 +19,19 @@ enum class EDoorOpenType : uint8
 	Opened_B
 };
 
+USTRUCT(BlueprintType)
+struct FDoorBreakStatus
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	bool bIsBroken = false;
+
+	UPROPERTY()
+	bool bForward = true;
+};
+
 UCLASS()
 class PROJECTG_API APGDoor1 : public AActor, public IInteractableActorInterface
 {
@@ -129,7 +142,11 @@ public:
 	void BreakDoorByEnemy(AActor* InteractInvestigator);
 
 protected:
-	bool bDoorBrokened;
+	UPROPERTY(ReplicatedUsing = OnRep_DoorBroken)
+	FDoorBreakStatus bDoorBroken;
+
+	UFUNCTION()
+	void OnRep_DoorBroken();
 
 	UPROPERTY(Replicated)
 	TObjectPtr<APGChaosCacheManager> CCMOpened;
