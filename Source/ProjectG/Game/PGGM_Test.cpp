@@ -39,7 +39,12 @@ void APGGM_Test::SpawnDoorTEST(FVector InLocation, FRotator InRotator)
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	SpawnParams.bNoFail = true;
 
-	APGDoor1::SpawnDoor(GetWorld(), SpawnTransform, SpawnParams, false);
+	check(PGDoor);
+	APGDoor1* DefaultDoor = PGDoor->GetDefaultObject<APGDoor1>();
+	if (DefaultDoor)
+	{
+		DefaultDoor->SpawnDoor(GetWorld(), PGDoor, SpawnTransform, SpawnParams, false);
+	}
 }
 
 void APGGM_Test::BeginPlay()

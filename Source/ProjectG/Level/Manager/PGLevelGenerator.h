@@ -10,6 +10,7 @@ class APGMasterRoom;
 class APGBlindCharacter;
 class APGChargerCharacter;
 class APGTriggerGimmickMannequin;
+class APGDoor1;
 
 UCLASS()
 class PROJECTG_API APGLevelGenerator : public AActor
@@ -73,6 +74,9 @@ private:
 
 	UPROPERTY()
 	TSubclassOf<APGTriggerGimmickMannequin> MannequinClass;
+
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
+	TSubclassOf<APGDoor1> PGDoor;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;

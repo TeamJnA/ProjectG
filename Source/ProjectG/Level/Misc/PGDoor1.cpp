@@ -51,6 +51,10 @@ APGDoor1::APGDoor1()
 	// Door does not affect to NavMesh. AI ignore door.
 	Mesh0->SetCanEverAffectNavigation(false);
 
+	DoorMeshBackSide = CreateDefaultSubobject<USceneComponent>(TEXT("DoorBackSide"));
+	DoorMeshBackSide->SetupAttachment(Mesh0);
+	DoorMeshBackSide->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+
 	const FRotator ClosedRotation = FRotator::ZeroRotator;
 	const FVector ClosedLocation = FVector(0.0f, 82.0f, 0.0f);
 	ClosedTransform = FTransform(ClosedRotation, ClosedLocation);
@@ -71,18 +75,6 @@ APGDoor1::APGDoor1()
 	ShakeParameterName = TEXT("WPOPower");
 
 	bDoorBroken.bIsBroken = false;
-
-	static ConstructorHelpers::FClassFinder<APGChaosCacheManager> CCM_Closed_BP(TEXT("/Game/ProjectG/Levels/Room/Misc/DoorDestruction/BP_CCM_DoorClosed.BP_CCM_DoorClosed_C"));
-	if (CCM_Closed_BP.Succeeded())
-	{
-		BP_PG_CCMClosed = CCM_Closed_BP.Class;
-	}
-
-	static ConstructorHelpers::FClassFinder<APGChaosCacheManager> CCM_Opened_BP(TEXT("/Game/ProjectG/Levels/Room/Misc/DoorDestruction/BP_CCM_DoorOpened.BP_CCM_DoorOpened_C"));
-	if (CCM_Opened_BP.Succeeded())
-	{
-		BP_PG_CCMOpened = CCM_Opened_BP.Class;
-	}
 
 	DoorOpenType = EDoorOpenType::Closed;
 }
@@ -106,16 +98,16 @@ void APGDoor1::BeginPlay()
 		*GetActorLocation().ToString());
 }
 
-void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool InbIsLocked)
+void APGDoor1::SpawnDoor(UWorld* World, TSubclassOf<APGDoor1> ClassToSpawn, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool InbIsLocked)
 {
-	APGDoor1* NewDoor = World->SpawnActor<APGDoor1>(StaticClass(), Transform, SpawnParams);
+	APGDoor1* NewDoor = World->SpawnActor<APGDoor1>(ClassToSpawn, Transform, SpawnParams);
 
 	if (NewDoor)
 	{
 		NewDoor->bIsLocked = InbIsLocked;
 
 		// Spawn Chaos Cache Managers
-		TSubclassOf<APGChaosCacheManager> CCMOpenToSpawn = GetDefault<APGDoor1>()->BP_PG_CCMOpened;
+		TSubclassOf<APGChaosCacheManager> CCMOpenToSpawn = NewDoor->BP_PG_CCMOpened;
 
 		APGChaosCacheManager* SpawnedOpenCCM = World->SpawnActor<APGChaosCacheManager>(CCMOpenToSpawn, Transform, SpawnParams);
 
@@ -125,7 +117,7 @@ void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActo
 			NewDoor->CCMOpened = SpawnedOpenCCM;
 		}
 
-		TSubclassOf<APGChaosCacheManager> CCMCloseToSpawn = GetDefault<APGDoor1>()->BP_PG_CCMClosed;
+		TSubclassOf<APGChaosCacheManager> CCMCloseToSpawn = NewDoor->BP_PG_CCMClosed;
 
 		APGChaosCacheManager* SpawnedCloseCCM = World->SpawnActor<APGChaosCacheManager>(CCMCloseToSpawn, Transform, SpawnParams);
 
@@ -305,6 +297,7 @@ void APGDoor1::OnRep_DoorBroken()
 
 	// Set ChaosDestruction Start Transform
 	FTransform TargetDoorTransform = Mesh0->GetComponentTransform();
+	FTransform TargetDoorBackTransform = DoorMeshBackSide->GetComponentTransform();
 
 	CCMClosed->SetActorTransform(TargetDoorTransform);
 	CCMOpened->SetActorTransform(TargetDoorTransform);
@@ -320,7 +313,7 @@ void APGDoor1::OnRep_DoorBroken()
 		else
 		{
 			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot-"));
-
+			/*
 			// 1. 필요한 월드 값들을 가져옵니다.
 			FTransform ActorW = GetActorTransform();            // 액터의 월드 트랜스폼 (중심)
 			FTransform MeshW = Mesh0->GetComponentTransform();  // 메쉬의 현재 월드 트랜스폼 (오른쪽 아래 피벗)
@@ -342,15 +335,17 @@ void APGDoor1::OnRep_DoorBroken()
 			FTransform FinalTargetW = RotatedRelative * ActorW;
 
 			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot-"));
-			CCMClosed->SetActorTransform(FinalTargetW);
+
+			*/
+			CCMClosed->SetActorTransform(TargetDoorBackTransform);
 		}
 
 		CCMClosed->PlayCached();
 	}
-	else if (DoorOpenType == EDoorOpenType::Opened_A)
+	else if (DoorOpenType == EDoorOpenType::Opened_A)  // Dot+ Opened
 	{
 		UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened A"));
-
+		/*
 		FTransform ActorW = GetActorTransform();
 		FTransform MeshW = Mesh0->GetComponentTransform();
 
@@ -363,8 +358,9 @@ void APGDoor1::OnRep_DoorBroken()
 		RotatedRelative.SetRotation(Rotation180 * MeshRelativeInActor.GetRotation());
 
 		FTransform FinalTargetW = RotatedRelative * ActorW;
+		*/
 
-		CCMOpened->SetActorTransform(FinalTargetW);
+		CCMOpened->SetActorTransform(TargetDoorBackTransform);
 
 		CCMOpened->PlayCached();
 	}

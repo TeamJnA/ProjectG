@@ -547,7 +547,12 @@ void APGLevelGenerator::SpawnDoors()
 
 		const bool bShouldBeLocked = (LockedDoorAmount > 0);
 
-		APGDoor1::SpawnDoor(World, SpawnTransform, SpawnParams, bShouldBeLocked);
+		check(PGDoor);
+		APGDoor1* DefaultDoor = PGDoor->GetDefaultObject<APGDoor1>();
+		if (DefaultDoor)
+		{
+			DefaultDoor->SpawnDoor(World, PGDoor, SpawnTransform, SpawnParams, bShouldBeLocked);
+		}
 
 		if (bShouldBeLocked)
 		{

@@ -40,7 +40,7 @@ class PROJECTG_API APGDoor1 : public AActor, public IInteractableActorInterface
 public:	
 	// Sets default values for this actor's properties
 	APGDoor1();
-	static void SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool _bIsLocked);
+	static void SpawnDoor(UWorld* World, TSubclassOf<APGDoor1> ClassToSpawn, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool _bIsLocked);
 
 	//IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
@@ -73,6 +73,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "DoorMesh")
 	TObjectPtr<UStaticMeshComponent> Mesh0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DoorMesh")
+	TObjectPtr<USceneComponent> DoorMeshBackSide;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;

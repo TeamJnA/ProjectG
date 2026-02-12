@@ -11,6 +11,7 @@
 
 class APGSoundManager;
 class APGGhostCharacter;
+class APGDoor1;
 
 /**
  * 
@@ -45,4 +46,7 @@ protected:
 	TSubclassOf<APGGhostCharacter> GhostCharacterClass;
 
 	FTimerHandle TimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
+	TSubclassOf<APGDoor1> PGDoor;
 };
