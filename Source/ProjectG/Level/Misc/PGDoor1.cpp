@@ -268,9 +268,12 @@ void APGDoor1::BreakDoorByEnemy(AActor* InteractInvestigator)
 	{
 		return;
 	}
-	
-	const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
-	const FVector DoorForwardVector = GetActorForwardVector();
+
+	// MeshÀÇ LeftVector( RightVector * -1 ) == ActorÀÇ ForwardVector,
+	// const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
+	// const FVector DoorForwardVector = GetActorForwardVector();
+	const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - Mesh0->GetComponentLocation();
+	const FVector DoorForwardVector = Mesh0->GetRightVector() * (-1);
 	const float DotProduct = FVector::DotProduct(DoorForwardVector, DoorToCharacter);
 	bool bIsForward = (DotProduct > 0.0f);
 
@@ -321,15 +324,49 @@ void APGDoor1::OnRep_DoorBroken()
 	}
 	else if (DoorOpenType == EDoorOpenType::Opened_A)  // Dot+ Opened
 	{
-		UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened A"));
+		if (bDoorBroken.bForward)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened A, Dot+"));
 
-		CCMOpened->SetActorTransform(TargetDoorBackTransform);
+			CCMOpened->SetActorTransform(TargetDoorBackTransform);
+			CCMOpened->SetActorLocation(TargetDoorTransform.GetLocation());
+
+			FVector NewScale = TargetDoorTransform.GetScale3D();
+			NewScale.X = -1.0f;
+			NewScale.Y = -1.0f;
+
+			CCMOpened->SetActorScale3D(NewScale);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened A, Dot-"));
+
+			CCMOpened->SetActorTransform(TargetDoorBackTransform);
+			CCMOpened->SetActorLocation(TargetDoorTransform.GetLocation());
+
+			FVector NewScale = TargetDoorTransform.GetScale3D();
+			NewScale.X = -1.0f;
+
+			CCMOpened->SetActorScale3D(NewScale);
+		}
 
 		CCMOpened->PlayCached();
 	}
 	else // DoorOpenType == EDoorOpenType::Opened_B
 	{
-		UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened B"));
+		if (!bDoorBroken.bForward)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened B, Dot-"));
+
+			FVector NewScale = TargetDoorTransform.GetScale3D();
+			NewScale.Y = -1.0f;
+
+			CCMOpened->SetActorScale3D(NewScale);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened B, Dot+"));
+		}
 
 		CCMOpened->PlayCached();
 	}

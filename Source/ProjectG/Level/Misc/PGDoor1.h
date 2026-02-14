@@ -158,6 +158,6 @@ protected:
 	TObjectPtr<APGChaosCacheManager> CCMClosed;
 
 private:
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, VisibleAnywhere)
 	EDoorOpenType DoorOpenType;
 };
