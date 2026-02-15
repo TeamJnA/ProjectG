@@ -72,4 +72,31 @@ protected:
 	TSubclassOf<APGGhostCharacter> GhostCharacterClass;
 
 	float SpawnOffset = 0.0f;
+
+public:
+	void ProcessSoloLeaveRequest(APGPlayerController* RequestingPC, ECleanupActionType ActionType);
+
+	void RequestMassTravel();
+
+	void RequestSessionDestruction(bool bServerQuit);
+
+	void OnPlayerCleanupFinished(APlayerController* PC);
+
+	virtual void Logout(AController* Exiting) override;
+
+private:
+	void BroadcastCleanupCommand();
+	void ExecutePendingAction();
+	void BroadcastRestartVoice();
+
+	bool bIsProcessingAction = false;
+	APGPlayerController* PendingLeaverPC = nullptr;
+	ECleanupActionType PendingActionType = ECleanupActionType::None;
+
+	bool bIsMassTravel = false;
+	bool bServerShouldQuit = false;
+
+	int32 ReadyPlayerCount = 0;
+	int32 TotalPlayerCount = 0;
+	FTimerHandle TimeoutTimerHandle;
 };

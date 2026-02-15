@@ -21,6 +21,10 @@
 #include "Camera/CameraActor.h"
 #include "UI/Manager/PGHUD.h"
 
+#include "Net/VoiceConfig.h"
+#include "EngineUtils.h"
+#include "Character/PGPlayerCharacter.h"
+
 APGLobbyPlayerController::APGLobbyPlayerController()
 {
 
@@ -52,13 +56,15 @@ void APGLobbyPlayerController::BeginPlay()
 		InputSubsystem->AddMappingContext(DefaultMappingContext, 1);
 	}
 
-	const UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
-	const APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
+	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
 	if (!GI || !GS)
 	{
 		UE_LOG(LogTemp, Error, TEXT("LobbyPC::BeginPlay: GI or GS not valid"));
 		return;
 	}
+
+	GI->ShowLoadingScreen();
 
 	// GameInstance .h
 	// bool IsHost() const { return bIsHost; }
@@ -89,6 +95,26 @@ void APGLobbyPlayerController::BeginPlay()
 	}
 }
 
+void APGLobbyPlayerController::PostSeamlessTravel()
+{
+	Super::PostSeamlessTravel();
+
+	// On travel first try success
+	UE_LOG(LogTemp, Warning, TEXT("LobbyPC::PostSeamlessTravel: [%s] travel success"), *GetNameSafe(this));
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PC::Client_PostSeamlessTravel_Implementation: No valid GI"));
+		return;
+	}
+	GI->ShowLoadingScreen();
+}
+
 void APGLobbyPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -98,6 +124,61 @@ void APGLobbyPlayerController::SetupInputComponent()
 		// ESC
 		EnhancedInputComponent->BindAction(ShowPauseMenuAction, ETriggerEvent::Started, this, &APGLobbyPlayerController::OnShowPauseMenu);
 	}
+}
+
+void APGLobbyPlayerController::OnPossess(APawn* aPawn)
+{
+	Super::OnPossess(aPawn);
+
+	if (IsLocalController())
+	{
+		TryStartLobbyVoice();
+
+		FTimerHandle HideTimer;
+		GetWorld()->GetTimerManager().SetTimer(HideTimer, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
+	}
+}
+
+void APGLobbyPlayerController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+
+	if (IsLocalController())
+	{
+		TryStartLobbyVoice();
+
+		FTimerHandle HideTimer;
+		GetWorld()->GetTimerManager().SetTimer(HideTimer, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
+	}
+}
+
+void APGLobbyPlayerController::TryStartLobbyVoice()
+{
+	if (GetPawn())
+	{
+		StartTalking();
+		UE_LOG(LogTemp, Log, TEXT("Lobby Voice: Started Talking (Has Pawn)"));
+	}
+}
+
+void APGLobbyPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (IsLocalController())
+	{
+		StopTalking();
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void APGLobbyPlayerController::HideLoadingScreenDelayed()
+{
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LobbyPC::HideLoadingScreenDelayed: No valid GI"));
+		return;
+	}
+	GI->HideLoadingScreen();
 }
 
 /*
@@ -197,4 +278,104 @@ void APGLobbyPlayerController::Client_ShowLoadingScreen_Implementation()
 		UE_LOG(LogTemp, Warning, TEXT("LobbyPC::Client_ShowLoadingScreen: No valid gi"));
 	}
 	GI->ShowLoadingScreen();
+}
+
+void APGLobbyPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanupActionType ActionType)
+{
+	if (ActionType != ECleanupActionType::None)
+	{
+		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+		{
+			GI->ShowLoadingScreen();
+		}
+	}
+
+	PerformCleanup();
+
+	FTimerHandle CleanupDelayTimer;
+	GetWorld()->GetTimerManager().SetTimer(CleanupDelayTimer, [this]()
+	{
+		if (IsValid(this))
+		{
+			Server_NotifyCleanupFinished();
+		}
+	}, 1.0f, false);
+}
+
+void APGLobbyPlayerController::PerformCleanup()
+{
+	StopTalking();
+
+	if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
+	{
+		IOnlineVoicePtr VoiceInterface = Subsystem->GetVoiceInterface();
+		if (VoiceInterface.IsValid() && PlayerState)
+		{
+			VoiceInterface->MuteRemoteTalker(0, *PlayerState->GetUniqueId(), true);
+			//VoiceInterface->RemoveAllRemoteTalkers();
+			VoiceInterface->ClearVoicePackets();
+		}
+	}
+}
+
+void APGLobbyPlayerController::Client_RestartVoice_Implementation()
+{
+	if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
+	{
+		IOnlineVoicePtr VoiceInterface = Subsystem->GetVoiceInterface();
+		if (VoiceInterface.IsValid() && PlayerState)
+		{
+			VoiceInterface->UnmuteRemoteTalker(0, *PlayerState->GetUniqueId(), true);
+		}
+	}
+
+	StartTalking();
+
+	UE_LOG(LogTemp, Log, TEXT("LobbyPC: Voice Restarted."));
+}
+
+void APGLobbyPlayerController::Client_ExecuteSoloAction_Implementation(ECleanupActionType ActionType)
+{
+	PerformSessionEndAction(ActionType);
+}
+
+void APGLobbyPlayerController::PerformSessionEndAction(ECleanupActionType ActionType)
+{
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		if (ActionType == ECleanupActionType::Solo_ReturnToMainMenu || ActionType == ECleanupActionType::Mass_KickForDestroy)
+		{
+			UE_LOG(LogTemp, Log, TEXT("LobbyPC: Executing ReturnToMainMenu"));
+			GI->LeaveSessionAndReturnToMainMenu();
+		}
+		else if (ActionType == ECleanupActionType::Solo_QuitToDesktop)
+		{
+			UE_LOG(LogTemp, Log, TEXT("LobbyPC: Executing QuitToDesktop"));
+			UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
+		}
+	}
+}
+
+void APGLobbyPlayerController::Server_NotifyCleanupFinished_Implementation()
+{
+	if (APGLobbyGameMode* GM = Cast<APGLobbyGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GM->OnPlayerCleanupFinished(this);
+	}
+}
+
+void APGLobbyPlayerController::Server_RequestSoloLeave_Implementation(ECleanupActionType ActionType)
+{
+	if (APGLobbyGameMode* GM = Cast<APGLobbyGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GM->ProcessSoloLeaveRequest(this, ActionType);
+	}
+}
+
+void APGLobbyPlayerController::Server_RequestSessionDestruction_Implementation(bool bServerQuit)
+{
+	if (APGLobbyGameMode* GM = Cast<APGLobbyGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GM->RequestSessionDestruction(bServerQuit);
+	}
 }

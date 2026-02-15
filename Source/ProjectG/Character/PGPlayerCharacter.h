@@ -28,6 +28,7 @@ class USpotLightComponent;
 
 class APGTriggerGimmickMannequin;
 class USphereComponent;
+class UVOIPTalker;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
@@ -447,4 +448,16 @@ protected:
 
 	bool bIsGlitching = false;
 	bool bIsGhostGlitching = false;
+
+//public:
+//	void TeardownVoiceChat();
+//
+//protected:
+//	void InitVoiceChat();
+//
+//	UPROPERTY(EditDefaultsOnly, Category = "Audio|Voice")
+//	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;
+//
+//	UPROPERTY(BlueprintReadOnly, Category = "Audio|Voice")
+//	TObjectPtr<UVOIPTalker> VoipTalker;
 };

@@ -140,13 +140,43 @@ void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()
 
 void UPGFinalScoreBoardWidget::ReturnToMainMenu()
 {
-	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
+	//if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
+	//{
+	//	GI->ShowLoadingScreen();
+
+	//	if (APlayerController* PC = GetOwningPlayer())
+	//	{
+	//		if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+	//		{
+	//			PGPC->Client_CleanUpVoiceBeforeTravel();
+	//		}
+	//	}
+
+	//	FTimerHandle LeaveTimerHandle;
+	//	GetWorld()->GetTimerManager().SetTimer(LeaveTimerHandle, [GI]()
+	//	{
+	//		if (GI)
+	//		{
+	//			UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget: Executing LeaveSessionAndReturnToMainMenu after delay"));
+	//			GI->LeaveSessionAndReturnToMainMenu();
+	//		}
+	//	}, 1.0f, false);
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::OnReturnToMainMenuButtonClicked: No valid GI"));
+	//}
+
+	APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer());
+	if (!PC) return;
+
+	if (PC->HasAuthority())
 	{
-		GI->LeaveSessionAndReturnToMainMenu();
+		PC->Server_RequestSessionDestruction(false);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::OnReturnToMainMenuButtonClicked: No valid GI"));
+		PC->Server_RequestSoloLeave(ECleanupActionType::Solo_ReturnToMainMenu);
 	}
 }
 

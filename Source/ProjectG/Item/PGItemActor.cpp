@@ -20,6 +20,7 @@ APGItemActor::APGItemActor()
 	bAlwaysRelevant = true;
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
+	StaticMesh->SetCollisionProfileName(TEXT("Item"));
 	RootComponent = StaticMesh;
 
 	InteractAbility = UGA_Interact_Item::StaticClass();

@@ -41,6 +41,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
+#include "Net/VoiceConfig.h"
+#include "Components/SynthComponent.h"
+
 APGPlayerCharacter::APGPlayerCharacter()
 {
 	// Set size for collision capsule
@@ -177,6 +180,10 @@ void APGPlayerCharacter::BeginPlay()
 		PC->PlayerCameraManager->ViewPitchMax = 75.0f;
 		PC->PlayerCameraManager->ViewPitchMin = -75.0f;
 	}
+
+
+	//FTimerHandle VoiceInitTimer;
+	//GetWorld()->GetTimerManager().SetTimer(VoiceInitTimer, this, &APGPlayerCharacter::InitVoiceChat, 1.0f, false);
 }
 
 void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -469,9 +476,17 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	GiveDefaultAbilities();
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
+	//InitVoiceChat();
+
+	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
 
 	if (IsLocallyControlled()) //
 	{
+		if (APGPlayerController* PC = Cast<APGPlayerController>(NewController))
+		{
+			PC->RefreshVoiceChannel();
+		}
+
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
 		InitPostProcessMaterial();
@@ -488,6 +503,13 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			HeadlightLight->SetVolumetricScatteringIntensity(0.2f);
 		}
 	}
+	else
+	{
+		if (PS)
+		{
+			PS->UpdateVoiceSettings();
+		}
+	}
 }
 
 //This function is called on the [CLIENT] When the server updates PlayerState.
@@ -497,9 +519,17 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	
 	InitAbilitySystemComponent();
 	InitDefaultAttributes();
-	
+	//InitVoiceChat();
+
+	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
+
 	if (IsLocallyControlled())
 	{
+		if (APGPlayerController* PC = Cast<APGPlayerController>(GetController()))
+		{
+			PC->RefreshVoiceChannel();
+		}
+
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
 		InitPostProcessMaterial();
@@ -514,6 +544,13 @@ void APGPlayerCharacter::OnRep_PlayerState()
 		{
 			HeadlightLight->SetIndirectLightingIntensity(1.0f);
 			HeadlightLight->SetVolumetricScatteringIntensity(0.2f);
+		}
+	}
+	else
+	{
+		if (PS)
+		{
+			PS->UpdateVoiceSettings();
 		}
 	}
 }
@@ -1389,3 +1426,49 @@ void APGPlayerCharacter::UpdateGhostGlitchFadeOut()
 		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), CurrentGhostGlitchIntensity);
 	}
 }
+
+//void APGPlayerCharacter::TeardownVoiceChat()
+//{
+//	if (VoipTalker)
+//	{
+//		VoipTalker = nullptr;
+//	}
+//}
+//
+//void APGPlayerCharacter::InitVoiceChat()
+//{
+//	if (VoipTalker)
+//	{
+//		return;
+//	}
+//
+//	APlayerState* PS = GetPlayerState();
+//	if (!PS)
+//	{
+//		return;
+//	}
+//
+//	if (!IsLocallyControlled())
+//	{
+//		VoipTalker = UVOIPTalker::CreateTalkerForPlayer(PS);
+//		if (VoipTalker)
+//		{
+//			FVoiceSettings& VoiceSettings = VoipTalker->Settings;
+//
+//			if (VoiceAttenuationAsset)
+//			{
+//				VoiceSettings.AttenuationSettings = VoiceAttenuationAsset;
+//			}
+//
+//			VoiceSettings.ComponentToAttachTo = GetRootComponent();
+//
+//			VoipTalker->RegisterWithPlayerState(PS);
+//
+//			UE_LOG(LogTemp, Log, TEXT("Voice Chat Initialized for %s"), *GetName());
+//		}
+//	}
+//	else
+//	{
+//		UVOIPStatics::SetMicThreshold(0.01f);
+//	}
+//}

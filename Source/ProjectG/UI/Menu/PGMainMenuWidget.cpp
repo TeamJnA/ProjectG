@@ -89,6 +89,16 @@ void UPGMainMenuWidget::NativeConstruct()
 		0.3f,
 		false
 	);
+
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		FTimerHandle HideTimer;
+		GetWorld()->GetTimerManager().SetTimer(HideTimer, [GI]()
+		{
+			GI->HideLoadingScreen();
+			UE_LOG(LogTemp, Log, TEXT("MainMenu: Loading Screen Hidden"));
+		}, 0.5f, false);
+	}
 }
 
 void UPGMainMenuWidget::NativeDestruct()

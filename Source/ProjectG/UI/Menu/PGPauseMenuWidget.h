@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Type/PGGameTypes.h"
+
 #include "PGPauseMenuWidget.generated.h"
 
 class UButton;

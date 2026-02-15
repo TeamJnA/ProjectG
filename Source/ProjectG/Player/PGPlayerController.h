@@ -6,8 +6,9 @@
 #include "GameFramework/PlayerController.h"
 
 #include "Blueprint/UserWidget.h"
-
+#include "Net/VoiceConfig.h"
 #include "Type/PGGameTypes.h"
+#include "Game/PGGameMode.h"
 
 #include "PGPlayerController.generated.h"
 
@@ -28,6 +29,9 @@ class PROJECTG_API APGPlayerController : public APlayerController
 
 public:
 	APGPlayerController();
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowLoadingScreen();
 
 	UFUNCTION(Client, Reliable)
 	void Client_HideLoadingScreen();
@@ -54,13 +58,16 @@ public:
 	virtual void OnRep_Pawn() override;
 
 	UFUNCTION(Client, Reliable)
-	void Client_DisplayJumpscare(UTexture2D* JumpscareTexture);
+	void Client_DisplayJumpscare(UTexture2D* JumpscareTexture); 
 
 protected:	
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void SetupInputComponent() override;
 	virtual void OnPossess(APawn* NewPawn) override;
 	virtual void PostSeamlessTravel() override;
+
+	void TryStartVoice();
 
 	void ReplaceInputMappingContext(const APawn* PawnType);
 
@@ -132,4 +139,29 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> GameplayBGMPlayer;
+
+public:
+	UFUNCTION(Client, Reliable)
+	void Client_StopVoiceAndCleanup(ECleanupActionType ActionType);
+
+	UFUNCTION(Client, Reliable)
+	void Client_RestartVoice();
+
+	UFUNCTION(Client, Reliable)
+	void Client_ExecuteSoloAction(ECleanupActionType ActionType);
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSoloLeave(ECleanupActionType ActionType);
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSessionDestruction(bool bServerQuit);
+
+	UFUNCTION(Server, Reliable)
+	void Server_NotifyCleanupFinished();
+
+	void RefreshVoiceChannel();
+
+private:
+	void PerformCleanup(); 
+	void PerformSessionEndAction(ECleanupActionType ActionType);
 };

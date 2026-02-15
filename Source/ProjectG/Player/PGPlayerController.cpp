@@ -24,6 +24,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "Net/UnrealNetwork.h"
+#include "Net/VoiceConfig.h"
 
 #include "PGLogChannels.h"
 
@@ -82,6 +83,15 @@ void APGPlayerController::BeginPlay()
 	InitializeGameplayBGM();
 }
 
+void APGPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	//if (IsLocalController())
+	//{
+	//	StopTalking();
+	//}
+	Super::EndPlay(EndPlayReason);
+}
+
 void APGPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -110,6 +120,7 @@ void APGPlayerController::OnPossess(APawn* NewPawn)
 	UE_LOG(LogTemp, Log, TEXT("APGPlayerController::OnPossess new pawn [%s]"), *NewPawn->GetName());
 
 	ReplaceInputMappingContext(NewPawn);
+	TryStartVoice();
 
 	if (const APGSpectatorPawn* Spectator = Cast<APGSpectatorPawn>(NewPawn))
 	{
@@ -131,6 +142,7 @@ void APGPlayerController::OnRep_Pawn()
 	}
 
 	ReplaceInputMappingContext(GetPawn());
+	TryStartVoice();
 
 	if (const APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
 	{
@@ -191,6 +203,15 @@ void APGPlayerController::PostSeamlessTravel()
 	Client_PostSeamlessTravel();
 }
 
+void APGPlayerController::TryStartVoice()
+{
+	if (GetPawn())
+	{
+		StartTalking();
+		UE_LOG(LogTemp, Log, TEXT("Voice Chat: Started Talking (Pawn Possessed/Replicated)"));
+	}
+}
+
 void APGPlayerController::Client_PostSeamlessTravel_Implementation()
 {
 	if (!IsLocalController()) 
@@ -225,6 +246,17 @@ void APGPlayerController::Client_ForceReturnToLobby_Implementation()
 	{
 		GI->LeaveSessionAndReturnToMainMenu();
 	}
+}
+
+void APGPlayerController::Client_ShowLoadingScreen_Implementation()
+{
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PC::Client_HidLoadingScreen: No valid GI"));
+		return;
+	}
+	GI->ShowLoadingScreen();
 }
 
 void APGPlayerController::Client_HideLoadingScreen_Implementation()
@@ -443,6 +475,7 @@ void APGPlayerController::OnEscapeMovementFinished()
 	}
 	PlayerCharacter->OnAutomatedMovementCompleted.RemoveDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
 
+	StopTalking();
 	Server_RequestFinishEscape();
 }
 
@@ -503,6 +536,11 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 
 	SpectateTargetList.Empty();
 	CurrentSpectateIndex = -1;
+
+	if (APGPlayerState* LocalPS = GetPlayerState<APGPlayerState>())
+	{
+		LocalPS->SetSpectating(true);
+	}
 	
 	if (const APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
@@ -532,6 +570,9 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 		return;
 	}
 	Possess(Spectator);
+
+	Client_RestartVoice();
+
 	Server_ChangeSpectateTarget(true);
 }
 
@@ -651,6 +692,8 @@ void APGPlayerController::InitFinalScoreBoardWidget()
 	{
 		HUD->InitFinalScoreBoardWidget();
 	}
+
+	RefreshVoiceChannel();
 }
 
 void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
@@ -690,5 +733,171 @@ void APGPlayerController::StopGameplayBGM()
 	if (GameplayBGMPlayer && GameplayBGMPlayer->IsPlaying())
 	{
 		GameplayBGMPlayer->FadeOut(1.5f, 0.0f);
+	}
+}
+
+void APGPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanupActionType ActionType)
+{
+	if (ActionType != ECleanupActionType::None)
+	{
+		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+		{
+			GI->ShowLoadingScreen();
+		}
+	}
+
+	PerformCleanup();
+
+	FTimerHandle CleanupDelayTimer;
+	GetWorld()->GetTimerManager().SetTimer(CleanupDelayTimer, [this]()
+	{
+		if (IsValid(this))
+		{
+			Server_NotifyCleanupFinished();
+		}
+	}, 1.0f, false);
+}
+
+void APGPlayerController::RefreshVoiceChannel()
+{
+	APGPlayerState* MyPS = GetPlayerState<APGPlayerState>();
+	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
+	if (!MyPS || !GS || !VoiceInterface.IsValid())
+	{
+		return;
+	}
+
+	bool bIsGameEnd = GS->GetCurrentGameState() == EGameState::EndGame;
+	for (APlayerState* OtherPS : GS->PlayerArray)
+	{
+		if (OtherPS == MyPS) 
+		{
+			continue;
+		}
+
+		APGPlayerState* OtherPGPS = Cast<APGPlayerState>(OtherPS);
+		FUniqueNetIdRepl OtherId = OtherPS->GetUniqueId();
+		if (!OtherPGPS || !OtherId.IsValid())
+		{
+			continue;
+		}
+
+		// 상황 (Target, Source, VOIP 여부)
+		// FinalScoreBoard (모두, 모두, x)
+		if (bIsGameEnd)
+		{
+			VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
+		}
+		// 사망/탈출 후 스코어보드 (x, x, x)
+		else if ((MyPS->IsDead() || MyPS->IsEscaping()) && !MyPS->IsSpectating())
+		{
+			VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
+		}
+		// 관전 (관전자, 모두, x)
+		else if (MyPS->IsSpectating())
+		{
+			if (OtherPGPS->IsSpectating() || (!OtherPGPS->IsDead() && !OtherPGPS->IsEscaping()))
+			{
+				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
+			}
+			else // 스코어보드 보는 사람은 차단
+			{
+				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
+			}
+		}
+		// 인게임 (모두, 인게임 플레이어, o)
+		else if (!MyPS->IsDead() && !MyPS->IsEscaping())
+		{
+			if (!OtherPGPS->IsDead() && !OtherPGPS->IsEscaping())
+			{
+				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
+			}
+			else
+			{
+				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
+			}
+		}
+	}
+}
+
+void APGPlayerController::PerformCleanup()
+{
+	StopTalking();
+
+	if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
+	{
+		IOnlineVoicePtr VoiceInterface = Subsystem->GetVoiceInterface();
+		if (VoiceInterface.IsValid() && PlayerState)
+		{
+			VoiceInterface->MuteRemoteTalker(0, *PlayerState->GetUniqueId(), true);
+			//VoiceInterface->RemoveAllRemoteTalkers();
+			VoiceInterface->ClearVoicePackets();
+		}
+	}
+
+	//if (GameplayBGMPlayer && GameplayBGMPlayer->IsPlaying())
+	//{
+	//	GameplayBGMPlayer->Stop();
+	//}
+}
+
+void APGPlayerController::Client_RestartVoice_Implementation()
+{
+	if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
+	{
+		IOnlineVoicePtr VoiceInterface = Subsystem->GetVoiceInterface();
+		if (VoiceInterface.IsValid() && PlayerState)
+		{
+			VoiceInterface->UnmuteRemoteTalker(0, *PlayerState->GetUniqueId(), true);
+		}
+	}
+
+	StartTalking();
+
+	UE_LOG(LogTemp, Log, TEXT("PGPC: Voice Restarted."));
+}
+
+void APGPlayerController::Client_ExecuteSoloAction_Implementation(ECleanupActionType ActionType)
+{
+	PerformSessionEndAction(ActionType);
+}
+
+void APGPlayerController::PerformSessionEndAction(ECleanupActionType ActionType)
+{
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		if (ActionType == ECleanupActionType::Solo_ReturnToMainMenu || ActionType == ECleanupActionType::Mass_KickForDestroy)
+		{
+			GI->LeaveSessionAndReturnToMainMenu();
+		}
+		else if (ActionType == ECleanupActionType::Solo_QuitToDesktop)
+		{
+			UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
+		}
+	}
+}
+
+void APGPlayerController::Server_NotifyCleanupFinished_Implementation()
+{
+	if (APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GM->OnPlayerCleanupFinished(this);
+	}
+}
+
+void APGPlayerController::Server_RequestSoloLeave_Implementation(ECleanupActionType ActionType)
+{
+	if (APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GM->ProcessSoloLeaveRequest(this, ActionType);
+	}
+}
+
+void APGPlayerController::Server_RequestSessionDestruction_Implementation(bool bServerQuit)
+{
+	if (APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GM->RequestSessionDestruction(bServerQuit);
 	}
 }

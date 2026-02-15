@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Type/PGGameTypes.h"
+
 #include "PGLobbyPlayerController.generated.h"
 
 class ACameraActor;
@@ -27,10 +29,16 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void Client_ShowLoadingScreen();
-	
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void PostSeamlessTravel() override;
 	virtual void SetupInputComponent() override;
+	virtual void OnPossess(APawn* aPawn) override;
+	virtual void OnRep_Pawn() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	void HideLoadingScreenDelayed();
 
 	UFUNCTION(Server, Reliable)
 	void Server_SpawnAndPossessPlayer();
@@ -39,6 +47,7 @@ protected:
 	void SetupMainMenuUI();
 	void SetupMainMenuView();
 	void OnShowPauseMenu(const FInputActionValue& Value);
+	void TryStartLobbyVoice();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	TSubclassOf<ACameraActor> LobbyCameraClass;
@@ -49,4 +58,27 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ShowPauseMenuAction;
+
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSoloLeave(ECleanupActionType ActionType);
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSessionDestruction(bool bServerQuit);
+	
+	UFUNCTION(Client, Reliable)
+	void Client_StopVoiceAndCleanup(ECleanupActionType ActionType);
+
+	UFUNCTION(Client, Reliable)
+	void Client_RestartVoice();
+
+	UFUNCTION(Client, Reliable)
+	void Client_ExecuteSoloAction(ECleanupActionType ActionType);
+
+	UFUNCTION(Server, Reliable)
+	void Server_NotifyCleanupFinished();
+
+private:
+	void PerformCleanup();
+	void PerformSessionEndAction(ECleanupActionType ActionType);
 };

@@ -7,12 +7,13 @@ public class ProjectG : ModuleRules
 	public ProjectG(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
-															"GameplayAbilities", "GameplayTags", "GameplayTasks",
+
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
+                                                            "GameplayAbilities", "GameplayTags", "GameplayTasks",
                                                             "UMG", "Slate", "SlateCore",
-                                                            "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam", 
-                                                            "AIModule", "NavigationSystem", "NetCore", "Niagara" });
+                                                            "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam",
+                                                            "AIModule", "NavigationSystem", "NetCore", "Niagara",
+                                                            "Voice", "AudioMixer" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Networking", "Steamworks" });
 

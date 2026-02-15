@@ -53,7 +53,7 @@ APGGameMode::APGGameMode()
 
 	DefaultPawnClass = nullptr;
 
-	bUseSeamlessTravel = true;
+	bUseSeamlessTravel = false;
 }
 
 /*
@@ -189,14 +189,30 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 		{
 			UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: All players are ready to return lobby"));
 
+			//for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+			//{
+			//	APGPlayerController* PC = Cast<APGPlayerController>(It->Get());
+			//	if (PC)
+			//	{
+			//		PC->Client_CleanUpVoiceBeforeTravel();
+			//		PC->Client_ShowLoadingScreen();
+			//	}
+			//}
+
 			GS->SetCurrentGameState(EGameState::Lobby);
 			if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 			{
-				GI->SaveGameStateOnTravel(GS->GetCurrentGameState());
+				GI->SaveGameStateOnTravel(EGameState::Lobby);
 				UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: Saving GameState to GameInstance before travel."));
 			}
 
-			GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGLobbyRoom?listen", true);
+			//FTimerHandle ReturnLobbyTimer;
+			//GetWorld()->GetTimerManager().SetTimer(ReturnLobbyTimer, [this]()
+			//{
+			//	GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGLobbyRoom?listen");
+			//}, 1.0f, false);
+
+			RequestMassTravel();
 		}
 		else
 		{
@@ -309,6 +325,177 @@ void APGGameMode::SpawnGhost(const FTransform& SpawnTransform)
 	}
 }
 
+void APGGameMode::ProcessSoloLeaveRequest(APGPlayerController* RequestingPC, ECleanupActionType ActionType)
+{
+	if (bIsProcessingAction) 
+	{
+		return;
+	}
+
+	bIsProcessingAction = true;
+	bIsMassTravel = false;
+	bServerShouldQuit = false;
+	PendingLeaverPC = RequestingPC;
+	PendingActionType = ActionType;
+
+	UE_LOG(LogTemp, Log, TEXT("PGGameMode: Solo Leave Requested by %s. Muting All."), *RequestingPC->GetName());
+	BroadcastCleanupCommand();
+}
+
+void APGGameMode::RequestMassTravel()
+{
+	if (bIsProcessingAction) 
+	{
+		return;
+	}
+
+	bIsProcessingAction = true;
+	bIsMassTravel = true; 
+	bServerShouldQuit = false;
+	PendingLeaverPC = nullptr;
+	PendingActionType = ECleanupActionType::Mass_ServerTravel;
+	UE_LOG(LogTemp, Log, TEXT("PGGameMode: Mass Travel Requested. Muting All."));
+	BroadcastCleanupCommand();
+}
+
+void APGGameMode::RequestSessionDestruction(bool bServerQuit)
+{
+	if (bIsProcessingAction) 
+	{
+		return;
+	}
+
+	bIsProcessingAction = true;
+	bIsMassTravel = false;
+	bServerShouldQuit = bServerQuit;
+	PendingLeaverPC = nullptr;
+	PendingActionType = ECleanupActionType::Mass_KickForDestroy;
+
+	BroadcastCleanupCommand();
+}
+
+void APGGameMode::BroadcastCleanupCommand()
+{
+	ReadyPlayerCount = 0;
+	TArray<APGPlayerController*> TargetPCs;
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APGPlayerController* PC = Cast<APGPlayerController>(It->Get()))
+		{
+			TargetPCs.Add(PC);
+		}
+	}
+	TotalPlayerCount = TargetPCs.Num();
+
+	for (APGPlayerController* PC : TargetPCs)
+	{
+		if (bIsMassTravel)
+		{
+			PC->Client_StopVoiceAndCleanup(ECleanupActionType::Mass_ServerTravel);
+		}
+		else
+		{
+			if (PendingLeaverPC && PC == PendingLeaverPC)
+			{
+				PC->Client_StopVoiceAndCleanup(PendingActionType);
+			}
+			else
+			{
+				PC->Client_StopVoiceAndCleanup(ECleanupActionType::None);
+			}
+		}
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(TimeoutTimerHandle, this, &APGGameMode::ExecutePendingAction, 5.0f, false);
+}
+
+void APGGameMode::OnPlayerCleanupFinished(APlayerController* PC)
+{
+	ReadyPlayerCount++;
+	UE_LOG(LogTemp, Log, TEXT("GM: Player Ready %d/%d"), ReadyPlayerCount, TotalPlayerCount);
+	if (ReadyPlayerCount >= TotalPlayerCount)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(TimeoutTimerHandle);
+		ExecutePendingAction();
+	}
+}
+
+void APGGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	if (bIsProcessingAction && Exiting == PendingLeaverPC)
+	{
+		UE_LOG(LogTemp, Log, TEXT("PGGameMode: Leaver Gone. Restarting Voice."));
+		BroadcastRestartVoice();
+
+		bIsProcessingAction = false;
+		bIsMassTravel = false;
+		bServerShouldQuit = false;
+		PendingLeaverPC = nullptr;
+		PendingActionType = ECleanupActionType::None;
+	}
+}
+
+void APGGameMode::BroadcastRestartVoice()
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APGPlayerController* PC = Cast<APGPlayerController>(It->Get()))
+		{
+			if (PC != PendingLeaverPC)
+			{
+				PC->Client_RestartVoice();
+			}
+		}
+	}
+}
+
+void APGGameMode::ExecutePendingAction()
+{
+	if (bIsMassTravel)
+	{
+		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGLobbyRoom?listen", true);
+		return;
+	}
+
+	if (PendingLeaverPC && IsValid(PendingLeaverPC) && PendingActionType != ECleanupActionType::Mass_KickForDestroy)
+	{
+		UE_LOG(LogTemp, Log, TEXT("PGGameMode: Executing Leave for %s"), *PendingLeaverPC->GetName());
+		PendingLeaverPC->Client_ExecuteSoloAction(PendingActionType);
+		return;
+	}
+
+	if (PendingActionType == ECleanupActionType::Mass_KickForDestroy)
+	{
+		UWorld* World = GetWorld();
+		APGPlayerController* HostPC = Cast<APGPlayerController>(World->GetFirstPlayerController());
+
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (APGPlayerController* PC = Cast<APGPlayerController>(It->Get()))
+			{
+				if (PC != HostPC)
+				{
+					PC->Client_ExecuteSoloAction(ECleanupActionType::Solo_ReturnToMainMenu);
+				}
+			}
+		}
+
+		if (HostPC)
+		{
+			if (bServerShouldQuit)
+			{
+				HostPC->Client_ExecuteSoloAction(ECleanupActionType::Solo_QuitToDesktop);
+			}
+			else 
+			{
+				HostPC->Client_ExecuteSoloAction(ECleanupActionType::Solo_ReturnToMainMenu);
+			}
+		}
+	}
+}
+
 void APGGameMode::InitSoundManagerToPlayers()
 {
 	// Set the character's SoundManager pointer to the globally spawned soundmanager instance.
@@ -337,8 +524,6 @@ APGSoundManager* APGGameMode::GetSoundManager()
 */
 void APGGameMode::HandlePlayerEscaping(ACharacter* EscapingPlayer, EExitPointType ExitPointType)
 {
-	ensure(HasAuthority());
-
 	if (!EscapingPlayer)
 	{
 		return;

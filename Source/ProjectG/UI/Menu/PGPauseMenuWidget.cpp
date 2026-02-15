@@ -9,6 +9,9 @@
 #include "Components/WidgetSwitcher.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
+#include "Game/PGGameMode.h"
+#include "Player/PGPlayerController.h"
+#include "Player/PGLobbyPlayerController.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -155,14 +158,65 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 
 void UPGPauseMenuWidget::ReturnToMainMenu()
 {
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (GI)
+	//UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	//if (GI)
+	//{
+	//	GI->ShowLoadingScreen();
+
+	//	if (APlayerController* PC = GetOwningPlayer())
+	//	{
+	//		if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+	//		{
+	//			PGPC->Client_CleanUpVoiceBeforeTravel();
+	//		}
+	//		else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+	//		{
+	//			LobbyPC->Client_CleanUpVoiceBeforeTravel();
+	//		}
+	//	}
+
+	//	FTimerHandle LeaveTimerHandle;
+	//	GetWorld()->GetTimerManager().SetTimer(LeaveTimerHandle, [GI]()
+	//	{
+	//		if (GI)
+	//		{
+	//			UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget: Executing LeaveSessionAndReturnToMainMenu after delay"));
+	//			GI->LeaveSessionAndReturnToMainMenu();
+	//		}
+	//	}, 1.0f, false);
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::ReturnToMainMenu: Failed to get GI"));
+	//}
+
+	APlayerController* OwningPC = GetOwningPlayer();
+
+	if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(OwningPC))
 	{
-		GI->LeaveSessionAndReturnToMainMenu();
+		if (LobbyPC->HasAuthority())
+		{
+			LobbyPC->Server_RequestSessionDestruction(false);
+		}
+		else
+		{
+			//LobbyPC->Client_StartCleanupSequence(ECleanupActionType::Solo_ReturnToMainMenu);
+			//LobbyPC->StartSoloCleanupSequence(ECleanupActionType::Solo_ReturnToMainMenu);
+			LobbyPC->Server_RequestSoloLeave(ECleanupActionType::Solo_ReturnToMainMenu);
+		}
+		return;
 	}
-	else
+
+	if (APGPlayerController* PGPC = Cast<APGPlayerController>(OwningPC))
 	{
-		UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::ReturnToMainMenu: Failed to get GI"));
+		if (PGPC->HasAuthority())
+		{
+			PGPC->Server_RequestSessionDestruction(false);
+		}
+		else
+		{
+			PGPC->Server_RequestSoloLeave(ECleanupActionType::Solo_ReturnToMainMenu);
+		}
 	}
 }
 
@@ -199,20 +253,50 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 void UPGPauseMenuWidget::ReturnToDesktop()
 {
 	// Leave session
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (GI)
-	{
-		GI->LeaveSessionAndReturnToMainMenu();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::OnDesktopButtonClicked: Failed to get GI"));
-	}
+	//UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	//if (GI)
+	//{
+	//	GI->LeaveSessionAndReturnToMainMenu();
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::OnDesktopButtonClicked: Failed to get GI"));
+	//}
 
 	// Exit game
-	if (GetOwningPlayer())
+	//if (GetOwningPlayer())
+	//{
+	//	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, true);
+	//}
+
+	APlayerController* OwningPC = GetOwningPlayer();
+
+	if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(OwningPC))
 	{
-		UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, true);
+		if (LobbyPC->HasAuthority())
+		{
+			LobbyPC->Server_RequestSessionDestruction(true);
+		}
+		else
+		{
+			//LobbyPC->Client_StartCleanupSequence(ECleanupActionType::Solo_QuitToDesktop);
+			//LobbyPC->StartSoloCleanupSequence(ECleanupActionType::Solo_QuitToDesktop);
+			LobbyPC->Server_RequestSoloLeave(ECleanupActionType::Solo_QuitToDesktop);
+		}
+		return;
+	}
+
+	if (APGPlayerController * PGPC = Cast<APGPlayerController>(GetOwningPlayer()))
+	{
+		if (PGPC->HasAuthority())
+		{
+			PGPC->Server_RequestSessionDestruction(true);
+		}
+		else
+		{
+			PGPC->Server_RequestSoloLeave(ECleanupActionType::Solo_QuitToDesktop);
+		}
+
 	}
 }
 

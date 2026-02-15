@@ -13,3 +13,13 @@ enum class EExitPointType : uint8
     Elevator    UMETA(DisplayName = "Elevator"),
     Count
 };
+
+UENUM(BlueprintType)
+enum class ECleanupActionType : uint8
+{
+	None,
+	Solo_ReturnToMainMenu, // [Client] 혼자 나가기
+	Solo_QuitToDesktop,    // [Client] 혼자 종료
+	Mass_ServerTravel,     // [Server] 레벨 이동 (Lobby <-> Main)
+	Mass_KickForDestroy    // [Server] 모두 종료 (Lobby/MainLevel -> MainMenu)
+};
