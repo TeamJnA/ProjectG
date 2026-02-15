@@ -11,6 +11,7 @@
 
 class APGSoundManager;
 class APGGhostCharacter;
+class APGDoor1;
 
 /**
  * 
@@ -27,6 +28,9 @@ public:
 	virtual APGSoundManager* GetSoundManager() override;
 	// ~ISoundManagerInterface
 
+	UFUNCTION(BlueprintCallable)
+	void SpawnDoorTEST(FVector InLocation, FRotator InRotator);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -42,4 +46,7 @@ protected:
 	TSubclassOf<APGGhostCharacter> GhostCharacterClass;
 
 	FTimerHandle TimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
+	TSubclassOf<APGDoor1> PGDoor;
 };

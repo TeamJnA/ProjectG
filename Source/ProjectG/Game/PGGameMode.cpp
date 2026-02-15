@@ -260,8 +260,10 @@ void APGGameMode::SpawnAllPlayers()
 */
 void APGGameMode::SpawnLevelGenerator()
 {
+	check(PGLevelGenerator);
+
 	const FTransform SpawnTransform(FRotator::ZeroRotator, FVector::ZeroVector);	
-	APGLevelGenerator* LG = GetWorld()->SpawnActor<APGLevelGenerator>(APGLevelGenerator::StaticClass(), SpawnTransform);
+	APGLevelGenerator* LG = GetWorld()->SpawnActor<APGLevelGenerator>(PGLevelGenerator, SpawnTransform);
 	if (!LG)
 	{
 		UE_LOG(LogTemp, Error, TEXT("GameMode: LevelGenerator not Spawned"));

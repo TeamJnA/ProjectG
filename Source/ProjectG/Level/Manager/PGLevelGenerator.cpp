@@ -32,7 +32,6 @@
 
 #include "Level/Misc/PGDoor1.h"
 #include "Level/Misc/PGWall.h"
-#include "Level/Misc/PGExitDoor.h"
 
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Enemy/Charger/Character/PGChargerCharacter.h"
@@ -256,9 +255,6 @@ void APGLevelGenerator::SpawnStartRoom()
 	TestMatch1->SetActorRelativeLocation(FVector(1400.0f, 350.0f, 10.0f));
 	// ~ for test
 
-	//APGExitDoor* ExitDoor = World->SpawnActor<APGExitDoor>(APGExitDoor::StaticClass(), SpawnParams);
-	//ExitDoor->SetActorRelativeLocation(FVector(1850.0f, 317.0f, 10.0f));
-	//ExitDoor->SetActorRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 }
 
 /*
@@ -653,7 +649,12 @@ void APGLevelGenerator::SpawnDoors()
 
 		const bool bShouldBeLocked = (LockedDoorAmount > 0);
 
-		APGDoor1::SpawnDoor(World, SpawnTransform, SpawnParams, bShouldBeLocked);
+		check(PGDoor);
+		APGDoor1* DefaultDoor = PGDoor->GetDefaultObject<APGDoor1>();
+		if (DefaultDoor)
+		{
+			DefaultDoor->SpawnDoor(World, PGDoor, SpawnTransform, SpawnParams, bShouldBeLocked);
+		}
 
 		if (bShouldBeLocked)
 		{

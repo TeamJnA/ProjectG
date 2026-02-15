@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using UnrealBuildTool.Rules;
 
 public class ProjectG : ModuleRules
 {
@@ -13,7 +14,9 @@ public class ProjectG : ModuleRules
                                                             "UMG", "Slate", "SlateCore",
                                                             "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam",
                                                             "AIModule", "NavigationSystem", "NetCore", "Niagara",
-                                                            "Voice", "AudioMixer" });
+                                                            "Voice", "AudioMixer",
+                                                            "ChaosCaching", "GeometryCollectionEngine", "PhysicsCore"});
+
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Networking", "Steamworks" });
 

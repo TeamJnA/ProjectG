@@ -13,6 +13,7 @@
 class APGPlayerController;
 class APGSoundManager;
 class APGGhostCharacter;
+class APGLevelGenerator;
 
 /**
  * 
@@ -70,6 +71,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	TSubclassOf<APGGhostCharacter> GhostCharacterClass;
+
+	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
+	TSubclassOf<APGLevelGenerator> PGLevelGenerator;
 
 	float SpawnOffset = 0.0f;
 

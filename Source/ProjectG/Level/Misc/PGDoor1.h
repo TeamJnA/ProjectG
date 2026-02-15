@@ -9,6 +9,29 @@
 
 #include "PGDoor1.generated.h"
 
+class APGChaosCacheManager;
+
+UENUM(BlueprintType)
+enum class EDoorOpenType : uint8
+{
+	Closed,
+	Opened_A,
+	Opened_B
+};
+
+USTRUCT(BlueprintType)
+struct FDoorBreakStatus
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	bool bIsBroken = false;
+
+	UPROPERTY()
+	bool bForward = true;
+};
+
 UCLASS()
 class PROJECTG_API APGDoor1 : public AActor, public IInteractableActorInterface
 {
@@ -17,7 +40,7 @@ class PROJECTG_API APGDoor1 : public AActor, public IInteractableActorInterface
 public:	
 	// Sets default values for this actor's properties
 	APGDoor1();
-	static void SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool _bIsLocked);
+	static void SpawnDoor(UWorld* World, TSubclassOf<APGDoor1> ClassToSpawn, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool _bIsLocked);
 
 	//IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
@@ -37,7 +60,7 @@ public:
 
 	void PlayDoorSound(const FName& SoundName, const bool IsEnemyHear = true);
 
-	void TEST_OpenDoorByAI(AActor* InteractInvestigator);
+	void OpenDoorByEnemy(AActor* InteractInvestigator);
 
 protected:
 	virtual void BeginPlay() override;
@@ -50,6 +73,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "DoorMesh")
 	TObjectPtr<UStaticMeshComponent> Mesh0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DoorMesh")
+	TObjectPtr<USceneComponent> DoorMeshBackSide;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
@@ -106,4 +132,32 @@ protected:
 
 	UFUNCTION()
 	void ToggleShakeEffect(bool bToggle);
+
+	// 
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Chaos")
+	TSubclassOf<APGChaosCacheManager> BP_PG_CCMOpened;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Chaos")
+	TSubclassOf<APGChaosCacheManager> BP_PG_CCMClosed;
+
+	UFUNCTION()
+	void BreakDoorByEnemy(AActor* InteractInvestigator);
+
+protected:
+	UPROPERTY(ReplicatedUsing = OnRep_DoorBroken)
+	FDoorBreakStatus bDoorBroken;
+
+	UFUNCTION()
+	void OnRep_DoorBroken();
+
+	UPROPERTY(Replicated)
+	TObjectPtr<APGChaosCacheManager> CCMOpened;
+
+	UPROPERTY(Replicated)
+	TObjectPtr<APGChaosCacheManager> CCMClosed;
+
+private:
+	UPROPERTY(Replicated, VisibleAnywhere)
+	EDoorOpenType DoorOpenType;
 };

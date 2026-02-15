@@ -111,12 +111,9 @@ void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* Ove
 		return;
 	}
 
-	// If the other actor can attackable.
-	// TODO TARRAY 들어오면 담고 나가면 빼. 죽일때 빼. 공격이 끝났을때 -> 껐다키는거랑 똑같은데?  array 가 비었는지 확인하고 안비면 다시 루프돎. 
-	// 반복~ 플레이어가 컬라이더에서 나왔어. endoverlap 인식이 안 됨. 이럴경우엔 어떡하냐.. -> 공격하기전에 대상이 유효한지(거리를 다시 확인한다)
-	// 현재 주변 체크 하는 기능 -> 이게 가능하면 이게 훨씬 낫다. 
-	// 유지보수에안좋아. // 분류가안됨. 
-	// 
+	// 닿은 액터 확인 후 알맞은 작업 진행
+	
+	// TODO : Beginoverlap 중에 한 명 더 overlap 되면...
 	if (IAttackableTarget* AttackableInterface= Cast<IAttackableTarget>(OtherActor))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Player was detected by %s"), *GetNameSafe(this));
@@ -158,12 +155,11 @@ void APGEnemyCharacterBase::OnDoorOverlapped(AActor* OverlapDoor)
 	{
 		if (bDoorBreakOpen == true)
 		{
-			// TODO : Make door break hear
-			OverlappedDoor->TEST_OpenDoorByAI(this);
+			OverlappedDoor->BreakDoorByEnemy(this);
 		}
 		else
 		{
-			OverlappedDoor->TEST_OpenDoorByAI(this);
+			OverlappedDoor->OpenDoorByEnemy(this);
 		}
 	}
 }
@@ -215,7 +211,7 @@ void APGEnemyCharacterBase::ForceOpenDoorsAroundCharacter()
 		if (OverlappedDoor)
 		{
 			UE_LOG(LogTemp, Log, TEXT("Door around EnemyCharacterBase was detected"));
-			OverlappedDoor->TEST_OpenDoorByAI(this);
+			OverlappedDoor->BreakDoorByEnemy(this);
 		}
 	}
 }

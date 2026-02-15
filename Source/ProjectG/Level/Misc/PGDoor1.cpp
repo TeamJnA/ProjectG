@@ -4,7 +4,7 @@
 #include "Level/Misc/PGDoor1.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-
+#include "Physics/PGChaosCacheManager.h"
 #include "GameFramework/GameModeBase.h"
 
 #include "AbilitySystemComponent.h"
@@ -51,6 +51,10 @@ APGDoor1::APGDoor1()
 	// Door does not affect to NavMesh. AI ignore door.
 	Mesh0->SetCanEverAffectNavigation(false);
 
+	DoorMeshBackSide = CreateDefaultSubobject<USceneComponent>(TEXT("DoorBackSide"));
+	DoorMeshBackSide->SetupAttachment(Mesh0);
+	DoorMeshBackSide->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+
 	const FRotator ClosedRotation = FRotator::ZeroRotator;
 	const FVector ClosedLocation = FVector(0.0f, 82.0f, 0.0f);
 	ClosedTransform = FTransform(ClosedRotation, ClosedLocation);
@@ -69,6 +73,10 @@ APGDoor1::APGDoor1()
 	LockedDoorSound = FName(TEXT("LEVEL_Door_Locked"));
 
 	ShakeParameterName = TEXT("WPOPower");
+
+	bDoorBroken.bIsBroken = false;
+
+	DoorOpenType = EDoorOpenType::Closed;
 }
 
 void APGDoor1::BeginPlay()
@@ -90,12 +98,34 @@ void APGDoor1::BeginPlay()
 		*GetActorLocation().ToString());
 }
 
-void APGDoor1::SpawnDoor(UWorld* World, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool InbIsLocked)
+void APGDoor1::SpawnDoor(UWorld* World, TSubclassOf<APGDoor1> ClassToSpawn, const FTransform& Transform, const FActorSpawnParameters& SpawnParams, bool InbIsLocked)
 {
-	APGDoor1* NewDoor = World->SpawnActor<APGDoor1>(StaticClass(), Transform, SpawnParams);
+	APGDoor1* NewDoor = World->SpawnActor<APGDoor1>(ClassToSpawn, Transform, SpawnParams);
+
 	if (NewDoor)
 	{
 		NewDoor->bIsLocked = InbIsLocked;
+
+		// Spawn Chaos Cache Managers
+		TSubclassOf<APGChaosCacheManager> CCMOpenToSpawn = NewDoor->BP_PG_CCMOpened;
+
+		APGChaosCacheManager* SpawnedOpenCCM = World->SpawnActor<APGChaosCacheManager>(CCMOpenToSpawn, Transform, SpawnParams);
+
+		if (SpawnedOpenCCM)
+		{
+			UE_LOG(LogTemp, Log, TEXT("APGDoor1 Succesfully Spawned APGChaosCacheManager : OpenCCM"));
+			NewDoor->CCMOpened = SpawnedOpenCCM;
+		}
+
+		TSubclassOf<APGChaosCacheManager> CCMCloseToSpawn = NewDoor->BP_PG_CCMClosed;
+
+		APGChaosCacheManager* SpawnedCloseCCM = World->SpawnActor<APGChaosCacheManager>(CCMCloseToSpawn, Transform, SpawnParams);
+
+		if (SpawnedCloseCCM)
+		{
+			UE_LOG(LogTemp, Log, TEXT("APGDoor1 Succesfully Spawned APGChaosCacheManager : SpawnedCloseCCM"));
+			NewDoor->CCMClosed = SpawnedCloseCCM;
+		}
 	}
 }
 
@@ -111,6 +141,11 @@ void APGDoor1::ToggleDoor(AActor* InteractInvestigator)
 
 void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 {
+	if (bDoorBroken.bIsBroken)
+	{
+		return;
+	}
+
 	// Check door open sound twice.
 	// when enemy overlap door, door open called forcely.
 	const bool bOpenTwice = (bIsOpen && InbIsOpen);
@@ -129,8 +164,6 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 			return;
 		}
 
-		Mesh0->SetCanEverAffectNavigation(true);
-
 		if (bIsPlayer)
 		{
 			PlayDoorSound(DoorOpenSound);
@@ -147,20 +180,30 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 			const FVector DoorForwardVector = GetActorForwardVector();
 			const float DotProduct = FVector::DotProduct(DoorForwardVector, DoorToCharacter);
 
-			DesiredTransform = (DotProduct < 0.0f) ? OpenedTransform_A : OpenedTransform_B;
+			if (DotProduct < 0.0f)
+			{
+				DesiredTransform = OpenedTransform_A;
+				DoorOpenType = EDoorOpenType::Opened_A;
+			}
+			else
+			{
+				DesiredTransform = OpenedTransform_B;
+				DoorOpenType = EDoorOpenType::Opened_B;
+			}
 		}
 		else
 		{
 			DesiredTransform = OpenedTransform_A;
+			DoorOpenType = EDoorOpenType::Opened_A;
 		}
 	}
 	else
 	{
 		PlayDoorSound(DoorCloseSound);
 
-		Mesh0->SetCanEverAffectNavigation(false);
-
 		DesiredTransform = ClosedTransform;
+		DoorOpenType = EDoorOpenType::Closed;
+
 	}
 
 	OnRep_DesiredTransform();
@@ -172,6 +215,10 @@ void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME(APGDoor1, bIsOpen);
 	DOREPLIFETIME(APGDoor1, bIsLocked);
 	DOREPLIFETIME(APGDoor1, DesiredTransform);
+	DOREPLIFETIME(APGDoor1, CCMOpened);
+	DOREPLIFETIME(APGDoor1, CCMClosed);
+	DOREPLIFETIME(APGDoor1, DoorOpenType);
+	DOREPLIFETIME(APGDoor1, bDoorBroken);
 }
 
 void APGDoor1::Multicast_ActivateShakeEffect_Implementation()
@@ -210,6 +257,118 @@ void APGDoor1::ToggleShakeEffect(bool bToggle)
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PGDoor Cannot Find MIDDoor"));
+	}
+}
+
+void APGDoor1::BreakDoorByEnemy(AActor* InteractInvestigator)
+{
+	check(HasAuthority());
+
+	if (bDoorBroken.bIsBroken)
+	{
+		return;
+	}
+
+	// Mesh의 LeftVector( RightVector * -1 ) == Actor의 ForwardVector,
+	// const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
+	// const FVector DoorForwardVector = GetActorForwardVector();
+	const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - Mesh0->GetComponentLocation();
+	const FVector DoorForwardVector = Mesh0->GetRightVector() * (-1);
+	const float DotProduct = FVector::DotProduct(DoorForwardVector, DoorToCharacter);
+	bool bIsForward = (DotProduct > 0.0f);
+
+	FDoorBreakStatus NewStatus = bDoorBroken;
+	NewStatus.bIsBroken = true;
+	NewStatus.bForward = bIsForward;
+
+	bDoorBroken = NewStatus;
+	OnRep_DoorBroken();
+}
+
+void APGDoor1::OnRep_DoorBroken()
+{
+	if (!CCMOpened || !CCMClosed)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot find chaos cache manager in PGDoor1"));
+		return;
+	}
+
+	// Set door hidden and uninteractable
+	SetActorHiddenInGame(true);
+
+	Mesh0->SetCollisionProfileName(TEXT("NoCollision"));
+
+	// Set ChaosDestruction Start Transform
+	FTransform TargetDoorTransform = Mesh0->GetComponentTransform();
+	FTransform TargetDoorBackTransform = DoorMeshBackSide->GetComponentTransform();
+
+	CCMClosed->SetActorTransform(TargetDoorTransform);
+	CCMOpened->SetActorTransform(TargetDoorTransform);
+
+	if (DoorOpenType == EDoorOpenType::Closed)
+	{
+
+		if (bDoorBroken.bForward)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot+"));
+			// 정방향
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot-"));
+
+			CCMClosed->SetActorTransform(TargetDoorBackTransform);
+		}
+
+		CCMClosed->PlayCached();
+	}
+	else if (DoorOpenType == EDoorOpenType::Opened_A)  // Dot+ Opened
+	{
+		if (bDoorBroken.bForward)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened A, Dot+"));
+
+			CCMOpened->SetActorTransform(TargetDoorBackTransform);
+			CCMOpened->SetActorLocation(TargetDoorTransform.GetLocation());
+
+			FVector NewScale = TargetDoorTransform.GetScale3D();
+			NewScale.X = -1.0f;
+			NewScale.Y = -1.0f;
+
+			CCMOpened->SetActorScale3D(NewScale);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened A, Dot-"));
+
+			CCMOpened->SetActorTransform(TargetDoorBackTransform);
+			CCMOpened->SetActorLocation(TargetDoorTransform.GetLocation());
+
+			FVector NewScale = TargetDoorTransform.GetScale3D();
+			NewScale.X = -1.0f;
+
+			CCMOpened->SetActorScale3D(NewScale);
+		}
+
+		CCMOpened->PlayCached();
+	}
+	else // DoorOpenType == EDoorOpenType::Opened_B
+	{
+		if (!bDoorBroken.bForward)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened B, Dot-"));
+
+			FVector NewScale = TargetDoorTransform.GetScale3D();
+			NewScale.Y = -1.0f;
+
+			CCMOpened->SetActorScale3D(NewScale);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened B, Dot+"));
+		}
+
+		CCMOpened->PlayCached();
 	}
 }
 
@@ -260,6 +419,11 @@ bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FTex
 
 		return false;
 	}
+	else if (bDoorBroken.bIsBroken)
+	{
+		OutFailureMessage = FText::FromString(TEXT(""));
+		return false;
+	}
 
 	return true;
 }
@@ -284,6 +448,11 @@ void APGDoor1::OnRep_LockState()
 
 void APGDoor1::UnLock()
 {
+	if (bDoorBroken.bIsBroken)
+	{
+		return;
+	}
+
 	PlayDoorSound(DoorUnlockSound);
 
 	bIsLocked = false; 
@@ -308,7 +477,7 @@ void APGDoor1::PlayDoorSound(const FName& SoundName, const bool IsEnemyHear)
 	}
 }
 
-void APGDoor1::TEST_OpenDoorByAI(AActor* InteractInvestigator)
+void APGDoor1::OpenDoorByEnemy(AActor* InteractInvestigator)
 {
 	UE_LOG(LogTemp, Log, TEXT("OpenDoor by AI"));
 	SetDoorState(true, InteractInvestigator);
