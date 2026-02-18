@@ -16,6 +16,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerArrayChangedDelegate);
 
 class APGPlayerController;
 class APGPlayerCharacter;
+class ULevelSequence;
+class ULevelSequencePlayer;
 
 UENUM(BlueprintType)
 enum class EGameState : uint8
@@ -45,6 +47,7 @@ public:
 	bool IsAllReadyToReturnLobby() const;
 	void NotifyPlayerFinished(APlayerState* FinishedPlayerState);
 
+	
 
 	// ----- Player List ---------
 	FOnPlayerArrayChangedDelegate OnPlayerArrayChanged;
@@ -92,4 +95,21 @@ protected:
 
 	UPROPERTY()
 	TMap<EExitPointType, TObjectPtr<AActor>> ExitCameraMap;
+
+// Play Seqeunce
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sequence")
+	TSoftObjectPtr<ULevelSequence> LevelSequenceAsset;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayerEnterLevelSequence();
+
+protected:
+	void PlayEnterLevelSeqeunce();
+
+	UPROPERTY()
+	TObjectPtr<ULevelSequence> LoadedLevelSequence;
+
+	UPROPERTY()
+	TObjectPtr<ULevelSequencePlayer> EnterSequencePlayer;
 };

@@ -35,7 +35,12 @@ APGGameMode::APGGameMode()
 		PlayerPawnClass = PlayerPawnBPClass.Class;
 	}
 
-	GameStateClass = APGGameState::StaticClass();
+	static ConstructorHelpers::FClassFinder<APGGameState> PGGameStateClass(TEXT("/Game/ProjectG/Game/BP_PGGameState.BP_PGGameState_C"));
+	if (PGGameStateClass.Class != nullptr)
+	{
+		GameStateClass = PGGameStateClass.Class;
+	}
+
 	PlayerStateClass = APGPlayerState::StaticClass();
 	PlayerControllerClass = APGPlayerController::StaticClass();
 	
@@ -78,6 +83,7 @@ void APGGameMode::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
 	}
+
 
 	FTimerHandle TravelCheckTimer;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -246,7 +252,15 @@ void APGGameMode::SpawnAllPlayers()
 
 		SpawnOffset += 50;
 
+
 		PC->Client_HideLoadingScreen();
+	}
+
+	// TODO
+	APGGameState* GS = GetGameState<APGGameState>();
+	if (GS)
+	{
+		GS->Multicast_PlayerEnterLevelSequence();
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager and SoundManager."));

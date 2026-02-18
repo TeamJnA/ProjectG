@@ -14,6 +14,10 @@
 #include "Net/UnrealNetwork.h"
 #include "Net/NetPushModelHelpers.h"
 
+#include "LevelSequence.h"
+#include "LevelSequencePlayer.h"
+#include "LevelSequenceActor.h"
+
 void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -23,7 +27,12 @@ void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 void APGGameState::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	if (!LevelSequenceAsset.IsNull())
+	{
+		LoadedLevelSequence = LevelSequenceAsset.LoadSynchronous();
+	}
+
 	// load saved game state
 	if (HasAuthority())
 	{
@@ -239,4 +248,45 @@ void APGGameState::HandlePlayerFinished(APlayerState* FinishedPlayerState)
 			}
 		}
 	}
+}
+
+void APGGameState::PlayEnterLevelSeqeunce()
+{
+	FMovieSceneSequencePlaybackSettings Settings;
+	Settings.bAutoPlay = false;  // 우리가 직접 Play() 호출
+	Settings.LoopCount.Value = 0;  // 0 = 반복 없음, -1 = 무한반복
+
+	ALevelSequenceActor* OutActor = nullptr;
+
+	EnterSequencePlayer = ULevelSequencePlayer::CreateLevelSequencePlayer(
+		GetWorld(),          // World Context
+		LoadedLevelSequence,  // 재생할 시퀀스
+		Settings,            // 재생 설정
+		OutActor             // 생성된 LevelSequenceActor를 받음
+	);
+
+	AActor* SpawnedDoorActor = GetExitCameraByEnum(EExitPointType::IronDoor);
+
+	if (OutActor && SpawnedDoorActor)
+	{
+		FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag("Door");
+
+		if (BindingID.IsValid())
+		{
+			OutActor->SetBinding(BindingID, { SpawnedDoorActor });
+		}
+	}
+
+	// TODO 
+	// EnterSequencePlayer->OnFinished.AddDynamic(this, &APGGameState::OnEnterSequenceFinished);
+
+	if (EnterSequencePlayer)
+	{
+		EnterSequencePlayer->Play();
+	}
+}
+
+void APGGameState::Multicast_PlayerEnterLevelSequence_Implementation()
+{
+	PlayEnterLevelSeqeunce();
 }
