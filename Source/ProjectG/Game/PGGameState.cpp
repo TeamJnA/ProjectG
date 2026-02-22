@@ -250,21 +250,61 @@ void APGGameState::HandlePlayerFinished(APlayerState* FinishedPlayerState)
 	}
 }
 
-void APGGameState::PlayEnterLevelSeqeunce()
+void APGGameState::Multicast_PlayerEnterLevelSequence_Implementation(int32 NumPlayers)
 {
+	PlayEnterLevelSeqeunce(NumPlayers);
+}
+
+void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
+{
+	UE_LOG(LogTemp, Log, TEXT("Play Level Sequence with players : %d"), NumPlayers);
+
+	
+	UMovieScene* MovieScene = LoadedLevelSequence->GetMovieScene();
+	if (MovieScene)
+	{
+		for (const FMovieSceneBinding& Binding : MovieScene->GetBindings())
+		{
+			FMovieSceneSpawnable* Spawnable = MovieScene->FindSpawnable(Binding.GetObjectGuid());
+			FMovieScenePossessable* Possessable = MovieScene->FindPossessable(Binding.GetObjectGuid());
+
+			UE_LOG(LogTemp, Warning, TEXT("Binding: %s | Spawnable: %s | Possessable: %s"),
+				*Binding.GetName(),
+				Spawnable ? TEXT("YES") : TEXT("NO"),
+				Possessable ? TEXT("YES") : TEXT("NO")
+			);
+		}
+
+		for (int32 i = 0; i < MovieScene->GetSpawnableCount(); i++)
+		{
+			FMovieSceneSpawnable& Spawnable = MovieScene->GetSpawnable(i);
+			int32 PlayerIndex = FCString::Atoi(*Spawnable.GetName().Right(1));
+
+			UE_LOG(LogTemp, Warning, TEXT("Spawnable PlayerIndex : %d"), PlayerIndex);
+
+			if (PlayerIndex > NumPlayers)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Remove players in LevelSequence"));
+				Spawnable.SetSpawnOwnership(ESpawnOwnership::External);
+			}
+		}
+	}
+	
+
 	FMovieSceneSequencePlaybackSettings Settings;
-	Settings.bAutoPlay = false;  // 우리가 직접 Play() 호출
-	Settings.LoopCount.Value = 0;  // 0 = 반복 없음, -1 = 무한반복
+	Settings.bAutoPlay = false;  // 직접 Play()
+	Settings.LoopCount.Value = 0;  // 0 = 반복 없음
 
 	ALevelSequenceActor* OutActor = nullptr;
 
 	EnterSequencePlayer = ULevelSequencePlayer::CreateLevelSequencePlayer(
-		GetWorld(),          // World Context
-		LoadedLevelSequence,  // 재생할 시퀀스
-		Settings,            // 재생 설정
-		OutActor             // 생성된 LevelSequenceActor를 받음
+		GetWorld(),
+		LoadedLevelSequence,
+		Settings,
+		OutActor
 	);
 
+	// Binding ExitDoor to LevelSequence
 	AActor* SpawnedDoorActor = GetExitCameraByEnum(EExitPointType::IronDoor);
 
 	if (OutActor && SpawnedDoorActor)
@@ -277,16 +317,42 @@ void APGGameState::PlayEnterLevelSeqeunce()
 		}
 	}
 
-	// TODO 
-	// EnterSequencePlayer->OnFinished.AddDynamic(this, &APGGameState::OnEnterSequenceFinished);
+	/*
+	if (OutActor)
+	{
+		for (int32 i = 1; i <= 4; ++i)
+		{
+			FName TargetTag = *FString::Printf(TEXT("Player%d"), i);
+			FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag(TargetTag);
+
+			if (BindingID.IsValid())
+			{
+				if (i > NumPlayers)
+				{
+					// 빈 배열을 바인딩하여 시퀀스가 스폰하는 것을 차단
+					OutActor->SetBinding(BindingID, TArray<AActor*>());
+				}
+			}
+		}
+	}
+	*/
 
 	if (EnterSequencePlayer)
 	{
+		EnterSequencePlayer->OnFinished.AddDynamic(this, &APGGameState::OnEnterSequenceFinished);
 		EnterSequencePlayer->Play();
 	}
 }
 
-void APGGameState::Multicast_PlayerEnterLevelSequence_Implementation()
+// Set camera to player character
+void APGGameState::OnEnterSequenceFinished()
 {
-	PlayEnterLevelSeqeunce();
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC && PC->IsLocalController())
+	{
+		if (APawn* MyPawn = PC->GetPawn())
+		{
+			PC->SetViewTargetWithBlend(MyPawn, 0.1f);
+		}
+	}
 }

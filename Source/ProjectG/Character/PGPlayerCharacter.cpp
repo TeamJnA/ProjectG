@@ -1114,6 +1114,7 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 			FRotator NewRotation;
 			NewRotation = FirstPersonCamera->GetComponentRotation();
 			Server_SendCameraRotation(NewRotation);
+
 		}
 	}
 }

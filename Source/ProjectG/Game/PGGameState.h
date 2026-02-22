@@ -102,10 +102,13 @@ public:
 	TSoftObjectPtr<ULevelSequence> LevelSequenceAsset;
 
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PlayerEnterLevelSequence();
+	void Multicast_PlayerEnterLevelSequence(int32 NumPlayers);
 
 protected:
-	void PlayEnterLevelSeqeunce();
+	void PlayEnterLevelSeqeunce(int32 NumPlayers);
+
+	UFUNCTION()
+	void OnEnterSequenceFinished();
 
 	UPROPERTY()
 	TObjectPtr<ULevelSequence> LoadedLevelSequence;

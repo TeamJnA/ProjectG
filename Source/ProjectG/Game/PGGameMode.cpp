@@ -260,7 +260,7 @@ void APGGameMode::SpawnAllPlayers()
 	APGGameState* GS = GetGameState<APGGameState>();
 	if (GS)
 	{
-		GS->Multicast_PlayerEnterLevelSequence();
+		GS->Multicast_PlayerEnterLevelSequence(GetWorld()->GetNumPlayerControllers());
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager and SoundManager."));
