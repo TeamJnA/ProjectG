@@ -259,37 +259,25 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 {
 	UE_LOG(LogTemp, Log, TEXT("Play Level Sequence with players : %d"), NumPlayers);
 
-	
+	// Set actors to player num
 	UMovieScene* MovieScene = LoadedLevelSequence->GetMovieScene();
 	if (MovieScene)
 	{
-		for (const FMovieSceneBinding& Binding : MovieScene->GetBindings())
+		for (int32 i = 1; i <= 4; ++i)
 		{
-			FMovieSceneSpawnable* Spawnable = MovieScene->FindSpawnable(Binding.GetObjectGuid());
-			FMovieScenePossessable* Possessable = MovieScene->FindPossessable(Binding.GetObjectGuid());
+			FName TargetTag = *FString::Printf(TEXT("Player%d"), i);
+			FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag(TargetTag);
 
-			UE_LOG(LogTemp, Warning, TEXT("Binding: %s | Spawnable: %s | Possessable: %s"),
-				*Binding.GetName(),
-				Spawnable ? TEXT("YES") : TEXT("NO"),
-				Possessable ? TEXT("YES") : TEXT("NO")
-			);
-		}
-
-		for (int32 i = 0; i < MovieScene->GetSpawnableCount(); i++)
-		{
-			FMovieSceneSpawnable& Spawnable = MovieScene->GetSpawnable(i);
-			int32 PlayerIndex = FCString::Atoi(*Spawnable.GetName().Right(1));
-
-			UE_LOG(LogTemp, Warning, TEXT("Spawnable PlayerIndex : %d"), PlayerIndex);
-
-			if (PlayerIndex > NumPlayers)
+			if (BindingID.IsValid())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Remove players in LevelSequence"));
-				Spawnable.SetSpawnOwnership(ESpawnOwnership::External);
+				if (i > NumPlayers)
+				{
+					UE_LOG(LogTemp, Log, TEXT("PlayEnterLevelSeqeunce :: Remove Actor %d"), i);
+					MovieScene->RemovePossessable(BindingID.GetGuid());
+				}
 			}
 		}
 	}
-	
 
 	FMovieSceneSequencePlaybackSettings Settings;
 	Settings.bAutoPlay = false;  // 직접 Play()
@@ -316,26 +304,6 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 			OutActor->SetBinding(BindingID, { SpawnedDoorActor });
 		}
 	}
-
-	/*
-	if (OutActor)
-	{
-		for (int32 i = 1; i <= 4; ++i)
-		{
-			FName TargetTag = *FString::Printf(TEXT("Player%d"), i);
-			FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag(TargetTag);
-
-			if (BindingID.IsValid())
-			{
-				if (i > NumPlayers)
-				{
-					// 빈 배열을 바인딩하여 시퀀스가 스폰하는 것을 차단
-					OutActor->SetBinding(BindingID, TArray<AActor*>());
-				}
-			}
-		}
-	}
-	*/
 
 	if (EnterSequencePlayer)
 	{
