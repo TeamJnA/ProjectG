@@ -246,6 +246,10 @@ void APGGameMode::SpawnAllPlayers()
 		APGPlayerCharacter* NewPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform);
 		if (NewPawn)
 		{
+			// 이곳에서랑 클라이언트에서 두 번 Hidden 처리를 한다.
+			// 복제가 잘 안 될 수 있으므로....
+			NewPawn->SetActorHiddenInGame(true);
+
 			PC->Possess(NewPawn);
 			PC->Client_PlayGameplayBGM();
 		}
