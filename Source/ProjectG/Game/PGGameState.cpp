@@ -259,26 +259,6 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 {
 	UE_LOG(LogTemp, Log, TEXT("Play Level Sequence with players : %d"), NumPlayers);
 
-	// Set actors to player num
-	UMovieScene* MovieScene = LoadedLevelSequence->GetMovieScene();
-	if (MovieScene)
-	{
-		for (int32 i = 1; i <= 4; ++i)
-		{
-			FName TargetTag = *FString::Printf(TEXT("Player%d"), i);
-			FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag(TargetTag);
-
-			if (BindingID.IsValid())
-			{
-				if (i > NumPlayers)
-				{
-					UE_LOG(LogTemp, Log, TEXT("PlayEnterLevelSeqeunce :: Remove Actor %d"), i);
-					MovieScene->RemovePossessable(BindingID.GetGuid());
-				}
-			}
-		}
-	}
-
 	FMovieSceneSequencePlaybackSettings Settings;
 	Settings.bAutoPlay = false;  // 직접 Play()
 	Settings.LoopCount.Value = 0;  // 0 = 반복 없음
@@ -309,6 +289,28 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 	{
 		EnterSequencePlayer->OnFinished.AddDynamic(this, &APGGameState::OnEnterSequenceFinished);
 		EnterSequencePlayer->Play();
+	}
+
+	// Set actors to player num
+	for (int32 i = NumPlayers + 1; i <= 4; ++i)
+	{
+		FName TargetTag = *FString::Printf(TEXT("Player%d"), i);
+		FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag(TargetTag);
+
+		if (BindingID.IsValid())
+		{
+			// TODO : 추후 소리 트랙도 제거하기 위해서...
+			// EnterSequencePlayer->UnbindPossessableObjects(BindingID.GetGuid());
+			TArray<UObject*> BoundObjects = EnterSequencePlayer->GetBoundObjects(BindingID);
+			for (UObject* Obj : BoundObjects)
+			{
+				AActor* Actor = Cast<AActor>(Obj);
+				if (Actor)
+				{
+					Actor->SetActorHiddenInGame(true);
+				}
+			}
+		}
 	}
 }
 
