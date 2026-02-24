@@ -12,6 +12,7 @@
 #include "Interface/HandItemInterface.h"
 #include "Interface/GimmickTargetInterface.h"
 #include "GenericTeamAgentInterface.h"
+#include "Net/VoiceConfig.h"
 
 #include "PGPlayerCharacter.generated.h"
 
@@ -28,7 +29,6 @@ class USpotLightComponent;
 
 class APGTriggerGimmickMannequin;
 class USphereComponent;
-class UVOIPTalker;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
@@ -59,9 +59,6 @@ public:
 	/** First Person camera */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = LocalMesh, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USkeletalMeshComponent> LocalBodyMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Headlight, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> HeadlightMesh;
@@ -449,15 +446,17 @@ protected:
 	bool bIsGlitching = false;
 	bool bIsGhostGlitching = false;
 
-//public:
-//	void TeardownVoiceChat();
-//
-//protected:
-//	void InitVoiceChat();
-//
-//	UPROPERTY(EditDefaultsOnly, Category = "Audio|Voice")
-//	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;
-//
-//	UPROPERTY(BlueprintReadOnly, Category = "Audio|Voice")
-//	TObjectPtr<UVOIPTalker> VoipTalker;
+// Voice Chat
+protected:
+	UPROPERTY()
+	TObjectPtr<UVOIPTalker> VoipTalker;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
+	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;
+
+public:
+	void TryInitVoiceSettings();
+
+protected:
+	void TrySetDeadCharacter();
 };

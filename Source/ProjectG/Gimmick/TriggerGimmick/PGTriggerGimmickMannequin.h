@@ -38,6 +38,7 @@ protected:
     void ApplyContinuousEffect(APGPlayerCharacter* Player);
     void PlaySoundLocal();
     bool IsPlayerLookingAtMannequin(APGPlayerCharacter* Player) const;
+    bool CanLookAtPlayer(APGPlayerCharacter* Player) const;
 
     UFUNCTION()
     void OnEffectRangeOverlapEnd(UPrimitiveComponent* OverlappedComponent,
@@ -74,7 +75,7 @@ protected:
     float UpdateRate = 0.1f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Mannequin Config")
-    float LookAngleThreshold = 0.5f;
+    float LookAngleThreshold = 0.7f;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mannequin Config")
     float MaxSanityDamage = 5.0f;

@@ -34,8 +34,8 @@ class PROJECTG_API APGGameState : public AGameState
 public:
 	void NotifyMapGenerationComplete();
 
-	EGameState GetCurrentGameState() const { return CurrentGameState; }
-	void SetCurrentGameState(EGameState NewGameState) { CurrentGameState = NewGameState; }
+	FORCEINLINE EGameState GetCurrentGameState() const { return CurrentGameState; }
+	void SetCurrentGameState(EGameState NewGameState) { CurrentGameState = NewGameState; OnRep_CurrentGameState(); }
 	
 	FOnMapGenerationComplete OnMapGenerationComplete;
 
@@ -87,8 +87,11 @@ protected:
 
 	void HandlePlayerFinished(APlayerState* FinishedPlayerState);
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "GameState")
-	EGameState CurrentGameState;
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentGameState, BlueprintReadOnly, Category = "GameState")
+	EGameState CurrentGameState; 
+	
+	UFUNCTION()
+	void OnRep_CurrentGameState();
 
 	UPROPERTY()
 	TMap<EExitPointType, TObjectPtr<AActor>> ExitCameraMap;

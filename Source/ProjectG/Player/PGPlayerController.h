@@ -67,8 +67,6 @@ protected:
 	virtual void OnPossess(APawn* NewPawn) override;
 	virtual void PostSeamlessTravel() override;
 
-	void TryStartVoice();
-
 	void ReplaceInputMappingContext(const APawn* PawnType);
 
 	UFUNCTION(Client, Reliable)
@@ -141,11 +139,10 @@ protected:
 	TObjectPtr<UAudioComponent> GameplayBGMPlayer;
 
 public:
-	UFUNCTION(Client, Reliable)
-	void Client_StopVoiceAndCleanup(ECleanupActionType ActionType);
+	void RefreshVoiceChannel();
 
 	UFUNCTION(Client, Reliable)
-	void Client_RestartVoice();
+	void Client_StopVoiceAndCleanup(ECleanupActionType ActionType, const FUniqueNetIdRepl& TargetNetId);
 
 	UFUNCTION(Client, Reliable)
 	void Client_ExecuteSoloAction(ECleanupActionType ActionType);
@@ -156,12 +153,12 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSessionDestruction(bool bServerQuit);
 
-	UFUNCTION(Server, Reliable)
-	void Server_NotifyCleanupFinished();
-
-	void RefreshVoiceChannel();
-
 private:
-	void PerformCleanup(); 
+	void PerformCleanup(const FUniqueNetIdRepl& TargetNetId);
 	void PerformSessionEndAction(ECleanupActionType ActionType);
+
+	UPROPERTY()
+	TSet<FUniqueNetIdRepl> Leavers;
+
+	bool bIsLeavingSession = false;
 };

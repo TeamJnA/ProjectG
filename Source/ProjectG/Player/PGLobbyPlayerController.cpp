@@ -132,7 +132,7 @@ void APGLobbyPlayerController::OnPossess(APawn* aPawn)
 
 	if (IsLocalController())
 	{
-		TryStartLobbyVoice();
+		StartTalking();
 
 		FTimerHandle HideTimer;
 		GetWorld()->GetTimerManager().SetTimer(HideTimer, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
@@ -145,28 +145,15 @@ void APGLobbyPlayerController::OnRep_Pawn()
 
 	if (IsLocalController())
 	{
-		TryStartLobbyVoice();
+		StartTalking();
 
 		FTimerHandle HideTimer;
 		GetWorld()->GetTimerManager().SetTimer(HideTimer, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
 	}
 }
 
-void APGLobbyPlayerController::TryStartLobbyVoice()
-{
-	if (GetPawn())
-	{
-		StartTalking();
-		UE_LOG(LogTemp, Log, TEXT("Lobby Voice: Started Talking (Has Pawn)"));
-	}
-}
-
 void APGLobbyPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (IsLocalController())
-	{
-		StopTalking();
-	}
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -280,8 +267,67 @@ void APGLobbyPlayerController::Client_ShowLoadingScreen_Implementation()
 	GI->ShowLoadingScreen();
 }
 
-void APGLobbyPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanupActionType ActionType)
+void APGLobbyPlayerController::RefreshVoiceChannel()
 {
+	if (bIsLeavingSession)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] PC is in Leaving process"));
+		return;
+	}
+
+	APGPlayerState* MyPS = GetPlayerState<APGPlayerState>();
+	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
+	FString NetModeStr = (GetNetMode() == NM_Client) ? TEXT("Client") : TEXT("Server");
+	if (!MyPS || !GS || !VoiceInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] [%s] RefreshVoiceChannel Early Exit! (MyPS: %d, GS: %d, VoiceInt: %d)"), *NetModeStr, MyPS != nullptr, GS != nullptr, VoiceInterface.IsValid());
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] --- Start Lobby refreshing voice channels for %s ---"), *NetModeStr, *MyPS->GetPlayerName());
+	for (APlayerState* OtherPS : GS->PlayerArray)
+	{
+		APGPlayerState* OtherPGPS = Cast<APGPlayerState>(OtherPS);
+		if (!OtherPGPS)
+		{
+			continue;
+		}
+
+		if (OtherPGPS->IsMyPlayerState())
+		{
+			continue;
+		}
+
+		FUniqueNetIdRepl OtherId = OtherPS->GetUniqueId();
+		if (!OtherId.IsValid())
+		{
+			UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] [%s] Target (%s) UniqueId is invalid! Cannot control voice channel."), *NetModeStr, *OtherPGPS->GetPlayerName());
+			continue;
+		}
+
+		if (Leavers.Contains(OtherId))
+		{
+			UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] [%s] Target (%s) is leaving! Cannot control voice channel."), *NetModeStr, *OtherPGPS->GetPlayerName());
+			continue;
+		}
+
+		VoiceInterface->RegisterRemoteTalker(*OtherId);
+		VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s]"), *VoiceInterface->GetVoiceDebugState());
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] --- Voice channel refresh complete ---"), *NetModeStr);
+}
+
+void APGLobbyPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanupActionType ActionType, const FUniqueNetIdRepl& TargetNetId)
+{
+	if (bIsLeavingSession)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Ignored Cleanup Command because PC is already leaving."));
+		return;
+	}
+
 	if (ActionType != ECleanupActionType::None)
 	{
 		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
@@ -290,48 +336,66 @@ void APGLobbyPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanu
 		}
 	}
 
-	PerformCleanup();
-
-	FTimerHandle CleanupDelayTimer;
-	GetWorld()->GetTimerManager().SetTimer(CleanupDelayTimer, [this]()
-	{
-		if (IsValid(this))
-		{
-			Server_NotifyCleanupFinished();
-		}
-	}, 1.0f, false);
+	PerformCleanup(TargetNetId);
 }
 
-void APGLobbyPlayerController::PerformCleanup()
+void APGLobbyPlayerController::PerformCleanup(const FUniqueNetIdRepl& TargetNetId)
 {
-	StopTalking();
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] --- Perform Cleanup ---"));
 
-	if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
+	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
+	if (!VoiceInterface.IsValid())
 	{
-		IOnlineVoicePtr VoiceInterface = Subsystem->GetVoiceInterface();
-		if (VoiceInterface.IsValid() && PlayerState)
-		{
-			VoiceInterface->MuteRemoteTalker(0, *PlayerState->GetUniqueId(), true);
-			//VoiceInterface->RemoveAllRemoteTalkers();
-			VoiceInterface->ClearVoicePackets();
-		}
-	}
-}
-
-void APGLobbyPlayerController::Client_RestartVoice_Implementation()
-{
-	if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
-	{
-		IOnlineVoicePtr VoiceInterface = Subsystem->GetVoiceInterface();
-		if (VoiceInterface.IsValid() && PlayerState)
-		{
-			VoiceInterface->UnmuteRemoteTalker(0, *PlayerState->GetUniqueId(), true);
-		}
+		UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] PerformCleanup Early Exit! VoiceInterface Invalid"));
+		return;
 	}
 
-	StartTalking();
+	if (TargetNetId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Muting specific leaver"));
+		Leavers.Add(TargetNetId);
+		VoiceInterface->RegisterRemoteTalker(*TargetNetId);
+		VoiceInterface->MuteRemoteTalker(0, *TargetNetId, false);
+	}
+	else
+	{
+		bIsLeavingSession = true;
+		StopTalking();
 
-	UE_LOG(LogTemp, Log, TEXT("LobbyPC: Voice Restarted."));
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Muting ALL players (I am leaving)."));
+		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+		if (!GS)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] PerformCleanup Early Exit! GS Invalid"));
+			return;
+		}
+
+		for (APlayerState* OtherPS : GS->PlayerArray)
+		{
+			APGPlayerState* OtherPGPS = Cast<APGPlayerState>(OtherPS);
+			if (!OtherPGPS)
+			{
+				continue;
+			}
+
+			if (OtherPGPS->IsMyPlayerState())
+			{
+				continue;
+			}
+
+			FUniqueNetIdRepl OtherId = OtherPS->GetUniqueId();
+			if (!OtherId.IsValid())
+			{
+				continue;
+			}
+
+			VoiceInterface->RegisterRemoteTalker(*OtherId);
+			VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
+		}
+		VoiceInterface->ClearVoicePackets();
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s]"), *VoiceInterface->GetVoiceDebugState());
 }
 
 void APGLobbyPlayerController::Client_ExecuteSoloAction_Implementation(ECleanupActionType ActionType)
@@ -353,14 +417,6 @@ void APGLobbyPlayerController::PerformSessionEndAction(ECleanupActionType Action
 			UE_LOG(LogTemp, Log, TEXT("LobbyPC: Executing QuitToDesktop"));
 			UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
 		}
-	}
-}
-
-void APGLobbyPlayerController::Server_NotifyCleanupFinished_Implementation()
-{
-	if (APGLobbyGameMode* GM = Cast<APGLobbyGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GM->OnPlayerCleanupFinished(this);
 	}
 }
 

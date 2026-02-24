@@ -3,6 +3,7 @@
 
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerController.h"
+#include "Player/PGLobbyPlayerController.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
@@ -41,11 +42,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
-#include "Net/VoiceConfig.h"
-#include "Components/SynthComponent.h"
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
+	bAlwaysRelevant = true;
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(47.0f, 96.0f);
 
@@ -67,9 +67,6 @@ APGPlayerCharacter::APGPlayerCharacter()
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
-
-	GetMesh()->SetOwnerNoSee(true);
-	GetMesh()->bCastHiddenShadow = true;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -96,12 +93,6 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HitCapsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
 	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
-
-	LocalBodyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("LocalBodyMesh"));
-	LocalBodyMesh->SetupAttachment(GetMesh());
-	LocalBodyMesh->SetOnlyOwnerSee(true);
-	LocalBodyMesh->SetCastShadow(false);
-	LocalBodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
@@ -180,10 +171,6 @@ void APGPlayerCharacter::BeginPlay()
 		PC->PlayerCameraManager->ViewPitchMax = 75.0f;
 		PC->PlayerCameraManager->ViewPitchMin = -75.0f;
 	}
-
-
-	//FTimerHandle VoiceInitTimer;
-	//GetWorld()->GetTimerManager().SetTimer(VoiceInitTimer, this, &APGPlayerCharacter::InitVoiceChat, 1.0f, false);
 }
 
 void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -462,7 +449,6 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 		GetMesh()->SetSimulatePhysics(true);
 		
 		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-		LocalBodyMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 		SetItemMesh(false);
 	}
@@ -476,17 +462,9 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	GiveDefaultAbilities();
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
-	//InitVoiceChat();
-
-	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
 
 	if (IsLocallyControlled()) //
 	{
-		if (APGPlayerController* PC = Cast<APGPlayerController>(NewController))
-		{
-			PC->RefreshVoiceChannel();
-		}
-
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
 		InitPostProcessMaterial();
@@ -503,13 +481,9 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			HeadlightLight->SetVolumetricScatteringIntensity(0.2f);
 		}
 	}
-	else
-	{
-		if (PS)
-		{
-			PS->UpdateVoiceSettings();
-		}
-	}
+
+	TryInitVoiceSettings();
+	TrySetDeadCharacter();
 }
 
 //This function is called on the [CLIENT] When the server updates PlayerState.
@@ -519,17 +493,9 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	
 	InitAbilitySystemComponent();
 	InitDefaultAttributes();
-	//InitVoiceChat();
-
-	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
 
 	if (IsLocallyControlled())
 	{
-		if (APGPlayerController* PC = Cast<APGPlayerController>(GetController()))
-		{
-			PC->RefreshVoiceChannel();
-		}
-
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
 		InitHUD(); //
 		InitPostProcessMaterial();
@@ -546,13 +512,8 @@ void APGPlayerCharacter::OnRep_PlayerState()
 			HeadlightLight->SetVolumetricScatteringIntensity(0.2f);
 		}
 	}
-	else
-	{
-		if (PS)
-		{
-			PS->UpdateVoiceSettings();
-		}
-	}
+
+	TryInitVoiceSettings();
 }
 
 void APGPlayerCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
@@ -1427,48 +1388,116 @@ void APGPlayerCharacter::UpdateGhostGlitchFadeOut()
 	}
 }
 
-//void APGPlayerCharacter::TeardownVoiceChat()
-//{
-//	if (VoipTalker)
-//	{
-//		VoipTalker = nullptr;
-//	}
-//}
-//
-//void APGPlayerCharacter::InitVoiceChat()
-//{
-//	if (VoipTalker)
-//	{
-//		return;
-//	}
-//
-//	APlayerState* PS = GetPlayerState();
-//	if (!PS)
-//	{
-//		return;
-//	}
-//
-//	if (!IsLocallyControlled())
-//	{
-//		VoipTalker = UVOIPTalker::CreateTalkerForPlayer(PS);
-//		if (VoipTalker)
-//		{
-//			FVoiceSettings& VoiceSettings = VoipTalker->Settings;
-//
-//			if (VoiceAttenuationAsset)
-//			{
-//				VoiceSettings.AttenuationSettings = VoiceAttenuationAsset;
-//			}
-//
-//			VoiceSettings.ComponentToAttachTo = GetRootComponent();
-//
-//			VoipTalker->RegisterWithPlayerState(PS);
-//
-//			UE_LOG(LogTemp, Log, TEXT("Voice Chat Initialized for %s"), *GetName());
-//		}
-//	}
-//	else
-//	{
-//		UVOIPStatics::SetMicThreshold(0.01f);
-//	}
-//}
+// 로컬이 리모트에 대해 Voip를 구현해야함
+void APGPlayerCharacter::TryInitVoiceSettings()
+{
+	FString NetModeStr = (GetNetMode() == NM_Client) ? TEXT("Client") : TEXT("Server");
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] TryInitVoiceSettings triggered!"), *NetModeStr);
+
+	APlayerController* LocalPC = GetWorld()->GetFirstPlayerController();
+	if (!LocalPC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] LocalPC not found! Retrying in 0.1s..."), *NetModeStr);
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
+		return;
+	}
+
+	APGPlayerController* InGamePC = Cast<APGPlayerController>(LocalPC);
+	APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(LocalPC);
+	if (!InGamePC && !LobbyPC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Valid PC not found! Retrying in 0.1s..."), *NetModeStr);
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
+		return;
+	}
+
+	// 로컬이면 Mute/Unmute 갱신
+	// 리모트면 대상의 Voip, Mute/Unmute 갱신
+	if (IsLocallyControlled())
+	{
+		if (InGamePC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local PGPC"));
+
+			InGamePC->RefreshVoiceChannel();
+		}
+		else if (LobbyPC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local LobbyPC"));
+
+			LobbyPC->RefreshVoiceChannel();
+		}
+	}
+	else
+	{
+		APGPlayerState* TargetPS = GetPlayerState<APGPlayerState>();
+		if (TargetPS && TargetPS->IsInactive())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] TargetPS is Inactive. Aborting voice setup."));
+			return;
+		}
+
+		if (!TargetPS || !TargetPS->GetUniqueId().IsValid()) 
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] TargetPS not found! Retrying in 0.1s..."), *NetModeStr);
+			FTimerHandle RetryHandle;
+			GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
+			return;
+		}
+
+		if (!VoipTalker)
+		{
+			VoipTalker = UVOIPTalker::CreateTalkerForPlayer(TargetPS);
+			if (VoipTalker)
+			{
+				VoipTalker->RegisterWithPlayerState(TargetPS);
+				VoipTalker->Settings.AttenuationSettings = VoiceAttenuationAsset;
+				VoipTalker->Settings.ComponentToAttachTo = GetRootComponent();
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] SUCCESS: Attached 3D Voice to %s (Owner: %s)"), *NetModeStr, *GetName(), *TargetPS->GetPlayerName());
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] Failed to create Talker. Retrying..."));
+				FTimerHandle RetryHandle;
+				GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
+				return;
+			}
+		}
+
+		if (InGamePC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] PGPC"));
+
+			InGamePC->RefreshVoiceChannel();
+		}
+		else if (LobbyPC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] LobbyPC"));
+
+			LobbyPC->RefreshVoiceChannel();
+		}
+	}
+}
+
+void APGPlayerCharacter::TrySetDeadCharacter()
+{
+	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
+	if (PS && PS->IsInactive())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[TrySetDeadCharacter] PS is Inactive (Player Left). Aborting."));
+		return;
+	}
+
+	if (!PS || !PS->GetUniqueId().IsValid())	
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[TrySetDeadCharacter] PS not found! Retrying in 0.1s..."));
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TrySetDeadCharacter, 0.1f, false);
+		return;
+	}
+
+	PS->SetPlayerCharacter(this);
+	UE_LOG(LogTemp, Log, TEXT("[TrySetDeadCharacter] SUCCESS: Set Dead Character to %s for PS(%s)"), *GetName(), *PS->GetPlayerName());
+}

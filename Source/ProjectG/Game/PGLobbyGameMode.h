@@ -33,8 +33,25 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
 	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
+
+public:
+	void ProcessSoloLeaveRequest(APGLobbyPlayerController* RequestingPC, ECleanupActionType ActionType);
+	void RequestSessionDestruction(bool bServerQuit);
+
+private:
+	void PerformSoloLeave(APGLobbyPlayerController* TargetPC);
+	void RequestServerTravel();
+	void CancelAllPendingSoloLeaves();
+	void BroadcastCleanupCommand();
+	void ExecutePendingAction();
+
+	UPROPERTY()
+	TMap<APGLobbyPlayerController*, ECleanupActionType> PendingSoloLeavers;
+
+	UPROPERTY()
+	TMap<APGLobbyPlayerController*, FTimerHandle> SoloLeaveTimers;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
@@ -42,28 +59,8 @@ protected:
 	UPROPERTY()
 	TObjectPtr<APGSoundManager> SoundManager;
 
-public:
-	virtual void Logout(AController* Exiting) override;
-
-	void ProcessSoloLeaveRequest(APGLobbyPlayerController* RequestingPC, ECleanupActionType ActionType);
-
-	void RequestSessionDestruction(bool bServerQuit);
-
-	void OnPlayerCleanupFinished(APlayerController* PC);
-
-private:
-	void BroadcastCleanupCommand();
-	void ExecutePendingAction();
-	void BroadcastRestartVoice();
-
-	bool bIsProcessingAction = false;
-	APGLobbyPlayerController* PendingLeaverPC = nullptr;
 	ECleanupActionType PendingActionType = ECleanupActionType::None;
 
-	bool bIsMassTravel = false;
+	bool bIsMassProcessing = false;
 	bool bServerShouldQuit = false;
-
-	int32 ReadyPlayerCount = 0;
-	int32 TotalPlayerCount = 0;
-	FTimerHandle TimeoutTimerHandle;
 };

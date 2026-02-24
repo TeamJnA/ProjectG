@@ -130,6 +130,13 @@ void APGTriggerGimmickMannequin::UpdateTracking()
         return;
     }
 
+    if (!CanLookAtPlayer(Player))
+    {
+        UE_LOG(LogTemp, Log, TEXT("[Mannequin] Player hid behind wall. Stop Tracking."));
+        StopTracking();
+        return;
+    }
+
     if (IsPlayerLookingAtMannequin(Player))
     {
         StopTracking();
@@ -194,7 +201,7 @@ void APGTriggerGimmickMannequin::PlaySoundLocal()
 
 bool APGTriggerGimmickMannequin::IsPlayerLookingAtMannequin(APGPlayerCharacter* Player) const
 {
-    if (!Player->GetFirstPersonCamera())
+    if (!Player || !Player->GetFirstPersonCamera())
     {
         return true;
     }
@@ -206,10 +213,19 @@ bool APGTriggerGimmickMannequin::IsPlayerLookingAtMannequin(APGPlayerCharacter* 
     const FVector DirectionToMannequin = (MannequinHeadLocation - CameraLocation).GetSafeNormal();
 
     const float DotProduct = FVector::DotProduct(CameraForwardVector, DirectionToMannequin);
-    if (DotProduct < LookAngleThreshold)
+
+    return (DotProduct >= LookAngleThreshold);
+}
+
+bool APGTriggerGimmickMannequin::CanLookAtPlayer(APGPlayerCharacter* Player) const
+{
+    if (!Player || !Player->GetFirstPersonCamera())
     {
         return false;
     }
+
+    const FVector Start = MannequinHead->GetComponentLocation();
+    const FVector End = Player->GetFirstPersonCamera()->GetComponentLocation();
 
     FHitResult HitResult;
     FCollisionQueryParams Params;
@@ -218,13 +234,13 @@ bool APGTriggerGimmickMannequin::IsPlayerLookingAtMannequin(APGPlayerCharacter* 
 
     const bool bHit = GetWorld()->LineTraceSingleByChannel(
         HitResult,
-        CameraLocation,
-        MannequinHeadLocation,
+        Start,
+        End,
         ECC_Visibility,
         Params
     );
 
-    return !bHit || (HitResult.GetActor() == this);
+    return !bHit;
 }
 
 void APGTriggerGimmickMannequin::OnEffectRangeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)

@@ -240,3 +240,25 @@ void APGGameState::HandlePlayerFinished(APlayerState* FinishedPlayerState)
 		}
 	}
 }
+
+void APGGameState::OnRep_CurrentGameState()
+{
+	if (CurrentGameState == EGameState::EndGame)
+	{
+		if (APGPlayerController* LocalPC = Cast<APGPlayerController>(GetWorld()->GetFirstPlayerController()))
+		{
+			for (APlayerState* PS : PlayerArray)
+			{
+				if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+				{
+					if (PGPS != LocalPC->PlayerState)
+					{
+						PGPS->UpdateVoiceSettings();
+					}
+				}
+			}
+
+			LocalPC->RefreshVoiceChannel();
+		}
+	}
+}

@@ -22,11 +22,8 @@ class PROJECTG_API APGPlayerState : public APlayerState, public IAbilitySystemIn
 public:
 	APGPlayerState();
 	
-	// 캐릭터의 상태 변화(사망, 탈출)에 따라 호출될 함수
 	void UpdateVoiceSettings();
-
-	// Getter
-	FORCEINLINE UVOIPTalker* GetVoipTalker() const { return VoipTalker; }
+	bool IsMyPlayerState() const;
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
@@ -42,16 +39,22 @@ public:
 	void SetIsDead(bool bInIsDead) { bIsDead = bInIsDead; OnRep_PlayerStateUpdated(); }
 
 	FORCEINLINE bool IsReadyToReturnLobby() const { return bIsReadyToReturnLobby; }
-	void SetReadyToReturnLobby(bool bInIsReadyToReturnLobby) { bIsReadyToReturnLobby = bInIsReadyToReturnLobby; OnRep_PlayerStateUpdated(); }
+	void SetReadyToReturnLobby(bool bInIsReadyToReturnLobby) { bIsReadyToReturnLobby = bInIsReadyToReturnLobby; }
 
 	FORCEINLINE bool IsEscaping() const { return bIsEscaping; }
-	FORCEINLINE void SetIsEscaping(bool bInIsEscaping) { bIsEscaping = bInIsEscaping; }
+	FORCEINLINE void SetIsEscaping(bool bInIsEscaping) { bIsEscaping = bInIsEscaping; OnRep_PlayerStateUpdated(); }
 
 	FORCEINLINE bool IsSpectating() const { return bIsSpectating; }
 	void SetSpectating(bool bInIsSpectating) { bIsSpectating = bInIsSpectating; OnRep_PlayerStateUpdated(); }
 
 	FORCEINLINE EExitPointType GetExitPoint() const { return ExitPoint; }
 	FORCEINLINE void SetExitPoint(EExitPointType _InExitPoint) { ExitPoint = _InExitPoint; }
+
+	FORCEINLINE bool IsInGame() const { return !bHasFinishedGame && !bIsEscaping; }
+	FORCEINLINE bool IsInScoreBoard() const { return (bHasFinishedGame || bIsEscaping) && !bIsSpectating; }
+
+	void SetPlayerCharacter(AActor* InCharacter) { PlayerCharacter = InCharacter; }
+	FORCEINLINE AActor* GetPlayerCharacter() const { return PlayerCharacter.Get(); }
 
 	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
 
@@ -65,6 +68,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UPGAttributeSet> AttributeSet;
 
+	UPROPERTY()
+	TWeakObjectPtr<AActor> PlayerCharacter;
+
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
 	bool bIsHost = false;
 
@@ -74,10 +80,10 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
 	bool bIsDead = false;
 
-	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
+	UPROPERTY(Replicated)
 	bool bIsReadyToReturnLobby = false;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
 	bool bIsEscaping = false;
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
@@ -88,14 +94,4 @@ protected:
 
 	UFUNCTION()
 	void OnRep_PlayerStateUpdated();
-
-	UPROPERTY()
-	TObjectPtr<UVOIPTalker> VoipTalker;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Audio|Voice")
-	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;
-
-private:
-	// 보이스 초기화 내부 함수
-	void InitVoiceTalker();
 };

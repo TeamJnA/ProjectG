@@ -158,38 +158,6 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 
 void UPGPauseMenuWidget::ReturnToMainMenu()
 {
-	//UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	//if (GI)
-	//{
-	//	GI->ShowLoadingScreen();
-
-	//	if (APlayerController* PC = GetOwningPlayer())
-	//	{
-	//		if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
-	//		{
-	//			PGPC->Client_CleanUpVoiceBeforeTravel();
-	//		}
-	//		else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
-	//		{
-	//			LobbyPC->Client_CleanUpVoiceBeforeTravel();
-	//		}
-	//	}
-
-	//	FTimerHandle LeaveTimerHandle;
-	//	GetWorld()->GetTimerManager().SetTimer(LeaveTimerHandle, [GI]()
-	//	{
-	//		if (GI)
-	//		{
-	//			UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget: Executing LeaveSessionAndReturnToMainMenu after delay"));
-	//			GI->LeaveSessionAndReturnToMainMenu();
-	//		}
-	//	}, 1.0f, false);
-	//}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::ReturnToMainMenu: Failed to get GI"));
-	//}
-
 	APlayerController* OwningPC = GetOwningPlayer();
 
 	if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(OwningPC))
@@ -200,8 +168,6 @@ void UPGPauseMenuWidget::ReturnToMainMenu()
 		}
 		else
 		{
-			//LobbyPC->Client_StartCleanupSequence(ECleanupActionType::Solo_ReturnToMainMenu);
-			//LobbyPC->StartSoloCleanupSequence(ECleanupActionType::Solo_ReturnToMainMenu);
 			LobbyPC->Server_RequestSoloLeave(ECleanupActionType::Solo_ReturnToMainMenu);
 		}
 		return;
@@ -252,23 +218,6 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 
 void UPGPauseMenuWidget::ReturnToDesktop()
 {
-	// Leave session
-	//UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	//if (GI)
-	//{
-	//	GI->LeaveSessionAndReturnToMainMenu();
-	//}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("PauseMenuWidget::OnDesktopButtonClicked: Failed to get GI"));
-	//}
-
-	// Exit game
-	//if (GetOwningPlayer())
-	//{
-	//	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, true);
-	//}
-
 	APlayerController* OwningPC = GetOwningPlayer();
 
 	if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(OwningPC))
@@ -279,8 +228,6 @@ void UPGPauseMenuWidget::ReturnToDesktop()
 		}
 		else
 		{
-			//LobbyPC->Client_StartCleanupSequence(ECleanupActionType::Solo_QuitToDesktop);
-			//LobbyPC->StartSoloCleanupSequence(ECleanupActionType::Solo_QuitToDesktop);
 			LobbyPC->Server_RequestSoloLeave(ECleanupActionType::Solo_QuitToDesktop);
 		}
 		return;

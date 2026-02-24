@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SpectatorPawn.h"
+#include "Net/VoiceConfig.h"
 #include "PGSpectatorPawn.generated.h"
 
 class UInputAction;
@@ -34,6 +35,8 @@ public:
 	FOnSpectateTargetChangedDelegate OnSpectateTargetChanged;
 
 protected:
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue, bool bForce) override {}
@@ -73,4 +76,12 @@ private:
 	float CurrentOrbitPitchAngle = 15.0f;
 
 	bool bCanOrbit = true;
+
+protected:
+	UPROPERTY()
+	TObjectPtr<UVOIPTalker> VoipTalker;
+
+public:
+	void TryInitVoiceSettings();
+	
 };

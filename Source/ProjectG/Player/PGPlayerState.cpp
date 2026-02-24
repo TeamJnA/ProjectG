@@ -7,11 +7,15 @@
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerController.h"
+#include "Player/PGLobbyPlayerController.h"
+#include "Character/PGPlayerCharacter.h"
+#include "Character/PGSpectatorPawn.h"
 
 #include "Net/UnrealNetwork.h"
 
 APGPlayerState::APGPlayerState()
 {
+	bAlwaysRelevant = true;
 	SetNetUpdateFrequency(100.0f);
 
 	AbilitySystemComponent = CreateDefaultSubobject<UPGAbilitySystemComponent>("AbilitySystemComponent");
@@ -36,17 +40,12 @@ void APGPlayerState::BeginPlay()
 	
 	UE_LOG(LogTemp, Log, TEXT("PS::BeginPlay: [%s] PlayerState Begin"), *GetPlayerName());
 	OnPlayerStateUpdated.Broadcast();
-
-	//APlayerController* PC = GetPlayerController();
-	//if (PC && !PC->IsLocalController())
-	//{
-	//	InitVoiceTalker();
-	//}
 }
 
 void APGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
 	DOREPLIFETIME(APGPlayerState, bIsHost);
 	DOREPLIFETIME(APGPlayerState, bHasFinishedGame);
 	DOREPLIFETIME(APGPlayerState, bIsDead);
@@ -58,61 +57,121 @@ void APGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 void APGPlayerState::OnRep_PlayerStateUpdated()
 {
-	UE_LOG(LogTemp, Log, TEXT("PS::OnRep_PlayerStateUpdated: [%s] PlayerState updated"), *GetPlayerName());
-	OnPlayerStateUpdated.Broadcast();
-
-	if (APGPlayerController* PC = Cast<APGPlayerController>(GetPlayerController()))
-	{
-		if (PC && PC->IsLocalController())
-		{
-			UpdateVoiceSettings();     // 내 목소리 설정 (3D/2D)
-			PC->RefreshVoiceChannel(); // 듣는 대상 설정 (Mute/Unmute)
-		}
-	}
-}
-
-void APGPlayerState::InitVoiceTalker()
-{
-	if (VoipTalker)
+	if (IsInactive()) 
 	{
 		return;
 	}
 
-	VoipTalker = UVOIPTalker::CreateTalkerForPlayer(this);
-	if (VoipTalker)
+	AGameStateBase* GS = GetWorld()->GetGameState();
+	if (GS && !GS->PlayerArray.Contains(this))
 	{
-		UpdateVoiceSettings();
+		return;
 	}
+
+	FString NetModeStr = (GetNetMode() == NM_Client) ? TEXT("Client") : TEXT("Server");
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] OnRep_PlayerStateUpdated triggered! Target PS: %s"), *NetModeStr, *GetPlayerName());
+
+	APlayerController* LocalPC = Cast<APlayerController>(GetWorld()->GetFirstPlayerController());
+	if (!LocalPC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] LocalPC not found! Retrying in 0.1s..."), *NetModeStr);
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerState::OnRep_PlayerStateUpdated, 0.1f, false);
+		return;
+	}
+
+	APGPlayerController* InGamePC = Cast<APGPlayerController>(LocalPC);
+	APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(LocalPC);
+	if (!InGamePC && !LobbyPC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Can not define PC class! Retrying in 0.1s..."), *NetModeStr);
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerState::OnRep_PlayerStateUpdated, 0.1f, false);
+		return;
+	}
+
+	OnPlayerStateUpdated.Broadcast();
+
+	//if (LocalPC->PlayerState == this)
+	if (IsMyPlayerState())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Judgment: This is 'Local' state change. Updating voice channel (Mute) rules only."), *NetModeStr);
+		if (InGamePC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local PGPC"));
+
+			InGamePC->RefreshVoiceChannel();
+		}
+		else if (LobbyPC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local LobbyPC"));
+
+			LobbyPC->RefreshVoiceChannel();
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Judgment: This is 'Remote' state change. (Target: %s) Updating 3D/2D settings and local voice channels."), *NetModeStr, *GetPlayerName());
+		UpdateVoiceSettings();
+		if (InGamePC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] PGPC"));
+
+			InGamePC->RefreshVoiceChannel();
+		}
+		else if (LobbyPC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] LobbyPC"));
+
+			LobbyPC->RefreshVoiceChannel();
+		}
+	}
+}
+
+bool APGPlayerState::IsMyPlayerState() const
+{
+	if (APlayerController* PC = GetPlayerController())
+	{
+		return PC->IsLocalController();
+	}
+
+	APlayerController* LocalPC = GetWorld()->GetFirstPlayerController();
+	if (LocalPC)
+	{
+		if (LocalPC->PlayerState == this)
+		{
+			return true;
+		}
+
+		if (ULocalPlayer* LP = LocalPC->GetLocalPlayer())
+		{
+			FUniqueNetIdRepl LocalId = LP->GetPreferredUniqueNetId();
+			FUniqueNetIdRepl MyId = GetUniqueId();
+
+			if (LocalId.IsValid() && MyId.IsValid() && LocalId == MyId)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 void APGPlayerState::UpdateVoiceSettings()
 {
-	if (!VoipTalker)
+	APawn* CurrentPawn = GetPawn();
+	if (!CurrentPawn) 
 	{
-		VoipTalker = UVOIPTalker::CreateTalkerForPlayer(this);
+		return;
 	}
 
-	if (!VoipTalker)
+	if (APGPlayerCharacter* PGChar = Cast<APGPlayerCharacter>(CurrentPawn))
 	{
-		return;	
+		PGChar->TryInitVoiceSettings();
 	}
-	
-	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-	bool bIsGameEnd = GS && GS->GetCurrentGameState() == EGameState::EndGame;
-
-	// FinalScoreBoard, 관전 상태의 음성: 2D
-	if (bIsGameEnd || bIsSpectating)
+	else if (APGSpectatorPawn* PGSpectator = Cast<APGSpectatorPawn>(CurrentPawn))
 	{
-		VoipTalker->Settings.AttenuationSettings = nullptr;
-		VoipTalker->Settings.ComponentToAttachTo = nullptr;
-	}
-	// 인게임 플레이어 음성: 3D
-	else if (!bHasFinishedGame)
-	{
-		VoipTalker->Settings.AttenuationSettings = VoiceAttenuationAsset;
-		if (GetPawn()) 
-		{
-			VoipTalker->Settings.ComponentToAttachTo = GetPawn()->GetRootComponent();
-		}
+		PGSpectator->TryInitVoiceSettings();
 	}
 }

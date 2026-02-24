@@ -21,5 +21,5 @@ enum class ECleanupActionType : uint8
 	Solo_ReturnToMainMenu, // [Client] 혼자 나가기
 	Solo_QuitToDesktop,    // [Client] 혼자 종료
 	Mass_ServerTravel,     // [Server] 레벨 이동 (Lobby <-> Main)
-	Mass_KickForDestroy    // [Server] 모두 종료 (Lobby/MainLevel -> MainMenu)
+	Mass_KickForDestroy    // [Server] 모두 종료 (Lobby/MainLevel -> MainMenu/Desktop)
 };

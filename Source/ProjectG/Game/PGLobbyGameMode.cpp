@@ -58,6 +58,90 @@ void APGLobbyGameMode::HandleStartingNewPlayer_Implementation(APlayerController*
 	}
 }
 
+void APGLobbyGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	APGLobbyPlayerController* LeavingPC = Cast<APGLobbyPlayerController>(Exiting);
+	if (!LeavingPC)
+	{
+		return;
+	}
+
+	if (SoloLeaveTimers.Contains(LeavingPC))
+	{
+		GetWorld()->GetTimerManager().ClearTimer(SoloLeaveTimers[LeavingPC]);
+		SoloLeaveTimers.Remove(LeavingPC);
+	}
+
+	if (PendingSoloLeavers.Contains(LeavingPC))
+	{
+		PendingSoloLeavers.Remove(LeavingPC);
+	}
+}
+
+void APGLobbyGameMode::ProcessSoloLeaveRequest(APGLobbyPlayerController* RequestingPC, ECleanupActionType ActionType)
+{
+	if (bIsMassProcessing)
+	{
+		return;
+	}
+
+	if (!RequestingPC || PendingSoloLeavers.Contains(RequestingPC))
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("LobbyGM: Solo Leave Requested by %s."), *RequestingPC->GetName());
+	PendingSoloLeavers.Add(RequestingPC, ActionType);
+
+	FUniqueNetIdRepl LeaverId;
+	if (RequestingPC->PlayerState)
+	{
+		LeaverId = RequestingPC->PlayerState->GetUniqueId();
+	}
+
+	RequestingPC->Client_StopVoiceAndCleanup(ActionType, FUniqueNetIdRepl());
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		APGLobbyPlayerController* OtherPC = Cast<APGLobbyPlayerController>(It->Get());
+		if (!OtherPC || OtherPC == RequestingPC || PendingSoloLeavers.Contains(OtherPC))
+		{
+			continue;
+		}
+
+		OtherPC->Client_StopVoiceAndCleanup(ECleanupActionType::None, LeaverId);
+	}
+
+	FTimerHandle PersonalTimerHandle;
+	FTimerDelegate TimeoutDelegate = FTimerDelegate::CreateUObject(this, &APGLobbyGameMode::PerformSoloLeave, RequestingPC);
+	GetWorld()->GetTimerManager().SetTimer(PersonalTimerHandle, TimeoutDelegate, 2.0f, false);
+	SoloLeaveTimers.Add(RequestingPC, PersonalTimerHandle);
+}
+
+void APGLobbyGameMode::PerformSoloLeave(APGLobbyPlayerController* TargetPC)
+{
+	if (bIsMassProcessing)
+	{
+		return;
+	}
+
+	if (!TargetPC || !PendingSoloLeavers.Contains(TargetPC))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LobbyGM: Solo Leave Cancelled."));
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("LobbyGM: Solo Leave Timeout for %s. Forcing Leave."), *TargetPC->GetName());
+	ECleanupActionType SoloAction = PendingSoloLeavers[TargetPC];
+	if (SoloLeaveTimers.Contains(TargetPC))
+	{
+		SoloLeaveTimers.Remove(TargetPC);
+	}
+
+	TargetPC->Client_ExecuteSoloAction(SoloAction);
+}
+
 /*
 * 메인 레벨로 이동
 * 레벨 이동 후 비교를 위해 현재 세션 내 플레이어 목록을 GameInstance에 저장
@@ -65,17 +149,6 @@ void APGLobbyGameMode::HandleStartingNewPlayer_Implementation(APlayerController*
 */
 void APGLobbyGameMode::StartGame()
 {
-	if (bIsProcessingAction)
-	{
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	APGGameState* GS = GetGameState<APGGameState>();
 	if (!GS || !GS)
@@ -86,160 +159,130 @@ void APGLobbyGameMode::StartGame()
 	GI->SaveGameStateOnTravel(EGameState::InGame);
 	GI->SetExpectedPlayersForTravel(GS->PlayerArray);
 
-	bIsProcessingAction = true;
-	bIsMassTravel = true;
-
 	UE_LOG(LogTemp, Log, TEXT("LobbyGM: Start Game (Mass Travel). Muting All."));
-	BroadcastCleanupCommand();
+
+	RequestServerTravel();
 }
 
-void APGLobbyGameMode::Logout(AController* Exiting)
+void APGLobbyGameMode::RequestServerTravel()
 {
-	Super::Logout(Exiting);
-
-	if (bIsProcessingAction && Exiting == PendingLeaverPC)
-	{
-		UE_LOG(LogTemp, Log, TEXT("LobbyGM: Leaver Gone. Restarting Voice."));
-		BroadcastRestartVoice();
-
-		bIsProcessingAction = false;
-		PendingLeaverPC = nullptr;
-		PendingActionType = ECleanupActionType::None;
-	}
-}
-
-void APGLobbyGameMode::ProcessSoloLeaveRequest(APGLobbyPlayerController* RequestingPC, ECleanupActionType ActionType)
-{
-	if (bIsProcessingAction) 
+	if (bIsMassProcessing)
 	{
 		return;
 	}
+	bIsMassProcessing = true;
 
-	bIsProcessingAction = true;
-	bIsMassTravel = false;
-	PendingLeaverPC = RequestingPC;
-	PendingActionType = ActionType;
+	CancelAllPendingSoloLeaves();
 
-	UE_LOG(LogTemp, Log, TEXT("LobbyGM: Solo Leave Requested by %s. Muting All."), *RequestingPC->GetName());
+	bServerShouldQuit = false;
+	PendingActionType = ECleanupActionType::Mass_ServerTravel;
+
+	UE_LOG(LogTemp, Log, TEXT("LobbyGM: Mass Travel Requested. Muting All."));
 	BroadcastCleanupCommand();
 }
 
 void APGLobbyGameMode::RequestSessionDestruction(bool bServerQuit)
 {
-	if (bIsProcessingAction) 
+	if (bIsMassProcessing)
+	{
+		return;
+	}
+	bIsMassProcessing = true;
+
+	CancelAllPendingSoloLeaves();
+
+	bServerShouldQuit = bServerQuit;
+	PendingActionType = ECleanupActionType::Mass_KickForDestroy;
+
+	UE_LOG(LogTemp, Log, TEXT("LobbyGM: Destroy Session Requested. Muting All."));
+	BroadcastCleanupCommand();
+}
+
+void APGLobbyGameMode::CancelAllPendingSoloLeaves()
+{
+	if (PendingSoloLeavers.Num() == 0)
 	{
 		return;
 	}
 
-	bIsProcessingAction = true;
-	bIsMassTravel = false;
-	bServerShouldQuit = bServerQuit;
-	PendingActionType = ECleanupActionType::Mass_KickForDestroy;
+	UE_LOG(LogTemp, Warning, TEXT("LobbyGM: Mass Action Triggered. Cancelling %d pending solo leaves."), PendingSoloLeavers.Num());
 
-	UE_LOG(LogTemp, Log, TEXT("LobbyGM: Session Destruction. Muting All."));
-	BroadcastCleanupCommand();
-}
-
-void APGLobbyGameMode::OnPlayerCleanupFinished(APlayerController* PC)
-{
-	ReadyPlayerCount++;
-	if (ReadyPlayerCount >= TotalPlayerCount)
+	for (auto& Elem : SoloLeaveTimers)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(TimeoutTimerHandle);
-		ExecutePendingAction();
+		APGLobbyPlayerController* PC = Elem.Key;
+		FTimerHandle& Timer = Elem.Value;
+
+		if (Timer.IsValid())
+		{
+			GetWorld()->GetTimerManager().ClearTimer(Timer);
+		}
+
+		if (PC && PendingSoloLeavers.Contains(PC))
+		{
+			PendingSoloLeavers.Remove(PC);
+		}
 	}
+	SoloLeaveTimers.Empty();
 }
 
 void APGLobbyGameMode::BroadcastCleanupCommand()
 {
-	ReadyPlayerCount = 0;
-	TArray<APGLobbyPlayerController*> TargetPCs;
+	UE_LOG(LogTemp, Log, TEXT("LobbyGM: Broadcasting Mass Cleanup. Execution in 2.0s."));
 
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		if (APGLobbyPlayerController* PC = Cast<APGLobbyPlayerController>(It->Get()))
 		{
-			TargetPCs.Add(PC);
-		}
-	}
-	TotalPlayerCount = TargetPCs.Num();
+			if (PendingSoloLeavers.Contains(PC))
+			{
+				continue;
+			}
 
-	for (APGLobbyPlayerController* PC : TargetPCs)
-	{
-		if (bIsMassTravel)
-		{
-			PC->Client_StopVoiceAndCleanup(ECleanupActionType::Mass_ServerTravel);
-		}
-		else
-		{
-			if (PendingLeaverPC && PC == PendingLeaverPC)
-			{
-				PC->Client_StopVoiceAndCleanup(PendingActionType);
-			}
-			else
-			{
-				PC->Client_StopVoiceAndCleanup(ECleanupActionType::None);
-			}
+			PC->Client_StopVoiceAndCleanup(PendingActionType, FUniqueNetIdRepl());
 		}
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(TimeoutTimerHandle, this, &APGLobbyGameMode::ExecutePendingAction, 5.0f, false);
+	FTimerHandle MassActionTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(MassActionTimerHandle, this, &APGLobbyGameMode::ExecutePendingAction, 2.0f, false);
 }
 
 void APGLobbyGameMode::ExecutePendingAction()
 {
-	if (bIsMassTravel)
+	if (!bIsMassProcessing)
+	{
+		return;
+	}
+
+	if (PendingActionType == ECleanupActionType::Mass_ServerTravel)
 	{
 		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
-		return;
 	}
-
-	if (PendingLeaverPC && IsValid(PendingLeaverPC) && PendingActionType != ECleanupActionType::Mass_KickForDestroy)
+	else if (PendingActionType == ECleanupActionType::Mass_KickForDestroy)
 	{
-		UE_LOG(LogTemp, Log, TEXT("LobbyGM: Executing Leave for %s"), *PendingLeaverPC->GetName());
-		PendingLeaverPC->Client_ExecuteSoloAction(PendingActionType);
-		return;
-	}
+		APGLobbyPlayerController* HostPC = Cast<APGLobbyPlayerController>(GetWorld()->GetFirstPlayerController());
 
-	if (PendingActionType == ECleanupActionType::Mass_KickForDestroy)
-	{
-		UWorld* World = GetWorld();
-		APGLobbyPlayerController* HostPC = Cast<APGLobbyPlayerController>(World->GetFirstPlayerController());
-
-		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 		{
 			if (APGLobbyPlayerController* PC = Cast<APGLobbyPlayerController>(It->Get()))
 			{
-				if (PC != HostPC) 
+				if (PC == HostPC)
 				{
-					PC->Client_ExecuteSoloAction(ECleanupActionType::Solo_ReturnToMainMenu);
+					continue;
 				}
+
+				PC->Client_ExecuteSoloAction(ECleanupActionType::Mass_KickForDestroy);
 			}
 		}
 
 		if (HostPC)
 		{
-			if (bServerShouldQuit) 
+			if (bServerShouldQuit)
 			{
 				HostPC->Client_ExecuteSoloAction(ECleanupActionType::Solo_QuitToDesktop);
 			}
-			else 
+			else
 			{
 				HostPC->Client_ExecuteSoloAction(ECleanupActionType::Solo_ReturnToMainMenu);
-			}
-		}
-	}
-}
-
-void APGLobbyGameMode::BroadcastRestartVoice()
-{
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		if (APGLobbyPlayerController* PC = Cast<APGLobbyPlayerController>(It->Get()))
-		{
-			if (PC != PendingLeaverPC)
-			{
-				PC->Client_RestartVoice();
 			}
 		}
 	}

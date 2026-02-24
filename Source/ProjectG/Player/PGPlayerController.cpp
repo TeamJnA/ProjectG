@@ -85,10 +85,6 @@ void APGPlayerController::BeginPlay()
 
 void APGPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	//if (IsLocalController())
-	//{
-	//	StopTalking();
-	//}
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -120,7 +116,7 @@ void APGPlayerController::OnPossess(APawn* NewPawn)
 	UE_LOG(LogTemp, Log, TEXT("APGPlayerController::OnPossess new pawn [%s]"), *NewPawn->GetName());
 
 	ReplaceInputMappingContext(NewPawn);
-	TryStartVoice();
+	StartTalking();
 
 	if (const APGSpectatorPawn* Spectator = Cast<APGSpectatorPawn>(NewPawn))
 	{
@@ -142,7 +138,7 @@ void APGPlayerController::OnRep_Pawn()
 	}
 
 	ReplaceInputMappingContext(GetPawn());
-	TryStartVoice();
+	StartTalking();
 
 	if (const APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
 	{
@@ -201,15 +197,6 @@ void APGPlayerController::PostSeamlessTravel()
 	// On travel first try success
 	UE_LOG(LogTemp, Warning, TEXT("PGPlayerController::PostSeamlessTravel: [%s] travel success"), *GetNameSafe(this));
 	Client_PostSeamlessTravel();
-}
-
-void APGPlayerController::TryStartVoice()
-{
-	if (GetPawn())
-	{
-		StartTalking();
-		UE_LOG(LogTemp, Log, TEXT("Voice Chat: Started Talking (Pawn Possessed/Replicated)"));
-	}
 }
 
 void APGPlayerController::Client_PostSeamlessTravel_Implementation()
@@ -475,7 +462,6 @@ void APGPlayerController::OnEscapeMovementFinished()
 	}
 	PlayerCharacter->OnAutomatedMovementCompleted.RemoveDynamic(this, &APGPlayerController::OnEscapeMovementFinished);
 
-	StopTalking();
 	Server_RequestFinishEscape();
 }
 
@@ -570,9 +556,6 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 		return;
 	}
 	Possess(Spectator);
-
-	Client_RestartVoice();
-
 	Server_ChangeSpectateTarget(true);
 }
 
@@ -639,7 +622,7 @@ void APGPlayerController::Server_ChangeSpectateTarget_Implementation(bool bNext)
 	}
 	else
 	{
-		const AActor* TargetPawn = NewTargetPS->GetPawn();
+		AActor* TargetPawn = NewTargetPS->GetPlayerCharacter();
 		if (TargetPawn)
 		{
 			UE_LOG(LogTemp, Log, TEXT("PGPC::Server_ChangeSpectateTarget: TargetPawn: [%s]"), *NewTargetPS->GetPlayerName());
@@ -692,8 +675,6 @@ void APGPlayerController::InitFinalScoreBoardWidget()
 	{
 		HUD->InitFinalScoreBoardWidget();
 	}
-
-	RefreshVoiceChannel();
 }
 
 void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
@@ -736,8 +717,124 @@ void APGPlayerController::StopGameplayBGM()
 	}
 }
 
-void APGPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanupActionType ActionType)
+void APGPlayerController::RefreshVoiceChannel()
 {
+	if (bIsLeavingSession)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] PC is in Leaving process"));
+		return;
+	}
+
+	APGPlayerState* MyPS = GetPlayerState<APGPlayerState>();
+	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
+
+	FString NetModeStr = (GetNetMode() == NM_Client) ? TEXT("Client") : TEXT("Server");
+
+	if (!MyPS || !GS || !VoiceInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] [%s] RefreshVoiceChannel Early Exit! (MyPS: %d, GS: %d, VoiceInt: %d)"), *NetModeStr, MyPS != nullptr, GS != nullptr, VoiceInterface.IsValid());
+		return;
+	}
+
+	bool bIsGameEnd = GS->GetCurrentGameState() == EGameState::EndGame;
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] --- Start refreshing voice channels for %s ---"), *NetModeStr, *MyPS->GetPlayerName());
+
+	for (APlayerState* OtherPS : GS->PlayerArray)
+	{
+		APGPlayerState* OtherPGPS = Cast<APGPlayerState>(OtherPS);
+		if (!OtherPGPS)
+		{
+			continue;
+		}
+
+		if (OtherPGPS->IsMyPlayerState())
+		{
+			continue;
+		}
+
+		FUniqueNetIdRepl OtherId = OtherPS->GetUniqueId();
+		if (!OtherId.IsValid())
+		{
+			UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] [%s] Target (%s) UniqueId is invalid! Cannot control voice channel."), *NetModeStr, *OtherPGPS->GetPlayerName());
+			continue;
+		}
+
+		if (Leavers.Contains(OtherId))
+		{
+			UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] [%s] Target (%s) is leaving! Cannot control voice channel."), *NetModeStr, *OtherPGPS->GetPlayerName());
+			continue;
+		}
+
+		VoiceInterface->RegisterRemoteTalker(*OtherId);
+
+		/* 상황 (Target, Source, 3D 음성) */
+		// FinalScoreBoard (모두, 모두, x)
+		if (bIsGameEnd)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 1: GameEnd] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+			VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
+		}
+		// 사망/탈출 후 스코어보드 (x, 인게임, x)
+		else if (MyPS->IsInScoreBoard())
+		{
+			if (OtherPGPS->IsInGame())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 1: Me-Scoreboard / Target-InGame] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+
+				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 2: Me-Scoreboard / Target-Not InGame] Target (%s) -> MUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+
+				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
+			}
+			//VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
+		}
+		// 관전 (관전자, 인게임/관전자, x)
+		else if (MyPS->IsSpectating())
+		{
+			if (OtherPGPS->IsSpectating() || OtherPGPS->IsInGame())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 3: Me-Spectating / Target-InGame or Spectating] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
+			}
+			else // 스코어보드 보는 사람은 차단
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 3: Me-Spectating / Target-Scoreboard] Target (%s) -> MUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
+			}
+		}
+		// 인게임 (모두, 인게임 플레이어, o)
+		else if (MyPS->IsInGame())
+		{
+			if (OtherPGPS->IsInGame())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 4: Me-InGame / Target-InGame] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 4: Me-InGame / Target-Not InGame] Target (%s) -> MUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s]"), *VoiceInterface->GetVoiceDebugState());
+
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] --- Voice channel refresh complete ---"), *NetModeStr);
+}
+
+void APGPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanupActionType ActionType, const FUniqueNetIdRepl& TargetNetId)
+{
+	if (bIsLeavingSession)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Ignored Cleanup Command because PC is already leaving."));
+		return;
+	}
+
 	if (ActionType != ECleanupActionType::None)
 	{
 		if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
@@ -746,116 +843,66 @@ void APGPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanupActi
 		}
 	}
 
-	PerformCleanup();
-
-	FTimerHandle CleanupDelayTimer;
-	GetWorld()->GetTimerManager().SetTimer(CleanupDelayTimer, [this]()
-	{
-		if (IsValid(this))
-		{
-			Server_NotifyCleanupFinished();
-		}
-	}, 1.0f, false);
+	PerformCleanup(TargetNetId);
 }
 
-void APGPlayerController::RefreshVoiceChannel()
+void APGPlayerController::PerformCleanup(const FUniqueNetIdRepl& TargetNetId)
 {
-	APGPlayerState* MyPS = GetPlayerState<APGPlayerState>();
-	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] --- Perform Cleanup ---"));
+
 	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
-	if (!MyPS || !GS || !VoiceInterface.IsValid())
+	if (!VoiceInterface.IsValid())
 	{
+		UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] PerformCleanup Early Exit! VoiceInterface Invalid"));
 		return;
 	}
 
-	bool bIsGameEnd = GS->GetCurrentGameState() == EGameState::EndGame;
-	for (APlayerState* OtherPS : GS->PlayerArray)
+	if (TargetNetId.IsValid())
 	{
-		if (OtherPS == MyPS) 
-		{
-			continue;
-		}
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Muting specific leaver"));
+		Leavers.Add(TargetNetId);
+		VoiceInterface->RegisterRemoteTalker(*TargetNetId);
+		VoiceInterface->MuteRemoteTalker(0, *TargetNetId, false);
+	}
+	else
+	{
+		bIsLeavingSession = true;
+		StopTalking();
 
-		APGPlayerState* OtherPGPS = Cast<APGPlayerState>(OtherPS);
-		FUniqueNetIdRepl OtherId = OtherPS->GetUniqueId();
-		if (!OtherPGPS || !OtherId.IsValid())
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Muting ALL players (I am leaving)."));
+		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+		if (!GS)
 		{
-			continue;
+			UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] PerformCleanup Early Exit! GS Invalid"));
+			return;
 		}
+		
+		for (APlayerState* OtherPS : GS->PlayerArray)
+		{
+			APGPlayerState* OtherPGPS = Cast<APGPlayerState>(OtherPS);
+			if (!OtherPGPS)
+			{
+				continue;
+			}
+	
+			if (OtherPGPS->IsMyPlayerState())
+			{
+				continue;
+			}
 
-		// 상황 (Target, Source, VOIP 여부)
-		// FinalScoreBoard (모두, 모두, x)
-		if (bIsGameEnd)
-		{
-			VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
-		}
-		// 사망/탈출 후 스코어보드 (x, x, x)
-		else if ((MyPS->IsDead() || MyPS->IsEscaping()) && !MyPS->IsSpectating())
-		{
+			FUniqueNetIdRepl OtherId = OtherPS->GetUniqueId();
+			if (!OtherId.IsValid())
+			{
+				continue;
+			}
+
+			VoiceInterface->RegisterRemoteTalker(*OtherId);
 			VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
 		}
-		// 관전 (관전자, 모두, x)
-		else if (MyPS->IsSpectating())
-		{
-			if (OtherPGPS->IsSpectating() || (!OtherPGPS->IsDead() && !OtherPGPS->IsEscaping()))
-			{
-				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
-			}
-			else // 스코어보드 보는 사람은 차단
-			{
-				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
-			}
-		}
-		// 인게임 (모두, 인게임 플레이어, o)
-		else if (!MyPS->IsDead() && !MyPS->IsEscaping())
-		{
-			if (!OtherPGPS->IsDead() && !OtherPGPS->IsEscaping())
-			{
-				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
-			}
-			else
-			{
-				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
-			}
-		}
-	}
-}
-
-void APGPlayerController::PerformCleanup()
-{
-	StopTalking();
-
-	if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
-	{
-		IOnlineVoicePtr VoiceInterface = Subsystem->GetVoiceInterface();
-		if (VoiceInterface.IsValid() && PlayerState)
-		{
-			VoiceInterface->MuteRemoteTalker(0, *PlayerState->GetUniqueId(), true);
-			//VoiceInterface->RemoveAllRemoteTalkers();
-			VoiceInterface->ClearVoicePackets();
-		}
+		VoiceInterface->ClearVoicePackets();
 	}
 
-	//if (GameplayBGMPlayer && GameplayBGMPlayer->IsPlaying())
-	//{
-	//	GameplayBGMPlayer->Stop();
-	//}
-}
-
-void APGPlayerController::Client_RestartVoice_Implementation()
-{
-	if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
-	{
-		IOnlineVoicePtr VoiceInterface = Subsystem->GetVoiceInterface();
-		if (VoiceInterface.IsValid() && PlayerState)
-		{
-			VoiceInterface->UnmuteRemoteTalker(0, *PlayerState->GetUniqueId(), true);
-		}
-	}
-
-	StartTalking();
-
-	UE_LOG(LogTemp, Log, TEXT("PGPC: Voice Restarted."));
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s]"), *VoiceInterface->GetVoiceDebugState());
 }
 
 void APGPlayerController::Client_ExecuteSoloAction_Implementation(ECleanupActionType ActionType)
@@ -875,14 +922,6 @@ void APGPlayerController::PerformSessionEndAction(ECleanupActionType ActionType)
 		{
 			UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
 		}
-	}
-}
-
-void APGPlayerController::Server_NotifyCleanupFinished_Implementation()
-{
-	if (APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GM->OnPlayerCleanupFinished(this);
 	}
 }
 

@@ -10,6 +10,9 @@
 #include "InputActionValue.h"
 
 #include "Character/PGPlayerCharacter.h"
+#include "Player/PGPlayerController.h"
+#include "Player/PGLobbyPlayerController.h"
+#include "Player/PGPlayerState.h"
 
 #include "Level/Exit/PGExitPointBase.h"
 
@@ -28,6 +31,20 @@ APGSpectatorPawn::APGSpectatorPawn()
 	{
 		OrbitYawAction = OrbitYawActionObj.Object;
 	}
+}
+
+void APGSpectatorPawn::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	TryInitVoiceSettings();
+}
+
+void APGSpectatorPawn::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	TryInitVoiceSettings();
 }
 
 /*
@@ -155,4 +172,97 @@ void APGSpectatorPawn::OnRep_TargetToOrbit()
 void APGSpectatorPawn::OnRep_TargetPlayerState()
 {
 	OnSpectateTargetChanged.Broadcast(TargetPlayerState);
+}
+
+// 로컬이 리모트에 대해 Voip를 구현해야함
+void APGSpectatorPawn::TryInitVoiceSettings()
+{
+	FString NetModeStr = (GetNetMode() == NM_Client) ? TEXT("Client") : TEXT("Server");
+	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] TryInitVoiceSettings triggered!"), *NetModeStr);
+
+	APlayerController* LocalPC = GetWorld()->GetFirstPlayerController();
+	if (!LocalPC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] LocalPC not found! Retrying in 0.1s..."), *NetModeStr);
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGSpectatorPawn::TryInitVoiceSettings, 0.1f, false);
+		return;
+	}
+
+	APGPlayerController* InGamePC = Cast<APGPlayerController>(LocalPC);
+	APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(LocalPC);
+	if (!InGamePC && !LobbyPC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Valid PC not found! Retrying in 0.1s..."), *NetModeStr);
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGSpectatorPawn::TryInitVoiceSettings, 0.1f, false);
+		return;
+	}
+
+	// 로컬이면 Mute/Unmute 갱신
+	// 리모트면 대상의 Voip, Mute/Unmute 갱신
+	if (IsLocallyControlled())
+	{
+		if (InGamePC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local PGPC"));
+
+			InGamePC->RefreshVoiceChannel();
+		}
+		else if (LobbyPC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local LobbyPC"));
+
+			LobbyPC->RefreshVoiceChannel();
+		}
+	}
+	else
+	{
+		APGPlayerState* TargetPS = GetPlayerState<APGPlayerState>();
+		if (TargetPS && TargetPS->IsInactive())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] TargetPS is Inactive. Aborting voice setup."));
+			return;
+		}
+
+		if (!TargetPS || !TargetPS->GetUniqueId().IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] TargetPS not found! Retrying in 0.1s..."), *NetModeStr);
+			FTimerHandle RetryHandle;
+			GetWorldTimerManager().SetTimer(RetryHandle, this, &APGSpectatorPawn::TryInitVoiceSettings, 0.1f, false);
+			return;
+		}
+
+		if (!VoipTalker)
+		{
+			VoipTalker = UVOIPTalker::CreateTalkerForPlayer(TargetPS);
+			if (VoipTalker)
+			{
+				VoipTalker->RegisterWithPlayerState(TargetPS);
+				VoipTalker->Settings.AttenuationSettings = nullptr;
+				VoipTalker->Settings.ComponentToAttachTo = nullptr;
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] SUCCESS: Attached 3D Voice to %s (Owner: %s)"), *NetModeStr, *GetName(), *TargetPS->GetPlayerName());
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] Failed to create Talker. Retrying..."));
+				FTimerHandle RetryHandle;
+				GetWorldTimerManager().SetTimer(RetryHandle, this, &APGSpectatorPawn::TryInitVoiceSettings, 0.1f, false);
+				return;
+			}
+		}
+
+		if (InGamePC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] PGPC"));
+
+			InGamePC->RefreshVoiceChannel();
+		}
+		else if (LobbyPC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] LobbyPC"));
+
+			LobbyPC->RefreshVoiceChannel();
+		}
+	}
 }

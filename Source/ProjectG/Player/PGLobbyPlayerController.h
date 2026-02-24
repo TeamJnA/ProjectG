@@ -47,7 +47,6 @@ protected:
 	void SetupMainMenuUI();
 	void SetupMainMenuView();
 	void OnShowPauseMenu(const FInputActionValue& Value);
-	void TryStartLobbyVoice();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	TSubclassOf<ACameraActor> LobbyCameraClass;
@@ -60,6 +59,8 @@ protected:
 	TObjectPtr<UInputAction> ShowPauseMenuAction;
 
 public:
+	void RefreshVoiceChannel();
+
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSoloLeave(ECleanupActionType ActionType);
 
@@ -67,18 +68,17 @@ public:
 	void Server_RequestSessionDestruction(bool bServerQuit);
 	
 	UFUNCTION(Client, Reliable)
-	void Client_StopVoiceAndCleanup(ECleanupActionType ActionType);
-
-	UFUNCTION(Client, Reliable)
-	void Client_RestartVoice();
+	void Client_StopVoiceAndCleanup(ECleanupActionType ActionType, const FUniqueNetIdRepl& TargetNetId);
 
 	UFUNCTION(Client, Reliable)
 	void Client_ExecuteSoloAction(ECleanupActionType ActionType);
 
-	UFUNCTION(Server, Reliable)
-	void Server_NotifyCleanupFinished();
-
 private:
-	void PerformCleanup();
+	void PerformCleanup(const FUniqueNetIdRepl& TargetNetId);
 	void PerformSessionEndAction(ECleanupActionType ActionType);
+
+	UPROPERTY()
+	TSet<FUniqueNetIdRepl> Leavers;
+
+	bool bIsLeavingSession = false;
 };

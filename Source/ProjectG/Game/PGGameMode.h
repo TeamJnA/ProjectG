@@ -43,9 +43,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
+	virtual void Logout(AController* Exiting) override;
 	// virtual void PostLogin(APlayerController* NewPlayer) override;
 	// virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
-	// virtual void Logout(AController* Exiting) override;
 
 	void CheckAllPlayersArrived();
 
@@ -59,6 +59,23 @@ protected:
 	void UpdateSpectatorsTarget(const ACharacter* RevivedCharacter, const APlayerState* RevivedPlayerState);
 
 	void InitSoundManagerToPlayers();
+
+public:
+	void ProcessSoloLeaveRequest(APGPlayerController* RequestingPC, ECleanupActionType ActionType);
+	void RequestSessionDestruction(bool bServerQuit);
+
+private:
+	void PerformSoloLeave(APGPlayerController* TargetPC);
+	void RequestServerTravel();
+	void CancelAllPendingSoloLeaves();
+	void BroadcastCleanupCommand();
+	void ExecutePendingAction();
+
+	UPROPERTY()
+	TMap<APGPlayerController*, ECleanupActionType> PendingSoloLeavers;
+
+	UPROPERTY()
+	TMap<APGPlayerController*, FTimerHandle> SoloLeaveTimers;
 
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> ArrivedPlayers;
@@ -77,30 +94,8 @@ protected:
 
 	float SpawnOffset = 0.0f;
 
-public:
-	void ProcessSoloLeaveRequest(APGPlayerController* RequestingPC, ECleanupActionType ActionType);
-
-	void RequestMassTravel();
-
-	void RequestSessionDestruction(bool bServerQuit);
-
-	void OnPlayerCleanupFinished(APlayerController* PC);
-
-	virtual void Logout(AController* Exiting) override;
-
-private:
-	void BroadcastCleanupCommand();
-	void ExecutePendingAction();
-	void BroadcastRestartVoice();
-
-	bool bIsProcessingAction = false;
-	APGPlayerController* PendingLeaverPC = nullptr;
 	ECleanupActionType PendingActionType = ECleanupActionType::None;
 
-	bool bIsMassTravel = false;
+	bool bIsMassProcessing = false;
 	bool bServerShouldQuit = false;
-
-	int32 ReadyPlayerCount = 0;
-	int32 TotalPlayerCount = 0;
-	FTimerHandle TimeoutTimerHandle;
 };
