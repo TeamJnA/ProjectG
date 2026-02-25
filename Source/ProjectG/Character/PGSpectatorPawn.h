@@ -11,6 +11,8 @@ class UInputAction;
 struct FInputActionValue;
 class APGPlayerCharacter;
 
+class UPGVOIPTalker;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpectateTargetChangedDelegate, const APlayerState*, NewTarget);
 
 /**
@@ -79,7 +81,7 @@ private:
 
 protected:
 	UPROPERTY()
-	TObjectPtr<UVOIPTalker> VoipTalker;
+	TObjectPtr<UPGVOIPTalker> VoipTalker;
 
 public:
 	void TryInitVoiceSettings();

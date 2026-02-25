@@ -30,6 +30,8 @@ class USpotLightComponent;
 class APGTriggerGimmickMannequin;
 class USphereComponent;
 
+class UPGVOIPTalker;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
 
@@ -449,7 +451,7 @@ protected:
 // Voice Chat
 protected:
 	UPROPERTY()
-	TObjectPtr<UVOIPTalker> VoipTalker;
+	TObjectPtr<UPGVOIPTalker> VoipTalker;
 
 	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
 	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;

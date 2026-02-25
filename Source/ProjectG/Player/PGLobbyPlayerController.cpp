@@ -356,6 +356,14 @@ void APGLobbyPlayerController::PerformCleanup(const FUniqueNetIdRepl& TargetNetI
 		Leavers.Add(TargetNetId);
 		VoiceInterface->RegisterRemoteTalker(*TargetNetId);
 		VoiceInterface->MuteRemoteTalker(0, *TargetNetId, false);
+
+		FTimerHandle RemoveTimer;
+		FUniqueNetIdRepl CapturedId = TargetNetId;
+		GetWorld()->GetTimerManager().SetTimer(RemoveTimer, [this, CapturedId]()
+		{
+			Leavers.Remove(CapturedId);
+			UE_LOG(LogTemp, Log, TEXT("[VoiceDebug] Removed leaver from Leavers set"));
+		}, 2.5f, false);
 	}
 	else
 	{

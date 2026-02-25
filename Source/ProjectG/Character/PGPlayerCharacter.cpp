@@ -41,6 +41,7 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/Component/PGVOIPTalker.h"
 
 
 APGPlayerCharacter::APGPlayerCharacter()
@@ -1449,7 +1450,7 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 
 		if (!VoipTalker)
 		{
-			VoipTalker = UVOIPTalker::CreateTalkerForPlayer(TargetPS);
+			VoipTalker = UPGVOIPTalker::CreateTalkerForPlayer(TargetPS);
 			if (VoipTalker)
 			{
 				VoipTalker->RegisterWithPlayerState(TargetPS);

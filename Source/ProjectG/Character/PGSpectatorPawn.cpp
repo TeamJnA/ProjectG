@@ -18,6 +18,7 @@
 
 #include "EngineUtils.h" 
 #include "Net/UnrealNetwork.h"
+#include "Character/Component/PGVOIPTalker.h"
 
 APGSpectatorPawn::APGSpectatorPawn()
 {
@@ -235,7 +236,7 @@ void APGSpectatorPawn::TryInitVoiceSettings()
 
 		if (!VoipTalker)
 		{
-			VoipTalker = UVOIPTalker::CreateTalkerForPlayer(TargetPS);
+			VoipTalker = UPGVOIPTalker::CreateTalkerForPlayer(TargetPS);
 			if (VoipTalker)
 			{
 				VoipTalker->RegisterWithPlayerState(TargetPS);

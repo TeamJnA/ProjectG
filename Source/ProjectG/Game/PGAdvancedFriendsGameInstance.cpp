@@ -21,6 +21,7 @@
 
 #include "Item/PGItemData.h"
 #include "Blueprint/UserWidget.h"
+#include "Player/PGGameUserSettings.h"
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 #include "steam/steam_api.h" 
@@ -50,9 +51,17 @@ void UPGAdvancedFriendsGameInstance::Init()
 			SessionInterface->OnSessionUserInviteAcceptedDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnSessionUserInviteAccepted);
 		}
 	}
-	
+
+	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnWorldLoaded);
+
 	// gamestate initiate
 	CurrentSavedGameState = EGameState::MainMenu;
+
+	// 저장된 오디오/마이크 설정 적용
+	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		Settings->ApplyMicSettings();
+	}
 
 	// Consumable
 	ItemDataMap.Add("Brick", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick")));
@@ -676,6 +685,71 @@ void UPGAdvancedFriendsGameInstance::OnReadFriendsListComplete(int32 LocalUserNa
 			}
 		}
 	}
+}
+
+void UPGAdvancedFriendsGameInstance::SetRemotePlayerVolume(const FUniqueNetIdRepl& PlayerId, float Volume)
+{
+	if (!PlayerId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[GameInstance] SetRemotePlayerVolume called with invalid PlayerId"));
+		return;
+	}
+
+	const float ClampedVolume = FMath::Clamp(Volume, 0.0f, 1.0f);
+	RemotePlayerVolumes.Add(PlayerId, ClampedVolume);
+
+	UE_LOG(LogTemp, Log, TEXT("[GameInstance] Set volume for player to %.2f"), ClampedVolume);
+
+}
+
+float UPGAdvancedFriendsGameInstance::GetRemotePlayerVolume(const FUniqueNetIdRepl& PlayerId)
+{
+	if (!PlayerId.IsValid())
+	{
+		return 1.0f;
+	}
+
+	const float* VolumePtr = RemotePlayerVolumes.Find(PlayerId);
+	if (VolumePtr)
+	{
+		return *VolumePtr;
+	}
+
+	return 1.0f;
+}
+
+void UPGAdvancedFriendsGameInstance::OnWorldLoaded(UWorld* LoadedWorld)
+{
+	if (!LoadedWorld)
+	{
+		return;
+	}
+
+	ApplySavedAudioSettings(LoadedWorld);
+}
+
+void UPGAdvancedFriendsGameInstance::ApplySavedAudioSettings(UWorld* InWorld)
+{
+	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	if (!Settings || !SoundMixModifier)
+	{
+		return;
+	}
+
+	ApplySoundMixOverride(InWorld, SoundClass_Music, Settings->MusicVolume);
+	ApplySoundMixOverride(InWorld, SoundClass_SFX, Settings->SFXVolume);
+	ApplySoundMixOverride(InWorld, SoundClass_Voice, Settings->VoiceVolume);
+}
+
+void UPGAdvancedFriendsGameInstance::ApplySoundMixOverride(UWorld* InWorld, USoundClass* InSoundClass, float Volume)
+{
+	if (!SoundMixModifier || !InSoundClass || !InWorld)
+	{
+		return;
+	}
+
+	UGameplayStatics::SetSoundMixClassOverride(InWorld, SoundMixModifier, InSoundClass, Volume, 1.0f, 1.0f, true);
+	UGameplayStatics::PushSoundMixModifier(InWorld, SoundMixModifier);
 }
 
 /*

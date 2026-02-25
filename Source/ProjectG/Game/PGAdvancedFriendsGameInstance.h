@@ -20,6 +20,7 @@ class UPGItemData;
 class FUniqueNetId;
 class FOnlineSessionSearchResult;
 class UUserWidget;
+class USoundMix;
 
 static const FName SESSION_KEY_CURRENT_PLAYERS = FName(TEXT("CURRENT_PLAYERS"));
 
@@ -206,4 +207,45 @@ private:
 	void OnReadFriendsListComplete(int32 LocalUserName, bool bWasSuccessful, const FString& ListName, const FString& ErrorStr);
 	// -------- Steam Friend -------------
 
+public:
+	/**
+	 * Set the volume for a remote player (local setting only)
+	 */
+	void SetRemotePlayerVolume(const FUniqueNetIdRepl& PlayerId, float Volume);
+
+	/**
+	 * Get the volume for a remote player
+	 * Returns 1.0f (100%) if player not found
+	 */
+	float GetRemotePlayerVolume(const FUniqueNetIdRepl& PlayerId);
+
+	void ApplySoundMixOverride(UWorld* InWorld, USoundClass* InSoundClass, float Volume);
+
+	USoundClass* GetSoundClass_Music() const { return SoundClass_Music; }
+	USoundClass* GetSoundClass_SFX() const { return SoundClass_SFX; }
+	USoundClass* GetSoundClass_Voice() const { return SoundClass_Voice; }
+
+private:
+	/**
+	 * Map of remote player volumes (PlayerId -> Volume Multiplier 0.0-1.0)
+	 * Not replicated - each client manages its own settings
+	 * Only persists during current game session
+	 */
+	UPROPERTY()
+	TMap<FUniqueNetIdRepl, float> RemotePlayerVolumes;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	TObjectPtr<USoundMix> SoundMixModifier;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	TObjectPtr<USoundClass> SoundClass_Music;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	TObjectPtr<USoundClass> SoundClass_SFX;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	TObjectPtr<USoundClass> SoundClass_Voice;
+
+	void OnWorldLoaded(UWorld* LoadedWorld);
+	void ApplySavedAudioSettings(UWorld* InWorld);
 };
