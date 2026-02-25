@@ -15,7 +15,8 @@ public class ProjectG : ModuleRules
                                                             "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam",
                                                             "AIModule", "NavigationSystem", "NetCore", "Niagara",
                                                             "Voice", "AudioMixer",
-                                                            "ChaosCaching", "GeometryCollectionEngine", "PhysicsCore"});
+                                                            "ChaosCaching", "GeometryCollectionEngine", "PhysicsCore",
+                                                            "LevelSequence", "MovieScene", "MovieSceneTracks"});
 
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Networking", "Steamworks" });

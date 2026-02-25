@@ -36,7 +36,12 @@ APGGameMode::APGGameMode()
 		PlayerPawnClass = PlayerPawnBPClass.Class;
 	}
 
-	GameStateClass = APGGameState::StaticClass();
+	static ConstructorHelpers::FClassFinder<APGGameState> PGGameStateClass(TEXT("/Game/ProjectG/Game/BP_PGGameState.BP_PGGameState_C"));
+	if (PGGameStateClass.Class != nullptr)
+	{
+		GameStateClass = PGGameStateClass.Class;
+	}
+
 	PlayerStateClass = APGPlayerState::StaticClass();
 	PlayerControllerClass = APGPlayerController::StaticClass();
 	
@@ -79,6 +84,7 @@ void APGGameMode::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
 	}
+
 
 	FTimerHandle TravelCheckTimer;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -225,13 +231,25 @@ void APGGameMode::SpawnAllPlayers()
 		APGPlayerCharacter* NewPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform);
 		if (NewPawn)
 		{
+			// 이곳에서랑 클라이언트에서 두 번 Hidden 처리를 한다.
+			// 복제가 잘 안 될 수 있으므로....
+			NewPawn->SetActorHiddenInGame(true);
+
 			PC->Possess(NewPawn);
 			PC->Client_PlayGameplayBGM();
 		}
 
 		SpawnOffset += 50;
 
+
 		PC->Client_HideLoadingScreen();
+	}
+
+	// TODO
+	APGGameState* GS = GetGameState<APGGameState>();
+	if (GS)
+	{
+		GS->Multicast_PlayerEnterLevelSequence(GetWorld()->GetNumPlayerControllers());
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager and SoundManager."));

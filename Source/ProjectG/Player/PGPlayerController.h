@@ -60,6 +60,11 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_DisplayJumpscare(UTexture2D* JumpscareTexture); 
 
+	void SetupPlayerForGameplay();
+
+	// Check player was spawned with game start or revive.
+	int32 bGameStartFirstSpawned : 1;
+
 protected:	
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -117,7 +122,6 @@ protected:
 	void OnSpectateNext(const FInputActionValue& Value);
 	void OnSpectatePrev(const FInputActionValue& Value);
 	void OnShowPauseMenu(const FInputActionValue& Value);
-
 
 	///
 	///		Audio comp. Sound parts

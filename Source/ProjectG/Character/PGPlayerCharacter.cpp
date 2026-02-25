@@ -466,8 +466,25 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 
 	if (IsLocallyControlled()) //
 	{
+		if (APGPlayerController* PC = Cast<APGPlayerController>(NewController))
+		{
+			PC->RefreshVoiceChannel();
+
+			// When spawned first time, wait input for play level sequence
+			if (PC->bGameStartFirstSpawned)
+			{
+				DisableInput(PC);
+
+				PC->SetIgnoreMoveInput(true);
+				PC->SetIgnoreLookInput(true);
+			}
+			else
+			{
+				InitHUD();
+			}
+		}
+
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init HUD [%s]"), *GetNameSafe(this)); //
-		InitHUD(); //
 		InitPostProcessMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
@@ -497,8 +514,25 @@ void APGPlayerCharacter::OnRep_PlayerState()
 
 	if (IsLocallyControlled())
 	{
+		if (APGPlayerController* PC = Cast<APGPlayerController>(GetController()))
+		{
+			PC->RefreshVoiceChannel();
+
+			// When spawned first time, wait input for play level sequence
+			if (PC->bGameStartFirstSpawned)
+			{
+				DisableInput(PC);
+
+				PC->SetIgnoreMoveInput(true);
+				PC->SetIgnoreLookInput(true);
+			}
+			else
+			{
+				InitHUD();
+			}
+		}
+
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
-		InitHUD(); //
 		InitPostProcessMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
@@ -1076,6 +1110,7 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 			FRotator NewRotation;
 			NewRotation = FirstPersonCamera->GetComponentRotation();
 			Server_SendCameraRotation(NewRotation);
+
 		}
 	}
 }
