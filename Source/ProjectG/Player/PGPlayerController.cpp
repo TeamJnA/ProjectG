@@ -66,6 +66,8 @@ APGPlayerController::APGPlayerController()
 	{
 		GameplayBGMSound = GameplayBGMAssetRef.Object;
 	}
+
+	bGameStartFirstSpawned = true;
 }
 
 void APGPlayerController::BeginPlay()
@@ -151,6 +153,25 @@ void APGPlayerController::OnRep_Pawn()
 			HUD->InitSpectatorWidget();
 		}
 	}
+}
+
+void APGPlayerController::SetupPlayerForGameplay()
+{
+	if (APGPlayerCharacter* PGCharacter = GetPawn<APGPlayerCharacter>())
+	{
+		// Set camera to player character
+		SetViewTargetWithBlend(PGCharacter, 0.1f);
+
+		// Set input enable
+		PGCharacter->EnableInput(this);
+
+		PGCharacter->InitHUD();
+	}
+
+	SetIgnoreMoveInput(false);
+	SetIgnoreLookInput(false);
+
+	bGameStartFirstSpawned = false;
 }
 
 void APGPlayerController::Client_DisplayJumpscare_Implementation(UTexture2D* JumpscareTexture)

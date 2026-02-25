@@ -257,7 +257,8 @@ void APGGameState::Multicast_PlayerEnterLevelSequence_Implementation(int32 NumPl
 
 void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 {
-	// Set Player Characters hidden
+	// Set Player Characters hidden 
+	// Input is ignored when first spawn
 	for (APlayerState* PS : PlayerArray)
 	{
 		if (PS)
@@ -269,20 +270,6 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 			}
 		}
 	}
-
-	// Set input disable
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (PC && PC->IsLocalController())
-	{
-		APawn* Pawn = PC->GetPawn();
-		if (Pawn)
-		{
-			Pawn->DisableInput(PC);
-		}
-		PC->SetIgnoreMoveInput(true);
-		PC->SetIgnoreLookInput(true);
-	}
-
 
 	UE_LOG(LogTemp, Log, TEXT("Play Level Sequence with players : %d"), NumPlayers);
 
@@ -344,23 +331,10 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 
 void APGGameState::OnEnterSequenceFinished()
 {
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	APGPlayerController* PC = Cast<APGPlayerController>(GetWorld()->GetFirstPlayerController());
 	if (PC && PC->IsLocalController())
 	{
-		// Set camera to player character
-		if (APawn* MyPawn = PC->GetPawn())
-		{
-			PC->SetViewTargetWithBlend(MyPawn, 0.1f);
-		}
-
-		// Set input enable
-		APawn* Pawn = PC->GetPawn();
-		if (Pawn)
-		{
-			Pawn->EnableInput(PC);
-		}
-		PC->SetIgnoreMoveInput(false);
-		PC->SetIgnoreLookInput(false);
+		PC->SetupPlayerForGameplay();
 	}
 
 	// Set characters unhidden
