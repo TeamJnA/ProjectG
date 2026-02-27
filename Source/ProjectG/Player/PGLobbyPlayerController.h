@@ -36,8 +36,8 @@ protected:
 	virtual void SetupInputComponent() override;
 	virtual void OnPossess(APawn* aPawn) override;
 	virtual void OnRep_Pawn() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	void InitLocalVoice();
 	void HideLoadingScreenDelayed();
 
 	UFUNCTION(Server, Reliable)

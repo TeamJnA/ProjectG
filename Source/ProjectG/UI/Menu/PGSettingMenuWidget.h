@@ -9,6 +9,7 @@
 class UVerticalBox;
 class USlider;
 class UButton;
+class UComboBoxString;
 class UWidgetSwitcher;
 class UPGPlayerVoiceEntry;
 class UPGOptionSwitcherWidget;
@@ -17,7 +18,7 @@ class APGGameState;
 class UPGGameUserSettings;
 
 /**
- * Settings menu widget handling GamePlay, Audio, Mic, and Video settings.
+ * Settings menu widget handling GamePlay, Device, Audio, Mic, and Video settings.
  */
 UCLASS()
 class PROJECTG_API UPGSettingMenuWidget : public UUserWidget
@@ -36,6 +37,13 @@ protected:
     // -------- GamePlay --------
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<USlider> CameraSensitivitySlider;
+
+    // -------- Audio Device --------
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UComboBoxString> OutputDeviceComboBox;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UComboBoxString> InputDeviceComboBox;
 
     // -------- Audio --------
     UPROPERTY(meta = (BindWidget))
@@ -142,6 +150,23 @@ private:
     UFUNCTION()
     void OnVideoOptionButtonClicked();
 
+    // -------- Device Callbacks --------
+    UFUNCTION()
+    void OnOutputDeviceSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+    UFUNCTION()
+    void OnInputDeviceSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+    void EnumerateAudioDevices();
+
+    UFUNCTION()
+    void OnOutputDevicesObtained(const TArray<FAudioOutputDeviceInfo>& AvailableDevices);
+
+    void PopulateInputDevices();
+
+    UFUNCTION()
+    void OnOutputDeviceSwapComplete(const FSwapAudioOutputResult& SwapResult);
+
     // -------- Helpers --------
     /** Load saved settings and apply to sliders */
     void LoadAndApplySettings();
@@ -152,11 +177,19 @@ private:
     /** After OverallGraphics changes, update individual quality widgets to reflect new values */
     void RefreshIndividualQualityWidgets();
 
+    /** Update OverallGraphics indicator after individual quality change */
+    void UpdateOverallGraphicsIndicator();
+
     /** Convert mic sensitivity CVar value to normalized slider value (0~1) */
     float MicSensitivityToSlider(float Threshold) const;
 
     /** Convert normalized slider value (0~1) to mic sensitivity CVar value */
     float SliderToMicSensitivity(float SliderValue) const;
+
+    // -------- Variables --------
+    // Device ComboBox 표시명 -> DeviceId 매핑
+    TMap<FString, FString> OutputDeviceNameToId;
+    TMap<FString, FString> InputDeviceNameToId;
 
     TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
     TWeakObjectPtr<APGGameState> GSRef;

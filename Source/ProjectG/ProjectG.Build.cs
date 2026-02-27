@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 using UnrealBuildTool.Rules;
 
@@ -9,12 +10,17 @@ public class ProjectG : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
+        string EnginePath = Path.GetFullPath(Target.RelativeEnginePath);
+
+        PrivateIncludePaths.Add(EnginePath + "Source/Runtime/Online/Voice/Private");
+        PrivateIncludePaths.Add(EnginePath + "Source/Runtime/Online/Voice/Private/Windows");
+
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
                                                             "GameplayAbilities", "GameplayTags", "GameplayTasks",
                                                             "UMG", "Slate", "SlateCore",
                                                             "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam",
                                                             "AIModule", "NavigationSystem", "NetCore", "Niagara",
-                                                            "Voice", "AudioMixer",
+                                                            "Voice", "AudioMixer", "AudioCapture", "AudioCaptureCore",
                                                             "ChaosCaching", "GeometryCollectionEngine", "PhysicsCore",
                                                             "LevelSequence", "MovieScene", "MovieSceneTracks"});
 

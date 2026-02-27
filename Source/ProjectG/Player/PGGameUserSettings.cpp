@@ -5,6 +5,8 @@
 
 UPGGameUserSettings::UPGGameUserSettings()
 	: CameraSensitivity(0.5f)
+	, OutputDeviceId(FString())
+	, InputDeviceId(FString())
 	, MusicVolume(0.5f)
 	, SFXVolume(0.5f)
 	, VoiceVolume(0.5f)
@@ -24,14 +26,16 @@ void UPGGameUserSettings::ApplyMicSettings()
 
 	if (IConsoleVariable* CVar = CM.FindConsoleVariable(TEXT("voice.SilenceDetectionThreshold")))
 	{
-		CVar->Set(MicSensitivity, ECVF_SetByGameSetting);
+		CVar->Set(MicSensitivity, ECVF_SetByConsole);
 	}
-	//if (IConsoleVariable* CVar = CM.FindConsoleVariable(TEXT("voice.MicNoiseGateThreshold")))
-	//{
-	//	CVar->Set(MicSensitivity, ECVF_SetByGameSetting);
-	//}
+
+	if (IConsoleVariable* CVar = CM.FindConsoleVariable(TEXT("voice.MicNoiseGateThreshold")))
+	{
+		CVar->Set(MicSensitivity, ECVF_SetByConsole);
+	}
+
 	if (IConsoleVariable* CVar = CM.FindConsoleVariable(TEXT("voice.MicInputGain")))
 	{
-		CVar->Set(MicInputGain, ECVF_SetByGameSetting);
+		CVar->Set(MicInputGain, ECVF_SetByConsole);
 	}
 }

@@ -30,6 +30,13 @@ public:
 	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|GamePlay")
 	float CameraSensitivity;
 
+	// -------- Audio Device --------
+	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|Audio")
+	FString OutputDeviceId;
+
+	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|Audio")
+	FString InputDeviceId;
+
 	// -------- Audio --------
 	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|Audio")
 	float MusicVolume;

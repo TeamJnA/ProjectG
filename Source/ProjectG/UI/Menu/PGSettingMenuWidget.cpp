@@ -8,6 +8,7 @@
 #include "Components/Slider.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "Components/ComboBoxString.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameState.h"
@@ -16,6 +17,9 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
+#include "AudioMixerBlueprintLibrary.h"
+#include "AudioCapture.h"
+#include "Utils/PGVoiceUtils.h"
 
 
 void UPGSettingMenuWidget::NativeOnInitialized()
@@ -31,6 +35,17 @@ void UPGSettingMenuWidget::NativeOnInitialized()
     if (CameraSensitivitySlider)
     {
         CameraSensitivitySlider->OnValueChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnCameraSensitivityChanged);
+    }
+
+    // -------- Bind Device Option Callbacks --------
+    if (OutputDeviceComboBox)
+    {
+        OutputDeviceComboBox->OnSelectionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnOutputDeviceSelectionChanged);
+    }
+
+    if (InputDeviceComboBox)
+    {
+        InputDeviceComboBox->OnSelectionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnInputDeviceSelectionChanged);
     }
 
     // -------- Bind Audio Option Callbacks --------
@@ -115,8 +130,6 @@ void UPGSettingMenuWidget::NativeConstruct()
     if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
     {
         GSRef = GS;
-        //GS->OnPlayerArrayChanged.RemoveAll(this);
-        //GS->OnPlayerArrayChanged.AddDynamic(this, &UPGSettingMenuWidget::UpdatePlayerVoiceList);
         GS->OnPlayerArrayChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::UpdatePlayerVoiceList);
     }
 
@@ -186,6 +199,7 @@ void UPGSettingMenuWidget::UpdatePlayerVoiceList()
     }
 }
 
+// Load Settings and apply to sliders
 void UPGSettingMenuWidget::LoadAndApplySettings()
 {
     UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
@@ -234,7 +248,8 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
     // Apply mic CVars
     Settings->ApplyMicSettings();
 
-    // Overall quality: 0=Low, 1=Medium, 2=High, 3=Ultra
+    // Video
+    // Overall quality: 0=Low, 1=Medium, 2=High, 3=Ultra, 4(-1) = Custom
     if (OverallGraphicsOption)
     {
         int32 OverallLevel = Settings->GetOverallScalabilityLevel();
@@ -248,6 +263,7 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
         }
     }
 
+    // Refresh each video options
     RefreshIndividualQualityWidgets();
 
     // VSync: 0=OFF, 1=ON
@@ -255,37 +271,12 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
     {
         VSyncOption->SetSelectedIndex(Settings->IsVSyncEnabled() ? 1 : 0, false);
     }
+
+    // Find/Set available devices and Load saved device settings
+    EnumerateAudioDevices();
 }
 
-void UPGSettingMenuWidget::RefreshIndividualQualityWidgets()
-{
-    UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
-    if (!Settings)
-    {
-        return;
-    }
-
-    if (TextureQualityOption)
-    {
-        TextureQualityOption->SetSelectedIndex(Settings->GetTextureQuality(), false);
-    }
-
-    if (ShadowQualityOption)
-    {
-        ShadowQualityOption->SetSelectedIndex(Settings->GetShadowQuality(), false);
-    }
-
-    if (ViewDistanceQualityOption)
-    {
-        ViewDistanceQualityOption->SetSelectedIndex(Settings->GetViewDistanceQuality(), false);
-    }
-
-    if (AntiAliasingQualityOption)
-    {
-        AntiAliasingQualityOption->SetSelectedIndex(Settings->GetAntiAliasingQuality(), false);
-    }
-}
-
+// -------- Gameplay --------
 void UPGSettingMenuWidget::OnCameraSensitivityChanged(float NewValue)
 {
     if (bIsLoadingSettings)
@@ -300,6 +291,7 @@ void UPGSettingMenuWidget::OnCameraSensitivityChanged(float NewValue)
     }
 }
 
+// -------- Audio --------
 void UPGSettingMenuWidget::OnMusicVolumeChanged(float NewValue)
 {
     if (bIsLoadingSettings)
@@ -389,6 +381,7 @@ void UPGSettingMenuWidget::OnMicVolumeChanged(float NewValue)
     }
 }
 
+// -------- Video --------
 void UPGSettingMenuWidget::OnOverallGraphicsChanged(int32 OptionIndex)
 {
     UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
@@ -406,18 +399,42 @@ void UPGSettingMenuWidget::OnOverallGraphicsChanged(int32 OptionIndex)
     RefreshIndividualQualityWidgets();
 }
 
+void UPGSettingMenuWidget::RefreshIndividualQualityWidgets()
+{
+    UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+    if (!Settings)
+    {
+        return;
+    }
+
+    if (TextureQualityOption)
+    {
+        TextureQualityOption->SetSelectedIndex(Settings->GetTextureQuality(), false);
+    }
+
+    if (ShadowQualityOption)
+    {
+        ShadowQualityOption->SetSelectedIndex(Settings->GetShadowQuality(), false);
+    }
+
+    if (ViewDistanceQualityOption)
+    {
+        ViewDistanceQualityOption->SetSelectedIndex(Settings->GetViewDistanceQuality(), false);
+    }
+
+    if (AntiAliasingQualityOption)
+    {
+        AntiAliasingQualityOption->SetSelectedIndex(Settings->GetAntiAliasingQuality(), false);
+    }
+}
+
 void UPGSettingMenuWidget::OnTextureQualityChanged(int32 OptionIndex)
 {
     if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
     {
         Settings->SetTextureQuality(OptionIndex);
         ApplyAndSaveSettings();
-
-        if (OverallGraphicsOption)
-        {
-            int32 OverallLevel = Settings->GetOverallScalabilityLevel();
-            OverallGraphicsOption->SetSelectedIndex(OverallLevel >= 0 ? OverallLevel : 4, false);
-        }
+        UpdateOverallGraphicsIndicator();
     }
 }
 
@@ -427,12 +444,7 @@ void UPGSettingMenuWidget::OnShadowQualityChanged(int32 OptionIndex)
     {
         Settings->SetShadowQuality(OptionIndex);
         ApplyAndSaveSettings();
-
-        if (OverallGraphicsOption)
-        {
-            int32 OverallLevel = Settings->GetOverallScalabilityLevel();
-            OverallGraphicsOption->SetSelectedIndex(OverallLevel >= 0 ? OverallLevel : 4, false);
-        }
+        UpdateOverallGraphicsIndicator();
     }
 }
 
@@ -442,12 +454,7 @@ void UPGSettingMenuWidget::OnViewDistanceQualityChanged(int32 OptionIndex)
     {
         Settings->SetViewDistanceQuality(OptionIndex);
         ApplyAndSaveSettings();
-
-        if (OverallGraphicsOption)
-        {
-            int32 OverallLevel = Settings->GetOverallScalabilityLevel();
-            OverallGraphicsOption->SetSelectedIndex(OverallLevel >= 0 ? OverallLevel : 4, false);
-        }
+        UpdateOverallGraphicsIndicator();
     }
 }
 
@@ -457,12 +464,7 @@ void UPGSettingMenuWidget::OnAntiAliasingQualityChanged(int32 OptionIndex)
     {
         Settings->SetAntiAliasingQuality(OptionIndex);
         ApplyAndSaveSettings();
-
-        if (OverallGraphicsOption)
-        {
-            int32 OverallLevel = Settings->GetOverallScalabilityLevel();
-            OverallGraphicsOption->SetSelectedIndex(OverallLevel >= 0 ? OverallLevel : 4, false);
-        }
+        UpdateOverallGraphicsIndicator();
     }
 }
 
@@ -475,6 +477,210 @@ void UPGSettingMenuWidget::OnVSyncChanged(int32 OptionIndex)
     }
 }
 
+void UPGSettingMenuWidget::UpdateOverallGraphicsIndicator()
+{
+    if (!OverallGraphicsOption)
+    {
+        return;
+    }
+
+    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+    {
+        int32 OverallLevel = Settings->GetOverallScalabilityLevel();
+        OverallGraphicsOption->SetSelectedIndex(OverallLevel >= 0 ? OverallLevel : 4, false);
+    }
+}
+
+// -------- Device --------
+void UPGSettingMenuWidget::EnumerateAudioDevices()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    // Output Device (비동기)
+    FOnAudioOutputDevicesObtained OutputDelegate;
+    OutputDelegate.BindDynamic(this, &UPGSettingMenuWidget::OnOutputDevicesObtained);
+    UAudioMixerBlueprintLibrary::GetAvailableAudioOutputDevices(World, OutputDelegate);
+
+    // Input Device (동기)
+    PopulateInputDevices();
+}
+
+void UPGSettingMenuWidget::OnOutputDevicesObtained(const TArray<FAudioOutputDeviceInfo>& AvailableDevices)
+{
+    if (!OutputDeviceComboBox)
+    {
+        return;
+    }
+
+    bIsLoadingSettings = true;
+
+    OutputDeviceComboBox->ClearOptions();
+    OutputDeviceNameToId.Empty();
+
+    UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+    FString SavedDeviceId = Settings ? Settings->OutputDeviceId : FString();
+    FString DefaultName;
+    FString SelectedName;
+
+    for (const FAudioOutputDeviceInfo& Device : AvailableDevices)
+    {
+        FString DisplayName = Device.Name;
+        FString DeviceId = Device.DeviceId;
+
+        OutputDeviceNameToId.Add(DisplayName, DeviceId);
+        OutputDeviceComboBox->AddOption(DisplayName);
+
+        if (Device.bIsSystemDefault)
+        {
+            DefaultName = DisplayName;
+        }
+
+        if (Device.DeviceId == SavedDeviceId)
+        {
+            SelectedName = DisplayName;
+        }
+    }
+
+    OutputDeviceComboBox->SetSelectedOption(SelectedName.IsEmpty() ? DefaultName : SelectedName);
+
+    // 저장된 디바이스가 없으면 현재 선택된 디바이스를 저장
+    if (Settings && Settings->OutputDeviceId.IsEmpty())
+    {
+        FString SelectedOption = OutputDeviceComboBox->GetSelectedOption();
+        if (FString* Id = OutputDeviceNameToId.Find(SelectedOption))
+        {
+            Settings->OutputDeviceId = *Id;
+            ApplyAndSaveSettings();
+        }
+    }
+
+    bIsLoadingSettings = false;
+}
+
+void UPGSettingMenuWidget::PopulateInputDevices()
+{
+    if (!InputDeviceComboBox)
+    {
+        return;
+    }
+
+    bIsLoadingSettings = true;
+
+    InputDeviceComboBox->ClearOptions();
+    InputDeviceNameToId.Empty();
+
+    Audio::FAudioCapture AudioCapture;
+    TArray<Audio::FCaptureDeviceInfo> Devices;
+    AudioCapture.GetCaptureDevicesAvailable(Devices);
+
+    UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+    FString SavedDeviceId = Settings ? Settings->InputDeviceId : FString();
+    FString DefaultName;
+    FString SelectedName;
+
+    for (const Audio::FCaptureDeviceInfo& Device : Devices)
+    {
+        FString DisplayName = Device.DeviceName;
+        FString DeviceId = Device.DeviceId;
+
+        InputDeviceNameToId.Add(DisplayName, DeviceId);
+        InputDeviceComboBox->AddOption(DisplayName);
+
+        if (DefaultName.IsEmpty())
+        {
+            DefaultName = DisplayName;
+        }
+
+        if (DeviceId == SavedDeviceId)
+        {
+            SelectedName = DisplayName;
+        }
+    }
+
+    InputDeviceComboBox->SetSelectedOption(SelectedName.IsEmpty() ? DefaultName : SelectedName);
+
+    // 저장된 디바이스가 없으면 현재 선택된 디바이스를 저장
+    if (Settings && Settings->InputDeviceId.IsEmpty())
+    {
+        FString SelectedOption = InputDeviceComboBox->GetSelectedOption();
+        if (FString* Id = InputDeviceNameToId.Find(SelectedOption))
+        {
+            Settings->InputDeviceId = *Id;
+            ApplyAndSaveSettings();
+        }
+    }
+
+    bIsLoadingSettings = false;
+}
+
+void UPGSettingMenuWidget::OnOutputDeviceSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+    if (bIsLoadingSettings)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[OutputDeviceChanged] is loading"));
+        return;
+    }
+
+    FString* DeviceId = OutputDeviceNameToId.Find(SelectedItem);
+    if (!DeviceId)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[OutputDeviceChanged] no valid id"));
+        return;
+    }
+
+    FOnCompletedDeviceSwap SwapDelegate;
+    SwapDelegate.BindDynamic(this, &UPGSettingMenuWidget::OnOutputDeviceSwapComplete);
+    UAudioMixerBlueprintLibrary::SwapAudioOutputDevice(GetWorld(), *DeviceId, SwapDelegate);
+
+    UE_LOG(LogTemp, Log, TEXT("[OutputDeviceChanged] swap device [%s]"), **DeviceId);
+
+    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+    {
+        Settings->OutputDeviceId = *DeviceId;
+        ApplyAndSaveSettings();
+    }
+}
+
+void UPGSettingMenuWidget::OnOutputDeviceSwapComplete(const FSwapAudioOutputResult& SwapResult)
+{
+    UE_LOG(LogTemp, Log, TEXT("[OutputDevice] Swap result - %s, Current: %s, Requested: %s"),
+        SwapResult.Result == ESwapAudioOutputDeviceResultState::Success ? TEXT("Success") : TEXT("Failed"),
+        *SwapResult.CurrentDeviceId,
+        *SwapResult.RequestedDeviceId);
+}
+
+void UPGSettingMenuWidget::OnInputDeviceSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+    if (bIsLoadingSettings)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[InputDeviceChanged] is loading"));
+        return;
+    }
+
+    FString* DeviceId = InputDeviceNameToId.Find(SelectedItem);
+    if (!DeviceId)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[InputDeviceChanged] no valid id"));
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("[InputDeviceChanged] swap device [%s]"), **DeviceId);
+
+    // 마이크 디바이스 전환
+    PGVoiceUtils::ChangeInputDevice(GetWorld(), SelectedItem);
+
+    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+    {
+        Settings->InputDeviceId = *DeviceId;
+        ApplyAndSaveSettings();
+    }
+}
+
+// -------- WidgetSwitch --------
 void UPGSettingMenuWidget::OnGamePlayOptionButtonClicked()
 {
     if (WidgetSwitcher)
@@ -499,6 +705,7 @@ void UPGSettingMenuWidget::OnVideoOptionButtonClicked()
     }
 }
 
+// -------- Helper --------
 void UPGSettingMenuWidget::ApplyAndSaveSettings()
 {
     if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())

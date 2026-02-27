@@ -27,6 +27,8 @@
 #include "Net/VoiceConfig.h"
 
 #include "PGLogChannels.h"
+#include "Utils/PGVoiceUtils.h"
+
 
 APGPlayerController::APGPlayerController()
 {
@@ -85,11 +87,6 @@ void APGPlayerController::BeginPlay()
 	InitializeGameplayBGM();
 }
 
-void APGPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
-}
-
 void APGPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -110,21 +107,19 @@ void APGPlayerController::OnPossess(APawn* NewPawn)
 	// Changing mapping context by pawn( Default gameplay or Spectate )
 	Super::OnPossess(NewPawn);
 
-	if (!IsLocalController())
+	if (IsLocalController())
 	{
-		return;
-	}
+		UE_LOG(LogTemp, Log, TEXT("APGPlayerController::OnPossess new pawn [%s]"), *NewPawn->GetName());
 
-	UE_LOG(LogTemp, Log, TEXT("APGPlayerController::OnPossess new pawn [%s]"), *NewPawn->GetName());
+		ReplaceInputMappingContext(NewPawn);
+		InitLocalVoice();
 
-	ReplaceInputMappingContext(NewPawn);
-	StartTalking();
-
-	if (const APGSpectatorPawn* Spectator = Cast<APGSpectatorPawn>(NewPawn))
-	{
-		if (APGHUD* HUD = GetHUD<APGHUD>())
+		if (const APGSpectatorPawn* Spectator = Cast<APGSpectatorPawn>(NewPawn))
 		{
-			HUD->InitSpectatorWidget();
+			if (APGHUD* HUD = GetHUD<APGHUD>())
+			{
+				HUD->InitSpectatorWidget();
+			}
 		}
 	}
 }
@@ -134,21 +129,30 @@ void APGPlayerController::OnRep_Pawn()
 {
 	Super::OnRep_Pawn();
 
-	if (!IsLocalController())
+	if (IsLocalController())
 	{
-		return;
-	}
+		ReplaceInputMappingContext(GetPawn());
+		InitLocalVoice();
 
-	ReplaceInputMappingContext(GetPawn());
-	StartTalking();
-
-	if (const APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
-	{
-		if (APGHUD* HUD = GetHUD<APGHUD>())
+		if (const APGSpectatorPawn* Spectator = GetPawn<APGSpectatorPawn>())
 		{
-			HUD->InitSpectatorWidget();
+			if (APGHUD* HUD = GetHUD<APGHUD>())
+			{
+				HUD->InitSpectatorWidget();
+			}
 		}
 	}
+}
+
+void APGPlayerController::InitLocalVoice()
+{
+	StartTalking();
+
+	FTimerHandle InputDeviceTimer;
+	GetWorld()->GetTimerManager().SetTimer(InputDeviceTimer, [this]()
+	{
+		PGVoiceUtils::ApplySavedInputDevice(GetWorld());
+	}, 0.5f, false);
 }
 
 void APGPlayerController::SetupPlayerForGameplay()

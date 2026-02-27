@@ -24,6 +24,8 @@
 #include "Net/VoiceConfig.h"
 #include "EngineUtils.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Utils/PGVoiceUtils.h"
+
 
 APGLobbyPlayerController::APGLobbyPlayerController()
 {
@@ -106,6 +108,7 @@ void APGLobbyPlayerController::PostSeamlessTravel()
 	{
 		return;
 	}
+
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (!GI)
 	{
@@ -132,7 +135,7 @@ void APGLobbyPlayerController::OnPossess(APawn* aPawn)
 
 	if (IsLocalController())
 	{
-		StartTalking();
+		InitLocalVoice();
 
 		FTimerHandle HideTimer;
 		GetWorld()->GetTimerManager().SetTimer(HideTimer, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
@@ -145,16 +148,22 @@ void APGLobbyPlayerController::OnRep_Pawn()
 
 	if (IsLocalController())
 	{
-		StartTalking();
+		InitLocalVoice();
 
 		FTimerHandle HideTimer;
 		GetWorld()->GetTimerManager().SetTimer(HideTimer, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
 	}
 }
 
-void APGLobbyPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void APGLobbyPlayerController::InitLocalVoice()
 {
-	Super::EndPlay(EndPlayReason);
+	StartTalking();
+
+	FTimerHandle InputDeviceTimer;
+	GetWorld()->GetTimerManager().SetTimer(InputDeviceTimer, [this]()
+	{
+		PGVoiceUtils::ApplySavedInputDevice(GetWorld());
+	}, 0.5f, false);
 }
 
 void APGLobbyPlayerController::HideLoadingScreenDelayed()

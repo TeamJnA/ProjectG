@@ -13,6 +13,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "Game/PGGameState.h"
+#include "AudioMixerBlueprintLibrary.h"
 
 #include "PGAdvancedFriendsGameInstance.generated.h"
 
@@ -248,4 +249,7 @@ private:
 
 	void OnWorldLoaded(UWorld* LoadedWorld);
 	void ApplySavedAudioSettings(UWorld* InWorld);
+
+	UFUNCTION()
+	void OnStartupDeviceSwapComplete(const FSwapAudioOutputResult& SwapResult);
 };

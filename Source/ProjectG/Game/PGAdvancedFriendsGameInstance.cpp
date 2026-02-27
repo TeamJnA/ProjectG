@@ -22,10 +22,12 @@
 #include "Item/PGItemData.h"
 #include "Blueprint/UserWidget.h"
 #include "Player/PGGameUserSettings.h"
+#include "AudioMixerBlueprintLibrary.h"
 
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 #include "steam/steam_api.h" 
 #endif
+
 
 void UPGAdvancedFriendsGameInstance::Init()
 {
@@ -731,14 +733,24 @@ void UPGAdvancedFriendsGameInstance::OnWorldLoaded(UWorld* LoadedWorld)
 void UPGAdvancedFriendsGameInstance::ApplySavedAudioSettings(UWorld* InWorld)
 {
 	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
-	if (!Settings || !SoundMixModifier)
+	if (!Settings)
 	{
 		return;
 	}
 
-	ApplySoundMixOverride(InWorld, SoundClass_Music, Settings->MusicVolume);
-	ApplySoundMixOverride(InWorld, SoundClass_SFX, Settings->SFXVolume);
-	ApplySoundMixOverride(InWorld, SoundClass_Voice, Settings->VoiceVolume);
+	if (SoundMixModifier)
+	{
+		ApplySoundMixOverride(InWorld, SoundClass_Music, Settings->MusicVolume);
+		ApplySoundMixOverride(InWorld, SoundClass_SFX, Settings->SFXVolume);
+		ApplySoundMixOverride(InWorld, SoundClass_Voice, Settings->VoiceVolume);
+	}
+
+	if (!Settings->OutputDeviceId.IsEmpty())
+	{
+		FOnCompletedDeviceSwap SwapDelegate;
+		SwapDelegate.BindDynamic(this, &UPGAdvancedFriendsGameInstance::OnStartupDeviceSwapComplete);
+		UAudioMixerBlueprintLibrary::SwapAudioOutputDevice(InWorld, Settings->OutputDeviceId, SwapDelegate);
+	}
 }
 
 void UPGAdvancedFriendsGameInstance::ApplySoundMixOverride(UWorld* InWorld, USoundClass* InSoundClass, float Volume)
@@ -750,6 +762,13 @@ void UPGAdvancedFriendsGameInstance::ApplySoundMixOverride(UWorld* InWorld, USou
 
 	UGameplayStatics::SetSoundMixClassOverride(InWorld, SoundMixModifier, InSoundClass, Volume, 1.0f, 1.0f, true);
 	UGameplayStatics::PushSoundMixModifier(InWorld, SoundMixModifier);
+}
+
+void UPGAdvancedFriendsGameInstance::OnStartupDeviceSwapComplete(const FSwapAudioOutputResult& SwapResult)
+{
+	UE_LOG(LogTemp, Log, TEXT("[Startup] Output device swap - %s, Requested: %s"),
+		SwapResult.Result == ESwapAudioOutputDeviceResultState::Success ? TEXT("Success") : TEXT("Failed"),
+		*SwapResult.RequestedDeviceId);
 }
 
 /*
