@@ -12,7 +12,7 @@ void UPGSessionStatusWidget::NativeOnInitialized()
 
 	if (CloseButton)
 	{
-		CloseButton->OnClicked.AddDynamic(this, &UPGSessionStatusWidget::OnCloseButtonClicked);
+		CloseButton->OnClicked.AddUniqueDynamic(this, &UPGSessionStatusWidget::OnCloseButtonClicked);
 	}
 }
 

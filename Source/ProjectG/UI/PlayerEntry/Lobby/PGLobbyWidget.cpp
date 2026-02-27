@@ -19,13 +19,6 @@ void UPGLobbyWidget::NativeOnInitialized()
 	{
 		GIRef = GI;
 	}
-
-	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
-	{
-		GSRef = GS;
-		GS->OnPlayerArrayChanged.RemoveAll(this);
-		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
-	}
 }
 
 void UPGLobbyWidget::NativeDestruct()
@@ -57,6 +50,12 @@ void UPGLobbyWidget::NativeDestruct()
 void UPGLobbyWidget::Init()
 {
 	UE_LOG(LogTemp, Log, TEXT("LobbyWidget::Init: lobby widget init"));
+
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		GSRef = GS;
+		GS->OnPlayerArrayChanged.AddUniqueDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
+	}
 
 	UpdatePlayerList();
 }
@@ -98,9 +97,8 @@ void UPGLobbyWidget::UpdatePlayerList()
 	{
 		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
-			PGPS->OnPlayerStateUpdated.RemoveAll(this);
-			PGPS->OnPlayerStateUpdated.AddDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
-
+			PGPS->OnPlayerStateUpdated.AddUniqueDynamic(this, &UPGLobbyWidget::UpdatePlayerList);
+			
 			if (PGPS->IsHost())
 			{
 				HostPlayer = PGPS;

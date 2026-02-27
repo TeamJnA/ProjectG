@@ -20,6 +20,9 @@
 #include "Net/UnrealNetwork.h"
 #include "Character/Component/PGVOIPTalker.h"
 
+#include "Player/PGGameUserSettings.h"
+
+
 APGSpectatorPawn::APGSpectatorPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -65,7 +68,7 @@ void APGSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 {
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// left/right
+		// mouse movement input
 		EnhancedInputComponent->BindAction(OrbitYawAction, ETriggerEvent::Triggered, this, &APGSpectatorPawn::OnOrbitYaw);
 	}
 }
@@ -90,14 +93,21 @@ void APGSpectatorPawn::OnOrbitYaw(const FInputActionValue& Value)
 		return;
 	}
 
+	float Sensitivity = 1.0f;
+	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		// 0~1 슬라이더 -> 0.2~2.0 배율
+		Sensitivity = FMath::Lerp(0.2f, 2.0f, Settings->CameraSensitivity);
+	}
+
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
-	CurrentOrbitYawAngle += LookAxisVector.X * RotationSpeed * GetWorld()->GetDeltaSeconds();
-	CurrentOrbitPitchAngle -= LookAxisVector.Y * RotationSpeed * GetWorld()->GetDeltaSeconds();
+	CurrentOrbitYawAngle += LookAxisVector.X * Sensitivity;
+	CurrentOrbitPitchAngle -= LookAxisVector.Y * Sensitivity;
 	CurrentOrbitPitchAngle = FMath::Clamp(CurrentOrbitPitchAngle, -49.0f, 69.0f);
 }
 
 /*
-* 설정된 타겟과의 거리(150.0f)를 유지하며 트래킹
+* 설정된 타겟과의 거리(150.0f)를 유지하며 트래킹/궤도 유지
 */
 void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 {

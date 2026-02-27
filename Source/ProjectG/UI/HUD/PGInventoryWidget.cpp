@@ -16,11 +16,14 @@ void UPGInventoryWidget::NativeOnInitialized()
 	InventorySlots.Add(InventorySlot2);
 	InventorySlots.Add(InventorySlot3);
 	InventorySlots.Add(InventorySlot4);
+
+	InventorySlot0->HighlightSlot();
 }
 
 void UPGInventoryWidget::NativeConstruct()
 {
-	InventorySlot0->HighlightSlot();
+	Super::NativeConstruct();
+	//InventorySlot0->HighlightSlot();
 }
 
 void UPGInventoryWidget::NativeDestruct()

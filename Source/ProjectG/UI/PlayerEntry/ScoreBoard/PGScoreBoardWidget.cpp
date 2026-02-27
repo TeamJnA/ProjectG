@@ -20,28 +20,12 @@ void UPGScoreBoardWidget::NativeOnInitialized()
 
 	if (SpectateButton)
 	{
-		SpectateButton->OnClicked.AddDynamic(this, &UPGScoreBoardWidget::OnSpectateButtonClicked);
+		SpectateButton->OnClicked.AddUniqueDynamic(this, &UPGScoreBoardWidget::OnSpectateButtonClicked);
 	}
 
 	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
 		GIRef = GI;
-	}
-
-	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
-	{
-		GSRef = GS;
-		GS->OnPlayerArrayChanged.RemoveAll(this);
-		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
-
-		for (APlayerState* PS : GS->PlayerArray)
-		{
-			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
-			{
-				PGPS->OnPlayerStateUpdated.RemoveAll(this);
-				PGPS->OnPlayerStateUpdated.AddDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
-			}
-		}
 	}
 }
 
@@ -75,6 +59,20 @@ void UPGScoreBoardWidget::NativeDestruct()
 void UPGScoreBoardWidget::BindPlayerEntry()
 {
 	UE_LOG(LogTemp, Log, TEXT("UPGScoreBoardWidget::BindPlayerEntry: InPlayerCharacter is valid. Binding delegate."));
+
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		GSRef = GS;
+		GS->OnPlayerArrayChanged.AddUniqueDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
+
+		for (APlayerState* PS : GS->PlayerArray)
+		{
+			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+			{
+				PGPS->OnPlayerStateUpdated.AddUniqueDynamic(this, &UPGScoreBoardWidget::UpdatePlayerEntry);
+			}
+		}
+	}
 
 	UpdatePlayerEntry();
 }

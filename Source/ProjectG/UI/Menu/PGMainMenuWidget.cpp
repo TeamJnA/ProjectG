@@ -22,53 +22,46 @@
 
 void UPGMainMenuWidget::NativeOnInitialized()
 {
-	if (HostButton)
-	{
-		HostButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnHostButtonClicked);
-	}
-
-	if (JoinButton)
-	{
-		JoinButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnJoinButtonClicked);
-	}
-
-	if (OptionButton)
-	{
-		OptionButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnOptionButtonClicked);
-	}
-
-	if (ExitButton)
-	{
-		ExitButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnExitButtonClicked);
-	}
-
-	if (OptionMenuCanvas_BackButton)
-	{
-		OptionMenuCanvas_BackButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnBackButtonClicked);
-	}
-
-	if (SessionListCanvas_BackButton)
-	{
-		SessionListCanvas_BackButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnBackButtonClicked);
-	}
-
-	if (RefreshButton)
-	{
-		RefreshButton->OnClicked.AddDynamic(this, &UPGMainMenuWidget::OnRefreshButtonClicked);
-	}
+	Super::NativeOnInitialized();
 
 	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
 		GIRef = GI;
+	}
 
-		GI->OnSessionsFound.AddUObject(this, &UPGMainMenuWidget::OnSessionsFound);
+	if (HostButton)
+	{
+		HostButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnHostButtonClicked);
+	}
 
-		GI->OnHostSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleHostSessionStarted);
-		GI->OnHostSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleHostSessionFinished);
-		GI->OnFindSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleFindSessionStarted);
-		GI->OnFindSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleFindSessionFinished);
-		GI->OnJoinSessionAttemptStarted.AddDynamic(this, &UPGMainMenuWidget::HandleJoinSessionStarted);
-		GI->OnJoinSessionAttemptFinished.AddDynamic(this, &UPGMainMenuWidget::HandleJoinSessionFinished);
+	if (JoinButton)
+	{
+		JoinButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnJoinButtonClicked);
+	}
+
+	if (OptionButton)
+	{
+		OptionButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnOptionButtonClicked);
+	}
+
+	if (ExitButton)
+	{
+		ExitButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnExitButtonClicked);
+	}
+
+	if (OptionMenuCanvas_BackButton)
+	{
+		OptionMenuCanvas_BackButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnBackButtonClicked);
+	}
+
+	if (SessionListCanvas_BackButton)
+	{
+		SessionListCanvas_BackButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnBackButtonClicked);
+	}
+
+	if (RefreshButton)
+	{
+		RefreshButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnRefreshButtonClicked);
 	}
 }
 
@@ -81,24 +74,33 @@ void UPGMainMenuWidget::NativeConstruct()
 
 	SetMainMenuButtonEnabled(true);
 
-	FTimerHandle CheckErrorMsgTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(
-		CheckErrorMsgTimerHandle,
-		this,
-		&UPGMainMenuWidget::CheckPendingNetworkFailure,
-		0.3f,
-		false
-	);
-
-	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
-		FTimerHandle HideTimer;
-		GetWorld()->GetTimerManager().SetTimer(HideTimer, [GI]()
+		GI->OnSessionsFound.RemoveAll(this);
+		GI->OnSessionsFound.AddUObject(this, &UPGMainMenuWidget::OnSessionsFound);
+		GI->OnHostSessionAttemptStarted.AddUniqueDynamic(this, &UPGMainMenuWidget::HandleHostSessionStarted);
+		GI->OnHostSessionAttemptFinished.AddUniqueDynamic(this, &UPGMainMenuWidget::HandleHostSessionFinished);
+		GI->OnFindSessionAttemptStarted.AddUniqueDynamic(this, &UPGMainMenuWidget::HandleFindSessionStarted);
+		GI->OnFindSessionAttemptFinished.AddUniqueDynamic(this, &UPGMainMenuWidget::HandleFindSessionFinished);
+		GI->OnJoinSessionAttemptStarted.AddUniqueDynamic(this, &UPGMainMenuWidget::HandleJoinSessionStarted);
+		GI->OnJoinSessionAttemptFinished.AddUniqueDynamic(this, &UPGMainMenuWidget::HandleJoinSessionFinished);
+
+		FTimerHandle HideLoadingScreenTimer;
+		GetWorld()->GetTimerManager().SetTimer(HideLoadingScreenTimer, [GI]()
 		{
 			GI->HideLoadingScreen();
 			UE_LOG(LogTemp, Log, TEXT("MainMenu: Loading Screen Hidden"));
 		}, 0.5f, false);
 	}
+
+	FTimerHandle CheckErrorMsgTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		CheckErrorMsgTimerHandle,
+		this,
+		&UPGMainMenuWidget::CheckPendingNetworkFailure,
+		0.5f,
+		false
+	);
 }
 
 void UPGMainMenuWidget::NativeDestruct()
@@ -380,7 +382,7 @@ void UPGMainMenuWidget::HandleJoinSessionFinished(bool bWasSuccessful, const FTe
 
 void UPGMainMenuWidget::CheckPendingNetworkFailure()
 {
-	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
 		FString ErrorMessage = GI->GetPendingNetworkFailureMessage();
 		if (!ErrorMessage.IsEmpty())

@@ -22,7 +22,7 @@ public:
 	void RefreshFriendList();
 
 protected:
-	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
 	UFUNCTION()
@@ -33,7 +33,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UPGFriendEntryWidget> FriendEntryWidgetClass;
-
-private:
-	TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
 };

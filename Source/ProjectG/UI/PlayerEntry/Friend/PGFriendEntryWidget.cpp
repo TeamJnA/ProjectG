@@ -15,7 +15,7 @@ void UPGFriendEntryWidget::NativeOnInitialized()
 
 	if (InviteButton)
 	{
-		InviteButton->OnClicked.AddDynamic(this, &UPGFriendEntryWidget::OnInviteButtonClicked);
+		InviteButton->OnClicked.AddUniqueDynamic(this, &UPGFriendEntryWidget::OnInviteButtonClicked);
 	}
 }
 

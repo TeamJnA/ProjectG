@@ -11,7 +11,7 @@ void UPGSessionSlotWidget::NativeOnInitialized()
 {
 	if (JoinButton)
 	{
-		JoinButton->OnClicked.AddDynamic(this, &UPGSessionSlotWidget::OnJoinClicked);
+		JoinButton->OnClicked.AddUniqueDynamic(this, &UPGSessionSlotWidget::OnJoinClicked);
 	}
 }
 

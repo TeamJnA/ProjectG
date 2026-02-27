@@ -69,8 +69,6 @@ private:
 	UFUNCTION()
 	void OnRep_TargetPlayerState();
 
-	// 초당 회전
-	float RotationSpeed = 90.0f;
 	// 대상으로부터의 거리
 	float CurrentOrbitDistance = 150.0f;
 	// 대상 주위를 공전하는 현재 Yaw 각도

@@ -12,12 +12,12 @@ void UPGConfirmWidget::NativeOnInitialized()
 
 	if (YesButton)
 	{
-		YesButton->OnClicked.AddDynamic(this, &UPGConfirmWidget::OnYesButtonClicked);
+		YesButton->OnClicked.AddUniqueDynamic(this, &UPGConfirmWidget::OnYesButtonClicked);
 	}
 
 	if (NoButton)
 	{
-		NoButton->OnClicked.AddDynamic(this, &UPGConfirmWidget::OnNoButtonClicked);
+		NoButton->OnClicked.AddUniqueDynamic(this, &UPGConfirmWidget::OnNoButtonClicked);
 	}
 }
 

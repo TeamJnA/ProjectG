@@ -18,39 +18,6 @@ void UPGSpectatorWidget::NativeOnInitialized()
 	{
 		GIRef = GI;
 	}
-
-	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
-	{
-		GSRef = GS;
-		GS->OnPlayerArrayChanged.RemoveAll(this);
-		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
-
-		for (APlayerState* PS : GS->PlayerArray)
-		{
-			if (PS == GetOwningPlayerState())
-			{
-				continue;
-			}
-
-			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
-			{
-				PGPS->OnPlayerStateUpdated.RemoveAll(this);
-				PGPS->OnPlayerStateUpdated.AddDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
-			}
-		}
-	}
-
-	if (APGSpectatorPawn* Spectator = GetOwningPlayerPawn<APGSpectatorPawn>())
-	{
-		SpectatorRef = Spectator;
-		Spectator->OnSpectateTargetChanged.RemoveAll(this);
-		Spectator->OnSpectateTargetChanged.AddDynamic(this, &UPGSpectatorWidget::HandleSpectateTargetChanged);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SpectatorWidget::NativeOnInitialized: No valid spectator pawn"));
-		return;
-	}
 }
 
 void UPGSpectatorWidget::NativeDestruct()
@@ -84,6 +51,40 @@ void UPGSpectatorWidget::NativeDestruct()
 void UPGSpectatorWidget::Init()
 {
 	UE_LOG(LogTemp, Warning, TEXT("SpectatorWidget::Init"));
+
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		GSRef = GS;
+		GS->OnPlayerArrayChanged.AddUniqueDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
+
+		for (APlayerState* PS : GS->PlayerArray)
+		{
+			if (PS == GetOwningPlayerState())
+			{
+				continue;
+			}
+
+			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+			{
+				PGPS->OnPlayerStateUpdated.AddUniqueDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
+			}
+		}
+	}
+
+	if (APGSpectatorPawn* OldSpectator = SpectatorRef.Get())
+	{
+		OldSpectator->OnSpectateTargetChanged.RemoveAll(this);
+	}
+
+	if (APGSpectatorPawn* Spectator = GetOwningPlayerPawn<APGSpectatorPawn>())
+	{
+		SpectatorRef = Spectator;
+		Spectator->OnSpectateTargetChanged.AddUniqueDynamic(this, &UPGSpectatorWidget::HandleSpectateTargetChanged);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SpectatorWidget::Init: No valid spectator pawn"));
+	}
 
 	UpdatePlayerList();
 }

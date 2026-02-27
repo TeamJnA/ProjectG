@@ -33,6 +33,7 @@
 #include "Components/SpotLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/AudioComponent.h"
+#include "Character/Component/PGVOIPTalker.h"
 
 // Interface
 #include "Interface/InteractableActorInterface.h"
@@ -41,7 +42,9 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
-#include "Character/Component/PGVOIPTalker.h"
+
+// Game Setting
+#include "Player/PGGameUserSettings.h"
 
 
 APGPlayerCharacter::APGPlayerCharacter()
@@ -1099,12 +1102,18 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
 	if (Controller != nullptr)
 	{
+		float Sensitivity = 1.0f;
+		if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+		{
+			// 0~1 슬라이더 -> 0.2~2.0 배율
+			Sensitivity = FMath::Lerp(0.2f, 2.0f, Settings->CameraSensitivity);
+		}
+
 		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
+		AddControllerYawInput(LookAxisVector.X * Sensitivity);
+		AddControllerPitchInput(LookAxisVector.Y * Sensitivity);
 		if (LookAxisVector.Y != 0)
 		{
 			FRotator NewRotation;

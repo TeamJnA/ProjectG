@@ -8,20 +8,19 @@
 #include "Game/PGAdvancedFriendsGameInstance.h"
 
 
-void UPGFriendListWidget::NativeOnInitialized()
+void UPGFriendListWidget::NativeConstruct()
 {
-	Super::NativeOnInitialized();
+	Super::NativeConstruct();
 
 	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
-		GIRef = GI;
-		GI->OnFriendListUpdated.AddDynamic(this, &UPGFriendListWidget::OnFriendListUpdated);
+		GI->OnFriendListUpdated.AddUniqueDynamic(this, &UPGFriendListWidget::OnFriendListUpdated);
 	}
 }
 
 void UPGFriendListWidget::NativeDestruct()
 {
-	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
 		GI->OnFriendListUpdated.RemoveAll(this);
 	}
@@ -36,7 +35,7 @@ void UPGFriendListWidget::RefreshFriendList()
 		FriendListContainer->ClearChildren();
 	}
 
-	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
+	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
 		GI->ReadSteamFriends();
 	}
@@ -49,7 +48,7 @@ void UPGFriendListWidget::OnFriendListUpdated()
 		return;
 	}
 
-	UPGAdvancedFriendsGameInstance* GI = GIRef.Get();
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (!GI)
 	{
 		return;

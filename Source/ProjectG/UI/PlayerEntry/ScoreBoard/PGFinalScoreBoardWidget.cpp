@@ -20,26 +20,19 @@ void UPGFinalScoreBoardWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	if (ReturnToMainMenuButton)
-	{
-		ReturnToMainMenuButton->OnClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked);
-	}
-
-	if (ReturnToLobbyButton)
-	{
-		ReturnToLobbyButton->OnClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked);
-	}
-
 	if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 	{
 		GIRef = GI;
 	}
 
-	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	if (ReturnToMainMenuButton)
 	{
-		GSRef = GS;
-		GS->OnPlayerArrayChanged.RemoveAll(this);
-		GS->OnPlayerArrayChanged.AddDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
+		ReturnToMainMenuButton->OnClicked.AddUniqueDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked);
+	}
+
+	if (ReturnToLobbyButton)
+	{
+		ReturnToLobbyButton->OnClicked.AddUniqueDynamic(this, &UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked);
 	}
 }
 
@@ -68,6 +61,12 @@ void UPGFinalScoreBoardWidget::NativeDestruct()
 void UPGFinalScoreBoardWidget::BindPlayerEntry()
 {
 	UE_LOG(LogTemp, Log, TEXT("UPGFinalScoreBoardWidget::BindPlayerEntry: InPC is valid. Binding delegate."));
+
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		GSRef = GS;
+		GS->OnPlayerArrayChanged.AddUniqueDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
+	}
 
 	UpdatePlayerEntry();
 }

@@ -21,37 +21,37 @@ void UPGPauseMenuWidget::NativeOnInitialized()
 
 	if (ResumeButton)
 	{
-		ResumeButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnResumeButtonClicked);
+		ResumeButton->OnClicked.AddUniqueDynamic(this, &UPGPauseMenuWidget::OnResumeButtonClicked);
 	}
 
 	if (InviteFriendButton)
 	{
-		InviteFriendButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnInviteFriendButtonClicked);
+		InviteFriendButton->OnClicked.AddUniqueDynamic(this, &UPGPauseMenuWidget::OnInviteFriendButtonClicked);
 	}
 
 	if (OptionButton)
 	{
-		OptionButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnOptionButtonClicked);
+		OptionButton->OnClicked.AddUniqueDynamic(this, &UPGPauseMenuWidget::OnOptionButtonClicked);
 	}
 
 	if (MainMenuButton)
 	{
-		MainMenuButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnMainMenuButtonClicked);
+		MainMenuButton->OnClicked.AddUniqueDynamic(this, &UPGPauseMenuWidget::OnMainMenuButtonClicked);
 	}
 
 	if (DesktopButton)
 	{
-		DesktopButton->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnDesktopButtonClicked);
+		DesktopButton->OnClicked.AddUniqueDynamic(this, &UPGPauseMenuWidget::OnDesktopButtonClicked);
 	}
 
 	if (BackButton_OptionMenuCanvas)
 	{
-		BackButton_OptionMenuCanvas->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnBackButtonClicked);
+		BackButton_OptionMenuCanvas->OnClicked.AddUniqueDynamic(this, &UPGPauseMenuWidget::OnBackButtonClicked);
 	}
 
 	if (BackButton_InviteMenuCanvas)
 	{
-		BackButton_InviteMenuCanvas->OnClicked.AddDynamic(this, &UPGPauseMenuWidget::OnBackButtonClicked);
+		BackButton_InviteMenuCanvas->OnClicked.AddUniqueDynamic(this, &UPGPauseMenuWidget::OnBackButtonClicked);
 	}
 }
 
