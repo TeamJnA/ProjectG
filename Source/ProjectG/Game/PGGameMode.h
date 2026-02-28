@@ -80,6 +80,9 @@ private:
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> ArrivedPlayers;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Spawn", meta = (AllowPrivateAccess = true))
+	TArray<FTransform> PlayerSpawnTransforms;
+
 	UPROPERTY(BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = true))
 	TObjectPtr<APGSoundManager> SoundManager;
 
@@ -91,8 +94,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
 	TSubclassOf<APGLevelGenerator> PGLevelGenerator;
-
-	float SpawnOffset = 0.0f;
 
 	ECleanupActionType PendingActionType = ECleanupActionType::None;
 
