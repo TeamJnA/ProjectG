@@ -107,23 +107,31 @@ void APGExitIronDoor::HighlightOn() const
         case E_LockPhase::E_ChainLock:
         {
             IronChainMesh->SetRenderCustomDepth(true);
+            IronChainMesh->SetCustomDepthStencilValue(1);
+
             IronChain1->SetRenderCustomDepth(true);
+            IronChain1->SetCustomDepthStencilValue(1);
+
             IronChain2->SetRenderCustomDepth(true);
+            IronChain2->SetCustomDepthStencilValue(1);
             break;
         }
         case E_LockPhase::E_WheelAttach:
         {
             HandWheelHole->SetRenderCustomDepth(true);
+            HandWheelHole->SetCustomDepthStencilValue(1);
             break;
         }
         case E_LockPhase::E_OilApplied:
         {
             HandWheelLubricantPoint->SetRenderCustomDepth(true);
+            HandWheelLubricantPoint->SetCustomDepthStencilValue(1);
             break;
         }
         case E_LockPhase::E_Unlocked:
         {
             HandWheelLubricantPoint->SetRenderCustomDepth(true);
+            HandWheelLubricantPoint->SetCustomDepthStencilValue(1);
             break;
         }
         default:
@@ -136,11 +144,13 @@ void APGExitIronDoor::HighlightOn() const
 
 void APGExitIronDoor::HighlightOff() const
 {
+    /*
     IronChainMesh->SetRenderCustomDepth(false);
     IronChain1->SetRenderCustomDepth(false);
     IronChain2->SetRenderCustomDepth(false);
     HandWheelHole->SetRenderCustomDepth(false);
     HandWheelLubricantPoint->SetRenderCustomDepth(false);
+    */
 }
 
 FInteractionInfo APGExitIronDoor::GetInteractionInfo() const
@@ -257,6 +267,15 @@ void APGExitIronDoor::InteractionFailed()
         // NeedSound : 녹슨거 돌리려다가 안돌아가는 끼릭 거리는 소리
     }
     }
+}
+
+void APGExitIronDoor::SelfHighlightOff()
+{
+    IronChainMesh->SetRenderCustomDepth(false);
+    IronChain1->SetRenderCustomDepth(false);
+    IronChain2->SetRenderCustomDepth(false);
+    HandWheelHole->SetRenderCustomDepth(false);
+    HandWheelLubricantPoint->SetRenderCustomDepth(false);
 }
 
 void APGExitIronDoor::UpdateHoldProgress(float Progress)
@@ -398,6 +417,8 @@ void APGExitIronDoor::BeginPlay()
 
     InitMIDs();
 
+    HighlightOn();
+
     // set base start door location
     DoorBaseLocation = IronDoorMesh->GetRelativeLocation();
 
@@ -470,7 +491,6 @@ void APGExitIronDoor::Multicast_UnlockChains_Implementation()
 
     bIsChain = false;
 
-    HighlightOff();
     if (HasAuthority())
     {
         OnRep_CurrentLockPhase();
@@ -486,7 +506,6 @@ void APGExitIronDoor::Multicast_AttachWheel_Implementation()
     HandWheelLubricantPoint->SetVisibility(true);
     HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
-    HighlightOff();
     if (HasAuthority())
     {
         OnRep_CurrentLockPhase();
@@ -502,7 +521,6 @@ void APGExitIronDoor::Multicast_SetWheelMaterialOiled_Implementation()
         HandWheelLubricantPoint->SetMaterial(0, HandWheelOiledMaterial);
     }
 
-    HighlightOff();
     if (HasAuthority())
     {
         OnRep_CurrentLockPhase();
@@ -626,10 +644,15 @@ void APGExitIronDoor::ToggleShakeEffect(bool bToggle)
 
 void APGExitIronDoor::OnRep_CurrentLockPhase()
 {
+    SelfHighlightOff();
+    HighlightOn();
+    /*
+    * TODO : Delete?
     if (IsLocalPlayerLookingThis())
     {
-        HighlightOn();
+        HighlightOn();        
     }
+    */
 }
 
 void APGExitIronDoor::InitMIDs()

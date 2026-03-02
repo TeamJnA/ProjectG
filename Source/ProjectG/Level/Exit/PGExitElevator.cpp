@@ -116,12 +116,15 @@ void APGExitElevator::HighlightOn() const
 	if(FuseState <= 2)
 	{
 		FusePanel->SetRenderCustomDepth(true);
+		FusePanel->SetCustomDepthStencilValue(1);
 	}
 }
 
 void APGExitElevator::HighlightOff() const
 {
+	/*
 	FusePanel->SetRenderCustomDepth(false);
+	*/
 }
 
 FInteractionInfo APGExitElevator::GetInteractionInfo() const
@@ -190,7 +193,9 @@ void APGExitElevator::OnRep_FuseState()
 		if (FuseIndex == 2)
 		{
 			FusePanelCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-			HighlightOff();
+
+			// HighlightOff
+			FusePanel->SetRenderCustomDepth(false);
 
 			ExecuteEscapeSequence();
 		}

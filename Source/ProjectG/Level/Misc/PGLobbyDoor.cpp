@@ -36,6 +36,11 @@ APGLobbyDoor::APGLobbyDoor()
 		Mesh0->SetStaticMesh(MeshRef.Object);
 		Mesh1->SetStaticMesh(MeshRef.Object);
 	}
+
+	Mesh0->SetRenderCustomDepth(true);
+	Mesh0->SetCustomDepthStencilValue(1);
+	Mesh1->SetRenderCustomDepth(true);
+	Mesh1->SetCustomDepthStencilValue(1);
 }
 
 TSubclassOf<UGameplayAbility> APGLobbyDoor::GetAbilityToInteract() const
@@ -57,8 +62,10 @@ void APGLobbyDoor::HighlightOn() const
 */
 void APGLobbyDoor::HighlightOff() const
 {
+	/*
 	Mesh0->SetRenderCustomDepth(false);
 	Mesh1->SetRenderCustomDepth(false);
+	*/
 }
 
 /*

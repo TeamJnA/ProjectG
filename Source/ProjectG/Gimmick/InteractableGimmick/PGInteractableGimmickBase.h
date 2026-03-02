@@ -29,6 +29,9 @@ public:
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
 	// ~IInteractableActorInterface
 
+	void SelfHighlightOn();
+	void SelfHighlightOff();
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> Root;

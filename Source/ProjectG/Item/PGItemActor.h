@@ -68,5 +68,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemSound", meta = (AllowPrivateAccess = "true"))
 	FName ItemDropSound;
 
+	FTimerHandle HighlightOnTimer;
+
 	bool bOwned = false;
 };

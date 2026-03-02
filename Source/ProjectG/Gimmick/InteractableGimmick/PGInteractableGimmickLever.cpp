@@ -18,6 +18,9 @@ APGInteractableGimmickLever::APGInteractableGimmickLever()
 	InteractAbility = UGA_Interact_Lever::StaticClass();
 
 	FrameFallSound = FName(TEXT("LEVEL_MirrorRoom_FrameFall"));
+
+	StaticMesh->SetRenderCustomDepth(true);
+	StaticMesh->SetCustomDepthStencilValue(0);
 }
 
 void APGInteractableGimmickLever::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -75,6 +78,8 @@ void APGInteractableGimmickLever::ActivateLever()
 
 void APGInteractableGimmickLever::Multicast_ActivatePhysics_Implementation()
 {
+	SelfHighlightOff();
+
 	StaticMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	StaticMesh->SetSimulatePhysics(true);
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);

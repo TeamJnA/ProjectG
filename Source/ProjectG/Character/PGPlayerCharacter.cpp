@@ -443,6 +443,8 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 {
 	if (bIsRagdoll)
 	{
+		HighlightOn();
+
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetCapsuleComponent()->SetSimulatePhysics(true);
 
@@ -479,6 +481,12 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 
 				PC->SetIgnoreMoveInput(true);
 				PC->SetIgnoreLookInput(true);
+
+#if !WITH_EDITOR
+				EnableInput(PC);
+				PC->SetIgnoreMoveInput(false);
+				PC->SetIgnoreLookInput(false);
+#endif
 			}
 			else
 			{
@@ -535,6 +543,12 @@ void APGPlayerCharacter::OnRep_PlayerState()
 
 				PC->SetIgnoreMoveInput(true);
 				PC->SetIgnoreLookInput(true);
+
+#if !WITH_EDITOR
+				EnableInput(PC);
+				PC->SetIgnoreMoveInput(false);
+				PC->SetIgnoreLookInput(false);
+#endif
 			}
 			else
 			{
@@ -801,15 +815,18 @@ void APGPlayerCharacter::HighlightOn() const
 	if (bIsRagdoll && GetMesh())
 	{
 		GetMesh()->SetRenderCustomDepth(true);
+		GetMesh()->SetCustomDepthStencilValue(2);
 	}
 }
 
 void APGPlayerCharacter::HighlightOff() const
 {
+	/*
 	if (bIsRagdoll && GetMesh())
 	{
 		GetMesh()->SetRenderCustomDepth(false);
 	}
+	*/
 }
 
 void APGPlayerCharacter::OnRevive()
