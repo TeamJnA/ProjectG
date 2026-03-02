@@ -47,6 +47,9 @@ public:
 	UFUNCTION()
 	void OnDissolveFinished();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_CleanupGeometyCollection();
+
 protected:
 	virtual void BeginPlay() override;
 

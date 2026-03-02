@@ -23,6 +23,7 @@
 #include "UI/Manager/PGHUD.h"
 #include "Sound/PGSoundManager.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
+#include "Physics/PGChaosCacheManager.h"
 #include "PGLobbyGameMode.h"
 
 
@@ -200,6 +201,9 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 		if (GS->IsAllReadyToReturnLobby())
 		{
 			UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: All players are ready to return lobby"));
+
+			// Stop and delete GC
+			CleanupGeometryCollections();
 
 			GS->SetCurrentGameState(EGameState::Lobby);
 			if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
@@ -517,6 +521,21 @@ void APGGameMode::ExecutePendingAction()
 			{
 				HostPC->Client_ExecuteSoloAction(ECleanupActionType::Solo_ReturnToMainMenu);
 			}
+		}
+	}
+}
+
+void APGGameMode::CleanupGeometryCollections()
+{
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APGChaosCacheManager::StaticClass(), FoundActors);
+
+	for (AActor* Actor : FoundActors)
+	{
+		APGChaosCacheManager* CCM = Cast<APGChaosCacheManager>(Actor);
+		if (CCM)
+		{
+			CCM->Multicast_CleanupGeometyCollection();
 		}
 	}
 }

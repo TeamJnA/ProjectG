@@ -70,6 +70,7 @@ private:
 	void CancelAllPendingSoloLeaves();
 	void BroadcastCleanupCommand();
 	void ExecutePendingAction();
+	void CleanupGeometryCollections();
 
 	UPROPERTY()
 	TMap<APGPlayerController*, ECleanupActionType> PendingSoloLeavers;

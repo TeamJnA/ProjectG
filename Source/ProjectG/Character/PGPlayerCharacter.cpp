@@ -482,7 +482,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 				PC->SetIgnoreMoveInput(true);
 				PC->SetIgnoreLookInput(true);
 
-#if !WITH_EDITOR
+#if WITH_EDITOR
 				EnableInput(PC);
 				PC->SetIgnoreMoveInput(false);
 				PC->SetIgnoreLookInput(false);
@@ -544,7 +544,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 				PC->SetIgnoreMoveInput(true);
 				PC->SetIgnoreLookInput(true);
 
-#if !WITH_EDITOR
+#if WITH_EDITOR
 				EnableInput(PC);
 				PC->SetIgnoreMoveInput(false);
 				PC->SetIgnoreLookInput(false);
