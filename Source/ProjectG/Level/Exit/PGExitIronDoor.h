@@ -40,6 +40,8 @@ public:
 	virtual void InteractionFailed() override;
 	// ~IInteractableActorInterface
 
+	void SelfHighlightOff();
+
 	// IHoldInteractProgressHandler~
 	virtual void UpdateHoldProgress(float Progress) override;
 	virtual void StopHoldProress() override;

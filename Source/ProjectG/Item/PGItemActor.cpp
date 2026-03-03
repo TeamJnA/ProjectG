@@ -39,6 +39,14 @@ TSubclassOf<UGameplayAbility> APGItemActor::GetAbilityToInteract() const
 void APGItemActor::HighlightOn() const
 {
 	StaticMesh->SetRenderCustomDepth(true);
+	if (LoadedItemData->ItemTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit"))))
+	{
+		StaticMesh->SetCustomDepthStencilValue(1);
+	}
+	else
+	{
+		StaticMesh->SetCustomDepthStencilValue(0);
+	}
 }
 
 /*
@@ -46,7 +54,7 @@ void APGItemActor::HighlightOn() const
 */
 void APGItemActor::HighlightOff() const
 {
-	StaticMesh->SetRenderCustomDepth(false);
+	// StaticMesh->SetRenderCustomDepth(false);
 }
 
 /*
@@ -74,6 +82,7 @@ void APGItemActor::InitWithData(UPGItemData* InItemData)
 	if (InItemData)
 	{
 		StaticMesh->SetStaticMesh(InItemData->ItemMesh);
+		HighlightOn();
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[SERVER] ItemActor::InitWithData: %s, %s, ItemData: %s"), *GetName(), *GetActorLocation().ToString(), InItemData ? *InItemData->GetName() : TEXT("nullptr"));
@@ -96,6 +105,7 @@ void APGItemActor::OnRep_ItemData()
 	{
 		LoadedItemData = ItemData;
 		StaticMesh->SetStaticMesh(ItemData->ItemMesh);
+		HighlightOn();
 	}
 }
 

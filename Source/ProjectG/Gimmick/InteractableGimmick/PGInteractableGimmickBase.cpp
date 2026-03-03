@@ -27,18 +27,23 @@ TSubclassOf<UGameplayAbility> APGInteractableGimmickBase::GetAbilityToInteract()
 
 void APGInteractableGimmickBase::HighlightOn() const
 {
+	/*
 	if (StaticMesh)
 	{
 		StaticMesh->SetRenderCustomDepth(true);
+		StaticMesh->SetCustomDepthStencilValue(0);
 	}
+	*/
 }
 
 void APGInteractableGimmickBase::HighlightOff() const
 {
+	/*
 	if (StaticMesh)
 	{
 		StaticMesh->SetRenderCustomDepth(false);
 	}
+	*/
 }
 
 FInteractionInfo APGInteractableGimmickBase::GetInteractionInfo() const
@@ -54,5 +59,22 @@ bool APGInteractableGimmickBase::CanStartInteraction(UAbilitySystemComponent* In
 		return false;
 	}
 	return true;
+}
+
+void APGInteractableGimmickBase::SelfHighlightOn()
+{
+	if (StaticMesh)
+	{
+		StaticMesh->SetRenderCustomDepth(true);
+		StaticMesh->SetCustomDepthStencilValue(0);
+	}
+}
+
+void APGInteractableGimmickBase::SelfHighlightOff()
+{
+	if (StaticMesh)
+	{
+		StaticMesh->SetRenderCustomDepth(false);
+	}
 }
 

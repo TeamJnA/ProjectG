@@ -23,6 +23,7 @@
 #include "UI/Manager/PGHUD.h"
 #include "Sound/PGSoundManager.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
+#include "Physics/PGChaosCacheManager.h"
 #include "PGLobbyGameMode.h"
 
 
@@ -56,6 +57,11 @@ APGGameMode::APGGameMode()
 	{
 		GhostCharacterClass = GhostPawnBPClass.Class;
 	}
+
+	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 20.0f, 0.0f), FVector(2640.0f, 180.0f, -298.6f)));
+	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 0.0f, 0.0f), FVector(2600.0f, 410.0f, -298.6f)));
+	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 50.0f, 0.0f), FVector(2750.0f, -100.0f, -298.6f)));
+	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, -30.0f, 0.0f), FVector(2690.0f, 710.0f, -298.6f)));
 
 	DefaultPawnClass = nullptr;
 
@@ -196,6 +202,9 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 		{
 			UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: All players are ready to return lobby"));
 
+			// Stop and delete GC
+			CleanupGeometryCollections();
+
 			GS->SetCurrentGameState(EGameState::Lobby);
 			if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 			{
@@ -218,6 +227,8 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 */
 void APGGameMode::SpawnAllPlayers()
 {
+	int32 PlayerIndex = 0;
+
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		APGPlayerController* PC = Cast<APGPlayerController>(It->Get());
@@ -227,8 +238,7 @@ void APGGameMode::SpawnAllPlayers()
 			return;
 		}
 
-		const FTransform SpawnTransform(FRotator::ZeroRotator, FVector(2800.0f, 150.0f + SpawnOffset, -305.0f));
-		APGPlayerCharacter* NewPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform);
+		APGPlayerCharacter* NewPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, PlayerSpawnTransforms[PlayerIndex]);
 		if (NewPawn)
 		{
 			// 이곳에서랑 클라이언트에서 두 번 Hidden 처리를 한다.
@@ -239,13 +249,12 @@ void APGGameMode::SpawnAllPlayers()
 			PC->Client_PlayGameplayBGM();
 		}
 
-		SpawnOffset += 50;
+		PlayerIndex++;
 
 
 		PC->Client_HideLoadingScreen();
 	}
 
-	// TODO
 	APGGameState* GS = GetGameState<APGGameState>();
 	if (GS)
 	{
@@ -512,6 +521,21 @@ void APGGameMode::ExecutePendingAction()
 			{
 				HostPC->Client_ExecuteSoloAction(ECleanupActionType::Solo_ReturnToMainMenu);
 			}
+		}
+	}
+}
+
+void APGGameMode::CleanupGeometryCollections()
+{
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APGChaosCacheManager::StaticClass(), FoundActors);
+
+	for (AActor* Actor : FoundActors)
+	{
+		APGChaosCacheManager* CCM = Cast<APGChaosCacheManager>(Actor);
+		if (CCM)
+		{
+			CCM->Multicast_CleanupGeometyCollection();
 		}
 	}
 }

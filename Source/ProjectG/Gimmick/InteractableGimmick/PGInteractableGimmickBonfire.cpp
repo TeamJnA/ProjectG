@@ -38,6 +38,8 @@ void APGInteractableGimmickBonfire::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SelfHighlightOn();
+
 	if (StaticMesh)
 	{
 		BonfireMID = StaticMesh->CreateDynamicMaterialInstance(0);
@@ -172,12 +174,16 @@ void APGInteractableGimmickBonfire::UpdateBonfireLit()
 		FireEffect->Activate(true);
 		TargetLightIntensity = 900.0f;
 		TargetEmissiveValue = 8.0f;
+
+		SelfHighlightOff();
 	}
 	else
 	{
 		FireEffect->Deactivate();
 		TargetLightIntensity = 0.0f;
 		TargetEmissiveValue = 0.0f;
+
+		SelfHighlightOn();
 	}
 
 	SetActorTickEnabled(true);

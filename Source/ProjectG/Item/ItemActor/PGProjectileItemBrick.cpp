@@ -125,6 +125,7 @@ void APGProjectileItemBrick::ConvertIntoItem()
 {
 	StaticMesh->SetSimulatePhysics(false);
 	StaticMesh->SetCollisionProfileName(TEXT("Item"));
+	HighlightOn();
 }
 
 void APGProjectileItemBrick::ConvertIntoItemWithTimer()

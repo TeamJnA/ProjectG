@@ -57,6 +57,20 @@ void APGChaosCacheManager::OnDissolveFinished()
 	SetActorTickEnabled(false);
 }
 
+void APGChaosCacheManager::Multicast_CleanupGeometyCollection_Implementation()
+{
+	if (GCMesh)
+	{
+		GCMesh->SetSimulatePhysics(false);
+
+		if (GCMesh->IsPhysicsStateCreated())
+		{
+			GCMesh->DestroyPhysicsState();
+		}
+		GCMesh->SetRestCollection(nullptr);
+	}
+}
+
 void APGChaosCacheManager::BeginPlay()
 {
 	using namespace Chaos;

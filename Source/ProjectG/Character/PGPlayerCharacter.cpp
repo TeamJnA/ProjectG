@@ -451,6 +451,8 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 {
 	if (bIsRagdoll)
 	{
+		HighlightOn();
+
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetCapsuleComponent()->SetSimulatePhysics(true);
 
@@ -481,18 +483,32 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			// When spawned first time, wait input for play level sequence
 			if (PC->bGameStartFirstSpawned)
 			{
+				UE_LOG(LogTemp, Log, TEXT("Server Player spawned first time. Stop input for play level sequence."));
+
 				DisableInput(PC);
 
 				PC->SetIgnoreMoveInput(true);
 				PC->SetIgnoreLookInput(true);
+
+#if WITH_EDITOR
+				EnableInput(PC);
+				PC->SetIgnoreMoveInput(false);
+				PC->SetIgnoreLookInput(false);
+#endif
 			}
 			else
 			{
+				UE_LOG(LogTemp, Log, TEXT("Server Player spawned not first. InitHUD."));
+
 				InitHUD();
 			}
 		}
+		else
+		{
+			InitHUD();
+		}
 
-		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init HUD [%s]"), *GetNameSafe(this)); //
+		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
@@ -537,18 +553,32 @@ void APGPlayerCharacter::OnRep_PlayerState()
 			// When spawned first time, wait input for play level sequence
 			if (PC->bGameStartFirstSpawned)
 			{
+				UE_LOG(LogTemp, Log, TEXT("Client Player spawned first time. Stop input for play level sequence."));
+
 				DisableInput(PC);
 
 				PC->SetIgnoreMoveInput(true);
 				PC->SetIgnoreLookInput(true);
+
+#if WITH_EDITOR
+				EnableInput(PC);
+				PC->SetIgnoreMoveInput(false);
+				PC->SetIgnoreLookInput(false);
+#endif
 			}
 			else
 			{
+				UE_LOG(LogTemp, Log, TEXT("Client Player spawned not first. InitHUD."));
+
 				InitHUD();
 			}
 		}
+		else
+		{
+			InitHUD();
+		}
 
-		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init HUD [%s]"), *GetNameSafe(this)); //
+		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
@@ -815,15 +845,18 @@ void APGPlayerCharacter::HighlightOn() const
 	if (bIsRagdoll && GetMesh())
 	{
 		GetMesh()->SetRenderCustomDepth(true);
+		GetMesh()->SetCustomDepthStencilValue(2);
 	}
 }
 
 void APGPlayerCharacter::HighlightOff() const
 {
+	/*
 	if (bIsRagdoll && GetMesh())
 	{
 		GetMesh()->SetRenderCustomDepth(false);
 	}
+	*/
 }
 
 void APGPlayerCharacter::OnRevive()
