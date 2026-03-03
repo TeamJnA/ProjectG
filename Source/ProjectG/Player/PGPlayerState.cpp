@@ -92,39 +92,26 @@ void APGPlayerState::OnRep_PlayerStateUpdated()
 
 	OnPlayerStateUpdated.Broadcast();
 
-	//if (LocalPC->PlayerState == this)
-	if (IsMyPlayerState())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Judgment: This is 'Local' state change. Updating voice channel (Mute) rules only."), *NetModeStr);
-		if (InGamePC)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local PGPC"));
-
-			InGamePC->RefreshVoiceChannel();
-		}
-		else if (LobbyPC)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local LobbyPC"));
-
-			LobbyPC->RefreshVoiceChannel();
-		}
-	}
-	else
+	//if (LocalPC->PlayerState != this)
+	if (!IsMyPlayerState())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Judgment: This is 'Remote' state change. (Target: %s) Updating 3D/2D settings and local voice channels."), *NetModeStr, *GetPlayerName());
 		UpdateVoiceSettings();
-		if (InGamePC)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] PGPC"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Judgment: This is 'Local' state change. Updating voice channel (Mute) rules only."), *NetModeStr);
+	}
 
-			InGamePC->RefreshVoiceChannel();
-		}
-		else if (LobbyPC)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] LobbyPC"));
-
-			LobbyPC->RefreshVoiceChannel();
-		}
+	if (InGamePC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] RefreshVoiceChannel PGPC"));
+		InGamePC->RefreshVoiceChannel();
+	}
+	else if (LobbyPC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] RefreshVoiceChannel LobbyPC"));
+		LobbyPC->RefreshVoiceChannel();
 	}
 }
 
@@ -138,11 +125,6 @@ bool APGPlayerState::IsMyPlayerState() const
 	APlayerController* LocalPC = GetWorld()->GetFirstPlayerController();
 	if (LocalPC)
 	{
-		if (LocalPC->PlayerState == this)
-		{
-			return true;
-		}
-
 		if (ULocalPlayer* LP = LocalPC->GetLocalPlayer())
 		{
 			FUniqueNetIdRepl LocalId = LP->GetPreferredUniqueNetId();
@@ -166,12 +148,14 @@ void APGPlayerState::UpdateVoiceSettings()
 		return;
 	}
 
-	if (APGPlayerCharacter* PGChar = Cast<APGPlayerCharacter>(CurrentPawn))
+	if (APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(CurrentPawn))
 	{
-		PGChar->TryInitVoiceSettings();
+		UE_LOG(LogTemp, Log, TEXT("[VoiceDebug] Update PGCharacter VOIP Settings"));
+		PGCharacter->UpdateVoipSettings();
 	}
 	else if (APGSpectatorPawn* PGSpectator = Cast<APGSpectatorPawn>(CurrentPawn))
 	{
-		PGSpectator->TryInitVoiceSettings();
+		UE_LOG(LogTemp, Log, TEXT("[VoiceDebug] Update Spectator VOIP Settings"));
+		PGSpectator->UpdateVoipSettings();
 	}
 }

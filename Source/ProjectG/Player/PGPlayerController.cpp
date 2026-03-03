@@ -503,10 +503,9 @@ void APGPlayerController::Server_RequestFinishEscape_Implementation()
 		}
 	}
 
-	if (APawn* MyPawn = GetPawn())
+	if (APGPlayerCharacter* MyCharacter = GetPawn<APGPlayerCharacter>())
 	{
-		UnPossess();
-		MyPawn->Destroy();
+		MyCharacter->OnEscapeFinished();
 	}
 }
 

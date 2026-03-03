@@ -381,6 +381,7 @@ public:
 	void Client_UpdateInteractionProgress(float Progress);
 
 protected:
+	UPROPERTY()
 	TObjectPtr<AActor> StaringTargetActor = nullptr;
 
 public:
@@ -388,6 +389,8 @@ public:
 	FOnAutomatedMovementCompleted OnAutomatedMovementCompleted;
 
 	void StartAutomatedMovement(const FVector& TargetLocation);
+
+	void OnEscapeFinished();
 
 private:
 	// 자동 이동 관련 변수들
@@ -456,9 +459,34 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
 	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;
 
+	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
+	TObjectPtr<USoundEffectSourcePresetChain> VoiceEffectAsset;
+
 public:
 	void TryInitVoiceSettings();
+	void UpdateVoipSettings();
 
 protected:
 	void TrySetDeadCharacter();
+
+private:
+	// Voice -> Noise
+	FTimerHandle VoiceCheckTimerHandle;
+	void CheckVoiceAndReportNoise();
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ReportVoiceNoise(float Amplitude);
+
+	void StopVoiceCheck();
+
+	FTimerHandle VoiceMonitoringTimerHandle;
+
+	float CurrentVoiceAmplitude = 0.0f;
+
+	UPROPERTY(Replicated)
+	bool bIsTalking = false;
+
+public:
+	FORCEINLINE bool IsTalking() const { return bIsTalking; }
+	FORCEINLINE float GetCurrentVoiceAmplitude() const { return CurrentVoiceAmplitude; }
 };

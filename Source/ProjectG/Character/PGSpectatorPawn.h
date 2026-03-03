@@ -83,5 +83,5 @@ protected:
 
 public:
 	void TryInitVoiceSettings();
-	
+	void UpdateVoipSettings();
 };

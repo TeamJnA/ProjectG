@@ -45,6 +45,8 @@
 
 // Game Setting
 #include "Player/PGGameUserSettings.h"
+#include "Utils/PGVoiceUtils.h"
+#include "Perception/AISense_Hearing.h"
 
 
 APGPlayerCharacter::APGPlayerCharacter()
@@ -108,7 +110,7 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeadlightMesh->SetupAttachment(FirstPersonCamera);
 	HeadlightMesh->SetVisibility(true);
 	HeadlightMesh->SetOwnerNoSee(true);
-	HeadlightMesh->bCastHiddenShadow = true;
+	HeadlightMesh->bCastHiddenShadow = false;
 
 	HeadlightLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("HeadlightLight"));
 	HeadlightLight->SetupAttachment(FirstPersonCamera);
@@ -157,6 +159,7 @@ void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME(APGPlayerCharacter, bIsRagdoll);
 	DOREPLIFETIME(APGPlayerCharacter, DeadPlayerState);
+	DOREPLIFETIME(APGPlayerCharacter, bIsTalking);
 }
 
 FGenericTeamId APGPlayerCharacter::GetGenericTeamId() const
@@ -431,13 +434,15 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 	{
 		return;
 	}
+
+	StopVoiceCheck();
+	bIsTalking = false;
+
 	// 본인이 보이도록 
 	GetMesh()->SetOwnerNoSee(false);
 
 	// TODO : 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
-
 	FirstPersonCamera->Deactivate();
-
 	FollowCamera->Activate();
 }
 
@@ -501,6 +506,8 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			HeadlightLight->SetIndirectLightingIntensity(1.0f);
 			HeadlightLight->SetVolumetricScatteringIntensity(0.2f);
 		}
+
+		GetWorldTimerManager().SetTimer(VoiceCheckTimerHandle, this, &APGPlayerCharacter::CheckVoiceAndReportNoise, 0.2f, true);
 	}
 
 	TryInitVoiceSettings();
@@ -512,6 +519,12 @@ void APGPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	
+	if (!GetPlayerState())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Character] OnRep_PlayerState: PS is not valid"));
+		return;
+	}
+
 	InitAbilitySystemComponent();
 	InitDefaultAttributes();
 
@@ -549,6 +562,8 @@ void APGPlayerCharacter::OnRep_PlayerState()
 			HeadlightLight->SetIndirectLightingIntensity(1.0f);
 			HeadlightLight->SetVolumetricScatteringIntensity(0.2f);
 		}
+
+		GetWorldTimerManager().SetTimer(VoiceCheckTimerHandle, this, &APGPlayerCharacter::CheckVoiceAndReportNoise, 0.2f, true);
 	}
 
 	TryInitVoiceSettings();
@@ -718,6 +733,18 @@ void APGPlayerCharacter::UpdateAutomatedMovement()
 
 		AddMovementInput(WorldDirectionToTarget, 1.0f);
 	}
+}
+
+void APGPlayerCharacter::OnEscapeFinished()
+{
+	SetActorHiddenInGame(true);
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	HeadlightMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	EquippedItemMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+	StopVoiceCheck();
 }
 
 void APGPlayerCharacter::RequestApplyGimmickEffect(TSubclassOf<UGameplayEffect> EffectClass)
@@ -1460,22 +1487,7 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 
 	// 로컬이면 Mute/Unmute 갱신
 	// 리모트면 대상의 Voip, Mute/Unmute 갱신
-	if (IsLocallyControlled())
-	{
-		if (InGamePC)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local PGPC"));
-
-			InGamePC->RefreshVoiceChannel();
-		}
-		else if (LobbyPC)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] Local LobbyPC"));
-
-			LobbyPC->RefreshVoiceChannel();
-		}
-	}
-	else
+	if (!IsLocallyControlled())
 	{
 		APGPlayerState* TargetPS = GetPlayerState<APGPlayerState>();
 		if (TargetPS && TargetPS->IsInactive())
@@ -1495,34 +1507,57 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 		if (!VoipTalker)
 		{
 			VoipTalker = UPGVOIPTalker::CreateTalkerForPlayer(TargetPS);
-			if (VoipTalker)
-			{
-				VoipTalker->RegisterWithPlayerState(TargetPS);
-				VoipTalker->Settings.AttenuationSettings = VoiceAttenuationAsset;
-				VoipTalker->Settings.ComponentToAttachTo = GetRootComponent();
-				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] SUCCESS: Attached 3D Voice to %s (Owner: %s)"), *NetModeStr, *GetName(), *TargetPS->GetPlayerName());
-			}
-			else
+			if (!VoipTalker)
 			{
 				UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] Failed to create Talker. Retrying..."));
 				FTimerHandle RetryHandle;
 				GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
 				return;
 			}
-		}
 
-		if (InGamePC)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] PGPC"));
-
-			InGamePC->RefreshVoiceChannel();
+			UpdateVoipSettings();
 		}
-		else if (LobbyPC)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] LobbyPC"));
+	}
 
-			LobbyPC->RefreshVoiceChannel();
-		}
+	if (InGamePC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] RefreshVoiceChannel PGPC"));
+		InGamePC->RefreshVoiceChannel();
+	}
+	else if (LobbyPC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] RefreshVoiceChannel LobbyPC"));
+		LobbyPC->RefreshVoiceChannel();
+	}
+}
+
+void APGPlayerCharacter::UpdateVoipSettings()
+{
+	if (!VoipTalker)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[UpdateVoipSettings] No valid VOIP."));
+		return;
+	}
+
+	APGPlayerState* TargetPS = GetPlayerState<APGPlayerState>();
+	if (!TargetPS || TargetPS->IsInactive())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] TargetPS is Inactive. Aborting voip update."));
+		return;
+	}
+
+	VoipTalker->RegisterWithPlayerState(TargetPS);
+	if (TargetPS->IsInGame())
+	{
+		VoipTalker->Settings.ComponentToAttachTo = GetRootComponent();
+		VoipTalker->Settings.AttenuationSettings = VoiceAttenuationAsset;
+		VoipTalker->Settings.SourceEffectChain = VoiceEffectAsset;
+	}
+	else
+	{
+		VoipTalker->Settings.ComponentToAttachTo = nullptr;
+		VoipTalker->Settings.AttenuationSettings = nullptr;
+		VoipTalker->Settings.SourceEffectChain = nullptr;
 	}
 }
 
@@ -1545,4 +1580,66 @@ void APGPlayerCharacter::TrySetDeadCharacter()
 
 	PS->SetPlayerCharacter(this);
 	UE_LOG(LogTemp, Log, TEXT("[TrySetDeadCharacter] SUCCESS: Set Dead Character to %s for PS(%s)"), *GetName(), *PS->GetPlayerName());
+}
+
+void APGPlayerCharacter::CheckVoiceAndReportNoise()
+{
+	CurrentVoiceAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
+	if (CurrentVoiceAmplitude < 0.02f)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[Character]: Too low Amplitude: %.2f"), CurrentVoiceAmplitude);
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[Character]: Amplitude: %.2f"), CurrentVoiceAmplitude);
+	Server_ReportVoiceNoise(CurrentVoiceAmplitude);
+}
+
+void APGPlayerCharacter::Server_ReportVoiceNoise_Implementation(float Amplitude)
+{
+	const float ClampedAmplitude = FMath::Clamp(Amplitude, 0.0f, 1.0f);
+	// Amplitude → SoundLevel 매핑
+	// 0.05~0.15 (속삭임)    → SoundLevel 2, Range 400 (800)
+	// 0.15~0.35 (일반 대화) → SoundLevel 3, Range 600 (1800)
+	// 0.35~ (큰 소리)   → SoundLevel 4, Range 800 (3200)
+	float SoundLevel;
+	float MaxRange;
+	if (ClampedAmplitude < 0.05f)
+	{
+		SoundLevel = 2.0f;
+		MaxRange = 400.0f;
+	}
+	else if (ClampedAmplitude < 0.2f)
+	{
+		SoundLevel = 3.0f;
+		MaxRange = 600.0f;
+	}
+	else
+	{
+		SoundLevel = 4.0f;
+		MaxRange = 800.0f;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[Character_Server]: SoundLevel: %.1f | MaxRange: %.1f"), SoundLevel, MaxRange);
+
+	UAISense_Hearing::ReportNoiseEvent(
+		GetWorld(),
+		GetActorLocation(),
+		SoundLevel,
+		this,
+		MaxRange,
+		FName("VoiceNoise")
+	);
+
+	bIsTalking = true;
+	GetWorldTimerManager().ClearTimer(VoiceMonitoringTimerHandle);
+	GetWorldTimerManager().SetTimer(VoiceMonitoringTimerHandle, [this]()
+	{
+		bIsTalking = false;
+	}, 0.5f, false);
+}
+
+void APGPlayerCharacter::StopVoiceCheck()
+{
+	GetWorldTimerManager().ClearTimer(VoiceCheckTimerHandle);
 }

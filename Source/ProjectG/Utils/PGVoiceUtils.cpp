@@ -119,3 +119,20 @@ bool PGVoiceUtils::ChangeInputDevice(UWorld* World, const FString& DeviceName)
     UE_LOG(LogTemp, Log, TEXT("[InputDevice] Changed to: %s"), *DeviceName);
     return true;
 }
+
+float PGVoiceUtils::GetCurrentAmplitude(UWorld* World)
+{
+    if (!World)
+    {
+        return 0.0f;
+    }
+
+    FVoiceCaptureWindows* VoiceCapture = GetWinVoiceCapture(World);
+    if (!VoiceCapture)
+    {
+        return 0.0f;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("[PGVoiceUtils] Amplitude: %.2f"), VoiceCapture->GetCurrentAmplitude());
+    return VoiceCapture->GetCurrentAmplitude();
+}

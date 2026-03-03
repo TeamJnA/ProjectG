@@ -10,8 +10,9 @@ class UPGAttributesWidget;
 class UPGInventoryWidget;
 class UPGInventoryComponent;
 class UPGMessageManagerWidget;
-class UPGCrosshairWidget;
 class UPGInteractionProgressWidget;
+class UPGVoiceIndicatorWidget;
+class UPGCrosshairWidget;
 class UPGMainMenuWidget;
 class UPGLobbyWidget;
 class UPGSpectatorWidget;
@@ -53,15 +54,6 @@ protected:
 	APGHUD();
 
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGMainMenuWidget> MainMenuWidgetClass;
-	
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGLobbyWidget> LobbyWidgetClass;
-
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGSpectatorWidget> SpectatorWidgetClass;
-
-	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGAttributesWidget> AttributeWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
@@ -69,6 +61,24 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGMessageManagerWidget> MessageManagerWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGInteractionProgressWidget> InteractionProgressWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGVoiceIndicatorWidget> VoiceIndicatorWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGCrosshairWidget> CrosshairWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGMainMenuWidget> MainMenuWidgetClass;
+	
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGLobbyWidget> LobbyWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGSpectatorWidget> SpectatorWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGScoreBoardWidget> ScoreBoardWidgetClass;
@@ -80,24 +90,9 @@ protected:
 	TSubclassOf<UPGPauseMenuWidget> PauseMenuWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGCrosshairWidget> CrosshairWidgetClass;
-
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGInteractionProgressWidget> InteractionProgressWidgetClass;
-
-	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGJumpscareWidget> JumpscareWidgetClass;
 
 private:
-	UPROPERTY()
-	TObjectPtr<UPGMainMenuWidget> MainMenuWidget;
-
-	UPROPERTY()
-	TObjectPtr<UPGLobbyWidget> LobbyWidget;
-	
-	UPROPERTY()
-	TObjectPtr<UPGSpectatorWidget> SpectatorWidget;
-
 	UPROPERTY()
 	TObjectPtr<UPGAttributesWidget> AttributeWidget;
 
@@ -108,6 +103,24 @@ private:
 	TObjectPtr<UPGMessageManagerWidget> MessageManagerWidget;
 
 	UPROPERTY()
+	TObjectPtr<UPGInteractionProgressWidget> InteractionProgressWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGVoiceIndicatorWidget> VoiceIndicatorWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGCrosshairWidget> CrosshairWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGMainMenuWidget> MainMenuWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGLobbyWidget> LobbyWidget;
+	
+	UPROPERTY()
+	TObjectPtr<UPGSpectatorWidget> SpectatorWidget;
+
+	UPROPERTY()
 	TObjectPtr<UPGScoreBoardWidget> ScoreBoardWidget;
 
 	UPROPERTY()
@@ -115,12 +128,6 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGPauseMenuWidget> PauseMenuWidget;
-
-	UPROPERTY()
-	TObjectPtr<UPGCrosshairWidget> CrosshairWidget;
-
-	UPROPERTY()
-	TObjectPtr<UPGInteractionProgressWidget> InteractionProgressWidget;
 
 	UPROPERTY()
 	TObjectPtr<UPGJumpscareWidget> JumpscareWidget;

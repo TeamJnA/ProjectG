@@ -2,6 +2,7 @@
 
 
 #include "Character/Animation/PGAnimInstance.h"
+#include "Character/PGPlayerCharacter.h"
 
 DEFINE_LOG_CATEGORY(LogAnim);
 
@@ -10,6 +11,17 @@ UPGAnimInstance::UPGAnimInstance()
 	HandPoseCount = static_cast<int32>(EHandPoseType::Count);
 
 	HandPoseWeights.SetNum(HandPoseCount);
+}
+
+void UPGAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
+{
+	Super::NativeUpdateAnimation(DeltaSeconds);
+
+	if (APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(TryGetPawnOwner()))
+	{
+		const float TargetScale = Player->IsTalking() ? TalkingHeadScale : 1.0f;
+		HeadBoneScale = FMath::FInterpTo(HeadBoneScale, TargetScale, DeltaSeconds, HeadScaleLerpSpeed);
+	}
 }
 
 void UPGAnimInstance::SetHandPose(EHandPoseType NewHandPoseType)

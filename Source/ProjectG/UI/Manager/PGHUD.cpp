@@ -13,8 +13,9 @@
 #include "UI/HUD/PGAttributesWidget.h"
 #include "UI/HUD/PGInventoryWidget.h"
 #include "UI/HUD/PGMessageManagerWidget.h"
-#include "UI/HUD/PGCrosshairWidget.h"
 #include "UI/HUD/PGInteractionProgressWidget.h"
+#include "UI/HUD/PGVoiceIndicatorWidget.h"
+#include "UI/HUD/PGCrosshairWidget.h"
 #include "UI/Screen/PGJumpscareWidget.h"
 
 #include "Character/Component/PGInventoryComponent.h"
@@ -75,6 +76,21 @@ void APGHUD::Init()
 		UE_LOG(LogTemp, Error, TEXT("APGHUD::Init: Failed to create MessageManagerWidget! Check MessageManagerWidgetClass in HUD Blueprint."));
 	}
 
+	if (!InteractionProgressWidget)
+	{
+		InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(PC, InteractionProgressWidgetClass);
+	}
+
+	if (!VoiceIndicatorWidget)
+	{
+		VoiceIndicatorWidget = CreateWidget<UPGVoiceIndicatorWidget>(PC, VoiceIndicatorWidgetClass);
+	}
+
+	if (VoiceIndicatorWidget && !VoiceIndicatorWidget->IsInViewport())
+	{
+		VoiceIndicatorWidget->AddToViewport();
+	}
+
 	if (!CrosshairWidget)
 	{
 		CrosshairWidget = CreateWidget<UPGCrosshairWidget>(PC, CrosshairWidgetClass);
@@ -83,11 +99,6 @@ void APGHUD::Init()
 	if (CrosshairWidget && !CrosshairWidget->IsInViewport())
 	{
 		CrosshairWidget->AddToViewport();
-	}
-
-	if (!InteractionProgressWidget)
-	{
-		InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(PC, InteractionProgressWidgetClass);
 	}
 }
 

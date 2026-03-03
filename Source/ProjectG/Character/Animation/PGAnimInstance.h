@@ -25,9 +25,18 @@ public:
 	// ~ICharacterAnimationInterface
 
 protected:
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HandPose", meta = (AllowPrivateAccess = "true"))
 	TArray<float> HandPoseWeights;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
+	float HeadBoneScale = 1.0f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HandPose", meta = (AllowPrivateAccess = "true"))
 	int32 HandPoseCount;
+
+private:
+	static constexpr float TalkingHeadScale = 1.05f;
+	static constexpr float HeadScaleLerpSpeed = 8.0f;
 };
