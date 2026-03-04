@@ -92,7 +92,7 @@ void APGPlayerState::OnRep_PlayerStateUpdated()
 
 	OnPlayerStateUpdated.Broadcast();
 
-	//if (LocalPC->PlayerState != this)
+	// Update remote voip setting
 	if (!IsMyPlayerState())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Judgment: This is 'Remote' state change. (Target: %s) Updating 3D/2D settings and local voice channels."), *NetModeStr, *GetPlayerName());

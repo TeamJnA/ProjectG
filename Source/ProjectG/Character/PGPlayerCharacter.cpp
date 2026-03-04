@@ -160,6 +160,7 @@ void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(APGPlayerCharacter, bIsRagdoll);
 	DOREPLIFETIME(APGPlayerCharacter, DeadPlayerState);
 	DOREPLIFETIME(APGPlayerCharacter, bIsTalking);
+	DOREPLIFETIME(APGPlayerCharacter, FlickerLevel);
 }
 
 FGenericTeamId APGPlayerCharacter::GetGenericTeamId() const
@@ -436,7 +437,6 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 	}
 
 	StopVoiceCheck();
-	bIsTalking = false;
 
 	// 본인이 보이도록 
 	GetMesh()->SetOwnerNoSee(false);
@@ -902,13 +902,18 @@ void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(c
 	}
 }
 
-void APGPlayerCharacter::Multicast_SetHeadlightState(bool InbIsFlashlightOn)
+void APGPlayerCharacter::SetHeadlightVisible(bool bVisible)
 {
-	HeadlightLight->SetVisibility(InbIsFlashlightOn);
+	HeadlightLight->SetVisibility(bVisible);
 }
 
 void APGPlayerCharacter::ToggleHeadLight()
 {
+	if (IsHeadlightLocked())
+	{
+		return;
+	}
+
 	if (!HeadlightLight->GetVisibleFlag())
 	{
 		ActivateAbilityByTag(HeadLightTag);
@@ -1493,6 +1498,162 @@ void APGPlayerCharacter::UpdateGhostGlitchFadeOut()
 	}
 }
 
+void APGPlayerCharacter::EnterGhostZone(AActor* Ghost)
+{
+	CachedGhost = Ghost;
+	GetWorldTimerManager().SetTimer(GhostDistanceCheckTimerHandle, this, &APGPlayerCharacter::UpdateFlickerLevel, 0.2f, true);
+}
+
+void APGPlayerCharacter::ExitGhostZone()
+{
+	CachedGhost.Reset();
+	GetWorldTimerManager().ClearTimer(GhostDistanceCheckTimerHandle);
+	Server_UpdateGhostZoneEffect(0, 0.0f);
+}
+
+void APGPlayerCharacter::UpdateFlickerLevel()
+{
+	if (!CachedGhost.IsValid())
+	{
+		ExitGhostZone();
+		return;
+	}
+
+	const float RawDistance = FVector::Dist(GetActorLocation(), CachedGhost->GetActorLocation());
+	const float Distance = FMath::Max(RawDistance - 200.0f, 0.0f);
+
+	uint8 NewLevel;
+	if (Distance < GhostZoneNear)
+	{
+		NewLevel = 3;
+	}
+	else if (Distance < GhostZoneMedium)
+	{
+		NewLevel = 2;
+	}
+	else
+	{
+		NewLevel = 1;
+	}
+
+    // Level 변경 여부와 관계없이 매번 전달 (Intensity/ConeAngle 연속 보간)
+	Server_UpdateGhostZoneEffect(NewLevel, Distance);
+}
+
+void APGPlayerCharacter::Server_UpdateGhostZoneEffect_Implementation(uint8 NewLevel, float DistanceToGhost)
+{
+	const uint8 OldLevel = FlickerLevel;
+	FlickerLevel = NewLevel;
+
+	// 범위 진입 시: 헤드라이트 꺼져있으면 강제로 켜기
+	if (OldLevel == 0 && NewLevel > 0)
+	{
+		if (AbilitySystemComponent && !HeadlightLight->GetVisibleFlag())
+		{
+			ActivateAbilityByTag(HeadLightTag);
+		}
+	}
+
+	// Level 변경 시 Flicker Effect 적용
+	if (OldLevel != NewLevel)
+	{
+		ApplyFlickerEffect(NewLevel);
+	}
+
+	if (NewLevel == 0)
+	{
+		// 복원
+		Multicast_SetHeadlightConeAngle(DefaultHeadlightConeAngle);
+	}
+	else
+	{
+		const float Alpha = FMath::Clamp(1.0f - (DistanceToGhost / 1300.0f), 0.0f, 1.0f);
+		const float NewConeAngle = FMath::Lerp(DefaultHeadlightConeAngle, MinHeadlightConeAngle, Alpha);
+		Multicast_SetHeadlightConeAngle(NewConeAngle);
+	}
+}
+
+void APGPlayerCharacter::Multicast_SetHeadlightConeAngle_Implementation(float NewConeAngle)
+{
+	if (HeadlightLight)
+	{
+		HeadlightLight->SetOuterConeAngle(NewConeAngle);
+		HeadlightLight->SetInnerConeAngle(NewConeAngle);
+	}
+}
+
+void APGPlayerCharacter::ApplyFlickerEffect(uint8 NewLevel)
+{
+	if (!HeadlightLight)
+	{
+		return;
+	}
+
+	if (NewLevel == 0)
+	{
+		GetWorldTimerManager().ClearTimer(FlickerOffTimerHandle);
+		GetWorldTimerManager().ClearTimer(FlickerOnTimerHandle);
+		HeadlightLight->SetVisibility(true);
+	}
+	else
+	{
+		// 첫 플리커 바로 실행
+		FlickerOff();
+	}
+}
+
+void APGPlayerCharacter::FlickerOff()
+{
+	if (!HeadlightLight)
+	{
+		return;
+	}
+
+	HeadlightLight->SetVisibility(false);
+
+	const float OffDuration = FMath::RandRange(0.1f, 0.15f);
+	GetWorldTimerManager().SetTimer(FlickerOnTimerHandle, this, &APGPlayerCharacter::FlickerOn, OffDuration, false);
+}
+
+void APGPlayerCharacter::FlickerOn()
+{
+	if (!HeadlightLight || FlickerLevel == 0)
+	{
+		return;
+	}
+
+	HeadlightLight->SetVisibility(true);
+
+	const float NextFlickerDelay = GetFlickerInterval();
+	GetWorldTimerManager().SetTimer(FlickerOffTimerHandle, this, &APGPlayerCharacter::FlickerOff, NextFlickerDelay, false);
+}
+
+float APGPlayerCharacter::GetFlickerInterval() const
+{
+	switch (FlickerLevel)
+	{
+		case 1:
+		{
+			return FMath::RandRange(2.0f, 3.0f);    // 가끔
+		}
+
+		case 2: 
+		{
+			return FMath::RandRange(1.0f, 1.6f);     // 보통
+		}
+
+		case 3: 
+		{
+			return FMath::RandRange(0.1f, 0.3f);   // 자주
+		}
+
+		default: 
+		{
+			return 1.0f;
+		}
+	}
+}
+
 // 로컬이 리모트에 대해 Voip를 구현해야함
 void APGPlayerCharacter::TryInitVoiceSettings()
 {
@@ -1675,4 +1836,5 @@ void APGPlayerCharacter::Server_ReportVoiceNoise_Implementation(float Amplitude)
 void APGPlayerCharacter::StopVoiceCheck()
 {
 	GetWorldTimerManager().ClearTimer(VoiceCheckTimerHandle);
+	bIsTalking = false;
 }

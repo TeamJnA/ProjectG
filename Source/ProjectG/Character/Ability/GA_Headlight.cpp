@@ -31,7 +31,8 @@ void UGA_Headlight::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	{
 		if (APGPlayerCharacter* Character = Cast<APGPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()))
 		{
-			Character->Multicast_SetHeadlightState(true);
+			//Character->Multicast_SetHeadlightState(true);
+			Character->SetHeadlightVisible(true);
 			
 			if (UPGSoundManagerComponent* SoundComp = Character->GetSoundManagerComponent())
 			{
@@ -50,7 +51,8 @@ void UGA_Headlight::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 	{
 		if (APGPlayerCharacter* Character = Cast<APGPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()))
 		{
-			Character->Multicast_SetHeadlightState(false);
+			//Character->Multicast_SetHeadlightState(false);
+			Character->SetHeadlightVisible(false);
 
 			if (UPGSoundManagerComponent* SoundComp = Character->GetSoundManagerComponent())
 			{

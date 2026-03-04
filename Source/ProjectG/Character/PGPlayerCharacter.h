@@ -311,7 +311,7 @@ protected:
 
 // ------------ HeadLight --------------------
 public:
-	void Multicast_SetHeadlightState(bool InbIsFlashlightOn);
+	void SetHeadlightVisible(bool bVisible);
 
 	FORCEINLINE FName GetHeadlightOnSoundName() const { return HeadlightOnSoundName; }
 
@@ -450,6 +450,47 @@ protected:
 
 	bool bIsGlitching = false;
 	bool bIsGhostGlitching = false;
+
+// Ghost Overlap
+public:
+	void EnterGhostZone(AActor* Ghost);
+	void ExitGhostZone();
+	FORCEINLINE bool IsHeadlightLocked() const { return FlickerLevel > 0; }
+
+private:
+	UFUNCTION(Server, Unreliable)
+	void Server_UpdateGhostZoneEffect(uint8 NewLevel, float DistanceToGhost);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_SetHeadlightConeAngle(float NewConeAngle);
+
+	void UpdateFlickerLevel();
+	void FlickerOff();
+	void FlickerOn();
+	float GetFlickerInterval() const;
+	void ApplyFlickerEffect(uint8 NewLevel);
+
+	UPROPERTY()
+	TWeakObjectPtr<AActor> CachedGhost;
+
+	FTimerHandle GhostDistanceCheckTimerHandle;
+	FTimerHandle FlickerOffTimerHandle;
+	FTimerHandle FlickerOnTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
+	float GhostZoneNear = 600.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
+	float GhostZoneMedium = 1000.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
+	float DefaultHeadlightConeAngle = 35.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
+	float MinHeadlightConeAngle = 10.0f;
+
+	UPROPERTY(Replicated)
+	uint8 FlickerLevel = 0;  // 0=없음, 1=멀리, 2=중간, 3=가까이
 
 // Voice Chat
 protected:

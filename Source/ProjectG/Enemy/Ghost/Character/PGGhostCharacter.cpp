@@ -32,6 +32,13 @@ APGGhostCharacter::APGGhostCharacter()
     LightExtinguishSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     LightExtinguishSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
     LightExtinguishSphere->SetGenerateOverlapEvents(false);
+
+    HeadlightFlickerSphere = CreateDefaultSubobject<USphereComponent>(TEXT("HeadlightFlickerSphere"));
+    HeadlightFlickerSphere->SetupAttachment(RootComponent);
+    HeadlightFlickerSphere->SetSphereRadius(1400.0f);
+    HeadlightFlickerSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    HeadlightFlickerSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+    HeadlightFlickerSphere->SetGenerateOverlapEvents(false);
 }
 
 void APGGhostCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -249,6 +256,38 @@ void APGGhostCharacter::OnLightExtinguishOverlapEnd(UPrimitiveComponent* Overlap
     }
 }
 
+void APGGhostCharacter::OnFlickerSphereOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    if (!OtherActor || OtherActor == this || !OtherComp)
+    {
+        return;
+    }
+
+    if (APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(OtherActor))
+    {
+        if (PGCharacter->GetPlayerState() == TargetPlayerState)
+        {
+            PGCharacter->EnterGhostZone(this);
+        }
+    }
+}
+
+void APGGhostCharacter::OnFlickerSphereOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+    if (!OtherActor || OtherActor == this || !OtherComp)
+    {
+        return;
+    }
+
+    if (APGPlayerCharacter* PGCharacter = Cast<APGPlayerCharacter>(OtherActor))
+    {
+        if (PGCharacter->GetPlayerState() == TargetPlayerState)
+        {
+            PGCharacter->ExitGhostZone();
+        }
+    }
+}
+
 void APGGhostCharacter::TryBindLightEffectEvents()
 {
     UE_LOG(LogTemp, Log, TEXT("Ghost::TryBindLightEffectEvents: LocalPlayerStateCache: %d, TargetPlayerState: %d"),
@@ -264,12 +303,20 @@ void APGGhostCharacter::TryBindLightEffectEvents()
         UE_LOG(LogTemp, Warning, TEXT("Ghost::TryBindLightEffectEvents: I AM THE TARGET. Binding overlap events. (Local: %s, Target: %s)"),
             *GetNameSafe(LocalPlayerStateCache.Get()), *GetNameSafe(TargetPlayerState));
 
+        // Light/Emissive용
         LightExtinguishSphere->OnComponentBeginOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapBegin);
         LightExtinguishSphere->OnComponentEndOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapEnd);
 
         LightExtinguishSphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
         LightExtinguishSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         LightExtinguishSphere->SetGenerateOverlapEvents(true);
+
+        // 캐릭터 헤드라이트 플리커용
+        HeadlightFlickerSphere->OnComponentBeginOverlap.AddDynamic(this, &APGGhostCharacter::OnFlickerSphereOverlapBegin);
+        HeadlightFlickerSphere->OnComponentEndOverlap.AddDynamic(this, &APGGhostCharacter::OnFlickerSphereOverlapEnd);
+        HeadlightFlickerSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+        HeadlightFlickerSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        HeadlightFlickerSphere->SetGenerateOverlapEvents(true);
     }
     else
     {
