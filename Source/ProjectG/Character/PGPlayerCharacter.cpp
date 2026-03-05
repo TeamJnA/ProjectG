@@ -1781,7 +1781,7 @@ void APGPlayerCharacter::CheckVoiceAndReportNoise()
 	CurrentVoiceAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
 	if (CurrentVoiceAmplitude < 0.02f)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[Character]: Too low Amplitude: %.2f"), CurrentVoiceAmplitude);
+		//UE_LOG(LogTemp, Log, TEXT("[Character]: Too low Amplitude: %.2f"), CurrentVoiceAmplitude);
 		return;
 	}
 

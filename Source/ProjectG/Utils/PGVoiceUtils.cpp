@@ -133,6 +133,6 @@ float PGVoiceUtils::GetCurrentAmplitude(UWorld* World)
         return 0.0f;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("[PGVoiceUtils] Amplitude: %.2f"), VoiceCapture->GetCurrentAmplitude());
+    //UE_LOG(LogTemp, Log, TEXT("[PGVoiceUtils] Amplitude: %.2f"), VoiceCapture->GetCurrentAmplitude());
     return VoiceCapture->GetCurrentAmplitude();
 }

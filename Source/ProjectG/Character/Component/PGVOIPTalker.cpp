@@ -75,8 +75,7 @@ void UPGVOIPTalker::OnTalkingBegin(UAudioComponent* AudioComponent)
 
     if (CachedPlayerState)
     {
-        UE_LOG(LogTemp, Log, TEXT("[PGVOIPTalker] Applied volume (%.2f) to %s"),
-            PlayerVolume, *CachedPlayerState->GetPlayerName());
+        UE_LOG(LogTemp, Log, TEXT("[PGVOIPTalker] Applied volume (%.2f) to %s"), PlayerVolume, *CachedPlayerState->GetPlayerName());
     }
 }
 
