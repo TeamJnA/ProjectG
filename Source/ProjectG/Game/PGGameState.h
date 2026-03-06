@@ -45,9 +45,7 @@ public:
 	bool IsGameFinished() const;
 	void NotifyGameFinished();
 	bool IsAllReadyToReturnLobby() const;
-	void NotifyPlayerFinished(APlayerState* FinishedPlayerState);
-
-	
+	void NotifyPlayerFinished(APlayerState* FinishedPlayerState);	
 
 	// ----- Player List ---------
 	FOnPlayerArrayChangedDelegate OnPlayerArrayChanged;
@@ -118,4 +116,17 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<ULevelSequencePlayer> EnterSequencePlayer;
+
+// Enemy AI Exploration Waypoint
+public: 
+	FORCEINLINE const TArray<FVector>& GetExplorationWaypoints() const { return ExplorationWaypoints; }
+	void SetExplorationWaypoints(const TArray<FVector>& InWaypoints) { ExplorationWaypoints = InWaypoints; }
+
+	FVector GetExplorationTarget(const FVector& CurrentLocation) const;
+
+	void DrawDebugWaypoints() const;
+
+protected:
+	UPROPERTY()
+	TArray<FVector> ExplorationWaypoints;
 };

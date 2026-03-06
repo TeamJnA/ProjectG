@@ -372,3 +372,57 @@ void APGGameState::OnEnterSequenceFinished()
 		}
 	}
 }
+
+// 가중치 기반 Waypoint 결정
+FVector APGGameState::GetExplorationTarget(const FVector& CurrentLocation) const
+{
+	if (ExplorationWaypoints.IsEmpty())
+	{
+		return FVector::ZeroVector;
+	}
+
+	float TotalWeight = 0.0f;
+	TArray<float> Weights;
+	Weights.Reserve(ExplorationWaypoints.Num());
+
+	for (const FVector& Waypoint : ExplorationWaypoints)
+	{
+		float Dist = FVector::Dist(CurrentLocation, Waypoint);
+		float Weight = Dist * Dist;
+		Weights.Add(Weight);
+		TotalWeight += Weight;
+	}
+
+	if (TotalWeight <= 0.0f)
+	{
+		return ExplorationWaypoints[FMath::RandRange(0, ExplorationWaypoints.Num() - 1)];
+	}
+
+	float Roll = FMath::FRand() * TotalWeight;
+	for (int32 i = 0; i < Weights.Num(); i++)
+	{
+		Roll -= Weights[i];
+		if (Roll <= 0.0f)
+		{
+			return ExplorationWaypoints[i];
+		}
+	}
+
+	return ExplorationWaypoints.Last();
+}
+
+// Debug
+void APGGameState::DrawDebugWaypoints() const
+{
+	if (ExplorationWaypoints.IsEmpty())
+	{
+		return;
+	}
+
+	for (int32 i = 0; i < ExplorationWaypoints.Num(); i++)
+	{
+		// 웨이포인트: 파란 구체 + 인덱스 표시
+		DrawDebugSphere(GetWorld(), ExplorationWaypoints[i], 80.0f, 12, FColor::Blue, true);
+		DrawDebugString(GetWorld(), ExplorationWaypoints[i] + FVector(0, 0, 100), FString::Printf(TEXT("WP[%d]"), i), nullptr, FColor::Blue, 10.0f);
+	}
+}

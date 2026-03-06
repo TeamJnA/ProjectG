@@ -43,7 +43,8 @@ protected:
 	void ReGenerateLevel();
 
 	const APGMasterRoom* FindFarthestRoom() const;
-	const APGMasterRoom* FindMiddleDistanceRoom() const;
+	const APGMasterRoom* FindMiddleDistanceRoom(const FVector& AvoidLocation = FVector::ZeroVector) const;
+	void ComputeExplorationWaypoints();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -429,19 +429,19 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 	}
 	else
 	{
-		// add to room graph
-		APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(InSelectedExitPoint->GetOwner());
-		if (ParentRoom)
-		{
-			RoomGraph.FindOrAdd(ParentRoom).Add(RoomToCheck);
-			RoomGraph.FindOrAdd(RoomToCheck).Add(ParentRoom);
-		}
-
-		ExitPointsList.Remove(InSelectedExitPoint);
+		// MirrorRoom인 경우 RoomGraph, DoorPointsList 추가 x
 		if (RoomAmount > 1)
 		{
+			// add to room graph
+			APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(InSelectedExitPoint->GetOwner());
+			if (ParentRoom)
+			{
+				RoomGraph.FindOrAdd(ParentRoom).Add(RoomToCheck);
+				RoomGraph.FindOrAdd(RoomToCheck).Add(ParentRoom);
+			}
 			DoorPointsList.Add(InSelectedExitPoint);
 		}
+		ExitPointsList.Remove(InSelectedExitPoint);
 
 		RoomAmount--;
 
@@ -560,6 +560,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 
 		return;
 	}
+	ComputeExplorationWaypoints();
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
@@ -823,21 +824,7 @@ bool APGLevelGenerator::SpawnEnemy()
 		return false;
 	}
 
-	const int32 MaxRetries = 8;
-	const APGMasterRoom* ChargerSpawnRoom = nullptr;
-	for (int32 i = 0; i < MaxRetries; i++)
-	{
-		const APGMasterRoom* CandidateRoom = FindMiddleDistanceRoom();
-		if (CandidateRoom == nullptr || CandidateRoom == BlindSpawnRoom)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("LG::SpawnEnemy: Blind already spawned here"));
-			continue;
-		}
-
-		ChargerSpawnRoom = CandidateRoom;
-		break;
-	}
-
+	const APGMasterRoom* ChargerSpawnRoom = FindMiddleDistanceRoom(BlindSpawnRoom->GetEnemySpawnLocation());
 	if (ChargerSpawnRoom)
 	{
 		const FTransform ChargerSpawnTransform(FRotator::ZeroRotator, ChargerSpawnRoom->GetEnemySpawnLocation());
@@ -974,11 +961,6 @@ const APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 	int32 MaxDistance = -1;
 	for (const auto& Elem : Distances)
 	{
-		if (Elem.Key->IsA(APGMirrorRoom::StaticClass()))
-		{
-			continue;
-		}
-
 		if (Elem.Value > MaxDistance)
 		{
 			MaxDistance = Elem.Value;
@@ -1006,7 +988,7 @@ const APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 * RoomGrpah에 대해 BFS 방식으로 StartRoom에서 중간 거리 Room 탐색
 * 중간 거리 Room 중 랜덤 선택
 */
-const APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
+const APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom(const FVector& AvoidLocation) const
 {
 	if (!StartRoom || !RoomGraph.Contains(StartRoom))
 	{
@@ -1026,11 +1008,7 @@ const APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 		TObjectPtr<APGMasterRoom> CurrentRoom;
 		RoomsToVisit.Dequeue(CurrentRoom);
 		const int32 CurrentDistance = Distances[CurrentRoom];
-
-		if (!CurrentRoom->IsA(APGMirrorRoom::StaticClass()))
-		{
-			MaxDistance = FMath::Max(MaxDistance, CurrentDistance);
-		}
+		MaxDistance = FMath::Max(MaxDistance, CurrentDistance);
 
 		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
 		{
@@ -1050,18 +1028,149 @@ const APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom() const
 	TArray<TObjectPtr<APGMasterRoom>> MiddleDistanceRooms;
 	for (const auto& Elem : Distances)
 	{
-		if (Elem.Value == TargetDistance && !Elem.Key->IsA(APGMirrorRoom::StaticClass()))
+		if (Elem.Value == TargetDistance)
 		{
 			MiddleDistanceRooms.Add(Elem.Key);
 		}
 	}
 
-	// random select
-	if (!MiddleDistanceRooms.IsEmpty())
+	if (MiddleDistanceRooms.IsEmpty())
 	{
-		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, MiddleDistanceRooms.Num());
-		return MiddleDistanceRooms[RandomIndex];
+		UE_LOG(LogTemp, Error, TEXT("[LG::FindMiddleDistanceRoom] no middle distance rooms"));
+		return nullptr;
 	}
 
-	return nullptr;
+	// if AvoidLocation != 0
+	if (!AvoidLocation.IsZero())
+	{
+		TObjectPtr<APGMasterRoom> FarthestRoom = nullptr;
+		float MaxDist = -1.0f;
+
+		for (const TObjectPtr<APGMasterRoom>& Room : MiddleDistanceRooms)
+		{
+			float Dist = FVector::Dist(Room->GetEnemySpawnLocation(), AvoidLocation);
+			if (Dist > MaxDist)
+			{
+				MaxDist = Dist;
+				FarthestRoom = Room;
+			}
+		}
+		return FarthestRoom;
+	}
+
+	// Default(AvoidLocation == 0): random select
+	const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, MiddleDistanceRooms.Num());
+	return MiddleDistanceRooms[RandomIndex];
+}
+
+void APGLevelGenerator::ComputeExplorationWaypoints()
+{
+	if (!StartRoom || !RoomGraph.Contains(StartRoom))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[LG] No valid StartRoom, RoomGraph"));
+		return;
+	}
+
+	TQueue<TObjectPtr<APGMasterRoom>> RoomsToVisit;
+	TMap<TObjectPtr<APGMasterRoom>, int32>  Distances;
+	TMap<TObjectPtr<APGMasterRoom>, TObjectPtr<APGMasterRoom>> ParentMap;
+
+	RoomsToVisit.Enqueue(StartRoom);
+	Distances.Add(StartRoom, 0);
+
+	int32 MaxDistance = 0;
+
+	while (!RoomsToVisit.IsEmpty())
+	{
+		TObjectPtr<APGMasterRoom> CurrentRoom;
+		RoomsToVisit.Dequeue(CurrentRoom);
+		const int32 CurrentDistance = Distances[CurrentRoom];
+		MaxDistance = FMath::Max(MaxDistance, CurrentDistance);
+
+		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
+		{
+			for (const TObjectPtr<APGMasterRoom>& Neighbor : *Neighbors)
+			{
+				if (Neighbor && !Distances.Contains(Neighbor))
+				{
+					Distances.Add(Neighbor, CurrentDistance + 1);
+					ParentMap.Add(Neighbor, CurrentRoom);
+					RoomsToVisit.Enqueue(Neighbor);
+				}
+			}
+		}
+	}
+
+	TArray<TObjectPtr<APGMasterRoom>> LeafRooms;
+	for (const auto& Elem : RoomGraph)
+	{
+		if (Elem.Key == StartRoom)
+		{
+			continue;
+		}
+
+		if (Elem.Value.Num() <= 1)
+		{
+			LeafRooms.Add(Elem.Key);
+		}
+	}
+
+	TArray<FVector> Waypoints;
+	TSet<TObjectPtr<APGMasterRoom>> UsedRooms;
+
+	for (const TObjectPtr<APGMasterRoom>& Leaf : LeafRooms)
+	{
+		int32 LeafDist = Distances.Contains(Leaf) ? Distances[Leaf] : 0;
+		int32 TargetDist = FMath::RoundToInt(LeafDist * 0.75f);
+
+		TObjectPtr<APGMasterRoom> Current = Leaf;
+		while (Current && Distances.Contains(Current))
+		{
+			if (Distances[Current] == TargetDist)
+			{
+				if (!UsedRooms.Contains(Current))
+				{
+					UsedRooms.Add(Current);
+					Waypoints.Add(Current->GetEnemySpawnLocation());
+				}
+				break;
+			}
+
+			if (ParentMap.Contains(Current))
+			{
+				Current = ParentMap[Current];
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	if (Waypoints.Num() < 4)
+	{
+		int32 MidDist = MaxDistance / 2;
+		for (const auto& Elem : Distances)
+		{
+			if (Elem.Key == StartRoom)
+			{
+				continue;
+			}
+
+			if (Elem.Value == MidDist && !UsedRooms.Contains(Elem.Key))
+			{
+				Waypoints.Add(Elem.Key->GetEnemySpawnLocation());
+			}
+		}
+	}
+
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		GS->SetExplorationWaypoints(Waypoints);
+		UE_LOG(LogTemp, Log, TEXT("LG::ComputeExplorationWaypoints: Generated %d waypoints"), Waypoints.Num());
+
+#if !UE_BUILD_SHIPPING
+		GS->DrawDebugWaypoints();
+#endif
+	}
 }
