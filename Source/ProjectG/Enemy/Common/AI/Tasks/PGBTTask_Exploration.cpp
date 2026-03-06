@@ -58,7 +58,7 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
         if (!WaypointTarget.IsZero())
         {
             FNavLocation NavLoc;
-            if (NavSys->GetRandomPointInNavigableRadius(WaypointTarget, 500.0f, NavLoc))
+            if (NavSys->GetRandomPointInNavigableRadius(WaypointTarget, 1000.0f, NavLoc))
             {
 #if !UE_BUILD_SHIPPING
                 // 선: AI → 선택된 Waypoint까지 경로, 구체: 선택된 Waypoint

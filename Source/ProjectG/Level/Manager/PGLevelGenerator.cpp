@@ -1149,6 +1149,7 @@ void APGLevelGenerator::ComputeExplorationWaypoints()
 
 	if (Waypoints.Num() < 4)
 	{
+		UE_LOG(LogTemp, Log, TEXT("LG::ComputeExplorationWaypoints: Too little waypoints"));
 		int32 MidDist = MaxDistance / 2;
 		for (const auto& Elem : Distances)
 		{
