@@ -494,6 +494,8 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 				EnableInput(PC);
 				PC->SetIgnoreMoveInput(false);
 				PC->SetIgnoreLookInput(false);
+
+				InitHUD();
 #endif
 			}
 			else
@@ -564,6 +566,8 @@ void APGPlayerCharacter::OnRep_PlayerState()
 				EnableInput(PC);
 				PC->SetIgnoreMoveInput(false);
 				PC->SetIgnoreLookInput(false);
+
+				InitHUD();
 #endif
 			}
 			else

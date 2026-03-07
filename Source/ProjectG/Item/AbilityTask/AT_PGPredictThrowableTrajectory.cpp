@@ -116,7 +116,7 @@ void UAT_PGPredictThrowableTrajectory::TickTask(float DeltaTime)
     FRotator EyesViewRotation;
     OwningActor->GetActorEyesViewPoint(EyesViewLocation, EyesViewRotation);
 
-    const FVector StartLocation = EyesViewLocation + (OwningActor->GetActorForwardVector() * 40) + (OwningActor->GetActorRightVector() * 25);
+    const FVector StartLocation = EyesViewLocation + (OwningActor->GetActorForwardVector() * 60) + (OwningActor->GetActorRightVector() * 25);
 
     EyesViewRotation.Pitch += 10;
     const FVector LaunchVector = EyesViewRotation.Vector() * InitialSpeed;

@@ -20,6 +20,10 @@ APGInteractableGimmickBase::APGInteractableGimmickBase()
 	StaticMesh->SetupAttachment(RootComponent);
 }
 
+void APGInteractableGimmickBase::GimmickInteract()
+{
+}
+
 TSubclassOf<UGameplayAbility> APGInteractableGimmickBase::GetAbilityToInteract() const
 {
 	return InteractAbility;
