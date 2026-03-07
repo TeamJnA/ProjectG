@@ -542,11 +542,15 @@ void APGGameMode::CleanupGeometryCollections()
 
 void APGGameMode::Logout(AController* Exiting)
 {
-	// 시체(PlayerCharacter) 정리
 	if (APGPlayerState* PS = Exiting->GetPlayerState<APGPlayerState>())
 	{
+		// 시체(PlayerCharacter) 정리
+		// 관전을 위해 남겨둔 시체가 남아서 발생하는 문제 방지
 		if (AActor* DeadBody = PS->GetPlayerCharacter())
 		{
+			// PS에 저장해둔 PlayerCharacter와 나가는 플레이어의 현재 Possess 캐릭터가 다른 경우만 실행
+			// => 관전 중 -> SpectatorPawn을 Possess하고 있는 경우만 명시적으로 시체 정리
+			// 관전 중이지 않은 경우(인게임, ScoreBoard) PlayerCharacter를 Possess 하고 있기 때문에 이 상황에서는 나가면 알아서 정리됨
 			if (DeadBody != Exiting->GetPawn())
 			{
 				UE_LOG(LogTemp, Log, TEXT("[GM::Logout] Destroy logout player dead body [%s]"), *PS->GetPlayerName());
@@ -554,7 +558,7 @@ void APGGameMode::Logout(AController* Exiting)
 			}
 		}
 
-		// 해당 플레이어 담당 Ghost 정리
+		// 담당 Ghost 정리
 		for (TActorIterator<APGGhostCharacter> It(GetWorld()); It; ++It)
 		{
 			if (It->GetTargetPlayerState() == PS)
