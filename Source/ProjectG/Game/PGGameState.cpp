@@ -74,6 +74,16 @@ void APGGameState::RemovePlayerState(APlayerState* PlayerState)
 	if (HasAuthority())
 	{
 		RequestUpdateSessionPlayerCount();
+
+		// 인게임 중 플레이어 이탈 시 게임 종료 조건 체크
+		// 로비에서는 작동하면 안됨.
+		if (CurrentGameState == EGameState::InGame && !PlayerArray.IsEmpty() && IsGameFinished())
+		{
+			UE_LOG(LogTemp, Log, TEXT("GS::RemovePlayerState: Player removed -> Game Ended"));
+
+			SetCurrentGameState(EGameState::EndGame);
+			NotifyGameFinished();
+		}
 	}
 }
 
