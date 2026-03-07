@@ -156,7 +156,15 @@ void APGGhostAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Sti
 		return;
 	}
 
-	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>() && Stimulus.WasSuccessfullySensed() && Actor == OwnerGhostCharacter->GetTargetPlayerState()->GetPawn())
+	APlayerState* TargetPS = OwnerGhostCharacter->GetTargetPlayerState();
+	if (!TargetPS || !TargetPS->GetPawn())
+	{
+		return;
+	}
+
+	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>() 
+		&& Stimulus.WasSuccessfullySensed() 
+		&& Actor == TargetPS->GetPawn())
 	{
 		const E_PGGhostState CurrentState = (E_PGGhostState)BB->GetValueAsEnum(BlackboardKey_AIState);
 

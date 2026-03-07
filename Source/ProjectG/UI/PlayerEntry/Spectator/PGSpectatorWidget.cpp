@@ -59,11 +59,6 @@ void UPGSpectatorWidget::Init()
 
 		for (APlayerState* PS : GS->PlayerArray)
 		{
-			if (PS == GetOwningPlayerState())
-			{
-				continue;
-			}
-
 			if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 			{
 				PGPS->OnPlayerStateUpdated.AddUniqueDynamic(this, &UPGSpectatorWidget::UpdatePlayerList);
@@ -103,11 +98,6 @@ void UPGSpectatorWidget::UpdatePlayerList()
 
 	for (APlayerState* PS : GS->PlayerArray)
 	{
-		if (PS == GetOwningPlayerState())
-		{
-			continue;
-		}
-
 		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
 		{
 			UPGPlayerEntryWidget* NewPlayerEntry = CreateWidget<UPGPlayerEntryWidget>(this, PlayerEntryWidgetClass);

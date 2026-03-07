@@ -556,7 +556,7 @@ void APGPlayerController::Server_EnterSpectatorMode_Implementation()
 	{
 		for (APlayerState* PS : GS->PlayerArray)
 		{
-			if (PS && PS != this->PlayerState)
+			if (PS)
 			{
 				SpectateTargetList.Add(PS);
 			}

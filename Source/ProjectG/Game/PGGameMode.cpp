@@ -542,6 +542,30 @@ void APGGameMode::CleanupGeometryCollections()
 
 void APGGameMode::Logout(AController* Exiting)
 {
+	// 시체(PlayerCharacter) 정리
+	if (APGPlayerState* PS = Exiting->GetPlayerState<APGPlayerState>())
+	{
+		if (AActor* DeadBody = PS->GetPlayerCharacter())
+		{
+			if (DeadBody != Exiting->GetPawn())
+			{
+				UE_LOG(LogTemp, Log, TEXT("[GM::Logout] Destroy logout player dead body [%s]"), *PS->GetPlayerName());
+				DeadBody->Destroy();
+			}
+		}
+
+		// 해당 플레이어 담당 Ghost 정리
+		for (TActorIterator<APGGhostCharacter> It(GetWorld()); It; ++It)
+		{
+			if (It->GetTargetPlayerState() == PS)
+			{
+				UE_LOG(LogTemp, Log, TEXT("[GM::Logout] Destroy logout player ghost [%s]"), *PS->GetPlayerName());
+				It->Destroy();
+				break;
+			}
+		}
+	}
+
 	Super::Logout(Exiting);
 
 	APGPlayerController* LeavingPC = Cast<APGPlayerController>(Exiting);

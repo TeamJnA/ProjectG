@@ -115,9 +115,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SpectatePrevAction;
 
-	// spectate
-	//TArray<TObjectPtr<APGPlayerCharacter>> SpectateTargetList;
-
 	int32 CurrentSpectateIndex = -1;
 
 	void OnSpectateNext(const FInputActionValue& Value);
