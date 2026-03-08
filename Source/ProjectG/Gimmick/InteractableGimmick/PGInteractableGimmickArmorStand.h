@@ -7,6 +7,7 @@
 #include "PGInteractableGimmickArmorStand.generated.h"
 
 class UBoxComponent;
+class UCameraShakeSourceComponent;
 
 /**
  * 
@@ -51,6 +52,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Collision", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UBoxComponent> ArmorBoxCollision;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraShakeSourceComponent> CameraShakeSource;
 
 	UPROPERTY(ReplicatedUsing = OnRep_CollisionDisabled)
 	bool bIsCollisionDisabled;

@@ -4,6 +4,7 @@
 #include "Components/BoxComponent.h"
 #include "Item/ItemActor/PGProjectileItemBase.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Camera/CameraShakeSourceComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "PGLogChannels.h"
 
@@ -11,6 +12,9 @@ APGInteractableGimmickArmorStand::APGInteractableGimmickArmorStand()
 {
     ArmorBoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ArmorBoxCollision"));
     ArmorBoxCollision->SetupAttachment(RootComponent);
+
+    CameraShakeSource = CreateDefaultSubobject<UCameraShakeSourceComponent>(TEXT("CameraShakeSource"));
+    CameraShakeSource->SetupAttachment(RootComponent);
 
     bIsCollisionDisabled = false;
 }
@@ -74,6 +78,7 @@ void APGInteractableGimmickArmorStand::OnHit(UPrimitiveComponent* HitComp, AActo
 void APGInteractableGimmickArmorStand::OnRep_CollisionDisabled()
 {
     ArmorBoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
+    CameraShakeSource->Start();
 }
 
 void APGInteractableGimmickArmorStand::CollapseArmor()
@@ -91,6 +96,7 @@ void APGInteractableGimmickArmorStand::CollapseArmor()
 
     bIsCollisionDisabled = true;
     ArmorBoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
+    CameraShakeSource->Start();
 
     // Highlight ²ô±â
     HighlightOff();
