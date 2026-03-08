@@ -11,7 +11,6 @@
 #include "Interface/InteractableActorInterface.h"
 #include "Interface/HandItemInterface.h"
 #include "Interface/GimmickTargetInterface.h"
-#include "GenericTeamAgentInterface.h"
 #include "Net/VoiceConfig.h"
 
 #include "PGPlayerCharacter.generated.h"
@@ -40,7 +39,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
  */
 UCLASS()
 class PROJECTG_API APGPlayerCharacter : public APGCharacterBase, public IAttackableTarget, public IHandItemInterface,
-	public IInteractableActorInterface, public IGenericTeamAgentInterface, public IGimmickTargetInterface
+	public IInteractableActorInterface, public IGimmickTargetInterface
 {
 	GENERATED_BODY()
 	

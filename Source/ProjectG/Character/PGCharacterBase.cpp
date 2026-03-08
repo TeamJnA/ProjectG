@@ -26,6 +26,11 @@ UPGAttributeSet* APGCharacterBase::GetAttributeSet() const
 	return nullptr;
 }
 
+FGenericTeamId APGCharacterBase::GetGenericTeamId() const
+{
+	return FGenericTeamId();
+}
+
 void APGCharacterBase::GiveDefaultAbilities()
 {
 	check(AbilitySystemComponent);

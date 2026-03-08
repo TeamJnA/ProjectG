@@ -91,6 +91,7 @@ void APGInteractableGimmickArmorStand::CollapseArmor()
         {
             ArmorMesh->SetSimulatePhysics(true);
             ArmorMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+            ArmorMesh->SetCollisionResponseToChannel(ECC_FootStep, ECR_Block);
         }
     }
 
