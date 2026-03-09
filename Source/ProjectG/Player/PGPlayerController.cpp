@@ -799,48 +799,23 @@ void APGPlayerController::RefreshVoiceChannel()
 			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 1: GameEnd] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
 			VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
 		}
-		// 사망/탈출 후 스코어보드 (x, 인게임, x)
-		else if (MyPS->IsInScoreBoard())
+		// 사망/탈출 후 스코어보드, 관전 (Not-InGame 플레이어, 모두, x)
+		else if (!MyPS->IsInGame())
 		{
-			if (OtherPGPS->IsInGame())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 1: Me-Scoreboard / Target-InGame] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
-
-				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 2: Me-Scoreboard / Target-Not InGame] Target (%s) -> MUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
-
-				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
-			}
-			//VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
-		}
-		// 관전 (관전자, 인게임/관전자, x)
-		else if (MyPS->IsSpectating())
-		{
-			if (OtherPGPS->IsSpectating() || OtherPGPS->IsInGame())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 3: Me-Spectating / Target-InGame or Spectating] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
-				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
-			}
-			else // 스코어보드 보는 사람은 차단
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 3: Me-Spectating / Target-Scoreboard] Target (%s) -> MUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
-				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
-			}
+			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 2: Me-NotInGame] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+			VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
 		}
 		// 인게임 (모두, 인게임 플레이어, o)
-		else if (MyPS->IsInGame())
+		else
 		{
 			if (OtherPGPS->IsInGame())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 4: Me-InGame / Target-InGame] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 3: Me-InGame / Target-InGame] Target (%s) -> UNMUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
 				VoiceInterface->UnmuteRemoteTalker(0, *OtherId, false);
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 4: Me-InGame / Target-Not InGame] Target (%s) -> MUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
+				UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] [Rule 3: Me-InGame / Target-NotInGame] Target (%s) -> MUTE"), *NetModeStr, *OtherPGPS->GetPlayerName());
 				VoiceInterface->MuteRemoteTalker(0, *OtherId, false);
 			}
 		}
