@@ -7,7 +7,6 @@
 #include "Character/PGCharacterBase.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "GameplayTagAssetInterface.h"
-#include "GenericTeamAgentInterface.h"
 
 #include "PGEnemyCharacterBase.generated.h"
 
@@ -19,7 +18,7 @@ class UBoxComponent;
  * 
  */
 UCLASS()
-class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase, public IGameplayTagAssetInterface, public IGenericTeamAgentInterface
+class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase, public IGameplayTagAssetInterface
 {
 	GENERATED_BODY()
 		

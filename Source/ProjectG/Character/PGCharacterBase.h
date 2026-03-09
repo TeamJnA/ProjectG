@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
+#include "GenericTeamAgentInterface.h"
 #include "PGCharacterBase.generated.h"
 
 // Ability
@@ -18,7 +19,7 @@ class UPGSoundManagerComponent;
 class APGSoundManager;
 
 UCLASS()
-class PROJECTG_API APGCharacterBase : public ACharacter, public IAbilitySystemInterface
+class PROJECTG_API APGCharacterBase : public ACharacter, public IAbilitySystemInterface, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -32,6 +33,10 @@ public:
 	virtual UPGAttributeSet* GetAttributeSet() const;
 
 	FORCEINLINE UPGSoundManagerComponent* GetSoundManagerComponent() const { return SoundManagerComponent; }
+
+	// IGenericTeamAgentInterface~
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	// ~IGenericTeamAgentInterface
 
 protected:
 	void GiveDefaultAbilities();

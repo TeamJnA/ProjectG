@@ -49,7 +49,7 @@ void UGA_ThrowBrick::SpawnProjectileActor()
         ForwardMovementAmount = 0;
     }
 
-    const FVector ForwardSpawnOffset = PGPC->GetActorForwardVector() * (40 + ForwardMovementAmount * 20);
+    const FVector ForwardSpawnOffset = PGPC->GetActorForwardVector() * (60 + ForwardMovementAmount * 20);
 
     ThrowStartLocation += ForwardSpawnOffset + (PGPC->GetActorRightVector() * 25);
 

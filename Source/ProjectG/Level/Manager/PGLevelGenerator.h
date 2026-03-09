@@ -50,6 +50,9 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Level Generation", meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TSubclassOf<APGMasterRoom>> RoomClassMap;
+
 	TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>> RoomGraph;
 
 	UPROPERTY()
@@ -63,9 +66,6 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
-
-	UPROPERTY()
-	TArray<TSubclassOf<APGMasterRoom>> RoomsList;
 
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;

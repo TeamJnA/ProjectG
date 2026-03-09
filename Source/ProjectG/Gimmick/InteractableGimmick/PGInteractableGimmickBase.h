@@ -21,6 +21,8 @@ public:
 	// Sets default values for this actor's properties
 	APGInteractableGimmickBase();
 
+	virtual void GimmickInteract();
+
 	// IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
 	virtual void HighlightOn() const override;
