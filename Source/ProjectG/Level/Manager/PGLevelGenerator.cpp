@@ -14,21 +14,7 @@
 
 #include "Level/Room/PGMasterRoom.h"
 #include "Level/Room/PGStartRoom.h"
-#include "Level/Room/PGRoom1.h"
-#include "Level/Room/PGRoom2.h"
-#include "Level/Room/PGRoom3.h"
-#include "Level/Room/PGStairRoom1.h"
 #include "Level/Room/PGMirrorRoom.h"
-#include "Level/Room/PGElevatorRoom.h"
-#include "Level/Room/PGBarrelRoom.h"
-#include "Level/Room/PGChargerRoom.h"
-#include "Level/Room/PGCorridor_Dark.h"
-#include "Level/Room/PGCorridor_Simple.h"
-#include "Level/Room/PGLibraryRoom.h"
-#include "Level/Room/PGSmallCorridor_Bonfire.h"
-#include "Level/Room/PGSmallCorridor_Dark.h"
-#include "Level/Room/PGSmallCorridor_Mannequin.h"
-#include "Level/Room/PGStairRoom_Simple.h"
 
 #include "Level/Misc/PGDoor1.h"
 #include "Level/Misc/PGWall.h"
@@ -52,12 +38,6 @@ APGLevelGenerator::APGLevelGenerator()
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
-	
-	RoomsList = {
-		APGRoom2::StaticClass(),
-		APGRoom3::StaticClass(),
-		APGStairRoom1::StaticClass()
-	};
 
 	// max room spawn amount
 	RoomAmount = 26;
@@ -284,102 +264,108 @@ void APGLevelGenerator::SpawnNextRoom()
 	spawnParams.Owner = this;
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	FName TargetRoomName = TEXT("");
+
 	APGMasterRoom* NewRoom = nullptr;
 	// Corridor 3
 	if (RoomAmount > 23)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("Room1");
 	}
 	// Coddidor_Dark 2
 	else if (RoomAmount > 21)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGCorridor_Dark::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("Corridor_Dark");
 	}
 	// Corridor_Simple 1
 	else if (RoomAmount > 20)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGCorridor_Simple::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("Corridor_Simple");
 	}
 	// BedRoom 2
 	else if (RoomAmount > 18)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom3::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("Room3");
 	}
 	// SmallCorridor_Mannequin 1
 	else if (RoomAmount > 17)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGSmallCorridor_Mannequin::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("SmallCorridor_Mannequin");
 	}
 	// Library 1
 	else if (RoomAmount > 16)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGLibraryRoom::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("LibraryRoom");
 	}
 	// SmallCorridor 2
 	else if (RoomAmount > 14)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom2::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("Room2");
 	}
 	// Corridor 1
 	else if (RoomAmount > 13)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGRoom1::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("Room1");
 	}
 	// SmallCorridor_Dark 2
 	else if (RoomAmount > 11)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGSmallCorridor_Dark::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("SmallCorridor_Dark");
 	}
 	// Corridor_Dark 1
 	else if (RoomAmount > 10)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGCorridor_Dark::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("Corridor_Dark");
 	}
 	// StairRoom_Simple 2
 	else if (RoomAmount > 8)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGStairRoom_Simple::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("StairRoom_Simple");
 	}
 	// Corridor_Simple 1
 	else if (RoomAmount > 7)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGCorridor_Simple::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("Corridor_Simple");
 	}
 	// StairRoom 1
 	else if (RoomAmount > 6)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGStairRoom1::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("StairRoom1");
 	}
 	// SmallCorridor_Bonfire 1
 	else if (RoomAmount > 5)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGSmallCorridor_Bonfire::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("SmallCorridor_Bonfire");
 	}
 	// SmallCorridor_Mannequin 1
 	else if (RoomAmount > 4)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGSmallCorridor_Mannequin::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("SmallCorridor_Mannequin");
 	}
 	// BarrelRoom 1
 	else if (RoomAmount > 3)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGBarrelRoom::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("BarrelRoom");
 	}
 	// ChargerRoom 1
 	else if (RoomAmount > 2)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGChargerRoom::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("ChargerRoom");
 	}
 	// ElevatorRoom 1
 	else if (RoomAmount > 1)
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGElevatorRoom::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("ElevatorRoom");
 	}
 	// MirrorRoom 1
 	else
 	{
-		NewRoom = World->SpawnActor<APGMasterRoom>(APGMirrorRoom::StaticClass(), SpawnTransform, spawnParams);
+		TargetRoomName = TEXT("MirrorRoom");
 	}
+	TSubclassOf<APGMasterRoom> NewRoomClass = RoomClassMap[TargetRoomName];
+	NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, spawnParams);
+
+	check(NewRoom);
 
 	TWeakObjectPtr<APGLevelGenerator> WeakThis(this);
 	TWeakObjectPtr<APGMasterRoom> WeakNewRoom(NewRoom);
@@ -569,7 +555,6 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	ExitPointsList.Empty();
 	DoorPointsList.Empty();
 	MannequinSpawnPointsList.Empty();
-	RoomsList.Empty();
 	RoomGraph.Empty();
 }
 
