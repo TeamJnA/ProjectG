@@ -164,6 +164,7 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 			return;
 		}
 
+
 		if (bIsPlayer)
 		{
 			PlayDoorSound(DoorOpenSound);
@@ -196,6 +197,8 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 			DesiredTransform = OpenedTransform_A;
 			DoorOpenType = EDoorOpenType::Opened_A;
 		}
+
+		Mesh0->SetCanEverAffectNavigation(true);
 	}
 	else
 	{
@@ -204,6 +207,7 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 		DesiredTransform = ClosedTransform;
 		DoorOpenType = EDoorOpenType::Closed;
 
+		Mesh0->SetCanEverAffectNavigation(false);
 	}
 
 	OnRep_DesiredTransform();
@@ -269,6 +273,8 @@ void APGDoor1::BreakDoorByEnemy(AActor* InteractInvestigator)
 		return;
 	}
 
+	Mesh0->SetCanEverAffectNavigation(false);
+
 	// MeshÀÇ LeftVector( RightVector * -1 ) == ActorÀÇ ForwardVector,
 	// const FVector DoorToCharacter = InteractInvestigator->GetActorLocation() - GetActorLocation();
 	// const FVector DoorForwardVector = GetActorForwardVector();
@@ -295,6 +301,7 @@ void APGDoor1::OnRep_DoorBroken()
 
 	// Set door hidden and uninteractable
 	SetActorHiddenInGame(true);
+	Mesh0->SetVisibleFlag(false);
 
 	Mesh0->SetCollisionProfileName(TEXT("NoCollision"));
 
@@ -369,6 +376,13 @@ void APGDoor1::OnRep_DoorBroken()
 		}
 
 		CCMOpened->PlayCached();
+	}
+
+	// Destroy self
+	if (HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[PGDoor1] Destroyed after broken"));
+		SetLifeSpan(2.0f);
 	}
 }
 
