@@ -41,6 +41,9 @@ APGMasterRoom::APGMasterRoom()
 	MannequinSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("MannequinSpawnPointsFolder"));
 	MannequinSpawnPointsFolder->SetupAttachment(RootComponent);
 
+	FuseBoxSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("FuseBoxSpawnPointsFolder"));
+	FuseBoxSpawnPointsFolder->SetupAttachment(RootComponent);
+
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
 	RoomDir->SetRelativeScale3D(FVector(7.75f, 7.75f, 7.75f));
 

@@ -39,6 +39,8 @@ public:
 	// ILightEffectInterface~
 	virtual void FadeOut() override;
 	virtual void FadeIn() override;
+	virtual void PermanentOff() override;
+	virtual bool IsPermanentOff() const override { return bPermanentOff; }
 	// ~ILightEffectInterface
 
 protected:
@@ -63,4 +65,6 @@ private:
 	TArray<FManagedMaterialInfo> ManagedMaterials;
 
 	FTimerHandle FadeTimerHandle;
+
+	bool bPermanentOff = false;
 };

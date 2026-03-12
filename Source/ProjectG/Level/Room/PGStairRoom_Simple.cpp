@@ -40,6 +40,13 @@ APGStairRoom_Simple::APGStairRoom_Simple()
 	MannequinSpawnPoint0->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
 	MannequinSpawnPoint0->bHiddenInGame = true;
 
+	FuseBoxSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("FuseBoxSpawnPoint0"));
+	FuseBoxSpawnPoint0->SetupAttachment(FuseBoxSpawnPointsFolder);
+	FuseBoxSpawnPoint0->SetRelativeLocation(FVector(39.0f, 602.0f, 620.0f));
+	FuseBoxSpawnPoint0->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	FuseBoxSpawnPoint0->SetArrowColor(FLinearColor(1.0f, 1.0f, 0.0f, 0.0f));
+	FuseBoxSpawnPoint0->bHiddenInGame = true;
+
 	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 480.0f));
 	OverlapBox->SetRelativeScale3D(FVector(19.3f, 19.1f, 14.75f));
 

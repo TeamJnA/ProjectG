@@ -21,8 +21,10 @@ public:
 	UPGManagedLightComponent();
 	
 	// ILightEffectInterface~
-	void FadeOut() override;
-	void FadeIn() override;
+	virtual void FadeOut() override;
+	virtual void FadeIn() override;
+	virtual void PermanentOff() override;
+	virtual bool IsPermanentOff() const override { return bPermanentOff; }
 	// ~ILightEffectInterface
 
 protected:
@@ -42,6 +44,8 @@ private:
 
 	float OriginalIntensity = 0.0f;
 	float TargetIntensity = 0.0f;
+
+	bool bPermanentOff = false;
 
 	UFUNCTION()
 	void UpdateFade();

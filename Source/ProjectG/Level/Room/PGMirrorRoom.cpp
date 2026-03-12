@@ -42,7 +42,7 @@ APGMirrorRoom::APGMirrorRoom()
 	{
 		Mesh->SetChildActorClass(MeshRef.Class);
 	}
-	Mesh->SetRelativeLocation(FVector(643.5f, 560.0f, 0.0f));
+	Mesh->SetRelativeLocation(FVector(643.5f, 551.0f, 0.0f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 
 	EntryTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("EntryTrigger"));
@@ -51,7 +51,7 @@ APGMirrorRoom::APGMirrorRoom()
 	EntryTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	EntryTrigger->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	EntryTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Overlap);
-	EntryTrigger->SetRelativeLocation(FVector(650.0f, 600.0f, 165.0f));
+	EntryTrigger->SetRelativeLocation(FVector(650.0f, 591.0f, 165.0f));
 	EntryTrigger->SetRelativeScale3D(FVector(17.5f, 27.5f, 5.0f));
 
 	GateMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateMesh"));
@@ -105,7 +105,7 @@ APGMirrorRoom::APGMirrorRoom()
 	{
 		LeverComponent->SetChildActorClass(LeverRef.Class);
 	}
-	LeverComponent->SetRelativeLocation(FVector(1162.0f, 1313.0f, 216.0f));
+	LeverComponent->SetRelativeLocation(FVector(1162.0f, 1304.0f, 216.0f));
 	LeverComponent->SetRelativeRotation(FRotator(0.0f, -65.0f, -3.0f));
 	LeverComponent->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 

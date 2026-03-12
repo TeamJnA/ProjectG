@@ -57,7 +57,7 @@ void UPGManagedLightComponent::FadeOut()
 
 void UPGManagedLightComponent::FadeIn()
 {
-	if (!TargetLight)
+	if (bPermanentOff || !TargetLight)
 	{
 		return;
 	}
@@ -67,6 +67,12 @@ void UPGManagedLightComponent::FadeIn()
 		TargetIntensity = OriginalIntensity;
 		ManageFadeTimer();
 	}
+}
+
+void UPGManagedLightComponent::PermanentOff()
+{
+	bPermanentOff = true;
+	FadeOut();
 }
 
 void UPGManagedLightComponent::UpdateFade()

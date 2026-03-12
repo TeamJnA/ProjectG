@@ -135,6 +135,11 @@ void UPGManagedEmissiveComponent::FadeOut()
 
 void UPGManagedEmissiveComponent::FadeIn()
 {
+	if (bPermanentOff)
+	{
+		return;
+	}
+
 	bool bNeedsTimer = false;
 	for (FManagedMaterialInfo& MatInfo : ManagedMaterials)
 	{
@@ -150,6 +155,12 @@ void UPGManagedEmissiveComponent::FadeIn()
 		UE_LOG(LogTemp, Log, TEXT("Emissive::FadeIn: [%s]"), *GetOwner()->GetName());
 		ManageFadeTimer();
 	}
+}
+
+void UPGManagedEmissiveComponent::PermanentOff()
+{
+	bPermanentOff = true;
+	FadeOut();
 }
 
 void UPGManagedEmissiveComponent::UpdateFade()

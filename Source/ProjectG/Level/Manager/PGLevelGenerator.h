@@ -11,6 +11,7 @@ class APGBlindCharacter;
 class APGChargerCharacter;
 class APGTriggerGimmickMannequin;
 class APGDoor1;
+class APGFuseBox;
 
 UCLASS()
 class PROJECTG_API APGLevelGenerator : public AActor
@@ -35,6 +36,7 @@ protected:
 	void SpawnDoors();
 	void SpawnItems();
 	void SpawnMannequins();
+	void SpawnFuseBoxes();
 	bool SpawnEnemy();
 	void SpawnSingleItem_Async(int32 ItemAmount);
 
@@ -66,6 +68,12 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> FuseBoxSpawnPointsList;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Environment", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<APGFuseBox> FuseBoxClass;
 
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;
