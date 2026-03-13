@@ -39,7 +39,7 @@ public:
 	// ILightEffectInterface~
 	virtual void FadeOut() override;
 	virtual void FadeIn() override;
-	virtual void PermanentOff() override;
+	virtual void PowerOff() override;
 	virtual bool IsPermanentOff() const override { return bPermanentOff; }
 	// ~ILightEffectInterface
 
@@ -61,10 +61,15 @@ private:
 
 	void ManageFadeTimer();
 
+	void PowerOffSequence();
+
 	UPROPERTY()
 	TArray<FManagedMaterialInfo> ManagedMaterials;
 
 	FTimerHandle FadeTimerHandle;
+	FTimerHandle PowerOffTimerHandle;
+
+	int32 PowerOffStep = 0;
 
 	bool bPermanentOff = false;
 };

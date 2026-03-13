@@ -43,7 +43,7 @@ void UPGManagedLightComponent::BeginPlay()
 
 void UPGManagedLightComponent::FadeOut()
 {
-	if (!TargetLight)
+	if (bPermanentOff || !TargetLight)
 	{
 		return;
 	}
@@ -69,15 +69,20 @@ void UPGManagedLightComponent::FadeIn()
 	}
 }
 
-void UPGManagedLightComponent::PermanentOff()
+void UPGManagedLightComponent::ManageFadeTimer()
 {
-	bPermanentOff = true;
-	FadeOut();
+	GetWorld()->GetTimerManager().SetTimer(
+		FadeTimerHandle,
+		this,
+		&UPGManagedLightComponent::UpdateFade,
+		FadeUpdateRate,
+		true
+	);
 }
 
 void UPGManagedLightComponent::UpdateFade()
 {
-	if (!TargetLight)
+	if (bPermanentOff || !TargetLight)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(FadeTimerHandle);
 		return;
@@ -96,13 +101,59 @@ void UPGManagedLightComponent::UpdateFade()
 	}
 }
 
-void UPGManagedLightComponent::ManageFadeTimer()
+void UPGManagedLightComponent::PowerOff()
 {
-	GetWorld()->GetTimerManager().SetTimer(
-		FadeTimerHandle,
-		this,
-		&UPGManagedLightComponent::UpdateFade,
-		FadeUpdateRate,
-		true
-	);
+	bPermanentOff = true;
+	PowerOffStep = 0;
+	PowerOffSequence();
+}
+
+void UPGManagedLightComponent::PowerOffSequence()
+{
+	if (!TargetLight)
+	{
+		return;
+	}
+
+	switch (PowerOffStep)
+	{
+		case 0:
+		{
+			TargetLight->SetIntensity(0.0f);
+			PowerOffStep++;
+			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedLightComponent::PowerOffSequence, 0.08f, false);
+			break;
+		}
+
+		case 1:
+		{
+			TargetLight->SetIntensity(OriginalIntensity * 0.6f);
+			PowerOffStep++;
+			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedLightComponent::PowerOffSequence, 0.4f, false);
+			break;
+		}
+
+		case 2:
+		{
+			TargetLight->SetIntensity(0.0f);
+			PowerOffStep++;
+			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedLightComponent::PowerOffSequence, 0.1f, false);
+			break;
+		}
+
+		case 3:
+		{
+			TargetLight->SetIntensity(OriginalIntensity * 0.3f);
+			PowerOffStep++;
+			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedLightComponent::PowerOffSequence, 0.3f, false);
+			break;
+		}
+
+		case 4:
+		{
+			TargetLight->SetIntensity(0.0f);
+			TargetIntensity = 0.0f;
+			break;
+		}
+	}
 }

@@ -37,48 +37,7 @@ void UPGManagedEmissiveComponent::BeginPlay()
 	{
 		UE_LOG(LogTemp, Log, TEXT("Emissive::BeginPlay: Found Mesh first cast: %s"), *TargetMesh->GetName());
 	}
-
-	//if (!TargetMesh)
-	//{
-	//	TargetMesh = Cast<UStaticMeshComponent>(ParentComp);
-	//	if (TargetMesh)
-	//	{
-	//		UE_LOG(LogTemp, Warning, TEXT("Emissive::BeginPlay: Found Mesh static mesh cast: %s"), *TargetMesh->GetName());
-	//	}
-	//}
-
-	//if (!TargetMesh)
-	//{
-	//	if (UChildActorComponent* ChildActorComp = Cast<UChildActorComponent>(ParentComp))
-	//	{
-	//		if (AActor* ChildActor = ChildActorComp->GetChildActor())
-	//		{
-	//			TargetMesh = ChildActor->FindComponentByClass<UMeshComponent>();
-	//			if (TargetMesh)
-	//			{
-	//				UE_LOG(LogTemp, Warning, TEXT("Emissive::BeginPlay: Found Mesh inside ChildActor: %s"), *TargetMesh->GetName());
-	//			}
-	//		}
-	//	}
-	//}
-
-	//if (!TargetMesh)
-	//{
-	//	TArray<USceneComponent*> Children;
-	//	ParentComp->GetChildrenComponents(true, Children);
-
-	//	for (USceneComponent* Child : Children)
-	//	{
-	//		if (Child != this && Child->IsA(UMeshComponent::StaticClass()))
-	//		{
-	//			TargetMesh = Cast<UMeshComponent>(Child);
-	//			UE_LOG(LogTemp, Warning, TEXT("Emissive::BeginPlay: Found Mesh in Parent's children: %s"), *TargetMesh->GetName());
-	//			break;
-	//		}
-	//	}
-	//}
-
-	if (!TargetMesh)
+	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Emissive::BeginPlay: [%s] failed final check."),
 			*GetOwner()->GetName(), *ParentComp->GetName());
@@ -116,6 +75,11 @@ void UPGManagedEmissiveComponent::BeginPlay()
 
 void UPGManagedEmissiveComponent::FadeOut()
 {
+	if (bPermanentOff)
+	{
+		return;
+	}
+
 	bool bNeedsTimer = false;
 	for (FManagedMaterialInfo& MatInfo : ManagedMaterials)
 	{
@@ -157,14 +121,25 @@ void UPGManagedEmissiveComponent::FadeIn()
 	}
 }
 
-void UPGManagedEmissiveComponent::PermanentOff()
+void UPGManagedEmissiveComponent::ManageFadeTimer()
 {
-	bPermanentOff = true;
-	FadeOut();
+	GetWorld()->GetTimerManager().SetTimer(
+		FadeTimerHandle,
+		this,
+		&UPGManagedEmissiveComponent::UpdateFade,
+		FadeUpdateRate,
+		true
+	);
 }
 
 void UPGManagedEmissiveComponent::UpdateFade()
 {
+	if (bPermanentOff)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(FadeTimerHandle);
+		return;
+	}
+
 	int32 FadingCount = 0;
 	for (FManagedMaterialInfo& MatInfo : ManagedMaterials)
 	{
@@ -191,13 +166,84 @@ void UPGManagedEmissiveComponent::UpdateFade()
 	}
 }
 
-void UPGManagedEmissiveComponent::ManageFadeTimer()
+void UPGManagedEmissiveComponent::PowerOff()
 {
-	GetWorld()->GetTimerManager().SetTimer(
-		FadeTimerHandle,
-		this,
-		&UPGManagedEmissiveComponent::UpdateFade,
-		FadeUpdateRate,
-		true
-	);
+	bPermanentOff = true;
+	PowerOffStep = 0;
+	PowerOffSequence();
+}
+
+void UPGManagedEmissiveComponent::PowerOffSequence()
+{
+	switch (PowerOffStep)
+	{
+		case 0:
+		{
+			for (FManagedMaterialInfo& MatInfo : ManagedMaterials)
+			{
+				if (MatInfo.MID) 
+				{
+					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, 0.0f);
+				}
+			}
+			PowerOffStep++;
+			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedEmissiveComponent::PowerOffSequence, 0.08f, false);
+			break;
+		}
+
+		case 1:
+		{
+			for (FManagedMaterialInfo& MatInfo : ManagedMaterials)
+			{
+				if (MatInfo.MID) 
+				{
+					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, MatInfo.OriginalValue * 0.6f);
+				}
+			}
+			PowerOffStep++;
+			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedEmissiveComponent::PowerOffSequence, 0.4f, false);
+			break;
+		}
+
+		case 2:
+		{
+			for (FManagedMaterialInfo& MatInfo : ManagedMaterials)
+			{
+				if (MatInfo.MID)
+				{
+					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, 0.0f);
+				}
+			}
+			PowerOffStep++;
+			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedEmissiveComponent::PowerOffSequence, 0.1f, false);
+			break;
+		}
+
+		case 3:
+		{
+			for (FManagedMaterialInfo& MatInfo : ManagedMaterials)
+			{
+				if (MatInfo.MID)
+				{
+					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, MatInfo.OriginalValue * 0.3f);
+				}
+			}
+			PowerOffStep++;
+			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedEmissiveComponent::PowerOffSequence, 0.3f, false);
+			break;
+		}
+
+		case 4:
+		{
+			for (FManagedMaterialInfo& MatInfo : ManagedMaterials)
+			{
+				if (MatInfo.MID)
+				{
+					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, 0.0f);
+				}
+				MatInfo.TargetValue = 0.0f;
+			}
+			break;
+		}
+	}
 }

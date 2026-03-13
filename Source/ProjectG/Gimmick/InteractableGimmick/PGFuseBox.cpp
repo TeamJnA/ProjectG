@@ -172,7 +172,7 @@ void APGFuseBox::TurnOffRoomLights()
         if (ILightEffectInterface* LightEffect = Cast<ILightEffectInterface>(Comp))
         {
             //LightEffect->FadeOut();
-            LightEffect->PermanentOff();
+            LightEffect->PowerOff();
         }
     }
 }

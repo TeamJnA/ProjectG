@@ -23,7 +23,7 @@ public:
 	// ILightEffectInterface~
 	virtual void FadeOut() override;
 	virtual void FadeIn() override;
-	virtual void PermanentOff() override;
+	virtual void PowerOff() override;
 	virtual bool IsPermanentOff() const override { return bPermanentOff; }
 	// ~ILightEffectInterface
 
@@ -37,18 +37,23 @@ protected:
 	float LightFadeSpeed = 3.0f;
 
 private:
-	FTimerHandle FadeTimerHandle;
-
-	UPROPERTY()
-	TObjectPtr<ULightComponent> TargetLight;
-
-	float OriginalIntensity = 0.0f;
-	float TargetIntensity = 0.0f;
-
-	bool bPermanentOff = false;
-
 	UFUNCTION()
 	void UpdateFade();
 
 	void ManageFadeTimer();
+
+	void PowerOffSequence();
+
+	UPROPERTY()
+	TObjectPtr<ULightComponent> TargetLight;
+
+	FTimerHandle FadeTimerHandle;
+	FTimerHandle PowerOffTimerHandle;
+
+	float OriginalIntensity = 0.0f;
+	float TargetIntensity = 0.0f;
+
+	int32 PowerOffStep = 0;
+
+	bool bPermanentOff = false;
 };
