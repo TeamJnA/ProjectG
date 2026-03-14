@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interface/InteractableActorInterface.h"
+#include "Interface/HoldInteractProgressHandler.h"
 #include "PGFuseBox.generated.h"
 
 class APGItemActor;
@@ -19,7 +20,7 @@ enum class EFuseBoxState : uint8
 };
 
 UCLASS()
-class PROJECTG_API APGFuseBox : public AActor, public IInteractableActorInterface
+class PROJECTG_API APGFuseBox : public AActor, public IInteractableActorInterface, public IHoldInteractProgressHandler
 {
 	GENERATED_BODY()
 	
@@ -34,6 +35,11 @@ public:
 	virtual FInteractionInfo GetInteractionInfo() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
 	// ~IInteractableActorInterface
+
+	// IHoldInteractProgressHandler~
+	virtual void UpdateHoldProgress(float Progress) override;
+	virtual void StopHoldProress() override;
+	// ~IHoldInteractProgressHandler
 
 	void OpenBox();
 
@@ -50,8 +56,32 @@ protected:
 	UFUNCTION()
 	void OnFuseItemDestroyed(AActor* DestroyedActor);
 
+	UFUNCTION()
+	void OnRep_FuseBoxState();
+
+	void TurnOffRoomLights();
+
+	UFUNCTION()
+	void OnRep_ShakeStep();
+
+	void DisableShakeEffect();
+
 	UPROPERTY(EditDefaultsOnly, Category = "Fuse")
 	TSoftObjectPtr<UPGItemData> FuseItemDataPath;
+
+	// Sound
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName CoverFallSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName CoverShakeSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName FuseTakeSound;
+
+	// Cover Shake
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ShakeEffect", meta = (AllowPrivateAccess = "true"))
+	FName ShakeParameterName = TEXT("WPOPower");
 
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 	TSubclassOf<UGameplayAbility> InteractAbility;
@@ -72,14 +102,18 @@ protected:
 	UPROPERTY()
 	TObjectPtr<APGItemActor> SpawnedFuseItem;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	TObjectPtr<AActor> OwnerRoom;
+
+	// Cover Shake
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> MIDCover;
+
+	FTimerHandle ShakeEffectTimerHandle;
 
 	UPROPERTY(ReplicatedUsing = OnRep_FuseBoxState)
 	EFuseBoxState FuseBoxState = EFuseBoxState::Closed;
 
-	UFUNCTION()
-	void OnRep_FuseBoxState();
-
-	void TurnOffRoomLights();
+	UPROPERTY(ReplicatedUsing = OnRep_ShakeStep)
+	uint8 ShakeStep = 0;
 };

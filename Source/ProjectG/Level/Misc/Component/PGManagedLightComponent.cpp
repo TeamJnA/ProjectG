@@ -127,7 +127,7 @@ void UPGManagedLightComponent::PowerOffSequence()
 
 		case 1:
 		{
-			TargetLight->SetIntensity(OriginalIntensity * 0.6f);
+			TargetLight->SetIntensity(OriginalIntensity * 1.0f);
 			PowerOffStep++;
 			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedLightComponent::PowerOffSequence, 0.4f, false);
 			break;
@@ -143,7 +143,7 @@ void UPGManagedLightComponent::PowerOffSequence()
 
 		case 3:
 		{
-			TargetLight->SetIntensity(OriginalIntensity * 0.3f);
+			TargetLight->SetIntensity(OriginalIntensity * 0.6f);
 			PowerOffStep++;
 			GetWorld()->GetTimerManager().SetTimer(PowerOffTimerHandle, this, &UPGManagedLightComponent::PowerOffSequence, 0.3f, false);
 			break;

@@ -197,7 +197,7 @@ void UPGManagedEmissiveComponent::PowerOffSequence()
 			{
 				if (MatInfo.MID) 
 				{
-					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, MatInfo.OriginalValue * 0.6f);
+					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, MatInfo.OriginalValue * 1.0f);
 				}
 			}
 			PowerOffStep++;
@@ -225,7 +225,7 @@ void UPGManagedEmissiveComponent::PowerOffSequence()
 			{
 				if (MatInfo.MID)
 				{
-					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, MatInfo.OriginalValue * 0.3f);
+					MatInfo.MID->SetScalarParameterValue(EmissiveParamName, MatInfo.OriginalValue * 0.6f);
 				}
 			}
 			PowerOffStep++;
