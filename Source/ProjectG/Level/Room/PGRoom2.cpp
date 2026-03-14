@@ -56,6 +56,13 @@ APGRoom2::APGRoom2()
 	MannequinSpawnPoint1->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
 	MannequinSpawnPoint1->bHiddenInGame = true;
 
+	FuseBoxSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("FuseBoxSpawnPoint0"));
+	FuseBoxSpawnPoint0->SetupAttachment(FuseBoxSpawnPointsFolder);
+	FuseBoxSpawnPoint0->SetRelativeLocation(FVector(900.0f, -320.0f, 200.0f));
+	FuseBoxSpawnPoint0->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	FuseBoxSpawnPoint0->SetArrowColor(FLinearColor(1.0f, 1.0f, 0.0f, 0.0f));
+	FuseBoxSpawnPoint0->bHiddenInGame = true;
+
 	EnemySpawnPoint->SetRelativeLocation(FVector(920.0f, 0.0f, 250.0f));
 
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));

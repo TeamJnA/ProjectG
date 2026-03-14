@@ -24,4 +24,6 @@ class PROJECTG_API ILightEffectInterface
 public:
 	virtual void FadeOut() = 0;
 	virtual void FadeIn() = 0;
+	virtual void PowerOff() = 0;
+	virtual bool IsPermanentOff() const { return false; }
 };

@@ -51,7 +51,6 @@ public:
 	FORCEINLINE void SetExitPoint(EExitPointType _InExitPoint) { ExitPoint = _InExitPoint; }
 
 	FORCEINLINE bool IsInGame() const { return !bHasFinishedGame && !bIsEscaping; }
-	FORCEINLINE bool IsInScoreBoard() const { return (bHasFinishedGame || bIsEscaping) && !bIsSpectating; }
 
 	void SetPlayerCharacter(AActor* InCharacter) { PlayerCharacter = InCharacter; }
 	FORCEINLINE AActor* GetPlayerCharacter() const { return PlayerCharacter.Get(); }

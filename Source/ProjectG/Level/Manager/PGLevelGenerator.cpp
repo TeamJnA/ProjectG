@@ -22,10 +22,12 @@
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Enemy/Charger/Character/PGChargerCharacter.h"
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickMannequin.h"
+#include "Gimmick/InteractableGimmick/PGFuseBox.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameMode.h"
 #include "Game/PGGameState.h"
+
 
 // Sets default values
 APGLevelGenerator::APGLevelGenerator()
@@ -124,7 +126,10 @@ void APGLevelGenerator::SpawnStartRoom()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	APGStartRoom* NewRoom = World->SpawnActor<APGStartRoom>(APGStartRoom::StaticClass(), SpawnTransform, SpawnParams);
+
+	FName StartRoomName = TEXT("StartRoom");
+	TSubclassOf<APGMasterRoom> StartRoomClass = RoomClassMap[StartRoomName];
+	APGStartRoom* NewRoom = World->SpawnActor<APGStartRoom>(StartRoomClass, SpawnTransform, SpawnParams);
 	if (!NewRoom)
 	{
 		return;
@@ -140,7 +145,7 @@ void APGLevelGenerator::SpawnStartRoom()
 	RoomGraph.Add(NewRoom);
 
 	// MasterRoom .h
-	// virtual const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
+	//  const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
 	if (const USceneComponent* ExitPointsFolder = NewRoom->GetExitPointsFolder())
 	{
 		const TArray<USceneComponent*>& ExitPoints = ExitPointsFolder->GetAttachChildren();
@@ -432,7 +437,7 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		RoomAmount--;
 
 		// MasterRoom .h
-		// virtual const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
+		// const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
 		if (const USceneComponent* LatestRoomExitPointsFolder = RoomToCheck->GetExitPointsFolder())
 		{
 			const TArray<USceneComponent*>& LatestRoomExitPoints = LatestRoomExitPointsFolder->GetAttachChildren();
@@ -441,7 +446,7 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		}
 
 		// MasterRoom .h
-		// virtual const USceneComponent* GetItemSpawnPointsFolder() const { return ItemSpawnPointsFolder; }
+		// const USceneComponent* GetItemSpawnPointsFolder() const { return ItemSpawnPointsFolder; }
 		if (const USceneComponent* ItemSpawnPointFolder = RoomToCheck->GetItemSpawnPointsFolder())
 		{
 			const TArray<USceneComponent*>& ItemSpawnPoints = ItemSpawnPointFolder->GetAttachChildren();
@@ -450,12 +455,21 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		}
 
 		// MasterRoom.h
-		// virtual const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
+		// const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
 		if (const USceneComponent* MannequinSpawnPointFolder = RoomToCheck->GetMannequinSpawnPointsFolder())
 		{
 			const TArray<USceneComponent*>& MannequinSpawnPoints = MannequinSpawnPointFolder->GetAttachChildren();
 			MannequinSpawnPointsList.Reserve(MannequinSpawnPointsList.Num() + MannequinSpawnPoints.Num());
 			MannequinSpawnPointsList.Append(MannequinSpawnPoints);
+		}
+
+		// MasterRoom.h
+		// virtual const USceneComponent* GetFuseBoxSpawnPointsFolder() const { return FuseBoxSpawnPointsFolder; }
+		if (const USceneComponent* FuseBoxSpawnPointFolder = RoomToCheck->GetFuseBoxSpawnPointsFolder())
+		{
+			const TArray<USceneComponent*>& FuseBoxSpawnPoints = FuseBoxSpawnPointFolder->GetAttachChildren();
+			FuseBoxSpawnPointsList.Reserve(FuseBoxSpawnPointsList.Num() + FuseBoxSpawnPoints.Num());
+			FuseBoxSpawnPointsList.Append(FuseBoxSpawnPoints);
 		}
 
 		if (RoomAmount > 0)
@@ -530,6 +544,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	SpawnDoors();
 	SpawnItems();
 	SpawnMannequins();
+	SpawnFuseBoxes();
 	if (!SpawnEnemy())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Enemy spawn failed. Restarting Level..."));
@@ -556,6 +571,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	ExitPointsList.Empty();
 	DoorPointsList.Empty();
 	MannequinSpawnPointsList.Empty();
+	FuseBoxSpawnPointsList.Empty();
 	RoomGraph.Empty();
 }
 
@@ -760,6 +776,44 @@ void APGLevelGenerator::SpawnMannequins()
 			World->SpawnActor<APGTriggerGimmickMannequin>(MannequinClass, SpawnTransform, SpawnParams);
 			MannequinAmount--;
 		}
+	}
+}
+
+void APGLevelGenerator::SpawnFuseBoxes()
+{
+	UWorld* World = GetWorld();
+	if (!World || FuseBoxSpawnPointsList.IsEmpty() || !FuseBoxClass)
+	{
+		return;
+	}
+
+	int32 FuseBoxCount = FMath::Min(3, FuseBoxSpawnPointsList.Num());
+	while (FuseBoxCount > 0 && !FuseBoxSpawnPointsList.IsEmpty())
+	{
+		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, FuseBoxSpawnPointsList.Num());
+		const TObjectPtr<USceneComponent> SelectedPoint = FuseBoxSpawnPointsList[RandomIndex];
+		FuseBoxSpawnPointsList.RemoveAt(RandomIndex);
+
+		if (!SelectedPoint)
+		{
+			continue;
+		}
+
+		const FTransform SpawnTransform = SelectedPoint->GetComponentTransform();
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		APGFuseBox* NewFuseBox = World->SpawnActor<APGFuseBox>(FuseBoxClass, SpawnTransform, SpawnParams);
+		if (NewFuseBox)
+		{
+			AActor* OwnerRoom = SelectedPoint->GetOwner();
+			NewFuseBox->SetOwnerRoom(OwnerRoom);
+
+			UE_LOG(LogTemp, Log, TEXT("LG::SpawnFuseBoxes: Spawned FuseBox in room '%s'"), *GetNameSafe(OwnerRoom));
+		}
+
+		FuseBoxCount--;
 	}
 }
 
