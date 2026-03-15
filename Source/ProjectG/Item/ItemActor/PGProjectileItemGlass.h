@@ -6,6 +6,7 @@
 #include "Item/ItemActor/PGProjectileItemBase.h"
 #include "PGProjectileItemGlass.generated.h"
 
+class UNiagaraComponent;
 /**
  * 
  */
@@ -26,6 +27,9 @@ public:
 
 protected:
 	virtual void PlaySound_Implementation(const FVector& HitLocation) override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	TObjectPtr<UNiagaraComponent> GlassBreakFX;
 
 private:
 	int32 bAlreadyHit : 1;
