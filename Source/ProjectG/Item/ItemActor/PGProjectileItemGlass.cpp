@@ -6,6 +6,7 @@
 #include "Sound/PGSoundManager.h"
 #include "GameFramework/GameModeBase.h"
 #include "NiagaraComponent.h"
+#include "Net/UnrealNetwork.h" 
 #include "PGLogChannels.h"
 
 APGProjectileItemGlass::APGProjectileItemGlass()
@@ -18,6 +19,8 @@ APGProjectileItemGlass::APGProjectileItemGlass()
 	GlassBreakFX->SetupAttachment(StaticMesh);
 
 	GlassBreakFX->bAutoActivate = false;
+
+	HitRotation = FRotator::ZeroRotator;
 }
 
 void APGProjectileItemGlass::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
@@ -36,22 +39,12 @@ void APGProjectileItemGlass::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 
 	bAlreadyHit = true;
 
-	// TODO 멀티 환경 테스트
-	if (StaticMesh)
-	{
-		StaticMesh->SetSimulatePhysics(false);
-		StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		StaticMesh->SetHiddenInGame(true);
-	}
+	HitRotation = Hit.ImpactNormal.Rotation();
+	OnRep_IsBroken();
 
-	if (GlassBreakFX)
-	{
-		GlassBreakFX->SetWorldRotation(Hit.ImpactNormal.Rotation());
-		GlassBreakFX->Activate(true);
-	}
+	PlaySound(Hit.Location);
 
-	//TODO [Play sound]
-	// PlaySound(Hit.Location); ItemHitSound
+	SetLifeSpan(3.0f);
 }
 
 void APGProjectileItemGlass::PlaySound_Implementation(const FVector& HitLocation)
@@ -62,5 +55,28 @@ void APGProjectileItemGlass::PlaySound_Implementation(const FVector& HitLocation
 		{
 			SoundManager->PlaySoundWithNoise(ItemHitSound, HitLocation, false);
 		}
+	}
+}
+
+void APGProjectileItemGlass::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APGProjectileItemGlass, HitRotation);
+}
+
+void APGProjectileItemGlass::OnRep_IsBroken()
+{
+	if (StaticMesh)
+	{
+		StaticMesh->SetSimulatePhysics(false);
+		StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		StaticMesh->SetHiddenInGame(true);
+	}
+
+	if (GlassBreakFX)
+	{
+		GlassBreakFX->SetWorldRotation(HitRotation);
+		GlassBreakFX->Activate(true);
 	}
 }
