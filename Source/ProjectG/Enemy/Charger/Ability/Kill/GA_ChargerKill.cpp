@@ -73,6 +73,7 @@ void UGA_ChargerKill::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 		);
 
 		MontageTask->OnCompleted.AddDynamic(this, &UGA_ChargerKill::OnMontageEnd);
+		MontageTask->OnCancelled.AddDynamic(this, &UGA_ChargerKill::OnMontageEnd);
 		MontageTask->OnInterrupted.AddDynamic(this, &UGA_ChargerKill::OnMontageEnd);
 		MontageTask->OnBlendOut.AddDynamic(this, &UGA_ChargerKill::OnMontageEnd);
 		MontageTask->ReadyForActivation();
@@ -124,4 +125,9 @@ void UGA_ChargerKill::OnMontageEnd()
 void UGA_ChargerKill::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+
+	if (APGChargerCharacter* OwnerPawn = Cast<APGChargerCharacter>(GetAvatarActorFromActorInfo()))
+	{
+		OwnerPawn->RecheckOverlappingPlayers();
+	}
 }

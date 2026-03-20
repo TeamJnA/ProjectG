@@ -73,7 +73,7 @@ protected:
 	float ExplorationWaitTime = 5.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI|Stats")
-	float PatrolSpeed = 80.0f;
+	float PatrolSpeed = 90.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI|Stats")
 	float ChargeSpeed = 1500.0f;

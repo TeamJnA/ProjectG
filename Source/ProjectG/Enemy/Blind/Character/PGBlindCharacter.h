@@ -9,6 +9,8 @@
 
 class UPGBlindAttributeSet;
 class UBoxComponent;
+class UAudioComponent;
+class UCameraShakeSourceComponent;
 
 /**
  * 시각이 없는 대신 소리와 촉각을 이용해 플레이어를 추적하는 적 캐릭터 클래스입니다.
@@ -22,6 +24,16 @@ enum class EBlindHuntLevel : uint8
 	Investigation,
 	Chase,
 	Count
+}; 
+
+UENUM(BlueprintType)
+enum class EBlindSoundState : uint8
+{
+	Breathing,   // Exploration, Investigation
+	Chasing,     // Chase 이동 중
+	Growling,    // Chase 도착 후 대기
+	Attacking,   // Bite
+	Silent		 // Roar 중
 };
 
 UCLASS()
@@ -30,7 +42,6 @@ class PROJECTG_API APGBlindCharacter : public APGEnemyCharacterBase, public IPGA
 	GENERATED_BODY()
 
 public:
-
 	APGBlindCharacter();
 
 	// IPGAIExplorationInterface~
@@ -43,9 +54,24 @@ public:
 
 	FORCEINLINE EBlindHuntLevel GetHuntLevel() const { return HuntLevel; }
 	void SetHuntLevel(EBlindHuntLevel newHuntLevel);
+	void SetSoundState(EBlindSoundState NewState);
+	FORCEINLINE EBlindSoundState GetSoundState() const { return SoundState; }
+	void TriggerFootstepShake();
+	void SpawnFootprint(const FVector& Location);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FVector2D BreathInterval = FVector2D(1.5f, 3.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FVector2D ChaseInterval = FVector2D(4.5f, 5.5f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Footprint")
+	FVector FootprintDecalSize = FVector(10.0f, 20.0f, 20.0f);
+
+public:
 	//Animation Montages
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> BiteMontage;
@@ -53,29 +79,51 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> RoarMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> SniffMontage;
-
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UPGBlindAttributeSet> BlindAttributeSet;
 
 	virtual void BeginPlay() override;
+	virtual void OnPlayerOverlapped(AActor* OverlapPlayer) override;
 
 	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
+	UPROPERTY(VisibleAnywhere, Category = "Sound")
+	TObjectPtr<UAudioComponent> BreathAudioComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Sound")
+	TObjectPtr<UAudioComponent> ChaseAudioComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Sound")
+	TObjectPtr<UAudioComponent> GrowlAudioComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "CameraShake")
+	TObjectPtr<UCameraShakeSourceComponent> CameraShakeSource;
+
+	UPROPERTY(EditDefaultsOnly, Category = "CameraShake")
+	TSubclassOf<UCameraShakeBase> WalkShakeClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "CameraShake")
+	TSubclassOf<UCameraShakeBase> RunShakeClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Footprint")
+	TObjectPtr<UMaterialInterface> FootprintDecalMaterial;
+
 private:
+	FTimerHandle SoundLoopTimerHandle;
+	FTimerHandle GrowlDelayTimerHandle;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	float ExplorationRadius = 1500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	float ExplorationWaitTime = 3.f;
 
-	//hunt level은 animation bp 추적용 변수
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", Replicated, meta = (AllowPrivateAccess = "true"))
-	EBlindHuntLevel HuntLevel = EBlindHuntLevel::Exploration;
+	UPROPERTY(EditDefaultsOnly, Category = "Footprint")
+	float FootprintLifetime = 8.0f;
 
-private:
+	UPROPERTY(EditDefaultsOnly, Category = "Footprint")
+	float FootprintFadeDuration = 2.0f;
 
 	//아래는 detect Noise 관련
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
@@ -83,4 +131,20 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	int32 NoiseMaxThreshold = 3;
+
+	//hunt level은 animation bp 추적용 변수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", Replicated, meta = (AllowPrivateAccess = "true"))
+	EBlindHuntLevel HuntLevel = EBlindHuntLevel::Exploration;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SoundState)
+	EBlindSoundState SoundState = EBlindSoundState::Breathing;
+
+	UFUNCTION()
+	void OnRep_SoundState();
+
+	void PlayBreathOnce();
+	void PlayChaseOnce();
+	void PlayGrowlOnce();
+	void StopGrowl();
+	void ScheduleNextSound();
 };

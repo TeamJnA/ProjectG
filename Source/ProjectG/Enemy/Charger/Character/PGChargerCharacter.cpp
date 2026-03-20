@@ -165,6 +165,11 @@ void APGChargerCharacter::OnRep_HeadYaw(float OldValue)
 
 void APGChargerCharacter::OnPlayerOverlapped(AActor* OverlapPlayer)
 {
+	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior.Attack"))))
+	{
+		return;
+	}
+
 	if (IAttackableTarget* AttackableInterface = Cast<IAttackableTarget>(OverlapPlayer))
 	{
 		if (AttackableInterface->IsValidAttackableTarget() && OverlapPlayer != CachedAttackedTarget)

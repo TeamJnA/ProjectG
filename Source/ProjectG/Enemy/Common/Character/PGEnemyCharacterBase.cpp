@@ -149,6 +149,25 @@ void APGEnemyCharacterBase::OnPlayerOverlapped(AActor* OverlapPlayer)
 	}
 }
 
+void APGEnemyCharacterBase::RecheckOverlappingPlayers()
+{
+	if (!HasAuthority() || !TouchCollider)
+	{
+		return;
+	}
+
+	TArray<AActor*> OverlappingActors;
+	TouchCollider->GetOverlappingActors(OverlappingActors);
+
+	for (AActor* Actor : OverlappingActors)
+	{
+		if (Actor && Actor != this)
+		{
+			OnPlayerOverlapped(Actor);
+		}
+	}
+}
+
 void APGEnemyCharacterBase::OnDoorOverlapped(AActor* OverlapDoor)
 {
 	if (APGDoor1* OverlappedDoor = Cast<APGDoor1>(OverlapDoor))

@@ -8,6 +8,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "Enemy/Blind/AI/Controllers/PGBlindAIController.h"
+#include "Character/Component/PGSoundManagerComponent.h"
+
 
 UGA_BlindBite::UGA_BlindBite()
 {
@@ -50,8 +52,19 @@ void UGA_BlindBite::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 		return;
 	}
 
-	Blackboard->SetValueAsBool(FName("DetectedPlayer"), true); //Behavior tree의 Detected Player 값 변경.
+	OwnerPawn->SetSoundState(EBlindSoundState::Attacking);
+	// Play roar sound before chasing.
+	UPGSoundManagerComponent* SoundManager = GetAvatarActorFromActorInfo()->FindComponentByClass<UPGSoundManagerComponent>();
+	if (SoundManager)
+	{
+		SoundManager->TriggerSoundForAllPlayers(TEXT("ENEMY_Blind_Attack"), OwnerPawn->GetActorLocation());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager from AvatarActor in UGA_BlindChase"));
+	}
 
+	Blackboard->SetValueAsBool(FName("DetectedPlayer"), true); //Behavior tree의 Detected Player 값 변경.
 
 	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,                                 // Ability 객체
@@ -64,18 +77,22 @@ void UGA_BlindBite::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	);
 
 	PlayMontageTask->OnCompleted.AddDynamic(this, &UGA_BlindBite::OnMontageCompleted);
+	PlayMontageTask->OnCancelled.AddDynamic(this, &UGA_BlindBite::OnMontageCompleted);
+	PlayMontageTask->OnInterrupted.AddDynamic(this, &UGA_BlindBite::OnMontageCompleted);
 
-
-	GetAbilitySystemComponentFromActorInfo()->
-		AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting")));
+	GetAbilitySystemComponentFromActorInfo()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting")));
 
 	PlayMontageTask->ReadyForActivation();
 }
 
+void UGA_BlindBite::OnMontageCompleted()
+{
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
 void UGA_BlindBite::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	GetAbilitySystemComponentFromActorInfo()->
-		RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting")));
+	GetAbilitySystemComponentFromActorInfo()->RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting")));
 
 	if (APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo()))
 	{
@@ -89,13 +106,9 @@ void UGA_BlindBite::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 				AIC->ResetHuntLevel();
 			}
 		}
+
+		OwnerPawn->RecheckOverlappingPlayers();
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-void UGA_BlindBite::OnMontageCompleted()
-{
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-	
 }

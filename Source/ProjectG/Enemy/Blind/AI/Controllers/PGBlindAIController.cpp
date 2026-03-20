@@ -60,6 +60,7 @@ void APGBlindAIController::ResetHuntLevel()
 	GetBlackboardComponent()->SetValueAsInt("DetectedMaxNoiseMagnitude", -1);
 	OwnerPawn->GetAbilitySystemComponent()->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
 	OwnerPawn->SetHuntLevel(EBlindHuntLevel::Exploration);
+	OwnerPawn->SetSoundState(EBlindSoundState::Breathing);
 }
 
 void APGBlindAIController::SetupPerceptionSystem()
@@ -148,6 +149,7 @@ void APGBlindAIController::CalculateNoise(float Noise, FVector SourceLocation)
 		//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("MaxThreshold")));
 
 		GetBlackboardComponent()->SetValueAsVector("TargetLocation", SourceLocation);
+		OwnerPawn->SetSoundState(EBlindSoundState::Chasing);
 
 		UE_LOG(LogPGEnemyBlind, Log, TEXT("PGBlind chase new max noise."));
 		
