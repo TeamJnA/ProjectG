@@ -14,8 +14,8 @@ APGStorage::APGStorage()
 
 	RoomDir->SetRelativeLocation(FVector(190.0f, 0.0f, 130.0f));
 	EnemySpawnPoint->SetRelativeLocation(FVector(430.0f, -10.0f, 220.0f));
-	OverlapBox->SetRelativeLocation(FVector(610.0f, 230.0f, 340.0f));
-	OverlapBox->SetRelativeScale3D(FVector(18.0f, 19.75f, 10.25f));
+	OverlapBox->SetRelativeLocation(FVector(610.0f, 240.0f, 340.0f));
+	OverlapBox->SetRelativeScale3D(FVector(18.5f, 20.0f, 10.25f));
 
 	RoomMesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	RoomMesh->SetupAttachment(GeometryFolder);
