@@ -55,6 +55,13 @@ void APGChaosCacheManager::UpdateDissolve(float Value)
 void APGChaosCacheManager::OnDissolveFinished()
 {
 	SetActorTickEnabled(false);
+
+	// Destroy this actor
+	if (HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[APGChaosCacheManager] Destroyed after broken"));
+		SetLifeSpan(2.0f);
+	}
 }
 
 void APGChaosCacheManager::Multicast_CleanupGeometyCollection_Implementation()
