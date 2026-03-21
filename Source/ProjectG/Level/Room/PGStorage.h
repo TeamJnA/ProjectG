@@ -4,23 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "Level/Room/PGMasterRoom.h"
-#include "PGBarrelRoom.generated.h"
+#include "PGStorage.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API APGBarrelRoom : public APGMasterRoom
+class PROJECTG_API APGStorage : public APGMasterRoom
 {
 	GENERATED_BODY()
 
 public:
-	APGBarrelRoom();
+	APGStorage();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	TObjectPtr<UChildActorComponent> RoomMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Bonfire")
-	TObjectPtr<UChildActorComponent> Bonfire;
+	TObjectPtr<UChildActorComponent> RoomMesh;	
 };
