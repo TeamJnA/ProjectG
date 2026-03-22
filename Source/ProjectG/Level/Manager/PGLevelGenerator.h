@@ -52,6 +52,10 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	void AddItemSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck);
+
+	TObjectPtr<USceneComponent> GetRandomPointFromSpecificList(TArray<TObjectPtr<USceneComponent>>& TargetList);
+
 	UPROPERTY(EditDefaultsOnly, Category = "Level Generation", meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TSubclassOf<APGMasterRoom>> RoomClassMap;
 
@@ -63,8 +67,19 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> DoorPointsList;
 
+	// Item Spawn ~
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> ItemSpawnPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> ExitKeyPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> HandWheelPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> RustOilPointsList;
+	// ~
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
