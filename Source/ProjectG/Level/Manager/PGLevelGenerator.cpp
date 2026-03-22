@@ -287,25 +287,30 @@ void APGLevelGenerator::SpawnNextRoom()
 	{
 		TargetRoomName = TEXT("Corridor_Simple");
 	}
-	// BedRoom 2
-	else if (RoomAmount > 18)
+	// BedRoom 1
+	else if (RoomAmount > 19)
 	{
 		TargetRoomName = TEXT("Room3");
 	}
 	// SmallCorridor_Mannequin 1
-	else if (RoomAmount > 17)
+	else if (RoomAmount > 18)
 	{
 		TargetRoomName = TEXT("SmallCorridor_Mannequin");
 	}
 	// Library 1
-	else if (RoomAmount > 16)
+	else if (RoomAmount > 17)
 	{
 		TargetRoomName = TEXT("LibraryRoom");
 	}
 	// SmallCorridor 2
-	else if (RoomAmount > 14)
+	else if (RoomAmount > 15)
 	{
 		TargetRoomName = TEXT("Room2");
+	}
+	// DiningRoom 1
+	else if (RoomAmount > 14)
+	{
+		TargetRoomName = TEXT("DiningRoom");
 	}
 	// Corridor 1
 	else if (RoomAmount > 13)
@@ -322,10 +327,15 @@ void APGLevelGenerator::SpawnNextRoom()
 	{
 		TargetRoomName = TEXT("Corridor_Dark");
 	}
-	// StairRoom_Simple 2
-	else if (RoomAmount > 8)
+	// StairRoom_Simple 1
+	else if (RoomAmount > 9)
 	{
 		TargetRoomName = TEXT("StairRoom_Simple");
+	}
+	// Storage 1
+	else if (RoomAmount > 8)
+	{
+		TargetRoomName = TEXT("Storage");
 	}
 	// Corridor_Simple 1
 	else if (RoomAmount > 7)
@@ -397,7 +407,7 @@ void APGLevelGenerator::SpawnNextRoom()
 * Overlap x -> RoomGraph에 추가 -> 부모 Room의 인접 Room으로 추가, 본인의 인접 Room으로 부모 Room 추가
 * 사용된 ExitPoint를 ExitPointsList에서 제거, DoorPointsList에 추가
 * 생성 확정된 Room의 ExitPoints를 ExitPointsList에 추가,
-* 생성 확정된 Room의 ItemSpawnPoints를 ItemSpawnPointsList에 추가
+* 생성 확정된 Room의 ItemSpawnPoints를 Tag에 맞춰 ItemSpawnPointsList에 추가
 * RoomAmount가 남은 경우 다음 Room 생성
 * RoomAmount를 모두 소모한 경우 Room 생성 종료, 구조물 생성
 */

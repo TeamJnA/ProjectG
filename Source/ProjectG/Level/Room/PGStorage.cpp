@@ -12,6 +12,13 @@ APGStorage::APGStorage()
 
 	WallClass = APGWall_Brown::StaticClass();
 
+	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
+	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
+	ItemSpawnPoint0->SetRelativeLocation(FVector(200.0f, 200.0f, 200.0f));
+	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	ItemSpawnPoint0->bHiddenInGame = true;
+
 	RoomDir->SetRelativeLocation(FVector(190.0f, 0.0f, 130.0f));
 	EnemySpawnPoint->SetRelativeLocation(FVector(430.0f, -10.0f, 220.0f));
 	OverlapBox->SetRelativeLocation(FVector(610.0f, 240.0f, 340.0f));

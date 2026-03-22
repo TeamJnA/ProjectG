@@ -12,6 +12,13 @@ APGBarrelRoom::APGBarrelRoom()
 	
 	WallClass = APGWall::StaticClass();
 
+	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
+	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
+	ItemSpawnPoint0->SetRelativeLocation(FVector(200.0f, 200.0f, 200.0f));
+	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	ItemSpawnPoint0->bHiddenInGame = true;
+
 	RoomDir->SetRelativeLocation(FVector(300.0f, 0.0f, 130.0f));
 	EnemySpawnPoint->SetRelativeLocation(FVector(550.0f, 280.0f, 230.0f));
 	OverlapBox->SetRelativeLocation(FVector(620.0f, 255.0f, 345.0f));

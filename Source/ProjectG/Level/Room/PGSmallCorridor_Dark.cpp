@@ -23,17 +23,10 @@ APGSmallCorridor_Dark::APGSmallCorridor_Dark()
 
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint0->SetRelativeLocation(FVector(666.0f, 429.0f, 72.0f));
+	ItemSpawnPoint0->SetRelativeLocation(FVector(666.0f, 743.0f, 72.0f));
 	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint0->bHiddenInGame = true;
-
-	ItemSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint1"));
-	ItemSpawnPoint1->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint1->SetRelativeLocation(FVector(666.0f, 743.0f, 72.0f));
-	ItemSpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint1->bHiddenInGame = true;
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(920.0f, 0.0f, 250.0f));
 

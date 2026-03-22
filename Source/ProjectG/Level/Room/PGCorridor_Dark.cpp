@@ -51,6 +51,7 @@ APGCorridor_Dark::APGCorridor_Dark()
 	ExitDir4->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir4->bHiddenInGame = true;
 
+	/*
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
 	ItemSpawnPoint0->SetRelativeLocation(FVector(1234.0f, 312.0f, 104.0f));
@@ -58,6 +59,7 @@ APGCorridor_Dark::APGCorridor_Dark()
 	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint0->bHiddenInGame = true;
 
+	
 	ItemSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint1"));
 	ItemSpawnPoint1->SetupAttachment(ItemSpawnPointsFolder);
 	ItemSpawnPoint1->SetRelativeLocation(FVector(1834.0f, -316.0f, 104.0f));
@@ -78,6 +80,7 @@ APGCorridor_Dark::APGCorridor_Dark()
 	ItemSpawnPoint3->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	ItemSpawnPoint3->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint3->bHiddenInGame = true;
+	*/
 
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);

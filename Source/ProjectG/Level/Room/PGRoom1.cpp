@@ -51,12 +51,14 @@ APGRoom1::APGRoom1()
 	ExitDir4->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir4->bHiddenInGame = true;
 
+	/*
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
 	ItemSpawnPoint0->SetRelativeLocation(FVector(594.0f, -344.0f, 105.0f));
 	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint0->bHiddenInGame = true;
+	*/
 
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);

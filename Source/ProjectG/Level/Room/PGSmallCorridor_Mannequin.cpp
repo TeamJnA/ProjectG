@@ -23,17 +23,10 @@ APGSmallCorridor_Mannequin::APGSmallCorridor_Mannequin()
 
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint0->SetRelativeLocation(FVector(1160.0f, -420.0f, 105.0f));
+	ItemSpawnPoint0->SetRelativeLocation(FVector(1160.0f, -675.0f, 105.0f));
 	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint0->bHiddenInGame = true;
-
-	ItemSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint1"));
-	ItemSpawnPoint1->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint1->SetRelativeLocation(FVector(1160.0f, -675.0f, 105.0f));
-	ItemSpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint1->bHiddenInGame = true;
 
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);

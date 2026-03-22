@@ -36,13 +36,6 @@ APGLibraryRoom::APGLibraryRoom()
 	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint0->bHiddenInGame = true;
 
-	ItemSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint1"));
-	ItemSpawnPoint1->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint1->SetRelativeLocation(FVector(1304.0f, -303.0f, 72.0f));
-	ItemSpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint1->bHiddenInGame = true;
-
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
 	MannequinSpawnPoint0->SetRelativeLocation(FVector(670.0f, 60.0f, 6.0f));

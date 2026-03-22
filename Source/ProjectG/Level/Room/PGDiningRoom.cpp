@@ -11,6 +11,13 @@ APGDiningRoom::APGDiningRoom()
 	static ConstructorHelpers::FClassFinder<AActor> RoomMeshRef(TEXT("/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionDiningRoom.LI_MansionDiningRoom_C"));
 
 	WallClass = APGWall_Brown::StaticClass();
+	
+	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
+	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
+	ItemSpawnPoint0->SetRelativeLocation(FVector(200.0f, 200.0f, 200.0f));
+	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	ItemSpawnPoint0->bHiddenInGame = true;
 
 	RoomDir->SetRelativeLocation(FVector(290.0f, 0.0f, 130.0f));
 	EnemySpawnPoint->SetRelativeLocation(FVector(400.0f, 800.0f, 220.0f));

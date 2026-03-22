@@ -11,6 +11,13 @@ APGChargerRoom::APGChargerRoom()
 
 	WallClass = APGWall::StaticClass();
 
+	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
+	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
+	ItemSpawnPoint0->SetRelativeLocation(FVector(200.0f, 200.0f, 200.0f));
+	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	ItemSpawnPoint0->bHiddenInGame = true;
+
 	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 480.0f));
 	OverlapBox->SetRelativeScale3D(FVector(19.25f, 19.5f, 14.75f));
 

@@ -12,7 +12,7 @@ APGElevatorRoom::APGElevatorRoom()
 	static ConstructorHelpers::FClassFinder<AActor> ExitElevatorRef(TEXT("/Game/ProjectG/Levels/Room/Exit/ExitElevator/BP_ExitElevator.BP_ExitElevator_C"));
 
 	WallClass = APGWall::StaticClass();
-
+	
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);
 	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
@@ -22,6 +22,7 @@ APGElevatorRoom::APGElevatorRoom()
 	ExitDir0->SetArrowLength(80.1f);
 	ExitDir0->bHiddenInGame = true;
 
+	/*
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
 	ItemSpawnPoint0->SetRelativeLocation(FVector(1166.0f, -676.0f, 105.0f));
@@ -42,6 +43,7 @@ APGElevatorRoom::APGElevatorRoom()
 	ItemSpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	ItemSpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint2->bHiddenInGame = true;
+	*/
 
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
 
