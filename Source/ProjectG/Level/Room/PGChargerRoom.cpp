@@ -13,7 +13,6 @@ APGChargerRoom::APGChargerRoom()
 
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint0->SetRelativeLocation(FVector(200.0f, 200.0f, 200.0f));
 	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint0->bHiddenInGame = true;

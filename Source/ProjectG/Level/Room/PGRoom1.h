@@ -40,6 +40,20 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
 	TObjectPtr<UArrowComponent> ItemSpawnPoint0;
 	*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PropSpawnPoint")
+	TObjectPtr<UArrowComponent> PropSpawnPoint0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PropSpawnPoint")
+	TObjectPtr<UArrowComponent> PropSpawnPoint1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PropSpawnPoint")
+	TObjectPtr<UArrowComponent> PropSpawnPoint2;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PropSpawnPoint")
+	TObjectPtr<UArrowComponent> PropSpawnPoint3;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PropSpawnPoint")
+	TObjectPtr<UArrowComponent> PropSpawnPoint4;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
 	TObjectPtr<UArrowComponent> MannequinSpawnPoint0;
