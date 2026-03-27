@@ -550,7 +550,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	CloseHoles();
 	SpawnDoors();
 	SpawnItems();
-	SpawnMannequins();
+	//SpawnMannequins();
 	SpawnFuseBoxes();
 	SpawnWaiterStands();
 	SpawnHideProps();
@@ -780,11 +780,16 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 	{
 		ItemKeyToLoad = FName("ChainKey");
 		SelectedItemSpawnPoint = GetRandomPointFromSpecificListAndRemove(ExitKeyPointsList, ItemSpawnPointsList);
+
+		HandWheelPointsList.Remove(SelectedItemSpawnPoint);
+		RustOilPointsList.Remove(SelectedItemSpawnPoint);
 	}
 	else if (ItemAmount > 13) // HandWheel 
 	{
 		ItemKeyToLoad = FName("HandWheel");
 		SelectedItemSpawnPoint = GetRandomPointFromSpecificListAndRemove(HandWheelPointsList, ItemSpawnPointsList);
+
+		RustOilPointsList.Remove(SelectedItemSpawnPoint);
 	}
 	else if (ItemAmount > 12) // RustOil
 	{
@@ -956,6 +961,94 @@ void APGLevelGenerator::SpawnWaiterStands()
 
 void APGLevelGenerator::SpawnHideProps()
 {
+	const int32 PropsNum = HidePropClasses.Num();
+	int32 CurProp = 0;
+
+	// 방 인덱스 리스트 생성 (0~4번 방) 후 섞기
+	TArray<int32> RoomIndices;
+	for (int32 i = 0; i < HidePropSpawnPointsList.Num() / 4; ++i)
+	{
+		RoomIndices.Add(i);
+	}
+
+	for (int32 i = RoomIndices.Num() - 1; i > 0; i--)
+	{
+		int32 j = FMath::RandRange(0, i);
+		RoomIndices.Swap(i, j);
+	}
+
+	// 반은 2개씩, 나머지 반은 1개씩 생성
+	for (int32 i = 0; i < RoomIndices.Num() ; ++i)
+	{
+		int32 SelectedRoomIdx = RoomIndices[i];
+
+		// 해당 방의 시작 인덱스 계산 (방당 4개씩)
+		int32 StartIdx = SelectedRoomIdx * 4;
+		int32 EndIdx = StartIdx + 3;
+
+		// 방 내부의 4개 포인트 중 2개를 랜덤 선택
+		TArray<int32> Points;
+		for (int32 j = StartIdx; j <= EndIdx; ++j)
+		{
+			Points.Add(j);
+		}
+
+		for (int32 j = Points.Num() - 1; j > 0; --j)
+		{
+			int32 k = FMath::RandRange(0, j);
+			Points.Swap(j, k);
+		}
+
+		int32 RandomPointIdx = Points[0];
+		int32 RandomPointIdx2 = Points[1];
+
+		// Spawn
+		if (HidePropSpawnPointsList.IsValidIndex(RandomPointIdx) && HidePropSpawnPointsList[RandomPointIdx])
+		{
+			USceneComponent* SpawnPoint = HidePropSpawnPointsList[RandomPointIdx];
+			FTransform SpawnTransform = SpawnPoint->GetComponentTransform();
+
+			FActorSpawnParameters Params;
+			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			APGHideProp* NewProp = GetWorld()->SpawnActor<APGHideProp>(
+				HidePropClasses[CurProp], // 한 종류씩 순서대로 꺼냄
+				SpawnTransform,
+				Params
+			);
+
+			UE_LOG(LogTemp, Log, TEXT("Spawn HideProp. PropIdx[%d] SpawnPointIndex[%d] "), CurProp, RandomPointIdx);
+
+			const int32 RandPropChoose = FMath::RandRange(1, PropsNum - 1);
+			CurProp += RandPropChoose;
+			CurProp %= PropsNum;
+		}
+
+		// 몇몇 방은 2개 Spawn
+		if (i < RoomIndices.Num() / 2)
+		{
+			if (HidePropSpawnPointsList.IsValidIndex(RandomPointIdx2) && HidePropSpawnPointsList[RandomPointIdx2])
+			{
+				USceneComponent* SpawnPoint = HidePropSpawnPointsList[RandomPointIdx2];
+				FTransform SpawnTransform = SpawnPoint->GetComponentTransform();
+
+				FActorSpawnParameters Params;
+				Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				APGHideProp* NewProp = GetWorld()->SpawnActor<APGHideProp>(
+					HidePropClasses[CurProp],
+					SpawnTransform,
+					Params
+				);
+
+				UE_LOG(LogTemp, Log, TEXT("Spawn HideProp. PropIdx[%d] SpawnPointIndex[%d] "), CurProp, RandomPointIdx2);
+
+				const int32 RandPropChoose = FMath::RandRange(1, PropsNum - 1);
+				CurProp += RandPropChoose;
+				CurProp %= PropsNum;
+			}
+		}
+	}
 }
 
 /*

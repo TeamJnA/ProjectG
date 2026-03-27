@@ -105,6 +105,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<APGWaiterStand> WaiterStandClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<APGHideProp>> HidePropClasses;
+
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;
 

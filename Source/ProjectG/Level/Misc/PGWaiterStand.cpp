@@ -14,6 +14,8 @@ APGWaiterStand::APGWaiterStand()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
+    bReplicates = true;
+
     // 1. Root Arrow ¼³Á¤
     RootArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("RootArrow"));
     RootComponent = RootArrow;
