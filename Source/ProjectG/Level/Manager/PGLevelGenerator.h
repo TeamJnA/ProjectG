@@ -97,6 +97,9 @@ private:
 	TArray<TObjectPtr<USceneComponent>> WaiterStandSpawnPointsList;
 
 	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> GlassBottleSpawnPointsList;
+
+	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> HidePropSpawnPointsList;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Environment", meta = (AllowPrivateAccess = "true"))

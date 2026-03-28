@@ -475,9 +475,17 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 			FuseBoxSpawnPointsList.Append(FuseBoxSpawnPoints);
 		}
 
-		// Spawn WaiterStand. 
+		// Props(Hide prop, waiter stand) points 
 		// 방 별로 포인트를 하나씩 가져오고, 그 포인트를 제거 후 나머지 포인터들 HideProp생성용으로 가져옴.
 		AddPropsSpawnPoint(RoomToCheck);
+
+		// Glass bottle spawn points
+		if (const USceneComponent* GlassBottleSpawnPointFolder = RoomToCheck->GetGlassBottleSpawnPointsFolder())
+		{
+			const TArray<USceneComponent*>& GlassBottleSpawnPoints = GlassBottleSpawnPointFolder->GetAttachChildren();
+			GlassBottleSpawnPointsList.Reserve(GlassBottleSpawnPointsList.Num() + GlassBottleSpawnPoints.Num());
+			GlassBottleSpawnPointsList.Append(GlassBottleSpawnPoints);
+		}
 
 		if (RoomAmount > 0)
 		{
@@ -658,7 +666,8 @@ void APGLevelGenerator::SpawnDoors()
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.bNoFail = true;
 
-		const bool bShouldBeLocked = (LockedDoorAmount > 0);
+		// const bool bShouldBeLocked = (LockedDoorAmount > 0);
+		const bool bShouldBeLocked = false;
 
 		check(PGDoor);
 		APGDoor1* DefaultDoor = PGDoor->GetDefaultObject<APGDoor1>();
@@ -748,8 +757,47 @@ void APGLevelGenerator::AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck
 */
 void APGLevelGenerator::SpawnItems()
 {
+	// Spawn basic items
 	const int32 ItemAmount = 15;
 	SpawnSingleItem_Async(ItemAmount);
+
+	// Spawn glass bottles
+	for (TObjectPtr<USceneComponent> SpawnPoint : GlassBottleSpawnPointsList)
+	{
+		// 20% 확률로 생성 안함
+		if (FMath::FRand() < 0.2f)
+		{
+			continue;
+		}
+
+		if (SpawnPoint)
+		{
+			UWorld* World = GetWorld();
+			UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+			if (!GI || !World)
+			{
+				return;
+			}
+
+			const FTransform SpawnTransform(SpawnPoint->GetComponentTransform());
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			GI->RequestLoadItemData(FName("GlassBottle"), FOnItemDataLoaded::CreateLambda([World, SpawnTransform, SpawnParams, ItemAmount, this](UPGItemData* LoadedItemData)
+				{
+					if (LoadedItemData)
+					{
+						APGItemActor* NewItem = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
+						if (NewItem)
+						{
+							NewItem->InitWithData(LoadedItemData);
+						}
+					}
+				}));
+		}
+	}
 }
 
 void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
