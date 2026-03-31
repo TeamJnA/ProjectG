@@ -47,6 +47,30 @@ void APGGM_Test::SpawnDoorTEST(FVector InLocation, FRotator InRotator)
 	}
 }
 
+void APGGM_Test::BreakDoorTEST(AActor* InteractInvestigator)
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// 1. 해당 클래스의 모든 액터를 담을 배열 생성
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(World, APGDoor1::StaticClass(), FoundActors);
+
+	// 2. 배열을 순회하며 함수 실행
+	for (AActor* Actor : FoundActors)
+	{
+		APGDoor1* Door = Cast<APGDoor1>(Actor);
+		if (Door)
+		{
+			// 3. APGDoor1 클래스 내부의 A 함수 실행
+			Door->BreakDoorByEnemy(InteractInvestigator);
+
+			// 만약 레벨에 문이 여러 개인데 하나만 실행하고 싶다면 여기서 break;
+			// break; 
+		}
+	}
+}
+
 void APGGM_Test::BeginPlay()
 {
 	Super::BeginPlay();
@@ -66,7 +90,7 @@ void APGGM_Test::BeginPlay()
 void APGGM_Test::InitWorld()
 {
 	InitSoundManagerToPlayers();
-	SpawnGhost();
+	// SpawnGhost();
 }
 
 void APGGM_Test::InitSoundManagerToPlayers()

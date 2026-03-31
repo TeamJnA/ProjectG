@@ -10,6 +10,7 @@
 #include "PGDoor1.generated.h"
 
 class APGChaosCacheManager;
+class UNiagaraComponent;
 
 UENUM(BlueprintType)
 enum class EDoorOpenType : uint8
@@ -156,6 +157,9 @@ protected:
 
 	UPROPERTY(Replicated)
 	TObjectPtr<APGChaosCacheManager> CCMClosed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	TObjectPtr<UNiagaraComponent> DoorBreakFX;
 
 private:
 	UPROPERTY(Replicated, VisibleAnywhere)
