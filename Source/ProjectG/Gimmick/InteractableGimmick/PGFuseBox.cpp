@@ -12,6 +12,7 @@
 #include "Interface/SoundManagerInterface.h"
 #include "Sound/PGSoundManager.h"
 #include "GameFramework/GameModeBase.h"
+#include "NiagaraComponent.h"
 
 
 // Sets default values
@@ -32,6 +33,10 @@ APGFuseBox::APGFuseBox()
 
     FuseAttachPoint = CreateDefaultSubobject<USceneComponent>(TEXT("FuseAttachPoint"));
     FuseAttachPoint->SetupAttachment(Root);
+
+    FuseSparkFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("FuseSparkFX"));
+    FuseSparkFX->SetupAttachment(Root);
+    FuseSparkFX->bAutoActivate = false;
 }
 
 // Called when the game starts or when spawned
@@ -179,6 +184,10 @@ void APGFuseBox::OnRep_FuseBoxState()
         case EFuseBoxState::Empty:
         {
             TurnOffRoomLights();
+            if (FuseSparkFX)
+            {
+                FuseSparkFX->Activate(true);
+            }
             break;
         }
 

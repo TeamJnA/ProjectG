@@ -10,6 +10,7 @@
 
 class APGItemActor;
 class UPGItemData;
+class UNiagaraComponent;
 
 UENUM(BlueprintType)
 enum class EFuseBoxState : uint8
@@ -116,4 +117,8 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_ShakeStep)
 	uint8 ShakeStep = 0;
+
+	// VFX
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	TObjectPtr<UNiagaraComponent> FuseSparkFX;
 };
