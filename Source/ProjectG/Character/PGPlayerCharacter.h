@@ -542,6 +542,8 @@ public:
 	FORCEINLINE UMaterialInstanceDynamic* GetLensDistortionMID() const { return LensDistortionMID; }
 	void FireCameraFlash();
 
+	void StopCameraFlash();
+
 protected:
 	void InitLensDistortionMaterial();
 	void CameraZoom(const FInputActionValue& Value);
@@ -551,8 +553,6 @@ protected:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_FireCameraFlash();
-
-	void StopCameraFlash();
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	TObjectPtr<UPGCameraComponent> CameraComp;

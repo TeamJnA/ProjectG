@@ -379,6 +379,7 @@ void APGGameState::OnEnterSequenceFinished()
 			if (Pawn)
 			{
 				Pawn->GetMesh()->SetVisibility(true, true);
+				Pawn->StopCameraFlash();
 				Pawn->SetHeadlightVisible(false);
 
 				if (HasAuthority())
