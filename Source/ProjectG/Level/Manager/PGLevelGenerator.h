@@ -12,6 +12,8 @@ class APGChargerCharacter;
 class APGTriggerGimmickMannequin;
 class APGDoor1;
 class APGFuseBox;
+class APGWaiterStand;
+class APGHideProp;
 
 UCLASS()
 class PROJECTG_API APGLevelGenerator : public AActor
@@ -37,6 +39,8 @@ protected:
 	void SpawnItems();
 	void SpawnMannequins();
 	void SpawnFuseBoxes();
+	void SpawnWaiterStands();
+	void SpawnHideProps();
 	bool SpawnEnemy();
 	void SpawnSingleItem_Async(int32 ItemAmount);
 
@@ -52,6 +56,12 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	void AddItemSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck);
+
+	void AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck);
+
+	TObjectPtr<USceneComponent> GetRandomPointFromSpecificListAndRemove(TArray<TObjectPtr<USceneComponent>>& TargetList, TArray<TObjectPtr<USceneComponent>>& TargetRemoveList);
+
 	UPROPERTY(EditDefaultsOnly, Category = "Level Generation", meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TSubclassOf<APGMasterRoom>> RoomClassMap;
 
@@ -63,8 +73,19 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> DoorPointsList;
 
+	// Item Spawn ~
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> ItemSpawnPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> ExitKeyPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> HandWheelPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> RustOilPointsList;
+	// ~
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
@@ -72,8 +93,23 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> FuseBoxSpawnPointsList;
 
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> WaiterStandSpawnPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> GlassBottleSpawnPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> HidePropSpawnPointsList;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Environment", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<APGFuseBox> FuseBoxClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<APGWaiterStand> WaiterStandClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<APGHideProp>> HidePropClasses;
 
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;

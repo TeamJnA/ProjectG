@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/BoxComponent.h"
+#include "NiagaraComponent.h"
 #include "Character/PGPlayerCharacter.h"
 
 APGExitElevator::APGExitElevator()
@@ -44,6 +45,13 @@ APGExitElevator::APGExitElevator()
 	ElevatorBodyCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ElevatorBodyCollision"));
 	ElevatorBodyCollision->SetupAttachment(ElevatorBody);
 	
+	FuseSparkFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("FuseSparkFX"));
+	FuseSparkFX->SetupAttachment(Root);
+	FuseSparkFX->bAutoActivate = false;
+
+	FuseSparkFX2 = CreateDefaultSubobject<UNiagaraComponent>(TEXT("FuseSparkFX2"));
+	FuseSparkFX2->SetupAttachment(Root);
+	FuseSparkFX2->bAutoActivate = false;
 
 	FuseState = 0;
 
@@ -185,11 +193,23 @@ void APGExitElevator::OnRep_FuseState()
 {
 	const int32 FuseIndex = FuseState - 1;
 
+	// Play spark vfx when attach fuse
+	if (FuseIndex == 0 && FuseSparkFX)
+	{
+		FuseSparkFX->Activate(true);
+	}
+	else if (FuseIndex == 1 && FuseSparkFX2)
+	{
+		FuseSparkFX2->Activate(true);
+	}
+
 	if (FuseStatusAnim.IsValidIndex(FuseIndex) && FuseStatusAnim[FuseIndex])
 	{
+		// Set fuse panel pose to proper state
 		FusePanel->SetAnimation(FuseStatusAnim[FuseIndex]);
 		FusePanel->Play(false);
 
+		// when start escape
 		if (FuseIndex == 2)
 		{
 			FusePanelCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);

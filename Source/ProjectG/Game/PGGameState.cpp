@@ -244,7 +244,7 @@ void APGGameState::HandlePlayerFinished(APlayerState* FinishedPlayerState)
 		PS->SetHasFinishedGame(true);
 
 		APGPlayerCharacter* FinishedPlayerCharacter = Cast<APGPlayerCharacter>(PS->GetPawn());
-
+		
 		if (IsGameFinished())
 		{
 			SetCurrentGameState(EGameState::EndGame);
@@ -290,15 +290,15 @@ void APGGameState::Multicast_PlayerEnterLevelSequence_Implementation(int32 NumPl
 void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 {
 	// Set Player Characters hidden 
-	// Input is ignored when first spawn
+	// Input is ignored when first spawn on player character class
 	for (APlayerState* PS : PlayerArray)
 	{
 		if (PS)
 		{
-			APawn* Pawn = PS->GetPawn();
+			APGPlayerCharacter* Pawn = Cast<APGPlayerCharacter>(PS->GetPawn());
 			if (Pawn)
 			{
-				Pawn->SetActorHiddenInGame(true);
+				Pawn->GetMesh()->SetVisibility(false, true);
 			}
 		}
 	}
@@ -338,6 +338,7 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 	}
 
 	// Set actors to player num
+	// 플레이어 인원 수 외의 액터들은 제거
 	for (int32 i = NumPlayers + 1; i <= 4; ++i)
 	{
 		FName TargetTag = *FString::Printf(TEXT("Player%d"), i);
@@ -374,10 +375,16 @@ void APGGameState::OnEnterSequenceFinished()
 	{
 		if (PS)
 		{
-			APawn* Pawn = PS->GetPawn();
+			APGPlayerCharacter* Pawn = Cast<APGPlayerCharacter>(PS->GetPawn());
 			if (Pawn)
 			{
-				Pawn->SetActorHiddenInGame(false);
+				Pawn->GetMesh()->SetVisibility(true, true);
+				Pawn->SetHeadlightVisible(false);
+
+				if (HasAuthority())
+				{
+					Pawn->ToggleHeadLight();
+				}
 			}
 		}
 	}

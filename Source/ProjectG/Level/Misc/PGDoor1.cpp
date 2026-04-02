@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Physics/PGChaosCacheManager.h"
 #include "GameFramework/GameModeBase.h"
+#include "NiagaraComponent.h"
 
 #include "AbilitySystemComponent.h"
 #include "Interact/Ability/GA_Interact_Door.h"
@@ -77,6 +78,11 @@ APGDoor1::APGDoor1()
 	bDoorBroken.bIsBroken = false;
 
 	DoorOpenType = EDoorOpenType::Closed;
+
+	DoorBreakFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("DoorBreakFX"));
+	DoorBreakFX->SetupAttachment(Mesh0);
+
+	DoorBreakFX->bAutoActivate = false;
 }
 
 void APGDoor1::BeginPlay()
@@ -300,9 +306,8 @@ void APGDoor1::OnRep_DoorBroken()
 	}
 
 	// Set door hidden and uninteractable
-	SetActorHiddenInGame(true);
 	Mesh0->SetVisibleFlag(false);
-
+	Mesh0->SetCastShadow(false);
 	Mesh0->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// Set ChaosDestruction Start Transform
@@ -312,6 +317,10 @@ void APGDoor1::OnRep_DoorBroken()
 	CCMClosed->SetActorTransform(TargetDoorTransform);
 	CCMOpened->SetActorTransform(TargetDoorTransform);
 
+	// Set spawned DoorCloseFX direction
+	FVector FXDiretion(FVector::ZeroVector);
+	FVector FXDebrisDiretion(FVector::ZeroVector);
+
 	if (DoorOpenType == EDoorOpenType::Closed)
 	{
 
@@ -319,12 +328,17 @@ void APGDoor1::OnRep_DoorBroken()
 		{
 			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot+"));
 			// Á¤¹æÇâ
+			FXDiretion = FVector(0.0f, 1.0f, 0.0f);
+			FXDebrisDiretion = FVector(0.0f, 1.0f, 0.0f);
 		}
 		else
 		{
 			UE_LOG(LogTemp, Log, TEXT("Set CCMClosed Transform Dot-"));
 
 			CCMClosed->SetActorTransform(TargetDoorBackTransform);
+
+			FXDiretion = FVector(0.0f, -1.0f, 0.0f);
+			FXDebrisDiretion = FVector(0.0f, -1.0f, 0.0f);
 		}
 
 		CCMClosed->PlayCached();
@@ -343,6 +357,9 @@ void APGDoor1::OnRep_DoorBroken()
 			NewScale.Y = -1.0f;
 
 			CCMOpened->SetActorScale3D(NewScale);
+
+			FXDiretion = FVector(-0.5f, 0.5f, 0.0f);
+			FXDebrisDiretion = FVector(-0.5f, 0.3f, 0.0f);
 		}
 		else
 		{
@@ -355,6 +372,9 @@ void APGDoor1::OnRep_DoorBroken()
 			NewScale.X = -1.0f;
 
 			CCMOpened->SetActorScale3D(NewScale);
+
+			FXDiretion = FVector(-0.5f, -0.5f, 0.0f);
+			FXDebrisDiretion = FVector(-0.5f, -0.3f, 0.0f);
 		}
 
 		CCMOpened->PlayCached();
@@ -369,20 +389,36 @@ void APGDoor1::OnRep_DoorBroken()
 			NewScale.Y = -1.0f;
 
 			CCMOpened->SetActorScale3D(NewScale);
+
+			FXDiretion = FVector(0.5f, 0.5f, 0.0f);
+			FXDebrisDiretion = FVector(-0.5f, -0.3f, 0.0f);
 		}
 		else
 		{
 			UE_LOG(LogTemp, Log, TEXT("Set CCMOpen Transform to Opened B, Dot+"));
+
+			FXDiretion = FVector(0.5f, -0.5f, 0.0f);
+			FXDebrisDiretion = FVector(-0.5f, 0.3f, 0.0f);
 		}
 
 		CCMOpened->PlayCached();
+	}
+
+	// Play niagara system fx
+	if (DoorBreakFX)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[PGDoor1] Play Door Break FX"));
+		DoorBreakFX->SetVariableVec3(FName("User.Direction"), FXDiretion);
+		DoorBreakFX->SetVariableVec3(FName("User.DebrisDirection"), FXDebrisDiretion);
+		DoorBreakFX->SetVisibility(true);
+		DoorBreakFX->Activate(true);
 	}
 
 	// Destroy self
 	if (HasAuthority())
 	{
 		UE_LOG(LogTemp, Log, TEXT("[PGDoor1] Destroyed after broken"));
-		SetLifeSpan(2.0f);
+		SetLifeSpan(3.0f);
 	}
 }
 

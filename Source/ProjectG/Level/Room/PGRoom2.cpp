@@ -21,6 +21,7 @@ APGRoom2::APGRoom2()
 	ExitDir0->SetArrowLength(80.1f);
 	ExitDir0->bHiddenInGame = true;
 
+	/*
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
 	ItemSpawnPoint0->SetRelativeLocation(FVector(1166.0f, -676.0f, 105.0f));
@@ -41,6 +42,7 @@ APGRoom2::APGRoom2()
 	ItemSpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	ItemSpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint2->bHiddenInGame = true;
+	*/
 
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);

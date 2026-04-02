@@ -8,6 +8,7 @@
 #include "PGExitElevator.generated.h"
 
 class UBoxComponent;
+class UNiagaraComponent;
 /**
  * 
  */
@@ -63,6 +64,12 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fuse", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UAnimSequence>> FuseStatusAnim;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UNiagaraComponent> FuseSparkFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UNiagaraComponent> FuseSparkFX2;
 
 	UPROPERTY(ReplicatedUsing = OnRep_FuseState, BlueprintReadOnly, Category = "Fuse", meta = (AllowPrivateAccess = "true"))
 	int32 FuseState;

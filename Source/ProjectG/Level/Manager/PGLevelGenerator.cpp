@@ -18,6 +18,8 @@
 
 #include "Level/Misc/PGDoor1.h"
 #include "Level/Misc/PGWall.h"
+#include "Level/Misc/PGWaiterStand.h"
+#include "Level/Misc/PGHideProp.h"
 
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Enemy/Charger/Character/PGChargerCharacter.h"
@@ -274,7 +276,7 @@ void APGLevelGenerator::SpawnNextRoom()
 	APGMasterRoom* NewRoom = nullptr;
 	// Corridor 3
 	if (RoomAmount > 23)
-	{
+{
 		TargetRoomName = TEXT("Room1");
 	}
 	// Coddidor_Dark 2
@@ -287,25 +289,30 @@ void APGLevelGenerator::SpawnNextRoom()
 	{
 		TargetRoomName = TEXT("Corridor_Simple");
 	}
-	// BedRoom 2
-	else if (RoomAmount > 18)
+	// BedRoom 1
+	else if (RoomAmount > 19)
 	{
 		TargetRoomName = TEXT("Room3");
 	}
 	// SmallCorridor_Mannequin 1
-	else if (RoomAmount > 17)
+	else if (RoomAmount > 18)
 	{
 		TargetRoomName = TEXT("SmallCorridor_Mannequin");
 	}
 	// Library 1
-	else if (RoomAmount > 16)
+	else if (RoomAmount > 17)
 	{
 		TargetRoomName = TEXT("LibraryRoom");
 	}
 	// SmallCorridor 2
-	else if (RoomAmount > 14)
+	else if (RoomAmount > 15)
 	{
 		TargetRoomName = TEXT("Room2");
+	}
+	// DiningRoom 1
+	else if (RoomAmount > 14)
+	{
+		TargetRoomName = TEXT("DiningRoom");
 	}
 	// Corridor 1
 	else if (RoomAmount > 13)
@@ -322,10 +329,15 @@ void APGLevelGenerator::SpawnNextRoom()
 	{
 		TargetRoomName = TEXT("Corridor_Dark");
 	}
-	// StairRoom_Simple 2
-	else if (RoomAmount > 8)
+	// StairRoom_Simple 1
+	else if (RoomAmount > 9)
 	{
 		TargetRoomName = TEXT("StairRoom_Simple");
+	}
+	// Storage 1
+	else if (RoomAmount > 8)
+	{
+		TargetRoomName = TEXT("Storage");
 	}
 	// Corridor_Simple 1
 	else if (RoomAmount > 7)
@@ -436,8 +448,7 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 
 		RoomAmount--;
 
-		// MasterRoom .h
-		// const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
+		// ExitPoints
 		if (const USceneComponent* LatestRoomExitPointsFolder = RoomToCheck->GetExitPointsFolder())
 		{
 			const TArray<USceneComponent*>& LatestRoomExitPoints = LatestRoomExitPointsFolder->GetAttachChildren();
@@ -445,17 +456,10 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 			ExitPointsList.Append(LatestRoomExitPoints);
 		}
 
-		// MasterRoom .h
-		// const USceneComponent* GetItemSpawnPointsFolder() const { return ItemSpawnPointsFolder; }
-		if (const USceneComponent* ItemSpawnPointFolder = RoomToCheck->GetItemSpawnPointsFolder())
-		{
-			const TArray<USceneComponent*>& ItemSpawnPoints = ItemSpawnPointFolder->GetAttachChildren();
-			ItemSpawnPointsList.Reserve(ItemSpawnPointsList.Num() + ItemSpawnPoints.Num());
-			ItemSpawnPointsList.Append(ItemSpawnPoints);
-		}
+		// ItemPoints
+		AddItemSpawnPoint(RoomToCheck);
 
-		// MasterRoom.h
-		// const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
+		// MannequinPoints
 		if (const USceneComponent* MannequinSpawnPointFolder = RoomToCheck->GetMannequinSpawnPointsFolder())
 		{
 			const TArray<USceneComponent*>& MannequinSpawnPoints = MannequinSpawnPointFolder->GetAttachChildren();
@@ -463,13 +467,24 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 			MannequinSpawnPointsList.Append(MannequinSpawnPoints);
 		}
 
-		// MasterRoom.h
-		// virtual const USceneComponent* GetFuseBoxSpawnPointsFolder() const { return FuseBoxSpawnPointsFolder; }
+		// FuseBox points
 		if (const USceneComponent* FuseBoxSpawnPointFolder = RoomToCheck->GetFuseBoxSpawnPointsFolder())
 		{
 			const TArray<USceneComponent*>& FuseBoxSpawnPoints = FuseBoxSpawnPointFolder->GetAttachChildren();
 			FuseBoxSpawnPointsList.Reserve(FuseBoxSpawnPointsList.Num() + FuseBoxSpawnPoints.Num());
 			FuseBoxSpawnPointsList.Append(FuseBoxSpawnPoints);
+		}
+
+		// Props(Hide prop, waiter stand) points 
+		// 방 별로 포인트를 하나씩 가져오고, 그 포인트를 제거 후 나머지 포인터들 HideProp생성용으로 가져옴.
+		AddPropsSpawnPoint(RoomToCheck);
+
+		// Glass bottle spawn points
+		if (const USceneComponent* GlassBottleSpawnPointFolder = RoomToCheck->GetGlassBottleSpawnPointsFolder())
+		{
+			const TArray<USceneComponent*>& GlassBottleSpawnPoints = GlassBottleSpawnPointFolder->GetAttachChildren();
+			GlassBottleSpawnPointsList.Reserve(GlassBottleSpawnPointsList.Num() + GlassBottleSpawnPoints.Num());
+			GlassBottleSpawnPointsList.Append(GlassBottleSpawnPoints);
 		}
 
 		if (RoomAmount > 0)
@@ -543,8 +558,10 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	CloseHoles();
 	SpawnDoors();
 	SpawnItems();
-	SpawnMannequins();
+	//SpawnMannequins();
 	SpawnFuseBoxes();
+	SpawnWaiterStands();
+	SpawnHideProps();
 	if (!SpawnEnemy())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Enemy spawn failed. Restarting Level..."));
@@ -649,7 +666,8 @@ void APGLevelGenerator::SpawnDoors()
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.bNoFail = true;
 
-		const bool bShouldBeLocked = (LockedDoorAmount > 0);
+		// const bool bShouldBeLocked = (LockedDoorAmount > 0);
+		const bool bShouldBeLocked = false;
 
 		check(PGDoor);
 		APGDoor1* DefaultDoor = PGDoor->GetDefaultObject<APGDoor1>();
@@ -667,14 +685,119 @@ void APGLevelGenerator::SpawnDoors()
 }
 
 /*
+태그에 맞게 아이템스폰포인트를 리스트에 추가.
+*/
+void APGLevelGenerator::AddItemSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck)
+{
+	const USceneComponent* ItemSpawnPointFolder = RoomToCheck->GetItemSpawnPointsFolder();
+
+	if (!ItemSpawnPointFolder)
+	{
+		return;
+	}
+
+	const TArray<USceneComponent*>& ItemSpawnPoints = ItemSpawnPointFolder->GetAttachChildren();
+
+	for (USceneComponent* SpawnPoint : ItemSpawnPoints)
+	{
+		ItemSpawnPointsList.Add(SpawnPoint);
+
+		if (SpawnPoint->ComponentHasTag(TEXT("ChainKey")))
+		{
+			ExitKeyPointsList.Add(SpawnPoint);
+		}
+		
+		if (SpawnPoint->ComponentHasTag(TEXT("RustOil")))
+		{
+			RustOilPointsList.Add(SpawnPoint);
+		}
+
+		if (SpawnPoint->ComponentHasTag(TEXT("HandWheel")))
+		{
+			HandWheelPointsList.Add(SpawnPoint);
+		}
+	}
+}
+
+void APGLevelGenerator::AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck)
+{
+	if (const USceneComponent* PropsSpawnPointsFolder = RoomToCheck->GetPropsSpawnPointsFolder())
+	{
+		// 1. 자식 컴포넌트(스폰 포인트들) 배열 가져오기
+		const TArray<USceneComponent*>& PropsSpawnPoints = PropsSpawnPointsFolder->GetAttachChildren();
+
+		if (PropsSpawnPoints.Num() == 0)
+		{
+			return;
+		}
+
+		// Points들을 랜덤하게 섞는다.
+		TArray<USceneComponent*> ShuffledPoints = PropsSpawnPoints;
+		for (int32 i = ShuffledPoints.Num() - 1; i > 0; i--)
+		{
+			int32 j = FMath::RandRange(0, i);
+			ShuffledPoints.Swap(i, j);
+		}
+
+		//  WaiterStandSpawnPointsList로 1개 고정
+		WaiterStandSpawnPointsList.Add(ShuffledPoints[0]);
+
+		// 나머지는 HidePropSpawnPointsList로 ( 총 5개이므로, 1~4 4개가 들어간다 )
+		for (int32 i = 1; i < ShuffledPoints.Num(); ++i)
+		{
+			HidePropSpawnPointsList.Add(ShuffledPoints[i]);
+		}
+	}
+}
+
+/*
 * 모든 Room 생성 후 아이템 스폰
 * 재귀를 통한 비동기 아이템 로드/스폰
 * 아이템 스폰 완료 후 ItemSpawnPointsList 초기화
 */
 void APGLevelGenerator::SpawnItems()
 {
-	const int32 ItemAmount = 24;
+	// Spawn basic items
+	const int32 ItemAmount = 15;
 	SpawnSingleItem_Async(ItemAmount);
+
+	// Spawn glass bottles
+	for (TObjectPtr<USceneComponent> SpawnPoint : GlassBottleSpawnPointsList)
+	{
+		// 20% 확률로 생성 안함
+		if (FMath::FRand() < 0.2f)
+		{
+			continue;
+		}
+
+		if (SpawnPoint)
+		{
+			UWorld* World = GetWorld();
+			UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+			if (!GI || !World)
+			{
+				return;
+			}
+
+			const FTransform SpawnTransform(SpawnPoint->GetComponentTransform());
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			GI->RequestLoadItemData(FName("GlassBottle"), FOnItemDataLoaded::CreateLambda([World, SpawnTransform, SpawnParams, ItemAmount, this](UPGItemData* LoadedItemData)
+				{
+					if (LoadedItemData)
+					{
+						APGItemActor* NewItem = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
+						if (NewItem)
+						{
+							NewItem->InitWithData(LoadedItemData);
+						}
+					}
+				}));
+		}
+	}
 }
 
 void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
@@ -682,6 +805,12 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 	UWorld* World = GetWorld();
 	if (!World || ItemAmount <= 0 || ItemSpawnPointsList.IsEmpty())
 	{
+		ItemSpawnPointsList.Empty();
+		ExitKeyPointsList.Empty();
+		RustOilPointsList.Empty();
+
+		UE_LOG(LogTemp, Log, TEXT("PGLevelGenerator : Remain Spawn Points :: %d"), ItemSpawnPointsList.Num());
+
 		ItemSpawnPointsList.Empty();
 		return;
 	}
@@ -692,41 +821,49 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 		return;
 	}
 
-	const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, ItemSpawnPointsList.Num());
-	const TObjectPtr<USceneComponent> SelectedItemSpawnPoint = ItemSpawnPointsList[RandomIndex];
-	ItemSpawnPointsList.RemoveAt(RandomIndex);
-	if (!SelectedItemSpawnPoint)
-	{
-		SpawnSingleItem_Async(ItemAmount);
-		return;
-	}
-
 	FName ItemKeyToLoad;
-	if (ItemAmount > 23)
+	TObjectPtr<USceneComponent> SelectedItemSpawnPoint = nullptr;
+
+	if (ItemAmount > 14) // HandWheel 
 	{
 		ItemKeyToLoad = FName("ChainKey");
+		SelectedItemSpawnPoint = GetRandomPointFromSpecificListAndRemove(ExitKeyPointsList, ItemSpawnPointsList);
+
+		HandWheelPointsList.Remove(SelectedItemSpawnPoint);
+		RustOilPointsList.Remove(SelectedItemSpawnPoint);
 	}
-	else if (ItemAmount > 22)
+	else if (ItemAmount > 13) // HandWheel 
 	{
 		ItemKeyToLoad = FName("HandWheel");
+		SelectedItemSpawnPoint = GetRandomPointFromSpecificListAndRemove(HandWheelPointsList, ItemSpawnPointsList);
+
+		RustOilPointsList.Remove(SelectedItemSpawnPoint);
 	}
-	else if (ItemAmount > 21)
+	else if (ItemAmount > 12) // RustOil
 	{
 		ItemKeyToLoad = FName("RustOil");
+		SelectedItemSpawnPoint = GetRandomPointFromSpecificListAndRemove(RustOilPointsList, ItemSpawnPointsList);
 	}
-	else if (ItemAmount > 13)
+	else // 나머지 일반 아이템 (메인 리스트에서 랜덤 선택)
 	{
-		ItemKeyToLoad = FName("Brick");
-	}
-	else if (ItemAmount > 5)
-	{
-		ItemKeyToLoad = FName("Key");
-	}
-	else
-	{
-		ItemKeyToLoad = FName("ReviveKit");
-	}
+		if (ItemAmount > 8)
+		{
+			ItemKeyToLoad = FName("ReviveKit");
+		}
+		else if (ItemAmount > 4)
+		{
+			ItemKeyToLoad = FName("Match");
+		}
+		else
+		{
+			ItemKeyToLoad = FName("GlassBottle");
+		}
 
+		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, ItemSpawnPointsList.Num());
+		SelectedItemSpawnPoint = ItemSpawnPointsList[RandomIndex];
+		ItemSpawnPointsList.RemoveAt(RandomIndex);
+	}
+	
 	ItemAmount--;
 
 	const FTransform SpawnTransform(FRotator::ZeroRotator, SelectedItemSpawnPoint->GetComponentLocation());
@@ -748,6 +885,23 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 
 		SpawnSingleItem_Async(ItemAmount);
 	}));
+}
+
+TObjectPtr<USceneComponent> APGLevelGenerator::GetRandomPointFromSpecificListAndRemove(TArray<TObjectPtr<USceneComponent>>& TargetList, TArray<TObjectPtr<USceneComponent>>& TargetRemoveList)
+{
+	if (TargetList.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, TargetList.Num());
+	TObjectPtr<USceneComponent> Point = TargetList[RandomIndex];
+
+	// 두 리스트 모두에서 제거
+	TargetList.RemoveAt(RandomIndex);
+	TargetRemoveList.Remove(Point);
+
+	return Point;
 }
 
 void APGLevelGenerator::SpawnMannequins()
@@ -814,6 +968,134 @@ void APGLevelGenerator::SpawnFuseBoxes()
 		}
 
 		FuseBoxCount--;
+	}
+}
+
+void APGLevelGenerator::SpawnWaiterStands()
+{
+	UWorld* World = GetWorld();
+	if (!World || WaiterStandSpawnPointsList.IsEmpty() || !WaiterStandClass)
+	{
+		return;
+	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		int32 RandomIndex = FMath::RandRange(0, WaiterStandSpawnPointsList.Num() - 1);
+		const TObjectPtr<USceneComponent> SelectedPoint = WaiterStandSpawnPointsList[RandomIndex];
+		WaiterStandSpawnPointsList.RemoveAt(RandomIndex);
+
+		if (!SelectedPoint)
+		{
+			continue;
+		}
+
+		const FTransform SpawnTransform = SelectedPoint->GetComponentTransform();
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		APGWaiterStand* NewWaiterStand = World->SpawnActor<APGWaiterStand>(WaiterStandClass, SpawnTransform, SpawnParams);
+		if (NewWaiterStand)
+		{
+			int32 BottleCount = FMath::RandRange(3, 6);
+
+			NewWaiterStand->SpawnItems(BottleCount);
+
+			UE_LOG(LogTemp, Log, TEXT("LGLevelGenerator::SpawnWaiterStand: Spawned WaiterStand with %d bottles"), BottleCount);
+		}
+	}
+}
+
+void APGLevelGenerator::SpawnHideProps()
+{
+	const int32 PropsNum = HidePropClasses.Num();
+	int32 CurProp = 0;
+
+	// 방 인덱스 리스트 생성 (0~4번 방) 후 섞기
+	TArray<int32> RoomIndices;
+	for (int32 i = 0; i < HidePropSpawnPointsList.Num() / 4; ++i)
+	{
+		RoomIndices.Add(i);
+	}
+
+	for (int32 i = RoomIndices.Num() - 1; i > 0; i--)
+	{
+		int32 j = FMath::RandRange(0, i);
+		RoomIndices.Swap(i, j);
+	}
+
+	// 반은 2개씩, 나머지 반은 1개씩 생성
+	for (int32 i = 0; i < RoomIndices.Num() ; ++i)
+	{
+		int32 SelectedRoomIdx = RoomIndices[i];
+
+		// 해당 방의 시작 인덱스 계산 (방당 4개씩)
+		int32 StartIdx = SelectedRoomIdx * 4;
+		int32 EndIdx = StartIdx + 3;
+
+		// 방 내부의 4개 포인트 중 2개를 랜덤 선택
+		TArray<int32> Points;
+		for (int32 j = StartIdx; j <= EndIdx; ++j)
+		{
+			Points.Add(j);
+		}
+
+		for (int32 j = Points.Num() - 1; j > 0; --j)
+		{
+			int32 k = FMath::RandRange(0, j);
+			Points.Swap(j, k);
+		}
+
+		int32 RandomPointIdx = Points[0];
+		int32 RandomPointIdx2 = Points[1];
+
+		// Spawn
+		if (HidePropSpawnPointsList.IsValidIndex(RandomPointIdx) && HidePropSpawnPointsList[RandomPointIdx])
+		{
+			USceneComponent* SpawnPoint = HidePropSpawnPointsList[RandomPointIdx];
+			FTransform SpawnTransform = SpawnPoint->GetComponentTransform();
+
+			FActorSpawnParameters Params;
+			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			APGHideProp* NewProp = GetWorld()->SpawnActor<APGHideProp>(
+				HidePropClasses[CurProp], // 한 종류씩 순서대로 꺼냄
+				SpawnTransform,
+				Params
+			);
+
+			UE_LOG(LogTemp, Log, TEXT("Spawn HideProp. PropIdx[%d] SpawnPointIndex[%d] "), CurProp, RandomPointIdx);
+
+			const int32 RandPropChoose = FMath::RandRange(1, PropsNum - 1);
+			CurProp += RandPropChoose;
+			CurProp %= PropsNum;
+		}
+
+		// 몇몇 방은 2개 Spawn
+		if (i < RoomIndices.Num() / 2)
+		{
+			if (HidePropSpawnPointsList.IsValidIndex(RandomPointIdx2) && HidePropSpawnPointsList[RandomPointIdx2])
+			{
+				USceneComponent* SpawnPoint = HidePropSpawnPointsList[RandomPointIdx2];
+				FTransform SpawnTransform = SpawnPoint->GetComponentTransform();
+
+				FActorSpawnParameters Params;
+				Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				APGHideProp* NewProp = GetWorld()->SpawnActor<APGHideProp>(
+					HidePropClasses[CurProp],
+					SpawnTransform,
+					Params
+				);
+
+				UE_LOG(LogTemp, Log, TEXT("Spawn HideProp. PropIdx[%d] SpawnPointIndex[%d] "), CurProp, RandomPointIdx2);
+
+				const int32 RandPropChoose = FMath::RandRange(1, PropsNum - 1);
+				CurProp += RandPropChoose;
+				CurProp %= PropsNum;
+			}
+		}
 	}
 }
 

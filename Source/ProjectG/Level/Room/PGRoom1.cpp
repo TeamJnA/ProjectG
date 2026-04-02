@@ -51,12 +51,48 @@ APGRoom1::APGRoom1()
 	ExitDir4->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir4->bHiddenInGame = true;
 
+	/*
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
 	ItemSpawnPoint0->SetRelativeLocation(FVector(594.0f, -344.0f, 105.0f));
 	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
 	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	ItemSpawnPoint0->bHiddenInGame = true;
+	*/
+	PropSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("PropSpawnPoint0"));
+	PropSpawnPoint0->SetupAttachment(PropsSpawnPointsFolder);
+	PropSpawnPoint0->SetRelativeLocation(FVector(594.0f, -344.0f, 105.0f));
+	PropSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	PropSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	PropSpawnPoint0->bHiddenInGame = true;
+
+	PropSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("PropSpawnPoint1"));
+	PropSpawnPoint1->SetupAttachment(PropsSpawnPointsFolder);
+	PropSpawnPoint1->SetRelativeLocation(FVector(594.0f, -344.0f, 105.0f));
+	PropSpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	PropSpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	PropSpawnPoint1->bHiddenInGame = true;
+
+	PropSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("PropSpawnPoint2"));
+	PropSpawnPoint2->SetupAttachment(PropsSpawnPointsFolder);
+	PropSpawnPoint2->SetRelativeLocation(FVector(594.0f, -344.0f, 105.0f));
+	PropSpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	PropSpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	PropSpawnPoint2->bHiddenInGame = true;
+
+	PropSpawnPoint3 = CreateDefaultSubobject<UArrowComponent>(TEXT("PropSpawnPoint3"));
+	PropSpawnPoint3->SetupAttachment(PropsSpawnPointsFolder);
+	PropSpawnPoint3->SetRelativeLocation(FVector(594.0f, -344.0f, 105.0f));
+	PropSpawnPoint3->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	PropSpawnPoint3->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	PropSpawnPoint3->bHiddenInGame = true;
+
+	PropSpawnPoint4 = CreateDefaultSubobject<UArrowComponent>(TEXT("PropSpawnPoint4"));
+	PropSpawnPoint4->SetupAttachment(PropsSpawnPointsFolder);
+	PropSpawnPoint4->SetRelativeLocation(FVector(594.0f, -344.0f, 105.0f));
+	PropSpawnPoint4->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	PropSpawnPoint4->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+	PropSpawnPoint4->bHiddenInGame = true;
 
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);

@@ -32,6 +32,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
 	TObjectPtr<UArrowComponent> ExitDir3;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
+	TObjectPtr<UArrowComponent> ItemSpawnPoint0;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "OverlapBox")
 	TObjectPtr<UBoxComponent> OverlapBox1;
 

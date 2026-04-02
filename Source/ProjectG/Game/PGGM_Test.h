@@ -31,6 +31,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SpawnDoorTEST(FVector InLocation, FRotator InRotator);
 
+	UFUNCTION(BlueprintCallable)
+	void BreakDoorTEST(AActor* InteractInvestigator);
+
 protected:
 	virtual void BeginPlay() override;
 

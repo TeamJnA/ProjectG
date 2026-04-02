@@ -319,10 +319,9 @@ public:
 
 	FORCEINLINE FName GetHeadlightOffSoundName() const { return HeadlightOffSoundName; }
 
-
-protected:
 	void ToggleHeadLight();
 
+protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	FName HeadlightOnSoundName = FName("SFX_Headlight");
 
