@@ -474,9 +474,10 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
 
-	if (IsLocallyControlled()) //
+	if (IsLocallyControlled()) 
 	{
-		if (APGPlayerController* PC = Cast<APGPlayerController>(NewController))
+		// MainLevel에 입장할 때만 아래 세팅 진행. APGPlayerContoller는 메인 레벨에서만 사용.
+		if (APGPlayerController* PC = Cast<APGPlayerController>(NewController)) 
 		{
 			PC->RefreshVoiceChannel();
 
@@ -1392,7 +1393,7 @@ void APGPlayerCharacter::StartGlitch()
 	const float GlitchIntensity = FMath::RandRange(0.8f, 1.0f);
 	SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), GlitchIntensity);
 
-	// Glitch sound?
+	// TODO : Glitch sound?
 
 	const float Duration = FMath::RandRange(0.1f, 0.2f);
 	GetWorld()->GetTimerManager().SetTimer(GlitchDurationTimerHandle, this, &APGPlayerCharacter::StopGlitch, Duration, false);
