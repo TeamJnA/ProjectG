@@ -47,6 +47,7 @@ void UGA_GhostAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 		if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 		{
 			BB->SetValueAsEnum(AIC->GetBlackboardKey_AIState(), (uint8)E_PGGhostState::Attacking);
+			Ghost->SetGhostState(E_PGGhostState::Attacking);
 		}
 	}
 
@@ -81,6 +82,7 @@ void UGA_GhostAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
 				BB->SetValueAsEnum(AIC->GetBlackboardKey_AIState(), (uint8)E_PGGhostState::Waiting);
+				Ghost->SetGhostState(E_PGGhostState::Waiting);
 			}
 		}
 	}

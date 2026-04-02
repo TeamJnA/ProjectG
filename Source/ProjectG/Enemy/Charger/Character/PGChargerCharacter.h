@@ -7,13 +7,14 @@
 #include "Enemy/Common/AI/Interfaces/PGAIExplorationInterface.h"
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Enemy/Charger/AI/E_PGChargerState.h"
+#include "Interface/PhotographableInterface.h"
 #include "PGChargerCharacter.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API APGChargerCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface
+class PROJECTG_API APGChargerCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface, public IPhotographableInterface
 {
 	GENERATED_BODY()
 
@@ -29,6 +30,12 @@ public:
 	virtual float GetExplorationRadius() const override { return ExplorationRadius; }
 	virtual float GetExplorationWaitTime() const override { return ExplorationWaitTime; }
 	// ~IPGAIExplorationInterface
+
+	// IPhotographableInterface~
+	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const override;
+	virtual FVector GetPhotoTargetLocation() const override;
+	// ~IPhotographableInterface
+
 	virtual void GetActorEyesViewPoint(FVector& out_Location, FRotator& out_Rotation) const override;
 
 	void SetHeadLookAtTarget(const FVector& NewTargetLocation);

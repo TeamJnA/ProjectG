@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Enemy/Common/Character/PGEnemyCharacterBase.h"
 #include "Enemy/Common/AI/Interfaces/PGAIExplorationInterface.h"
+#include "Interface/PhotographableInterface.h"
 #include "PGBlindCharacter.generated.h"
 
 class UPGBlindAttributeSet;
@@ -37,7 +38,7 @@ enum class EBlindSoundState : uint8
 };
 
 UCLASS()
-class PROJECTG_API APGBlindCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface
+class PROJECTG_API APGBlindCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface, public IPhotographableInterface
 {
 	GENERATED_BODY()
 
@@ -48,6 +49,11 @@ public:
 	FORCEINLINE virtual float GetExplorationRadius() const override { return ExplorationRadius; }
 	FORCEINLINE virtual float GetExplorationWaitTime() const override { return ExplorationWaitTime; }
 	// ~IPGAIExplorationInterface
+
+	// IPhotographableInterface~
+	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const override;
+	virtual FVector GetPhotoTargetLocation() const override;
+	// ~IPhotographableInterface
 
 	FORCEINLINE int32 GetNoiseLevelThreshold() const { return NoiseLevelThreshold; }
 	FORCEINLINE int32 GetNoiseMaxThreshold() const { return NoiseMaxThreshold; }

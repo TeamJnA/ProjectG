@@ -4,10 +4,10 @@
 #include "Enemy/Ghost/Ability/Chase/GA_GhostStopChase.h"
 #include "AbilitySystemComponent.h"
 #include "Enemy/Common/AbilitySystem/GA_Exploration.h"
-#include "GameFramework/Character.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
+#include "Enemy/Ghost/Character/PGGhostCharacter.h"
 
 UGA_GhostStopChase::UGA_GhostStopChase()
 {
@@ -23,14 +23,15 @@ void UGA_GhostStopChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+		if (AAIController* AIC = Cast<AAIController>(Ghost->GetController()))
 		{
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
 				BB->ClearValue(TEXT("TargetPlayerPawn"));
 				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Exploring);
+				Ghost->SetGhostState(E_PGGhostState::Exploring);
 			}
 		}
 	}

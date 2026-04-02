@@ -46,25 +46,13 @@ void APGGhostCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(APGGhostCharacter, TargetPlayerState);
-    DOREPLIFETIME_CONDITION(APGGhostCharacter, bIsCurrentlyChasing, COND_Custom);
-    DOREPLIFETIME_CONDITION(APGGhostCharacter, bIsCurrentlyAttacking, COND_Custom);
+    DOREPLIFETIME(APGGhostCharacter, CurrentGhostState);
 }
 
 void APGGhostCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (HasAuthority())
-    {
-        if (AbilitySystemComponent)
-        {
-            FGameplayTag ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
-            AbilitySystemComponent->RegisterGameplayTagEvent(ChasingTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &APGGhostCharacter::OnChasingTagChanged);
-
-            FGameplayTag AttackingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking"));
-            AbilitySystemComponent->RegisterGameplayTagEvent(AttackingTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &APGGhostCharacter::OnAttackingTagChanged);
-        }
-    }
     UpdateGhostVisibility();
 
     APlayerController* LocalPC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -113,34 +101,72 @@ bool APGGhostCharacter::IsNetRelevantFor(const AActor* RealViewer, const AActor*
     return false;
 }
 
-void APGGhostCharacter::OnChasingTagChanged(const FGameplayTag Tag, int32 NewCount)
+bool APGGhostCharacter::IsPhotographable() const
 {
-    bIsCurrentlyChasing = (NewCount > 0);
-
-    if (HasAuthority())
+    APlayerController* LocalPC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    if (!LocalPC || !LocalPC->PlayerState)
     {
-        UpdateGhostVisibility();
+        return false;
     }
-    ForceNetUpdate();
+
+    if (LocalPC->PlayerState != TargetPlayerState)
+    {
+        return false;
+    }
+
+    return true;
 }
 
-void APGGhostCharacter::OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount)
+FPhotoSubjectInfo APGGhostCharacter::GetPhotoSubjectInfo() const
 {
-    bIsCurrentlyAttacking = (NewCount > 0);
+    int32 ID = 0;
+    int32 Score = 0;
 
-    if (HasAuthority())
+    switch (CurrentGhostState)
     {
-        UpdateGhostVisibility();
+        case E_PGGhostState::Waiting:
+        case E_PGGhostState::Exploring:
+        {
+            ID = PhotoID::Ghost_Exploring;
+            Score = 10;
+            break;
+        }
+
+        case E_PGGhostState::Tracking:
+        case E_PGGhostState::Chasing:
+        case E_PGGhostState::Attacking:
+        {
+            ID = PhotoID::Ghost_Chasing;
+            Score = 70;
+            break;
+        }
     }
-    ForceNetUpdate();
+
+    return FPhotoSubjectInfo(ID, Score);
 }
 
-void APGGhostCharacter::OnRep_IsChasing()
+FVector APGGhostCharacter::GetPhotoTargetLocation() const
 {
+    return GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
+}
+
+void APGGhostCharacter::SetCameraModeVisible(bool bVisible)
+{
+    bCameraModeVisible = bVisible;
     UpdateGhostVisibility();
 }
 
-void APGGhostCharacter::OnRep_IsAttacking()
+void APGGhostCharacter::SetGhostState(E_PGGhostState NewState)
+{
+    if (HasAuthority())
+    {
+        CurrentGhostState = NewState;
+        UpdateGhostVisibility();
+        ForceNetUpdate();
+    }
+}
+
+void APGGhostCharacter::OnRep_GhostState()
 {
     UpdateGhostVisibility();
 }
@@ -149,7 +175,12 @@ void APGGhostCharacter::UpdateGhostVisibility()
 {
     bool bShouldBeVisible = false;
 
-    if (bIsCurrentlyChasing || bIsCurrentlyAttacking)
+    if (CurrentGhostState == E_PGGhostState::Chasing || CurrentGhostState == E_PGGhostState::Attacking)
+    {
+        bShouldBeVisible = true;
+    }
+
+    if (bCameraModeVisible)
     {
         bShouldBeVisible = true;
     }
@@ -184,49 +215,49 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
         return;
     }
 
-    const FGameplayTag ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
-    const FGameplayTag AttackingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking"));
-    if (!AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(ChasingTag) || AbilitySystemComponent->HasMatchingGameplayTag(AttackingTag))
+    // Chasing 상태에서만 공격
+    if (CurrentGhostState == E_PGGhostState::Chasing)
     {
-        // Chasing / Attacking 상태가 아닐때 Overlap 된 경우 화면 Glitch 효과 + 타겟 Sanity 감소
-        const float CurrentTime = GetWorld()->GetTimeSeconds();
-        if (LastJumpscareTime > 0.0f && (CurrentTime - LastJumpscareTime) < JumpscareCooldown)
+        if (IAttackableTarget* AttackableInterface = Cast<IAttackableTarget>(OtherActor))
         {
-            UE_LOG(LogTemp, Error, TEXT("[Ghost] Cool Time : %.2f"), (CurrentTime - LastJumpscareTime));
-            return;
-        }
-
-        LastJumpscareTime = CurrentTime;
-
-        TouchedPlayer->Client_TriggerGhostGlitch();
-
-        UAbilitySystemComponent* TargetASC = TouchedPlayer->GetAbilitySystemComponent();
-        if (TargetASC)
-        {
-            FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
-            ContextHandle.AddInstigator(this, this);
-
-            FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(SanityDecreaseEffectClass, 1.0f, ContextHandle);
-            if (SpecHandle.IsValid())
+            if (AttackableInterface->IsValidAttackableTarget() && OtherActor != CachedAttackedTarget)
             {
-                TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+                CachedAttackedTarget = OtherActor;
+                AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation(), 160.0f);
             }
-        }
 
+            AbilitySystemComponent->TryActivateAbilityByClass(UGA_GhostAttack::StaticClass(), true);
+        }
         return;
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("Ghost::OnTouchColliderOverlapBegin: Ghost touched target Starting Attack."));
-
-    if (IAttackableTarget* AttackableInterface = Cast<IAttackableTarget>(OtherActor))
+    if (CurrentGhostState == E_PGGhostState::Attacking || CurrentGhostState == E_PGGhostState::Tracking)
     {
-        if (AttackableInterface->IsValidAttackableTarget() && OtherActor != CachedAttackedTarget)
-        {
-            CachedAttackedTarget = OtherActor;
-            AttackableInterface->OnAttacked(GetCapsuleTopWorldLocation(), 160.0f);
-        }
+        return;
+    }
 
-        AbilitySystemComponent->TryActivateAbilityByClass(UGA_GhostAttack::StaticClass(), true);
+    // Exploring/Waiting 상태에서 터치 → 글리치 + Sanity 감소
+    const float CurrentTime = GetWorld()->GetTimeSeconds();
+    if (LastJumpscareTime > 0.0f && (CurrentTime - LastJumpscareTime) < JumpscareCooldown)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[Ghost] Cool Time : %.2f"), (CurrentTime - LastJumpscareTime));
+        return;
+    }
+
+    LastJumpscareTime = CurrentTime;
+    TouchedPlayer->Client_TriggerGhostGlitch();
+
+    UAbilitySystemComponent* TargetASC = TouchedPlayer->GetAbilitySystemComponent();
+    if (TargetASC && SanityDecreaseEffectClass)
+    {
+        FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
+        ContextHandle.AddInstigator(this, this);
+
+        FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(SanityDecreaseEffectClass, 1.0f, ContextHandle);
+        if (SpecHandle.IsValid())
+        {
+            TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+        }
     }
 }
 
@@ -306,7 +337,6 @@ void APGGhostCharacter::TryBindLightEffectEvents()
         // Light/Emissive용
         LightExtinguishSphere->OnComponentBeginOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapBegin);
         LightExtinguishSphere->OnComponentEndOverlap.AddDynamic(this, &APGGhostCharacter::OnLightExtinguishOverlapEnd);
-
         LightExtinguishSphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
         LightExtinguishSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         LightExtinguishSphere->SetGenerateOverlapEvents(true);

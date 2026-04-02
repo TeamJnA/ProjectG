@@ -4,9 +4,11 @@
 #include "Enemy/Common/AbilitySystem/GA_Exploration.h"
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
+#include "Enemy/Ghost/Character/PGGhostCharacter.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
+
 
 UGA_Exploration::UGA_Exploration()
 {
@@ -40,13 +42,15 @@ void UGA_Exploration::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	// Ghost
+	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+		if (AAIController* AIC = Cast<AAIController>(Ghost->GetController()))
 		{
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
 				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Exploring);
+				Ghost->SetGhostState(E_PGGhostState::Exploring);
 			}
 		}
 	}

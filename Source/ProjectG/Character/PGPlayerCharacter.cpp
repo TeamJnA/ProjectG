@@ -34,6 +34,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/AudioComponent.h"
 #include "Character/Component/PGVOIPTalker.h"
+#include "Character/Component/PGCameraComponent.h"
 
 // Interface
 #include "Interface/InteractableActorInterface.h"
@@ -120,6 +121,11 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeadlightLight->SetIndirectLightingIntensity(0.0f);
 	HeadlightLight->SetVolumetricScatteringIntensity(5.0f);
 
+	CameraFlashLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("CameraFlashLight"));
+	CameraFlashLight->SetupAttachment(FirstPersonCamera);
+	CameraFlashLight->SetVisibility(false);
+	CameraFlashLight->SetIsReplicated(true);
+
 	// Create Components
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
 
@@ -130,6 +136,8 @@ APGPlayerCharacter::APGPlayerCharacter()
 
 	HeartBeatAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("HeartBeatAudioComponent"));
 	HeartBeatAudioComponent->bAutoActivate = false;
+
+	CameraComp = CreateDefaultSubobject<UPGCameraComponent>(TEXT("CameraComponent"));
 
 	// Set hand actions anim montages
 	HandActionMontageType = EHandActionMontageType::Pick;;
@@ -216,6 +224,10 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		
 		EnhancedInputComponent->BindAction(MouseRightAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, MouseRightTag);
 		EnhancedInputComponent->BindAction(MouseRightAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, MouseRightTag);
+
+		// Camera
+		EnhancedInputComponent->BindAction(CameraModeAction, ETriggerEvent::Started, this, &APGPlayerCharacter::ToggleCameraMode);
+		EnhancedInputComponent->BindAction(CameraZoomAction, ETriggerEvent::Triggered, this, &APGPlayerCharacter::CameraZoom);
 
 		//ChangeItemSlot
 		UPGAdvancedFriendsGameInstance * PGAdvancedFriendsGameInstance = Cast<UPGAdvancedFriendsGameInstance>(GetGameInstance());
@@ -307,9 +319,20 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 
 void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, FRotator NewRotation)
 {
+	// 카메라 모드 강제 해제
+	if (CameraComp)
+	{
+		CameraComp->ForceExitCameraMode();
+	}
+
 	// Stop player input.
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
+		if (APGHUD* HUD = Cast<APGHUD>(PlayerController->GetHUD()))
+		{
+			HUD->ForceCleanupHUD();
+		}
+
 		DisableInput(PlayerController);
 	}
 
@@ -512,6 +535,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
+		InitLensDistortionMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
 		FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.Dead"));
@@ -584,6 +608,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 
 		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
+		InitLensDistortionMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
 		FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.Dead"));
@@ -1360,11 +1385,7 @@ void APGPlayerCharacter::ScheduleNextGlitch()
 		return;
 	}
 
-	float Interval = FMath::GetMappedRangeValueClamped(
-		FVector2D(0.0f, GlitchThresholdSanity),
-		FVector2D(3.0f, 10.0f),
-		CurrentSanity
-	);
+	float Interval = FMath::GetMappedRangeValueClamped(FVector2D(0.0f, GlitchThresholdSanity), FVector2D(3.0f, 10.0f), CurrentSanity);
 	Interval += FMath::RandRange(-0.5f, 0.5f);
 	if (Interval < 0.1f)
 	{
@@ -1428,31 +1449,19 @@ void APGPlayerCharacter::Client_TriggerGhostGlitch_Implementation()
 
 	bIsGhostGlitching = true;
 	bIsGlitching = true;
+	CurrentGhostGlitchIntensity = 1.5f;
 
 	GetWorld()->GetTimerManager().ClearTimer(GlitchIntervalTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(GlitchDurationTimerHandle);
 
 	SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), 1.5f);
-
-	if (FirstPersonCamera)
-	{
-		FirstPersonCamera->PostProcessSettings.bOverride_FilmGrainIntensity = true;
-		FirstPersonCamera->PostProcessSettings.FilmGrainIntensity = 1.5f;
-	}
-	if (FollowCamera)
-	{
-		FollowCamera->PostProcessSettings.bOverride_FilmGrainIntensity = true;
-		FollowCamera->PostProcessSettings.FilmGrainIntensity = 1.5f;
-	}
+	ApplyFilmGrain();
 
 	GetWorld()->GetTimerManager().SetTimer(GhostGlitchTimerHandle, this, &APGPlayerCharacter::StartGhostGlitchFadeOut, 1.5f, false);
-
-	UE_LOG(LogTemp, Log, TEXT("PlayerCharacter::GhostGlitch"));
 }
 
 void APGPlayerCharacter::StartGhostGlitchFadeOut()
 {
-	CurrentGhostGlitchIntensity = 1.5f;
 	GetWorld()->GetTimerManager().SetTimer(GhostGlitchTimerHandle, this, &APGPlayerCharacter::UpdateGhostGlitchFadeOut, 0.05f, true, 0.5f);
 }
 
@@ -1470,16 +1479,9 @@ void APGPlayerCharacter::UpdateGhostGlitchFadeOut()
 		GetWorld()->GetTimerManager().ClearTimer(GhostGlitchTimerHandle);
 		bIsGhostGlitching = false;
 		bIsGlitching = false;
-		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), BaseNoiseIntensity);
 
-		if (FirstPersonCamera)
-		{
-			FirstPersonCamera->PostProcessSettings.bOverride_FilmGrainIntensity = false;
-		}
-		if (FollowCamera)
-		{
-			FollowCamera->PostProcessSettings.bOverride_FilmGrainIntensity = false;
-		}
+		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), BaseNoiseIntensity);
+		ApplyFilmGrain();
 
 		if (AttributeSet)
 		{
@@ -1488,17 +1490,30 @@ void APGPlayerCharacter::UpdateGhostGlitchFadeOut()
 	}
 	else
 	{
-		const float GrainIntensity = FMath::Clamp(CurrentGhostGlitchIntensity, 0.2f, 1.5f);
-		if (FirstPersonCamera)
-		{
-			FirstPersonCamera->PostProcessSettings.FilmGrainIntensity = GrainIntensity;
-		}
-		if (FollowCamera)
-		{
-			FollowCamera->PostProcessSettings.FilmGrainIntensity = GrainIntensity;
-		}
-
 		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), CurrentGhostGlitchIntensity);
+		ApplyFilmGrain();
+	}
+}
+
+void APGPlayerCharacter::SetCameraFilmGrain(float Intensity)
+{
+	CameraModeFilmGrainIntensity = Intensity;
+	ApplyFilmGrain();
+}
+
+void APGPlayerCharacter::ApplyFilmGrain()
+{
+	float FinalGrainIntensity = 0.2f;  // 기본값
+	FinalGrainIntensity = FMath::Max(FinalGrainIntensity, CameraModeFilmGrainIntensity);
+	FinalGrainIntensity = FMath::Max(FinalGrainIntensity, bIsGhostGlitching ? CurrentGhostGlitchIntensity : 0.0f);
+
+	if (FirstPersonCamera)
+	{
+		FirstPersonCamera->PostProcessSettings.FilmGrainIntensity = FinalGrainIntensity;
+	}
+	if (FollowCamera)
+	{
+		FollowCamera->PostProcessSettings.FilmGrainIntensity = FinalGrainIntensity;
 	}
 }
 
@@ -1841,4 +1856,93 @@ void APGPlayerCharacter::StopVoiceCheck()
 {
 	GetWorldTimerManager().ClearTimer(VoiceCheckTimerHandle);
 	bIsTalking = false;
+}
+
+void APGPlayerCharacter::ToggleCameraMode()
+{
+	if (!IsLocallyControlled() || !CameraComp)
+	{
+		return;
+	}
+
+	if (CameraComp->IsInCameraMode())
+	{
+		CameraComp->ExitCameraMode();
+	}
+	else
+	{
+		if (!CameraComp->HasBattery())
+		{
+			// 배터리 없음 메시지
+			if (APlayerController* PC = Cast<APlayerController>(GetController()))
+			{
+				if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
+				{
+					HUD->DisplayInteractionFailedMessage(FText::FromString(TEXT("Battery Empty")), 1.0f);
+				}
+			}
+			return;
+		}
+		CameraComp->EnterCameraMode();
+	}
+}
+
+void APGPlayerCharacter::InitLensDistortionMaterial()
+{
+	if (!LensDistortionMaterialClass)
+	{
+		return;
+	}
+
+	LensDistortionMID = UMaterialInstanceDynamic::Create(LensDistortionMaterialClass, this);
+	if (LensDistortionMID)
+	{
+		LensDistortionMID->SetScalarParameterValue(FName("LenseDistortion"), 0.0f);
+		if (FirstPersonCamera)
+		{
+			FirstPersonCamera->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.0f, LensDistortionMID));
+		}
+	}
+}
+
+void APGPlayerCharacter::CameraZoom(const FInputActionValue& Value)
+{
+	if (!CameraComp || !CameraComp->IsInCameraMode())
+	{
+		return;
+	}
+
+	float AxisValue = Value.Get<float>();
+	CameraComp->AdjustZoom(AxisValue);
+}
+
+void APGPlayerCharacter::FireCameraFlash()
+{
+	Server_FireCameraFlash();
+}
+
+void APGPlayerCharacter::Server_FireCameraFlash_Implementation()
+{
+	Multicast_FireCameraFlash();
+}
+
+void APGPlayerCharacter::Multicast_FireCameraFlash_Implementation()
+{
+	if (!CameraFlashLight)
+	{
+		return;
+	}
+
+	CameraFlashLight->SetVisibility(true);
+
+	FTimerHandle Handle;
+	GetWorld()->GetTimerManager().SetTimer(Handle, this, &APGPlayerCharacter::StopCameraFlash, 0.05f, false);
+}
+
+void APGPlayerCharacter::StopCameraFlash()
+{
+	if (CameraFlashLight)
+	{
+		CameraFlashLight->SetVisibility(false);
+	}
 }

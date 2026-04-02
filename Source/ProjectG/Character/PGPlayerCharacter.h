@@ -31,6 +31,8 @@ class USphereComponent;
 
 class UPGVOIPTalker;
 
+class UPGCameraComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
 
@@ -258,6 +260,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	FName CrouchToStandSoundName = FName("");
 
+public:
 	UFUNCTION(Server, Reliable)
 	void AddTagToCharacter(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag);
 
@@ -411,6 +414,8 @@ public:
 
 // Glitch
 public:
+	void SetCameraFilmGrain(float Intensity);
+
 	UFUNCTION(Client, Reliable)
 	void Client_TriggerGhostGlitch();
 
@@ -424,6 +429,8 @@ protected:
 	void ScheduleNextGlitch();
 	void StartGlitch();
 	void StopGlitch();
+
+	void ApplyFilmGrain();
 
 	void StartGhostGlitchFadeOut();
 	void UpdateGhostGlitchFadeOut();
@@ -442,10 +449,10 @@ protected:
 
 	FTimerHandle GhostGlitchTimerHandle;
 
-	float BaseNoiseIntensity = 0.0f;
 	float GlitchThresholdSanity = 60.0f;
-
-	float CurrentGhostGlitchIntensity = 1.0f;
+	float BaseNoiseIntensity = 0.0f;
+	float CurrentGhostGlitchIntensity = 1.5f;
+	float CameraModeFilmGrainIntensity = 0.2f;
 
 	bool bIsGlitching = false;
 	bool bIsGhostGlitching = false;
@@ -529,4 +536,40 @@ private:
 public:
 	FORCEINLINE bool IsTalking() const { return bIsTalking; }
 	FORCEINLINE float GetCurrentVoiceAmplitude() const { return CurrentVoiceAmplitude; }
+
+public:
+	FORCEINLINE UPGCameraComponent* GetCameraComponent() const { return CameraComp; }
+	void ToggleCameraMode();
+	FORCEINLINE UMaterialInstanceDynamic* GetLensDistortionMID() const { return LensDistortionMID; }
+	void FireCameraFlash();
+
+protected:
+	void InitLensDistortionMaterial();
+	void CameraZoom(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Reliable)
+	void Server_FireCameraFlash();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_FireCameraFlash();
+
+	void StopCameraFlash();
+
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	TObjectPtr<UPGCameraComponent> CameraComp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> CameraModeAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> CameraZoomAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "PostProcess")
+	TObjectPtr<UMaterialInterface> LensDistortionMaterialClass;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> LensDistortionMID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USpotLightComponent> CameraFlashLight;
 };

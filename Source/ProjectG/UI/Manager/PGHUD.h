@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
+#include "Type/PGPhotoTypes.h"
 #include "PGHUD.generated.h"
 
 class UPGAttributesWidget;
@@ -12,6 +13,7 @@ class UPGInventoryComponent;
 class UPGMessageManagerWidget;
 class UPGInteractionProgressWidget;
 class UPGVoiceIndicatorWidget;
+class UPGCameraWidget;
 class UPGCrosshairWidget;
 class UPGMainMenuWidget;
 class UPGLobbyWidget;
@@ -42,6 +44,7 @@ public:
 	void DisplayJumpscare(UTexture2D* JumpscareTexture);
 
 	void ClearViewport();
+	void ForceCleanupHUD();
 
 	// MessageManagerWidget Getter
 	UPGMessageManagerWidget* GetMessageManagerWidget() const { return MessageManagerWidget; }
@@ -49,6 +52,13 @@ public:
 	UPGInventoryWidget* GetInventoryWidget() const { return InventoryWidget; }
 	// ScoreBoardWidgetGetter
 	UPGScoreBoardWidget* GetScoreBoardWidget() const { return ScoreBoardWidget; }
+	// CameraWidgetGetter
+	UPGCameraWidget* GetCameraWidget() const { return CameraWidget; }
+
+	void EnterCameraMode();
+	void ExitCameraMode();
+	void UpdateCameraProgress(float Progress);
+	void DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 TotalScore);
 
 protected:
 	APGHUD();
@@ -67,6 +77,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGVoiceIndicatorWidget> VoiceIndicatorWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGCameraWidget> CameraWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGCrosshairWidget> CrosshairWidgetClass;
@@ -107,6 +120,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGVoiceIndicatorWidget> VoiceIndicatorWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGCameraWidget> CameraWidget;
 
 	UPROPERTY()
 	TObjectPtr<UPGCrosshairWidget> CrosshairWidget;

@@ -19,6 +19,21 @@ APGTriggerGimmickWindowBlood::APGTriggerGimmickWindowBlood()
     }
 }
 
+bool APGTriggerGimmickWindowBlood::IsPhotographable() const
+{
+    return bIsActivated;
+}
+
+FPhotoSubjectInfo APGTriggerGimmickWindowBlood::GetPhotoSubjectInfo() const
+{
+    return FPhotoSubjectInfo(PhotoID::WindowBlood, 50);
+}
+
+FVector APGTriggerGimmickWindowBlood::GetPhotoTargetLocation() const
+{
+    return GetActorLocation() + FVector(0.0f, 30.0f, 130.0f);
+}
+
 void APGTriggerGimmickWindowBlood::OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     Super::OnTriggerOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
@@ -26,6 +41,8 @@ void APGTriggerGimmickWindowBlood::OnTriggerOverlap(UPrimitiveComponent* Overlap
 
 void APGTriggerGimmickWindowBlood::LocalEffect(AActor* OtherActor, UPrimitiveComponent* OtherComp)
 {
+    bIsActivated = true;
+
     float TargetSanity = 100.0f;
     IGimmickTargetInterface* GimmickTarget = Cast<IGimmickTargetInterface>(OtherActor);
     if (GimmickTarget)

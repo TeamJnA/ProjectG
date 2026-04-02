@@ -31,7 +31,7 @@ APGGameMode::APGGameMode()
 {
 	bStartPlayersAsSpectators = true;
 
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/ProjectG/Character/BP_PlayerCharacter"));
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/ProjectG/Character/BP_PlayerCharacter.BP_PlayerCharacter_C"));
 	if (PlayerPawnBPClass.Class != nullptr)
 	{
 		PlayerPawnClass = PlayerPawnBPClass.Class;
@@ -46,7 +46,7 @@ APGGameMode::APGGameMode()
 	PlayerStateClass = APGPlayerState::StaticClass();
 	PlayerControllerClass = APGPlayerController::StaticClass();
 	
-	static ConstructorHelpers::FClassFinder<AHUD> HUDBPClass(TEXT("/Game/ProjectG/UI/Manager/BP_PGHUD"));
+	static ConstructorHelpers::FClassFinder<AHUD> HUDBPClass(TEXT("/Game/ProjectG/UI/Manager/BP_PGHUD.BP_PGHUD_C"));
 	if (HUDBPClass.Class != nullptr)
 	{
 		HUDClass = HUDBPClass.Class;

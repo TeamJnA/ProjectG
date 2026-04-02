@@ -53,6 +53,9 @@ void APGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(APGPlayerState, bIsEscaping);
 	DOREPLIFETIME(APGPlayerState, ExitPoint);
 	DOREPLIFETIME(APGPlayerState, bIsSpectating);
+	DOREPLIFETIME(APGPlayerState, PhotoScore);
+	DOREPLIFETIME(APGPlayerState, CameraBattery);
+	DOREPLIFETIME(APGPlayerState, CapturedSubjectIDArray);
 }
 
 void APGPlayerState::OnRep_PlayerStateUpdated()
@@ -157,5 +160,22 @@ void APGPlayerState::UpdateVoiceSettings()
 	{
 		UE_LOG(LogTemp, Log, TEXT("[VoiceDebug] Update Spectator VOIP Settings"));
 		PGSpectator->UpdateVoipSettings();
+	}
+}
+
+void APGPlayerState::AddPhotoResult(const TArray<FPhotoSubjectInfo>& Subjects)
+{
+	for (const FPhotoSubjectInfo& Subject : Subjects)
+	{
+		if (CapturedSubjectIDs.Contains(Subject.SubjectID))
+		{
+			continue;
+		}
+
+		CapturedSubjectIDs.Add(Subject.SubjectID);
+		CapturedSubjectIDArray.Add(Subject.SubjectID);
+		PhotoScore += Subject.ScoreValue;
+
+		UE_LOG(LogTemp, Log, TEXT("[Photo] Captured ID: %d (Score: %d, Total: %d)"), Subject.SubjectID, Subject.ScoreValue, PhotoScore);
 	}
 }

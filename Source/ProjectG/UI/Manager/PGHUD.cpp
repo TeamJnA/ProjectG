@@ -15,10 +15,12 @@
 #include "UI/HUD/PGMessageManagerWidget.h"
 #include "UI/HUD/PGInteractionProgressWidget.h"
 #include "UI/HUD/PGVoiceIndicatorWidget.h"
+#include "UI/HUD/PGCameraWidget.h"
 #include "UI/HUD/PGCrosshairWidget.h"
 #include "UI/Screen/PGJumpscareWidget.h"
 
 #include "Character/Component/PGInventoryComponent.h"
+#include "Game/PGGameState.h"
 
 APGHUD::APGHUD()
 {
@@ -81,15 +83,15 @@ void APGHUD::Init()
 		InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(PC, InteractionProgressWidgetClass);
 	}
 
-	if (!VoiceIndicatorWidget)
-	{
-		VoiceIndicatorWidget = CreateWidget<UPGVoiceIndicatorWidget>(PC, VoiceIndicatorWidgetClass);
-	}
+	//if (!VoiceIndicatorWidget)
+	//{
+	//	VoiceIndicatorWidget = CreateWidget<UPGVoiceIndicatorWidget>(PC, VoiceIndicatorWidgetClass);
+	//}
 
-	if (VoiceIndicatorWidget && !VoiceIndicatorWidget->IsInViewport())
-	{
-		VoiceIndicatorWidget->AddToViewport();
-	}
+	//if (VoiceIndicatorWidget && !VoiceIndicatorWidget->IsInViewport())
+	//{
+	//	VoiceIndicatorWidget->AddToViewport();
+	//}
 
 	if (!CrosshairWidget)
 	{
@@ -352,5 +354,131 @@ void APGHUD::ClearViewport()
 	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
 	{
 		Viewport->RemoveAllViewportWidgets();
+	}
+}
+
+void APGHUD::ForceCleanupHUD()
+{
+	// 카메라 위젯 즉시 제거
+	if (CameraWidget && CameraWidget->IsInViewport())
+	{
+		CameraWidget->RemoveFromParent();
+	}
+
+	// 일반 HUD 전부 숨김
+	if (AttributeWidget && AttributeWidget->IsInViewport())
+	{
+		AttributeWidget->RemoveFromParent();
+	}
+	if (InventoryWidget && InventoryWidget->IsInViewport())
+	{
+		InventoryWidget->RemoveFromParent();
+	}
+	if (CrosshairWidget && CrosshairWidget->IsInViewport())
+	{
+		CrosshairWidget->RemoveFromParent();
+	}
+	if (InteractionProgressWidget && InteractionProgressWidget->IsInViewport())
+	{
+		InteractionProgressWidget->RemoveFromParent();
+	}
+}
+
+void APGHUD::EnterCameraMode()
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC)
+	{
+		return;
+	}
+
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		if (GS->GetCurrentGameState() == EGameState::Lobby)
+		{
+			if (LobbyWidget && LobbyWidget->IsInViewport())
+			{
+				LobbyWidget->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+	}
+
+	// 기존 HUD 숨기기
+	if (AttributeWidget && AttributeWidget->IsInViewport())
+	{
+		AttributeWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (InventoryWidget && InventoryWidget->IsInViewport())
+	{
+		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (CrosshairWidget && CrosshairWidget->IsInViewport())
+	{
+		CrosshairWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// 카메라 위젯 표시
+	if (!CameraWidget)
+	{
+		CameraWidget = CreateWidget<UPGCameraWidget>(PC, CameraWidgetClass);
+	}
+
+	if (CameraWidget && !CameraWidget->IsInViewport())
+	{
+		CameraWidget->AddToViewport();
+	}
+}
+
+void APGHUD::ExitCameraMode()
+{
+	// 카메라 위젯 제거
+	if (CameraWidget && CameraWidget->IsInViewport())
+	{
+		CameraWidget->RemoveFromParent();
+	}
+
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		if (GS->GetCurrentGameState() == EGameState::Lobby)
+		{
+			if (LobbyWidget)
+			{
+				LobbyWidget->SetVisibility(ESlateVisibility::Visible);
+			}
+			else
+			{
+				InitLobbyWidget();
+			}
+		}
+	}
+
+	// 기존 HUD 복원
+	if (AttributeWidget)
+	{
+		AttributeWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+	if (InventoryWidget)
+	{
+		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+	if (CrosshairWidget)
+	{
+		CrosshairWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void APGHUD::UpdateCameraProgress(float Progress)
+{
+	if (CameraWidget)
+	{
+		CameraWidget->SetProgress(Progress);
+	}
+}
+
+void APGHUD::DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 TotalScore)
+{
+	if (CameraWidget)
+	{
+		CameraWidget->DisplayPhotoResult(Results, TotalScore);
 	}
 }

@@ -4,18 +4,25 @@
 
 #include "CoreMinimal.h"
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickBase.h"
+#include "Interface/PhotographableInterface.h"
 #include "PGTriggerGimmickWindowBlood.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTG_API APGTriggerGimmickWindowBlood : public APGTriggerGimmickBase
+class PROJECTG_API APGTriggerGimmickWindowBlood : public APGTriggerGimmickBase, public IPhotographableInterface
 {
 	GENERATED_BODY()
 	
 public:
 	APGTriggerGimmickWindowBlood();
+
+	// IPhotographableInterface~
+	virtual bool IsPhotographable() const override;
+	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const override;
+	virtual FVector GetPhotoTargetLocation() const override;
+	// ~IPhotographableInterface
 
 protected:
 	virtual void OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent, 
@@ -57,4 +64,6 @@ protected:
 	int32 NumEffect = 3;
 
 	int32 CurrentIndex = 0;
+
+	bool bIsActivated = false;
 };

@@ -5,8 +5,8 @@
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "Enemy/Ghost/Ability/Chase/GA_GhostPostChase.h"
-#include "GameFramework/Character.h"
 #include "AIController.h"
+#include "Enemy/Ghost/Character/PGGhostCharacter.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
 
@@ -42,13 +42,14 @@ void UGA_GhostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	UE_LOG(LogTemp, Log, TEXT("[GA_GhostChase] AI (%s) ACTIVATED. Applying 'AI.State.IsChasing' tag for %.1f-%.1f sec."),
 		*GetNameSafe(GetAvatarActorFromActorInfo()), MinChaseDuration, MaxChaseDuration);
 
-	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+		if (AAIController* AIC = Cast<AAIController>(Ghost->GetController()))
 		{
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
 				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Chasing);
+				Ghost->SetGhostState(E_PGGhostState::Chasing);
 			}
 		}
 	}
@@ -83,15 +84,16 @@ void UGA_GhostChase::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 	UE_LOG(LogTemp, Log, TEXT("[GA_GhostChase] AI (%s) ENDED. Removing 'AI.State.IsChasing' tag."),
 		*GetNameSafe(GetAvatarActorFromActorInfo()));
 
-	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (AAIController* AIC = Cast<AAIController>(Char->GetController()))
+		if (AAIController* AIC = Cast<AAIController>(Ghost->GetController()))
 		{
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
 				if (!bWasCancelled)
 				{
 					BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Waiting);
+					Ghost->SetGhostState(E_PGGhostState::Waiting);
 				}
 			}
 		}

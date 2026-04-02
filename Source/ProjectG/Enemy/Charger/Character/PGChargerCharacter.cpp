@@ -118,6 +118,45 @@ void APGChargerCharacter::RotateHeadYaw()
 	}
 }
 
+FPhotoSubjectInfo APGChargerCharacter::GetPhotoSubjectInfo() const
+{
+	int32 ID = 0;
+	int32 Score = 0;
+
+	switch (CurrentState)
+	{
+		case E_PGChargerState::Exploring:
+		{
+			ID = PhotoID::Charger_Exploring;
+			Score = 10;
+			break;
+		}
+
+		case E_PGChargerState::Staring:
+		case E_PGChargerState::Adjusting:
+		{
+			ID = PhotoID::Charger_Staring;
+			Score = 50;
+			break;
+		}
+
+		case E_PGChargerState::Attacking:
+		case E_PGChargerState::Killing:
+		{
+			ID = PhotoID::Charger_Attacking;
+			Score = 70;
+			break;
+		}
+	}
+
+	return FPhotoSubjectInfo(ID, Score);	
+}
+
+FVector APGChargerCharacter::GetPhotoTargetLocation() const
+{
+	return GetActorLocation();
+}
+
 void APGChargerCharacter::SetCurrentState(E_PGChargerState NewState)
 {
 	if (HasAuthority())

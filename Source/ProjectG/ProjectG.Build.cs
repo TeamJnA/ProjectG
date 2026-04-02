@@ -22,7 +22,7 @@ public class ProjectG : ModuleRules
                                                             "AIModule", "NavigationSystem", "NetCore", "Niagara",
                                                             "Voice", "AudioMixer", "AudioCapture", "AudioCaptureCore",
                                                             "ChaosCaching", "GeometryCollectionEngine", "PhysicsCore",
-                                                            "LevelSequence", "MovieScene", "MovieSceneTracks"});
+                                                            "LevelSequence", "MovieScene", "MovieSceneTracks", "MediaAssets" });
 
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Networking", "Steamworks" });

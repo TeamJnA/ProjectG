@@ -7,6 +7,7 @@
 #include "AbilitySystemInterface.h"
 #include "Net/VoiceConfig.h"
 #include "Type/PGGameTypes.h"
+#include "Type/PGPhotoTypes.h"
 #include "PGPlayerState.generated.h"
 
 class UPGAbilitySystemComponent;
@@ -55,11 +56,26 @@ public:
 	void SetPlayerCharacter(AActor* InCharacter) { PlayerCharacter = InCharacter; }
 	FORCEINLINE AActor* GetPlayerCharacter() const { return PlayerCharacter.Get(); }
 
+	FORCEINLINE int32 GetPhotoScore() const { return PhotoScore; }
+	void AddPhotoResult(const TArray<FPhotoSubjectInfo>& Subjects);
+
+	FORCEINLINE float GetCameraBattery() const { return CameraBattery; }
+	void SetCameraBattery(float NewBattery) { CameraBattery = NewBattery; }
+
+	FORCEINLINE const TArray<int32>& GetCapturedIDs() const { return CapturedSubjectIDArray; }
+
 	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UPROPERTY()
+	TSet<int32> CapturedSubjectIDs;
+
+	// 리플리케이션용
+	UPROPERTY(Replicated)
+	TArray<int32> CapturedSubjectIDArray;
 
 	UPROPERTY()
 	TObjectPtr<UPGAbilitySystemComponent> AbilitySystemComponent;
@@ -69,6 +85,15 @@ protected:
 
 	UPROPERTY()
 	TWeakObjectPtr<AActor> PlayerCharacter;
+
+	UPROPERTY(Replicated)
+	float CameraBattery = 1.0f;
+
+	UPROPERTY(Replicated)
+	int32 PhotoScore = 0;
+
+	UPROPERTY(Replicated)
+	EExitPointType ExitPoint = EExitPointType::None;
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
 	bool bIsHost = false;
@@ -87,9 +112,6 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
 	bool bIsSpectating = false;
-
-	UPROPERTY(Replicated)
-	EExitPointType ExitPoint = EExitPointType::None;
 
 	UFUNCTION()
 	void OnRep_PlayerStateUpdated();

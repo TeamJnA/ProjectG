@@ -48,6 +48,37 @@ APGBlindCharacter::APGBlindCharacter()
     CameraShakeSource->OuterAttenuationRadius = 2200.0f;
 }
 
+FPhotoSubjectInfo APGBlindCharacter::GetPhotoSubjectInfo() const
+{
+    int32 ID = 0;
+    int32 Score = 0;
+
+    switch (HuntLevel)
+    {
+        case EBlindHuntLevel::Exploration:
+        {
+            ID = PhotoID::Blind_Exploring;
+            Score = 10;
+            break;
+        }
+
+        case EBlindHuntLevel::Investigation:
+        case EBlindHuntLevel::Chase:
+        {
+            ID = PhotoID::Blind_Chasing;
+            Score = 50;
+            break;
+        }
+    }
+
+    return FPhotoSubjectInfo(ID, Score);
+}
+
+FVector APGBlindCharacter::GetPhotoTargetLocation() const
+{
+    return GetActorLocation() + FVector(0.0f, 0.0f, 100.0f);
+}
+
 void APGBlindCharacter::SetHuntLevel(EBlindHuntLevel newHuntLevel)
 {
     checkf(HasAuthority(), TEXT("서버에서만 호출되어야 합니다."));

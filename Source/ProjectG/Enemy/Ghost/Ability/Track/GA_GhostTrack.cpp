@@ -4,10 +4,10 @@
 #include "Enemy/Ghost/Ability/Track/GA_GhostTrack.h"
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
-#include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
 #include "Enemy/Ghost/AI/Controllers/PGGhostAIController.h"
+#include "Enemy/Ghost/Character/PGGhostCharacter.h"
 
 UGA_GhostTrack::UGA_GhostTrack()
 {
@@ -33,13 +33,14 @@ void UGA_GhostTrack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (const ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Char->GetController()))
+		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
 		{
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
 				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Tracking);
+				Ghost->SetGhostState(E_PGGhostState::Tracking);
 			}
 
 			AIC->SetSightEnable(true);

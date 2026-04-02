@@ -6,6 +6,8 @@
 #include "Enemy/Common/Character/PGEnemyCharacterBase.h"
 #include "Enemy/Common/AI/Interfaces/PGAIExplorationInterface.h"
 #include "AbilitySystem/PGAttributeSet.h"
+#include "Enemy/Ghost/AI/E_PGGhostState.h"
+#include "Interface/PhotographableInterface.h"
 #include "PGGhostCharacter.generated.h"
 
 struct FOnAttributeChangeData;
@@ -16,7 +18,7 @@ class USphereComponent;
  * 
  */
 UCLASS()
-class PROJECTG_API APGGhostCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface
+class PROJECTG_API APGGhostCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface, public IPhotographableInterface
 {
 	GENERATED_BODY()
 
@@ -32,8 +34,18 @@ public:
 	virtual float GetExplorationWaitTime() const override { return ExplorationWaitTime; }
 	// ~IPGAIExplorationInterface
 
+	// IPhotographableInterface~
+	virtual bool IsPhotographable() const override;
+	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const override;
+	virtual FVector GetPhotoTargetLocation() const override;
+	// ~IPhotographableInterface
+	void SetCameraModeVisible(bool bVisible);
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ghost|Animation")
 	TObjectPtr<UAnimMontage> AttackMontage;
+
+	FORCEINLINE E_PGGhostState GetGhostState() const { return CurrentGhostState; }
+	void SetGhostState(E_PGGhostState NewState);
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -41,17 +53,10 @@ protected:
 
 	virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
 
-	void OnChasingTagChanged(const FGameplayTag Tag, int32 NewCount);
-
-	void OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount);
-
 	void UpdateGhostVisibility();
 
 	UFUNCTION()
-	void OnRep_IsChasing();
-
-	UFUNCTION()
-	void OnRep_IsAttacking();
+	void OnRep_GhostState();
 
 	virtual void OnTouchColliderOverlapBegin(
 		UPrimitiveComponent* OverlappedComponent,
@@ -117,9 +122,8 @@ protected:
 
 	float LastJumpscareTime = -1.0f;
 
-	UPROPERTY(ReplicatedUsing = OnRep_IsChasing)
-	bool bIsCurrentlyChasing = false;
+	UPROPERTY(ReplicatedUsing = OnRep_GhostState)
+	E_PGGhostState CurrentGhostState = E_PGGhostState::Exploring;
 
-	UPROPERTY(ReplicatedUsing = OnRep_IsAttacking)
-	bool bIsCurrentlyAttacking = false;
+	bool bCameraModeVisible = false;
 };
