@@ -125,6 +125,7 @@ void APGGameState::NotifyPlayerArrayUpdated()
 */
 void APGGameState::NotifyMapGenerationComplete()
 {
+	check(HasAuthority());
 	Multicast_MapGenerationComplete();
 }
 
