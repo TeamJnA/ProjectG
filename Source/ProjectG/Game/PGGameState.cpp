@@ -290,20 +290,7 @@ void APGGameState::Multicast_PlayerEnterLevelSequence_Implementation(int32 NumPl
 
 void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 {
-	// Set Player Characters hidden 
 	// Input is ignored when first spawn on player character class
-	for (APlayerState* PS : PlayerArray)
-	{
-		if (PS)
-		{
-			APGPlayerCharacter* Pawn = Cast<APGPlayerCharacter>(PS->GetPawn());
-			if (Pawn)
-			{
-				Pawn->GetMesh()->SetVisibility(false, true);
-			}
-		}
-	}
-
 	UE_LOG(LogTemp, Log, TEXT("Play Level Sequence with players : %d"), NumPlayers);
 
 	FMovieSceneSequencePlaybackSettings Settings;
@@ -318,19 +305,6 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 		Settings,
 		OutActor
 	);
-
-	// Binding ExitDoor to LevelSequence
-	AActor* SpawnedDoorActor = GetExitCameraByEnum(EExitPointType::IronDoor);
-
-	if (OutActor && SpawnedDoorActor)
-	{
-		FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag("Door");
-
-		if (BindingID.IsValid())
-		{
-			OutActor->SetBinding(BindingID, { SpawnedDoorActor });
-		}
-	}
 
 	if (EnterSequencePlayer)
 	{
@@ -369,26 +343,6 @@ void APGGameState::OnEnterSequenceFinished()
 	if (PC && PC->IsLocalController())
 	{
 		PC->SetupPlayerForGameplay();
-	}
-
-	// Set characters unhidden
-	for (APlayerState* PS : PlayerArray)
-	{
-		if (PS)
-		{
-			APGPlayerCharacter* Pawn = Cast<APGPlayerCharacter>(PS->GetPawn());
-			if (Pawn)
-			{
-				Pawn->GetMesh()->SetVisibility(true, true);
-				Pawn->StopCameraFlash();
-				Pawn->SetHeadlightVisible(false);
-
-				if (HasAuthority())
-				{
-					Pawn->ToggleHeadLight();
-				}
-			}
-		}
 	}
 }
 

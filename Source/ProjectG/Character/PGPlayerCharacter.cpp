@@ -497,6 +497,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
 
+	// Server controller
 	if (IsLocallyControlled()) 
 	{
 		// MainLevel에 입장할 때만 아래 세팅 진행. APGPlayerContoller는 메인 레벨에서만 사용.
@@ -552,6 +553,9 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 
 		GetWorldTimerManager().SetTimer(VoiceCheckTimerHandle, this, &APGPlayerCharacter::CheckVoiceAndReportNoise, 0.2f, true);
 	}
+
+	// Turn on headlight
+	ToggleHeadLight();
 
 	TryInitVoiceSettings();
 	TrySetDeadCharacter();
