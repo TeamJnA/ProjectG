@@ -54,14 +54,6 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Battery")
     TArray<float> BatteryDisplaySteps = { 0.0f, 0.11f, 0.36f, 0.61f, 0.86f, 1.0f };
 
-    // 총 점수
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UTextBlock> ScoreText;
-
-    // 촬영 완료 메시지
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UTextBlock> StatusText;
-
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     TObjectPtr<UWidgetAnimation> FadeInTransitionAnim;
 

@@ -3,7 +3,9 @@
 
 #include "Level/Room/PGChargerRoom.h"
 #include "Level/Misc/PGWall.h"
+#include "Level/Misc/PGPhotoSpot.h"
 #include "Components/BoxComponent.h"
+
 
 APGChargerRoom::APGChargerRoom()
 {
@@ -41,4 +43,33 @@ APGChargerRoom::APGChargerRoom()
 		RoomMesh->SetChildActorClass(RoomMeshRef.Class);
 	}
 	RoomMesh->SetRelativeLocation(FVector(946.5f, -300.1f, -25.1f));
+
+	PhotoSpotConfigs = {
+		{ PhotoID::Room_Charger_1, 100, FVector(730.0f, 400.0f, 480.0f) },
+		{ PhotoID::Room_Charger_2, 100, FVector(820.0f, 10.0f, 590.0f) },
+		{ PhotoID::Room_Charger_3, 100, FVector(1430.0f, -1290.0f, 620.0f) }
+	};
+}
+
+void APGChargerRoom::SpawnPhotoSpots()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	for (const FPhotoSpotConfig& Config : PhotoSpotConfigs)
+	{
+		FVector SpawnLocation = GetActorLocation() + GetActorRotation().RotateVector(Config.Offset);
+		FRotator SpawnRotation = GetActorRotation() + Config.Rotation;
+
+		FActorSpawnParameters Params;
+		Params.Owner = this;
+
+		APGPhotoSpot* Spot = GetWorld()->SpawnActor<APGPhotoSpot>(SpawnLocation, SpawnRotation, Params);
+		if (Spot)
+		{
+			Spot->SetPhotoInfo(Config.PhotoID, Config.PhotoScore, Config.Rotation, Config.BoxExtent);
+		}
+	}
 }

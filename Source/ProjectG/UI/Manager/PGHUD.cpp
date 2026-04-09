@@ -17,8 +17,11 @@
 #include "UI/HUD/PGVoiceIndicatorWidget.h"
 #include "UI/HUD/PGCameraWidget.h"
 #include "UI/HUD/PGCrosshairWidget.h"
+#include "UI/HUD/PGPhotoAlertWidget.h"
+#include "UI/HUD/PGBackgroundBlurWidget.h"
 #include "UI/Screen/PGJumpscareWidget.h"
 
+#include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
 #include "Game/PGGameState.h"
 
@@ -83,15 +86,15 @@ void APGHUD::Init()
 		InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(PC, InteractionProgressWidgetClass);
 	}
 
-	//if (!VoiceIndicatorWidget)
-	//{
-	//	VoiceIndicatorWidget = CreateWidget<UPGVoiceIndicatorWidget>(PC, VoiceIndicatorWidgetClass);
-	//}
+	if (!PhotoAlertWidget)
+	{
+		PhotoAlertWidget = CreateWidget<UPGPhotoAlertWidget>(PC, PhotoAlertWidgetClass);
+	}
 
-	//if (VoiceIndicatorWidget && !VoiceIndicatorWidget->IsInViewport())
-	//{
-	//	VoiceIndicatorWidget->AddToViewport();
-	//}
+	if (PhotoAlertWidget && !PhotoAlertWidget->IsInViewport())
+	{
+		PhotoAlertWidget->AddToViewport();
+	}
 
 	if (!CrosshairWidget)
 	{
@@ -101,6 +104,16 @@ void APGHUD::Init()
 	if (CrosshairWidget && !CrosshairWidget->IsInViewport())
 	{
 		CrosshairWidget->AddToViewport();
+	}
+
+	if (!BackgroundBlurWidget)
+	{
+		BackgroundBlurWidget = CreateWidget<UPGBackgroundBlurWidget>(PC, BackgroundBlurWidgetClass);
+	}
+
+	if (BackgroundBlurWidget && !BackgroundBlurWidget->IsInViewport())
+	{
+		BackgroundBlurWidget->AddToViewport(-1);
 	}
 }
 
@@ -351,6 +364,14 @@ void APGHUD::DisplayJumpscare(UTexture2D* JumpscareTexture)
 
 void APGHUD::ClearViewport()
 {
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		if (GS->GetCurrentGameState() == EGameState::Lobby)
+		{
+			return;
+		}
+	}
+
 	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
 	{
 		Viewport->RemoveAllViewportWidgets();
@@ -365,22 +386,59 @@ void APGHUD::ForceCleanupHUD()
 		CameraWidget->RemoveFromParent();
 	}
 
-	// 老馆 HUD 傈何 见辫
-	if (AttributeWidget && AttributeWidget->IsInViewport())
+	// 老馆 HUD 力芭
+	if (AttributeWidget)
 	{
-		AttributeWidget->RemoveFromParent();
+		AttributeWidget->SetVisibility(ESlateVisibility::Visible);
+		if (AttributeWidget->IsInViewport())
+		{
+			AttributeWidget->RemoveFromParent();
+		}
 	}
-	if (InventoryWidget && InventoryWidget->IsInViewport())
+
+	if (InventoryWidget)
 	{
-		InventoryWidget->RemoveFromParent();
+		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+		if (InventoryWidget->IsInViewport())
+		{
+			InventoryWidget->RemoveFromParent();
+		}
 	}
-	if (CrosshairWidget && CrosshairWidget->IsInViewport())
+
+	if (MessageManagerWidget)
 	{
-		CrosshairWidget->RemoveFromParent();
+		MessageManagerWidget->SetVisibility(ESlateVisibility::Visible);
+		if (MessageManagerWidget->IsInViewport())
+		{
+			MessageManagerWidget->RemoveFromParent();
+		}
 	}
-	if (InteractionProgressWidget && InteractionProgressWidget->IsInViewport())
+
+	if (InteractionProgressWidget)
 	{
-		InteractionProgressWidget->RemoveFromParent();
+		InteractionProgressWidget->SetVisibility(ESlateVisibility::Visible);
+		if (InteractionProgressWidget->IsInViewport())
+		{
+			InteractionProgressWidget->RemoveFromParent();
+		}
+	}
+
+	if (PhotoAlertWidget)
+	{
+		PhotoAlertWidget->SetVisibility(ESlateVisibility::Visible);
+		if (PhotoAlertWidget->IsInViewport())
+		{
+			PhotoAlertWidget->RemoveFromParent();
+		}
+	}
+
+	if (CrosshairWidget)
+	{
+		CrosshairWidget->SetVisibility(ESlateVisibility::Visible);
+		if (CrosshairWidget->IsInViewport())
+		{
+			CrosshairWidget->RemoveFromParent();
+		}
 	}
 }
 
@@ -408,10 +466,27 @@ void APGHUD::EnterCameraMode()
 	{
 		AttributeWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
 	if (InventoryWidget && InventoryWidget->IsInViewport())
 	{
 		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	if (MessageManagerWidget && MessageManagerWidget->IsInViewport())
+	{
+		MessageManagerWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	if (InteractionProgressWidget && InteractionProgressWidget->IsInViewport())
+	{
+		InteractionProgressWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	if (PhotoAlertWidget && PhotoAlertWidget->IsInViewport())
+	{
+		PhotoAlertWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
 	if (CrosshairWidget && CrosshairWidget->IsInViewport())
 	{
 		CrosshairWidget->SetVisibility(ESlateVisibility::Collapsed);
@@ -457,10 +532,27 @@ void APGHUD::ExitCameraMode()
 	{
 		AttributeWidget->SetVisibility(ESlateVisibility::Visible);
 	}
+
 	if (InventoryWidget)
 	{
 		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
 	}
+
+	if (MessageManagerWidget)
+	{
+		MessageManagerWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	if (InteractionProgressWidget)
+	{
+		InteractionProgressWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	if (PhotoAlertWidget)
+	{
+		PhotoAlertWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+
 	if (CrosshairWidget)
 	{
 		CrosshairWidget->SetVisibility(ESlateVisibility::Visible);
@@ -480,5 +572,22 @@ void APGHUD::DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 
 	if (CameraWidget)
 	{
 		CameraWidget->DisplayPhotoResult(Results, TotalScore);
+	}
+}
+
+void APGHUD::SetPhotoAlertVisible(bool bVisible)
+{
+	if (!PhotoAlertWidget)
+	{
+		return;
+	}
+
+	if (bVisible)
+	{
+		PhotoAlertWidget->StartBlinking();
+	}
+	else
+	{
+		PhotoAlertWidget->StopBlinking();
 	}
 }

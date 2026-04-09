@@ -27,7 +27,7 @@ class UPGInventoryComponent;
 class USpotLightComponent;
 
 class APGTriggerGimmickMannequin;
-class USphereComponent;
+class UBoxComponent;
 
 class UPGVOIPTalker;
 
@@ -571,4 +571,32 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpotLightComponent> CameraFlashLight;
+
+	// 카메라 알림용
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	TObjectPtr<UBoxComponent> PhotoDetectionBox;
+
+	UFUNCTION()
+	void OnPhotoDetectionBeginOverlap(UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep, 
+		const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnPhotoDetectionEndOverlap(UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex);
+
+	void ValidateNearbyPhotographables();
+
+	UPROPERTY()
+	TArray<TWeakObjectPtr<AActor>> NearbyPhotographables;
+
+	FTimerHandle PhotoDetectionTimerHandle;
+
+	void InitPhotoDetection();
+	bool bPhotoDetectionInitialized = false;
 };

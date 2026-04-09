@@ -14,6 +14,7 @@
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
+#include "Enemy/MirrorGhost/Character/PGMirrorGhostCharacter.h"
 
 
 UPGCameraComponent::UPGCameraComponent()
@@ -22,10 +23,8 @@ UPGCameraComponent::UPGCameraComponent()
     SetIsReplicatedByDefault(true);
 }
 
-void UPGCameraComponent::BeginPlay()
+void UPGCameraComponent::InitCameraComponent()
 {
-    Super::BeginPlay();
-
     // 저장된 배터리, 찍은 대상들 정보 복원
     if (APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner()))
     {
@@ -39,6 +38,24 @@ void UPGCameraComponent::BeginPlay()
             }
         }
     }
+}
+
+void UPGCameraComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    //if (APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner()))
+    //{
+    //    if (APGPlayerState* PS = Owner->GetPlayerState<APGPlayerState>())
+    //    {
+    //        CurrentBattery = PS->GetCameraBattery();
+
+    //        for (int32 ID : PS->GetCapturedIDs())
+    //        {
+    //            LocalCapturedIDs.Add(ID);
+    //        }
+    //    }
+    //}
 }
 
 void UPGCameraComponent::EnterCameraMode()
@@ -411,17 +428,10 @@ void UPGCameraComponent::UpdateCameraProgress()
                     IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(TrackedTargetActor.Get());
                     if (Photographable)
                     {
-                        if (Photographable->ShouldTrackFocusFrame())
+                        FVector2D ScreenPos;
+                        if (PC->ProjectWorldLocationToScreen(Photographable->GetPhotoTargetLocation(), ScreenPos))
                         {
-                            FVector2D ScreenPos;
-                            if (PC->ProjectWorldLocationToScreen(Photographable->GetPhotoTargetLocation(), ScreenPos))
-                            {
-                                Widget->UpdateFocusFramePosition(ScreenPos);
-                            }
-                        }
-                        else
-                        {
-                            Widget->ResetFocusFrame();
+                            Widget->UpdateFocusFramePosition(ScreenPos);
                         }
                     }
                 }
@@ -509,7 +519,8 @@ AActor* UPGCameraComponent::FindClosestSubjectActor() const
         FVector TargetLocation = Photographable->GetPhotoTargetLocation();
         FVector DirectionToActor = TargetLocation - CameraLocation;
         float Distance = DirectionToActor.Size();
-        if (Distance > CurrentCameraRange)
+        float MaxRange = FMath::Min(CurrentCameraRange, Photographable->GetPhotoDetectionRange());
+        if (Distance > MaxRange)
         {
             continue;
         }
@@ -572,7 +583,8 @@ bool UPGCameraComponent::IsTargetValid(AActor* Target) const
     FVector TargetLocation = Photographable->GetPhotoTargetLocation();
     FVector DirectionToActor = TargetLocation - CameraLocation;
     float Distance = DirectionToActor.Size();
-    if (Distance > CurrentCameraRange)
+    float MaxRange = FMath::Min(CurrentCameraRange, Photographable->GetPhotoDetectionRange());
+    if (Distance > MaxRange)
     {
         return false;
     }
@@ -782,6 +794,16 @@ void UPGCameraComponent::SetLocalGhostVisible(bool bVisible)
         if (Ghost && Ghost->GetTargetPlayerState() == PC->PlayerState)
         {
             Ghost->SetCameraModeVisible(bVisible);
+            break;
+        }
+    }
+
+    for (TActorIterator<APGMirrorGhostCharacter> It(GetWorld()); It; ++It)
+    {
+        APGMirrorGhostCharacter* MirrorGhost = *It;
+        if (MirrorGhost && MirrorGhost->GetTargetPlayer() == Owner)
+        {
+            MirrorGhost->SetCameraModeVisible(bVisible);
             break;
         }
     }

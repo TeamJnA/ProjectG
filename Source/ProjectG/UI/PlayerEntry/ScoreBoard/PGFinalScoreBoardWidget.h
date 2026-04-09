@@ -44,6 +44,12 @@ protected:
 	UFUNCTION()
 	void OnReturnToLobbyButtonClicked();
 
+	void PlaySequentialStampEffects();
+	void StampNextEntry();
+
+	UPROPERTY()
+	TArray<TObjectPtr<UPGPlayerEntryWidget>> PlayerEntries;
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UVerticalBox> PlayerContainer;
 
@@ -65,4 +71,8 @@ protected:
 private:
 	TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
 	TWeakObjectPtr<APGGameState> GSRef;
+
+	FTimerHandle StampTimerHandle;
+	int32 CurrentStampIndex = 0;
+	bool bStampCompleted = false;
 };

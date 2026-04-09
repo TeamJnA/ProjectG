@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Level/Room/PGMasterRoom.h"
+#include "Type/PGPhotoTypes.h"
 #include "PGMirrorRoom.generated.h"
 
 class UBoxComponent;
@@ -22,6 +23,7 @@ class PROJECTG_API APGMirrorRoom : public APGMasterRoom
 
 public:
 	APGMirrorRoom();
+	virtual void SpawnPhotoSpots() override;
 
 	void SolveGimmick();
 
@@ -47,6 +49,9 @@ private:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetGateState(bool bLock);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	FPhotoSpotConfig PhotoSpotConfig;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gate")
 	FVector GateOpenRelativeLocation = FVector(15.0f, 0.0f, 320.0f);

@@ -8,6 +8,8 @@
 #include "Components/Border.h"
 
 #include "Player/PGPlayerState.h"
+#include "Type/PGPhotoTypes.h"
+
 
 /*
 * 받은 데이터를 바탕으로 플레이어 이미지, 이름, 상태 디스플레이
@@ -18,7 +20,7 @@ void UPGPlayerEntryWidget::SetupEntry(const APGPlayerState* InPlayerState, UText
 {
 	UE_LOG(LogTemp, Log, TEXT("PlayerEntryWidget::SetupEntry: [%s]"), *InPlayerState->GetPlayerName());
 	
-	if (!InPlayerState || !PlayerNameText || !PlayerAvatar || !StatusText)
+	if (!InPlayerState || !PlayerNameText || !PlayerAvatar || !StatusText || !ScoreText)
 	{
 		return;
 	}
@@ -38,6 +40,8 @@ void UPGPlayerEntryWidget::SetupEntry(const APGPlayerState* InPlayerState, UText
 	FText StatusMessage;
 	FLinearColor StatusColor = FLinearColor::White;
 	bool bShowStatus = true;
+	bool bShowScore = false;
+
 	if (Context == EPlayerEntryContext::Lobby)
 	{
 		PlayerNameFontSize = 16;
@@ -55,7 +59,23 @@ void UPGPlayerEntryWidget::SetupEntry(const APGPlayerState* InPlayerState, UText
 	else if (Context == EPlayerEntryContext::Scoreboard)
 	{
 		PlayerNameFontSize = 28;
-		StatusFontSize = 14;
+		StatusFontSize = 24;
+		if (InPlayerState->IsDead())
+		{
+			StatusMessage = FText::FromString(TEXT("DEAD"));
+			StatusColor = FLinearColor::Red;
+		}
+		else if (InPlayerState->HasFinishedGame())
+		{
+			StatusMessage = FText::FromString(TEXT("ESCAPED"));
+			StatusColor = FLinearColor::Green;
+		}
+	}
+	else if (Context == EPlayerEntryContext::FinalScoreboard)
+	{
+		PlayerNameFontSize = 28;
+		StatusFontSize = 24;
+		bShowScore = true;
 		if (InPlayerState->IsDead())
 		{
 			StatusMessage = FText::FromString(TEXT("DEAD"));
@@ -94,6 +114,10 @@ void UPGPlayerEntryWidget::SetupEntry(const APGPlayerState* InPlayerState, UText
 	StatusText->SetColorAndOpacity(StatusColor);
 	StatusText->SetVisibility(bShowStatus ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 
+	int32 Score = InPlayerState->GetPhotoScore();
+	ScoreText->SetText(FText::FromString(FString::Printf(TEXT("%s"), *PhotoGrade::GetGrade(Score))));
+	ScoreText->SetVisibility(bShowScore ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
 	UnhighlightEntry();
 }
 
@@ -110,5 +134,21 @@ void UPGPlayerEntryWidget::UnhighlightEntry()
 	if (HighlightBorder)
 	{
 		HighlightBorder->SetBrushColor(DefaultColor);
+	}
+}
+
+void UPGPlayerEntryWidget::HideScoreText()
+{
+	if (ScoreText)
+	{
+		ScoreText->SetRenderOpacity(0.0f);
+	}
+}
+
+void UPGPlayerEntryWidget::PlayGradeStampEffect()
+{
+	if (GradeStampAnim)
+	{
+		PlayAnimation(GradeStampAnim);
 	}
 }

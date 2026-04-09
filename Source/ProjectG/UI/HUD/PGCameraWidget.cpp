@@ -77,34 +77,11 @@ void UPGCameraWidget::SetProgress(float Progress)
         float Scale = FMath::Lerp(1.0f, FocusFrameMaxScale, Progress);
         FocusFrame->SetRenderScale(FVector2D(Scale, Scale));
     }
-
-    if (StatusText)
-    {
-        if (Progress < 1.0f)
-        {
-            StatusText->SetText(FText::FromString(TEXT("Focusing...")));
-        }
-    }
 }
 
 void UPGCameraWidget::DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 TotalScore)
 {
-    if (StatusText)
-    {
-        if (Results.Num() > 0)
-        {
-            StatusText->SetText(FText::FromString(FString::Printf(TEXT("Captured %d subjects!"), Results.Num())));
-        }
-        else
-        {
-            StatusText->SetText(FText::FromString(TEXT("Nothing captured...")));
-        }
-    }
-
-    if (ScoreText)
-    {
-        ScoreText->SetText(FText::FromString(FString::Printf(TEXT("Score: %d"), TotalScore)));
-    }
+    UE_LOG(LogTemp, Log, TEXT("[CameraWidget] PhotoResult: Captured %d subjects, TotalScore: %d"), Results.Num(), TotalScore);
 }
 
 void UPGCameraWidget::PlayFadeInTransition(FOnCameraTransitionFinished OnFinished)

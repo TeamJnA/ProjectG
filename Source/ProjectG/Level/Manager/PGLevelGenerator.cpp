@@ -448,6 +448,8 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 
 		RoomAmount--;
 
+		RoomToCheck->SpawnPhotoSpots();
+
 		// ExitPoints
 		if (const USceneComponent* LatestRoomExitPointsFolder = RoomToCheck->GetExitPointsFolder())
 		{
@@ -1491,7 +1493,7 @@ void APGLevelGenerator::ComputeExplorationWaypoints()
 		GS->SetExplorationWaypoints(Waypoints);
 		UE_LOG(LogTemp, Log, TEXT("LG::ComputeExplorationWaypoints: Generated %d waypoints"), Waypoints.Num());
 
-#if !UE_BUILD_SHIPPING
+#if WITH_EDITOR
 		GS->DrawDebugWaypoints();
 #endif
 	}

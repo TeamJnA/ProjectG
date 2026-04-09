@@ -46,6 +46,11 @@ void UPGFinalScoreBoardWidget::NativeConstruct()
 
 void UPGFinalScoreBoardWidget::NativeDestruct()
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(StampTimerHandle);
+	}
+
 	if (APGGameState* GS = GSRef.Get())
 	{
 		GS->OnPlayerArrayChanged.RemoveAll(this);
@@ -77,6 +82,12 @@ void UPGFinalScoreBoardWidget::BindPlayerEntry()
 */
 void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(StampTimerHandle);
+	}
+	CurrentStampIndex = 0;
+
 	UPGAdvancedFriendsGameInstance* GI = GIRef.Get();
 	APGGameState* GS = GSRef.Get();
 	if (!GI || !GS)
@@ -85,6 +96,7 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 	}
 
 	PlayerContainer->ClearChildren();
+	PlayerEntries.Empty();
 
 	for (APlayerState* PS : GS->PlayerArray)
 	{
@@ -99,11 +111,39 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 					AvatarTexture = GI->GetSteamAvatarAsTexture(*PGPS->GetUniqueId().GetUniqueNetId());
 				}
 
-				NewSlot->SetupEntry(PGPS, AvatarTexture, EPlayerEntryContext::Scoreboard);
+				NewSlot->SetupEntry(PGPS, AvatarTexture, EPlayerEntryContext::FinalScoreboard);
 				PlayerContainer->AddChild(NewSlot);
+				PlayerEntries.Add(NewSlot);
 				UE_LOG(LogTemp, Log, TEXT("ScoreBoardWidget::UpdatePlayerEntry: Add PlayerEntry | Name: %s"), *PGPS->GetPlayerName());
 			}
 		}		
+	}
+
+	if (bStampCompleted)
+	{
+		if (ReturnToLobbyButton)
+		{
+			ReturnToLobbyButton->SetVisibility(ESlateVisibility::Visible);
+		}
+
+		if (ReturnToMainMenuButton)
+		{
+			ReturnToMainMenuButton->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+	else
+	{
+		if (ReturnToLobbyButton)
+		{
+			ReturnToLobbyButton->SetVisibility(ESlateVisibility::Hidden);
+		}
+
+		if (ReturnToMainMenuButton)
+		{
+			ReturnToMainMenuButton->SetVisibility(ESlateVisibility::Hidden);
+		}
+
+		PlaySequentialStampEffects();
 	}
 }
 
@@ -172,4 +212,54 @@ void UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked()
 	{
 		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: PC Ref is not PG class"));
 	}
+}
+
+void UPGFinalScoreBoardWidget::PlaySequentialStampEffects()
+{
+	for (UPGPlayerEntryWidget* Entry : PlayerEntries)
+	{
+		if (Entry)
+		{
+			Entry->HideScoreText();
+		}
+	}
+
+	CurrentStampIndex = 0;
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(StampTimerHandle, this, &UPGFinalScoreBoardWidget::StampNextEntry, 0.6f, true, 0.5f);
+	}
+}
+
+void UPGFinalScoreBoardWidget::StampNextEntry()
+{
+	if (CurrentStampIndex >= PlayerEntries.Num())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(StampTimerHandle);
+		}
+
+		bStampCompleted = true;
+
+		if (ReturnToLobbyButton)
+		{
+			ReturnToLobbyButton->SetVisibility(ESlateVisibility::Visible);
+		}
+
+		if (ReturnToMainMenuButton)
+		{
+			ReturnToMainMenuButton->SetVisibility(ESlateVisibility::Visible);
+		}
+
+		return;
+	}
+
+	if (UPGPlayerEntryWidget* Entry = PlayerEntries[CurrentStampIndex])
+	{
+		Entry->PlayGradeStampEffect();
+	}
+
+	CurrentStampIndex++;
 }

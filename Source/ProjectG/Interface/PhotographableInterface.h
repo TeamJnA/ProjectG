@@ -24,7 +24,7 @@ class PROJECTG_API IPhotographableInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual bool IsPhotographable() const { return true; }
-	virtual bool ShouldTrackFocusFrame() const { return true; }
+	virtual float GetPhotoDetectionRange() const { return 4000.0f; }
 	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const = 0;
 	virtual FVector GetPhotoTargetLocation() const = 0;
 };

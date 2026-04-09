@@ -3,6 +3,7 @@
 
 #include "Level/Room/PGElevatorRoom.h"
 #include "Level/Misc/PGWall.h"
+#include "Level/Misc/PGPhotoSpot.h"
 #include "Components/BoxComponent.h"
 
 APGElevatorRoom::APGElevatorRoom()
@@ -92,4 +93,26 @@ APGElevatorRoom::APGElevatorRoom()
 	}
 	ExitElevator->SetRelativeLocation(FVector(906.0f, -1185.0f, 135.0f));
 	ExitElevator->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+
+	PhotoSpotConfig = { PhotoID::Room_Elevator, 100, FVector(910.0f, -1180.0f, 170.0f) };
+}
+
+void APGElevatorRoom::SpawnPhotoSpots()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	FVector SpawnLocation = GetActorLocation() + GetActorRotation().RotateVector(PhotoSpotConfig.Offset);
+	FRotator SpawnRotation = GetActorRotation() + PhotoSpotConfig.Rotation;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+
+	APGPhotoSpot* Spot = GetWorld()->SpawnActor<APGPhotoSpot>(SpawnLocation, SpawnRotation, Params);
+	if (Spot)
+	{
+		Spot->SetPhotoInfo(PhotoSpotConfig.PhotoID, PhotoSpotConfig.PhotoScore, PhotoSpotConfig.Rotation, PhotoSpotConfig.BoxExtent);
+	}
 }

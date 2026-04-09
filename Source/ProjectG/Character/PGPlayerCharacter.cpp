@@ -23,6 +23,7 @@
 #include "Player/PGPlayerState.h"
 
 // UI and Components
+#include "Components/BoxComponent.h"
 #include "Component/PGInventoryComponent.h"
 #include "Item/PGItemData.h"
 #include "Component/PGSoundManagerComponent.h"
@@ -39,6 +40,7 @@
 // Interface
 #include "Interface/InteractableActorInterface.h"
 #include "Interface/CharacterAnimationInterface.h"
+#include "Interface/PhotographableInterface.h"
 #include "Interact/Ability/GA_Interact_Revive.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -100,6 +102,17 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HitCapsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
 	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
+
+	PhotoDetectionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("PhotoDetectionBox"));
+	PhotoDetectionBox->SetupAttachment(RootComponent);
+	PhotoDetectionBox->SetCollisionObjectType(ECC_GameTraceChannel8);
+	PhotoDetectionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PhotoDetectionBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+	PhotoDetectionBox->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
+	PhotoDetectionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
+	PhotoDetectionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
+	PhotoDetectionBox->SetGenerateOverlapEvents(false);
+	PhotoDetectionBox->SetHiddenInGame(true);
 
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
@@ -551,6 +564,16 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 		}
 
 		GetWorldTimerManager().SetTimer(VoiceCheckTimerHandle, this, &APGPlayerCharacter::CheckVoiceAndReportNoise, 0.2f, true);
+		InitPhotoDetection();
+
+		if (CameraComp)
+		{
+			CameraComp->InitCameraComponent();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Character] PossessedBy: Camera Comp is not valid"));
+		}
 	}
 
 	TryInitVoiceSettings();
@@ -624,6 +647,16 @@ void APGPlayerCharacter::OnRep_PlayerState()
 		}
 
 		GetWorldTimerManager().SetTimer(VoiceCheckTimerHandle, this, &APGPlayerCharacter::CheckVoiceAndReportNoise, 0.2f, true);
+		InitPhotoDetection();
+
+		if (CameraComp)
+		{
+			CameraComp->InitCameraComponent();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Character] OnRep_PlayerState: Camera Comp is not valid"));
+		}
 	}
 
 	TryInitVoiceSettings();
@@ -728,6 +761,8 @@ void APGPlayerCharacter::InitHUD()
 	{
 		if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
 		{
+			HUD->ClearViewport();
+
 			HUD->Init();
 
 			UPGMessageManagerWidget* MessageManager = HUD->GetMessageManagerWidget();
@@ -1945,5 +1980,129 @@ void APGPlayerCharacter::StopCameraFlash()
 	if (CameraFlashLight)
 	{
 		CameraFlashLight->SetVisibility(false);
+	}
+}
+
+void APGPlayerCharacter::InitPhotoDetection()
+{
+	if (bPhotoDetectionInitialized)
+	{
+		return;
+	}
+	bPhotoDetectionInitialized = true;
+
+	PhotoDetectionBox->OnComponentBeginOverlap.AddDynamic(this, &APGPlayerCharacter::OnPhotoDetectionBeginOverlap);
+	PhotoDetectionBox->OnComponentEndOverlap.AddDynamic(this, &APGPlayerCharacter::OnPhotoDetectionEndOverlap);
+	GetWorldTimerManager().SetTimer(PhotoDetectionTimerHandle, this, &APGPlayerCharacter::ValidateNearbyPhotographables, 1.0f, true);
+
+	FTimerHandle PhotoDetectionDelayHandle;
+	GetWorldTimerManager().SetTimer(PhotoDetectionDelayHandle, [this]()
+	{
+		if (PhotoDetectionBox)
+		{
+			PhotoDetectionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			PhotoDetectionBox->SetGenerateOverlapEvents(true);
+			PhotoDetectionBox->UpdateOverlaps();
+		}
+	}, 2.0f, false);
+}
+
+void APGPlayerCharacter::OnPhotoDetectionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!OtherActor || OtherActor == this)
+	{
+		return;
+	}
+
+	IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(OtherActor);
+	if (!Photographable)
+	{
+		return;
+	}
+
+	NearbyPhotographables.AddUnique(OtherActor);
+	ValidateNearbyPhotographables();
+}
+
+void APGPlayerCharacter::OnPhotoDetectionEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	NearbyPhotographables.Remove(OtherActor);
+	ValidateNearbyPhotographables();
+}
+
+void APGPlayerCharacter::ValidateNearbyPhotographables()
+{
+	if (!IsLocallyControlled() || !FirstPersonCamera)
+	{
+		return;
+	}
+
+	bool bHasPhotographable = false;
+
+	const FVector CameraLocation = FirstPersonCamera->GetComponentLocation();
+	const FVector ForwardVector = FirstPersonCamera->GetForwardVector();
+
+	for (int32 i = NearbyPhotographables.Num() - 1; i >= 0; i--)
+	{
+		if (!NearbyPhotographables[i].IsValid())
+		{
+			NearbyPhotographables.RemoveAt(i);
+			continue;
+		}
+
+		AActor* Actor = NearbyPhotographables[i].Get();
+		IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(Actor);
+		if (!Photographable || !Photographable->IsPhotographable())
+		{
+			continue;
+		}
+
+		// 이미 찍은 대상 스킵
+		if (CameraComp)
+		{
+			FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
+			if (CameraComp->IsAlreadyCaptured(Info.SubjectID))
+			{
+				continue;
+			}
+		}
+
+		// 거리 체크 (촬영 알림용)
+		FVector TargetLocation = Photographable->GetPhotoTargetLocation();
+		float Distance = FVector::Dist(CameraLocation, TargetLocation);
+		if (Distance > Photographable->GetPhotoDetectionRange())
+		{
+			continue;
+		}
+
+		// 시야 내에 있는지
+		FVector DirectionToActor = (TargetLocation - CameraLocation).GetSafeNormal();
+		float DotResult = FVector::DotProduct(ForwardVector, DirectionToActor);
+		if (DotResult < 0.8f)
+		{
+			continue;
+		}
+
+		FHitResult HitResult;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+		Params.AddIgnoredActor(Actor);
+
+		bool bBlocked = GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, TargetLocation, ECC_GameTraceChannel7, Params);
+		if (bBlocked)
+		{
+			continue;
+		}
+
+		bHasPhotographable = true;
+		break;
+	}
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
+		{
+			HUD->SetPhotoAlertVisible(bHasPhotographable);
+		}
 	}
 }

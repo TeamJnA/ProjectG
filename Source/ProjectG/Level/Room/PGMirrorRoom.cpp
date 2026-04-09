@@ -3,6 +3,7 @@
 
 #include "Level/Room/PGMirrorRoom.h"
 #include "Level/Misc/PGWall_Brown.h"
+#include "Level/Misc/PGPhotoSpot.h"
 #include "Components/BoxComponent.h"
 #include "Components/ChildActorComponent.h"
 #include "NavModifierComponent.h"
@@ -119,6 +120,28 @@ APGMirrorRoom::APGMirrorRoom()
 
 	DoorCloseSound = FName(TEXT("LEVEL_MirrorRoom_DoorClose"));
 	DoorOpenSound = FName(TEXT("LEVEL_MirrorRoom_DoorOpen"));
+
+	PhotoSpotConfig = { PhotoID::Room_Ghost, 100, FVector(1150.0f, 1280.0f, 160.0f), FRotator(0.0f, 15.0f, 0.0f) };
+}
+
+void APGMirrorRoom::SpawnPhotoSpots()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	FVector SpawnLocation = GetActorLocation() + GetActorRotation().RotateVector(PhotoSpotConfig.Offset);
+	FRotator SpawnRotation = GetActorRotation() + PhotoSpotConfig.Rotation;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+
+	APGPhotoSpot* Spot = GetWorld()->SpawnActor<APGPhotoSpot>(SpawnLocation, SpawnRotation, Params);
+	if (Spot)
+	{
+		Spot->SetPhotoInfo(PhotoSpotConfig.PhotoID, PhotoSpotConfig.PhotoScore, PhotoSpotConfig.Rotation, PhotoSpotConfig.BoxExtent);
+	}
 }
 
 void APGMirrorRoom::BeginPlay()

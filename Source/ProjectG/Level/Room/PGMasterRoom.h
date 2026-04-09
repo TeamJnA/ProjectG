@@ -30,6 +30,7 @@ public:
 
 	FORCEINLINE FVector GetEnemySpawnLocation() const { return EnemySpawnPoint->GetComponentLocation(); }
 	FORCEINLINE TSubclassOf<AActor> GetWallClass() const { return WallClass; }
+	virtual void SpawnPhotoSpots() {}
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")

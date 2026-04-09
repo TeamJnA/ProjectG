@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Level/Room/PGMasterRoom.h"
+#include "Type/PGPhotoTypes.h"
 #include "PGElevatorRoom.generated.h"
 
 /**
@@ -16,8 +17,12 @@ class PROJECTG_API APGElevatorRoom : public APGMasterRoom
 
 public:
 	APGElevatorRoom();
+	virtual void SpawnPhotoSpots() override;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	FPhotoSpotConfig PhotoSpotConfig;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
 	TObjectPtr<UArrowComponent> ExitDir0;
 

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Level/Room/PGMasterRoom.h"
+#include "Type/PGPhotoTypes.h"
 #include "PGChargerRoom.generated.h"
 
 /**
@@ -16,8 +17,12 @@ class PROJECTG_API APGChargerRoom : public APGMasterRoom
 
 public:
 	APGChargerRoom();
+	virtual void SpawnPhotoSpots() override;
 
 protected:
+
+    UPROPERTY(EditDefaultsOnly, Category = "Camera")
+    TArray<FPhotoSpotConfig> PhotoSpotConfigs;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> RoomMesh;

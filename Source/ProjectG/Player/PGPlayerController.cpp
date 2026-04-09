@@ -408,11 +408,6 @@ void APGPlayerController::Client_OnRevive_Implementation()
 {
 	if (IsLocalController())
 	{
-		if (APGHUD* HUD = GetHUD<APGHUD>())
-		{
-			HUD->ClearViewport();
-		}
-
 		bShowMouseCursor = false;
 		SetInputMode(FInputModeGameOnly());
 	}

@@ -60,7 +60,7 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
             FNavLocation NavLoc;
             if (NavSys->GetRandomPointInNavigableRadius(WaypointTarget, 1000.0f, NavLoc))
             {
-#if !UE_BUILD_SHIPPING
+#if WITH_EDITOR
                 // 선: AI → 선택된 Waypoint까지 경로, 구체: 선택된 Waypoint
                 FColor DebugColor;
                 if (Enemy->IsA(APGBlindCharacter::StaticClass()))
@@ -74,6 +74,7 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
                 DrawDebugSphere(GetWorld(), NavLoc.Location, 50.0f, 8, DebugColor, false, 5.0f);
                 DrawDebugString(GetWorld(), NavLoc.Location + FVector(0, 0, 70), FString::Printf(TEXT("%s → WP"), *Enemy->GetName()), nullptr, DebugColor, 5.0f);
 #endif
+
                 OwnerComp.GetBlackboardComponent()->SetValueAsVector(GetSelectedBlackboardKey(), NavLoc.Location);
                 FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
                 return EBTNodeResult::Succeeded;

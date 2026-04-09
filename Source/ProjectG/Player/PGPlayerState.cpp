@@ -118,6 +118,11 @@ void APGPlayerState::OnRep_PlayerStateUpdated()
 	}
 }
 
+void APGPlayerState::OnRep_PhotoScoreUpdated()
+{
+	OnPlayerStateUpdated.Broadcast();
+}
+
 bool APGPlayerState::IsMyPlayerState() const
 {
 	if (APlayerController* PC = GetPlayerController())
@@ -174,7 +179,22 @@ void APGPlayerState::AddPhotoResult(const TArray<FPhotoSubjectInfo>& Subjects)
 
 		CapturedSubjectIDs.Add(Subject.SubjectID);
 		CapturedSubjectIDArray.Add(Subject.SubjectID);
-		PhotoScore += Subject.ScoreValue;
+
+		// 같은 카테고리 Room을 이미 찍은 적 있는지 확인
+		int32 FinalScore = Subject.ScoreValue;
+		if (PhotoID::IsRoom(Subject.SubjectID))
+		{
+			for (int32 CapturedID : CapturedSubjectIDs)
+			{
+				if (CapturedID != Subject.SubjectID && PhotoID::IsSameRoomCategory(CapturedID, Subject.SubjectID))
+				{
+					FinalScore = 10;  // 감소된 점수
+					break;
+				}
+			}
+		}
+
+		PhotoScore += FinalScore;
 
 		UE_LOG(LogTemp, Log, TEXT("[Photo] Captured ID: %d (Score: %d, Total: %d)"), Subject.SubjectID, Subject.ScoreValue, PhotoScore);
 	}

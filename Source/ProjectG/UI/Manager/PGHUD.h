@@ -15,6 +15,8 @@ class UPGInteractionProgressWidget;
 class UPGVoiceIndicatorWidget;
 class UPGCameraWidget;
 class UPGCrosshairWidget;
+class UPGPhotoAlertWidget;
+class UPGBackgroundBlurWidget;
 class UPGMainMenuWidget;
 class UPGLobbyWidget;
 class UPGSpectatorWidget;
@@ -59,6 +61,7 @@ public:
 	void ExitCameraMode();
 	void UpdateCameraProgress(float Progress);
 	void DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 TotalScore);
+	void SetPhotoAlertVisible(bool bVisible);
 
 protected:
 	APGHUD();
@@ -83,6 +86,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGCrosshairWidget> CrosshairWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGPhotoAlertWidget> PhotoAlertWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGBackgroundBlurWidget> BackgroundBlurWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGMainMenuWidget> MainMenuWidgetClass;
@@ -126,6 +135,12 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGCrosshairWidget> CrosshairWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGPhotoAlertWidget> PhotoAlertWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGBackgroundBlurWidget> BackgroundBlurWidget;
 
 	UPROPERTY()
 	TObjectPtr<UPGMainMenuWidget> MainMenuWidget;

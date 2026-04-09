@@ -20,6 +20,7 @@ public:
 
 	// IPhotographableInterface~
 	virtual bool IsPhotographable() const override;
+	virtual float GetPhotoDetectionRange() const override { return 1500.0f; }
 	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const override;
 	virtual FVector GetPhotoTargetLocation() const override;
 	// ~IPhotographableInterface

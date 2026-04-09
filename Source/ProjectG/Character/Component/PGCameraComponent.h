@@ -18,12 +18,15 @@ class PROJECTG_API UPGCameraComponent : public UActorComponent
 public:
     UPGCameraComponent();
 
+    void InitCameraComponent();
+
     void EnterCameraMode();
     void ExitCameraMode();
     void ForceExitCameraMode();
 
     FORCEINLINE bool IsInCameraMode() const { return bInCameraMode; }
     FORCEINLINE bool IsTransitioning() const { return bIsTransitioning; }
+    FORCEINLINE bool IsAlreadyCaptured(int32 SubjectID) const { return LocalCapturedIDs.Contains(SubjectID); }
 
     FORCEINLINE bool HasBattery() const { return CurrentBattery > 0.0f; }
     FORCEINLINE float GetBatteryPercent() const { return CurrentBattery; }

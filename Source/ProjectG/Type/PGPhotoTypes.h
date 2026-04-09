@@ -31,21 +31,61 @@ namespace PhotoID
     constexpr int32 Ghost_Exploring = 131;
     constexpr int32 Ghost_Chasing = 132;
 
+    // MirrorGhost
+    constexpr int32 MirrorGhost = 140;
+
     // Anomaly
     constexpr int32 Mannequin = 210;
     constexpr int32 WindowBlood = 220;
     
     // Room
-    constexpr int32 Room_Charger = 310;
+    constexpr int32 Room_Charger_1 = 310;
+    constexpr int32 Room_Charger_2 = 311;
+    constexpr int32 Room_Charger_3 = 312;
     constexpr int32 Room_Blind = 320;
     constexpr int32 Room_Ghost = 330;
+    constexpr int32 Room_Elevator = 340;
 
     // 카테고리 판별
     FORCEINLINE bool IsMonster(int32 ID) { return ID / 100 == 1; }
     FORCEINLINE bool IsAnomaly(int32 ID) { return ID / 100 == 2; }
     FORCEINLINE bool IsRoom(int32 ID) { return ID / 100 == 3; }
+    FORCEINLINE int32 GetRoomCategory(int32 ID) { return ID / 10; }
+    FORCEINLINE bool IsSameRoomCategory(int32 A, int32 B) { return GetRoomCategory(A) == GetRoomCategory(B); }
 }
 
+namespace PhotoGrade
+{
+    FORCEINLINE FString GetGrade(int32 Score)
+    {
+        if (Score >= 1000)
+        {
+            return TEXT("S");
+        }
+
+        if (Score >= 700)
+        {
+            return TEXT("A");
+        }
+
+        if (Score >= 500)
+        {
+            return TEXT("B");
+        }
+
+        if (Score >= 300)
+        {
+            return TEXT("C");
+        }
+
+        if (Score >= 100)
+        {
+            return TEXT("D");
+        }
+
+        return TEXT("F");
+    }
+}
 
 USTRUCT(BlueprintType)
 struct FPhotoSubjectInfo
@@ -61,4 +101,25 @@ struct FPhotoSubjectInfo
     FPhotoSubjectInfo() {}
     FPhotoSubjectInfo(int32 InID, int32 InScore)
         : SubjectID(InID), ScoreValue(InScore) {}
+};
+
+USTRUCT()
+struct FPhotoSpotConfig
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditDefaultsOnly)
+    int32 PhotoID = 0;
+
+    UPROPERTY(EditDefaultsOnly)
+    int32 PhotoScore = 100;
+
+    UPROPERTY(EditDefaultsOnly)
+    FVector Offset = FVector::ZeroVector;
+
+    UPROPERTY(EditDefaultsOnly)
+    FRotator Rotation = FRotator::ZeroRotator;
+
+    UPROPERTY(EditDefaultsOnly)
+    FVector BoxExtent = FVector(32.0f);
 };

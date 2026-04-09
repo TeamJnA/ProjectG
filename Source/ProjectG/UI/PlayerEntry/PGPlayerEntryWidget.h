@@ -16,6 +16,7 @@ enum class EPlayerEntryContext : uint8
 {
 	Lobby,
 	Scoreboard,
+	FinalScoreboard,
 	Spectator
 };
 
@@ -33,7 +34,10 @@ public:
 	void HighlightEntry();
 	void UnhighlightEntry();
 
-	APlayerState* GetPlayerState() const { return PlayerStateRef.Get(); }
+	void HideScoreText();
+	void PlayGradeStampEffect();
+
+	FORCEINLINE APlayerState* GetPlayerState() const { return PlayerStateRef.Get(); }
 
 protected:
 	UPROPERTY(meta = (BindWidget))
@@ -44,9 +48,15 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> StatusText;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> ScoreText;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UBorder> HighlightBorder;
+
+	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))
+	TObjectPtr<UWidgetAnimation> GradeStampAnim;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "UI")

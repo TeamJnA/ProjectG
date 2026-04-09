@@ -89,7 +89,7 @@ protected:
 	UPROPERTY(Replicated)
 	float CameraBattery = 1.0f;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_PhotoScoreUpdated)
 	int32 PhotoScore = 0;
 
 	UPROPERTY(Replicated)
@@ -115,4 +115,7 @@ protected:
 
 	UFUNCTION()
 	void OnRep_PlayerStateUpdated();
+
+	UFUNCTION()
+	void OnRep_PhotoScoreUpdated();
 };

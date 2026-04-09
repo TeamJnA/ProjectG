@@ -4,21 +4,48 @@
 #include "Enemy/MirrorGhost/Character/PGMirrorGhostCharacter.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerController.h"
+#include "Character/Component/PGCameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/PGAbilitySystemComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Type/PGPhotoTypes.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+
 
 APGMirrorGhostCharacter::APGMirrorGhostCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	SetReplicateMovement(true);
+}
 
-	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Character"));
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+bool APGMirrorGhostCharacter::IsPhotographable() const
+{
+	if (!TargetPlayer)
+	{
+		return false;
+	}
+
+	APlayerController* LocalPC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (!LocalPC)
+	{
+		return false;
+	}
+
+	return LocalPC == TargetPlayer->GetController();
+}
+
+FPhotoSubjectInfo APGMirrorGhostCharacter::GetPhotoSubjectInfo() const
+{
+	return FPhotoSubjectInfo(PhotoID::MirrorGhost, 150);
+}
+
+FVector APGMirrorGhostCharacter::GetPhotoTargetLocation() const
+{
+	return GetActorLocation() + FVector(0.0f, 0.0f, 60.0f);
 }
 
 bool APGMirrorGhostCharacter::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
@@ -42,14 +69,13 @@ void APGMirrorGhostCharacter::BeginPlay()
 	UE_LOG(LogTemp, Log, TEXT("[MirrorGhost] BeginPlay"));
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-
-	//UpdateVisibility();
 }
 
 void APGMirrorGhostCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGMirrorGhostCharacter, bIsFrozen);
+	DOREPLIFETIME(APGMirrorGhostCharacter, TargetPlayer);
 }
 
 void APGMirrorGhostCharacter::Tick(float DeltaTime)
@@ -70,6 +96,22 @@ void APGMirrorGhostCharacter::SetTargetPlayer(APGPlayerCharacter* InTargetPlayer
 	{
 		UE_LOG(LogTemp, Log, TEXT("[MirrorGhost] complete"));
 		SetOwner(InTargetPlayer->GetController());
+
+		OnRep_TargetPlayer();
+	}
+}
+
+void APGMirrorGhostCharacter::OnRep_TargetPlayer()
+{
+	if (TargetPlayer && TargetPlayer->IsLocallyControlled())
+	{
+		if (UPGCameraComponent* CameraComp = TargetPlayer->GetCameraComponent())
+		{
+			if (CameraComp->IsInCameraMode())
+			{
+				SetCameraModeVisible(true);
+			}
+		}
 	}
 
 	UpdateVisibility();
@@ -89,6 +131,22 @@ void APGMirrorGhostCharacter::UpdateVisibility()
 	}
 
 	GetMesh()->SetVisibility(bShouldBeVisible);
+}
+
+void APGMirrorGhostCharacter::SetCameraModeVisible(bool bVisible)
+{
+	if (!MirrorGhostMID)
+	{
+		if (GetMesh() && GetMesh()->GetNumMaterials() > 0)
+		{
+			MirrorGhostMID = GetMesh()->CreateDynamicMaterialInstance(0);
+		}
+	}
+
+	if (MirrorGhostMID)
+	{
+		MirrorGhostMID->SetScalarParameterValue(FName("CameraModeVisible"), bVisible ? 1.0f : 0.0f);
+	}
 }
 
 void APGMirrorGhostCharacter::UpdateMovement(float DeltaTime)
