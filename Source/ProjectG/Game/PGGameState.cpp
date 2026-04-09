@@ -312,16 +312,31 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 		EnterSequencePlayer->Play();
 	}
 
+	// Play footstep sounds
+	int32 PlayCount = FMath::Min(NumPlayers, EnterSequenceFootStepSounds.Num());
+
+	for (int32 i = 0; i < PlayCount; ++i)
+	{
+		if (EnterSequenceFootStepSounds[i])
+		{
+			UGameplayStatics::PlaySound2D(GetWorld(), EnterSequenceFootStepSounds[i]);
+
+			//  캐릭터 위치에서 재생
+			// UGameplayStatics::PlaySoundAtLocation(this, FootStepSounds[i], GetActorLocation());
+		}
+	}
+
 	// Set actors to player num
 	// 플레이어 인원 수 외의 액터들은 제거
 	for (int32 i = NumPlayers + 1; i <= 4; ++i)
 	{
 		FName TargetTag = *FString::Printf(TEXT("Player%d"), i);
 		FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag(TargetTag);
-
+		
 		if (BindingID.IsValid())
 		{
 			// TODO : 추후 소리 트랙도 제거하기 위해서...
+			//EnterSequencePlayer->UnbindPossessableObjects(BindingID);
 			// EnterSequencePlayer->UnbindPossessableObjects(BindingID.GetGuid());
 			TArray<UObject*> BoundObjects = EnterSequencePlayer->GetBoundObjects(BindingID);
 			for (UObject* Obj : BoundObjects)

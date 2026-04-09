@@ -111,6 +111,9 @@ protected:
 	UFUNCTION()
 	void OnEnterSequenceFinished();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sequence", meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<USoundBase>> EnterSequenceFootStepSounds;
+
 	UPROPERTY()
 	TObjectPtr<ULevelSequence> LoadedLevelSequence;
 
