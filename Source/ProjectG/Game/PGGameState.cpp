@@ -125,6 +125,7 @@ void APGGameState::NotifyPlayerArrayUpdated()
 */
 void APGGameState::NotifyMapGenerationComplete()
 {
+	check(HasAuthority());
 	Multicast_MapGenerationComplete();
 }
 
@@ -289,20 +290,7 @@ void APGGameState::Multicast_PlayerEnterLevelSequence_Implementation(int32 NumPl
 
 void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 {
-	// Set Player Characters hidden 
 	// Input is ignored when first spawn on player character class
-	for (APlayerState* PS : PlayerArray)
-	{
-		if (PS)
-		{
-			APGPlayerCharacter* Pawn = Cast<APGPlayerCharacter>(PS->GetPawn());
-			if (Pawn)
-			{
-				Pawn->GetMesh()->SetVisibility(false, true);
-			}
-		}
-	}
-
 	UE_LOG(LogTemp, Log, TEXT("Play Level Sequence with players : %d"), NumPlayers);
 
 	FMovieSceneSequencePlaybackSettings Settings;
@@ -318,23 +306,24 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 		OutActor
 	);
 
-	// Binding ExitDoor to LevelSequence
-	AActor* SpawnedDoorActor = GetExitCameraByEnum(EExitPointType::IronDoor);
-
-	if (OutActor && SpawnedDoorActor)
-	{
-		FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag("Door");
-
-		if (BindingID.IsValid())
-		{
-			OutActor->SetBinding(BindingID, { SpawnedDoorActor });
-		}
-	}
-
 	if (EnterSequencePlayer)
 	{
 		EnterSequencePlayer->OnFinished.AddDynamic(this, &APGGameState::OnEnterSequenceFinished);
 		EnterSequencePlayer->Play();
+	}
+
+	// Play footstep sounds
+	int32 PlayCount = FMath::Min(NumPlayers, EnterSequenceFootStepSounds.Num());
+
+	for (int32 i = 0; i < PlayCount; ++i)
+	{
+		if (EnterSequenceFootStepSounds[i])
+		{
+			UGameplayStatics::PlaySound2D(GetWorld(), EnterSequenceFootStepSounds[i]);
+
+			//  캐릭터 위치에서 재생
+			// UGameplayStatics::PlaySoundAtLocation(this, FootStepSounds[i], GetActorLocation());
+		}
 	}
 
 	// Set actors to player num
@@ -343,10 +332,11 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 	{
 		FName TargetTag = *FString::Printf(TEXT("Player%d"), i);
 		FMovieSceneObjectBindingID BindingID = LoadedLevelSequence->FindBindingByTag(TargetTag);
-
+		
 		if (BindingID.IsValid())
 		{
 			// TODO : 추후 소리 트랙도 제거하기 위해서...
+			//EnterSequencePlayer->UnbindPossessableObjects(BindingID);
 			// EnterSequencePlayer->UnbindPossessableObjects(BindingID.GetGuid());
 			TArray<UObject*> BoundObjects = EnterSequencePlayer->GetBoundObjects(BindingID);
 			for (UObject* Obj : BoundObjects)
@@ -368,26 +358,6 @@ void APGGameState::OnEnterSequenceFinished()
 	if (PC && PC->IsLocalController())
 	{
 		PC->SetupPlayerForGameplay();
-	}
-
-	// Set characters unhidden
-	for (APlayerState* PS : PlayerArray)
-	{
-		if (PS)
-		{
-			APGPlayerCharacter* Pawn = Cast<APGPlayerCharacter>(PS->GetPawn());
-			if (Pawn)
-			{
-				Pawn->GetMesh()->SetVisibility(true, true);
-				Pawn->StopCameraFlash();
-				Pawn->SetHeadlightVisible(false);
-
-				if (HasAuthority())
-				{
-					Pawn->ToggleHeadLight();
-				}
-			}
-		}
 	}
 }
 

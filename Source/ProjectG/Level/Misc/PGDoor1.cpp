@@ -414,9 +414,20 @@ void APGDoor1::OnRep_DoorBroken()
 		DoorBreakFX->Activate(true);
 	}
 
-	// Destroy self
-	if (HasAuthority())
+	// Play Door sound
+	if(HasAuthority())
 	{
+		if (DoorOpenType == EDoorOpenType::Closed)
+		{
+			PlayDoorSound(ClosedDoorBrokeSound, false);
+		}
+		else
+		{
+			PlayDoorSound(OpenedDoorBrokeSound, false);
+		}
+
+
+	// Destroy self
 		UE_LOG(LogTemp, Log, TEXT("[PGDoor1] Destroyed after broken"));
 		SetLifeSpan(3.0f);
 	}

@@ -510,6 +510,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
 
+	// Server controller
 	if (IsLocallyControlled()) 
 	{
 		// MainLevel에 입장할 때만 아래 세팅 진행. APGPlayerContoller는 메인 레벨에서만 사용.
@@ -575,6 +576,9 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			UE_LOG(LogTemp, Warning, TEXT("[Character] PossessedBy: Camera Comp is not valid"));
 		}
 	}
+
+	// Turn on headlight
+	ToggleHeadLight();
 
 	TryInitVoiceSettings();
 	TrySetDeadCharacter();

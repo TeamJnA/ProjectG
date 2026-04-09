@@ -227,6 +227,8 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 */
 void APGGameMode::SpawnAllPlayers()
 {
+	check(HasAuthority());
+
 	int32 PlayerIndex = 0;
 
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)

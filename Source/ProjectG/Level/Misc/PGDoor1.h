@@ -116,6 +116,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	FName LockedDoorSound;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName OpenedDoorBrokeSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName ClosedDoorBrokeSound;
+
 	// Door Shake
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> MIDDoor;
@@ -134,7 +140,7 @@ protected:
 	UFUNCTION()
 	void ToggleShakeEffect(bool bToggle);
 
-	// 
+	// DoorBroke
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Chaos")
 	TSubclassOf<APGChaosCacheManager> BP_PG_CCMOpened;
