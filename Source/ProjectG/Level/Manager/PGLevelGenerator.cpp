@@ -1121,7 +1121,7 @@ bool APGLevelGenerator::SpawnEnemy()
 	}
 
 	//APGMasterRoom* EnemySpawnRoom = FindFarthestRoom();
-	const APGMasterRoom* BlindSpawnRoom = FindMiddleDistanceRoom();
+	const APGMasterRoom* BlindSpawnRoom = FindFarthestRoom();
 	if (BlindSpawnRoom)
 	{
 		const FTransform SpawnTransform(FRotator::ZeroRotator, BlindSpawnRoom->GetEnemySpawnLocation());
