@@ -155,6 +155,8 @@ void APGLevelGenerator::SpawnStartRoom()
 		ExitPointsList.Append(ExitPoints);
 	}
 
+	/*
+	// for test ~
 	APGItemActor* DefaultKey1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
 	if (UPGItemData* ItemData1 = GI->GetItemDataByKey("Key"))
 	{
@@ -169,8 +171,6 @@ void APGLevelGenerator::SpawnStartRoom()
 	}
 	DeafultKey2->SetActorRelativeLocation(FVector(538.0f, 356.0f, 90.0f));
 
-	
-	// for test ~
 	APGItemActor* TestChainKey = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
 	if (UPGItemData* ItemData3 = GI->GetItemDataByKey("ChainKey"))
 	{
@@ -241,6 +241,7 @@ void APGLevelGenerator::SpawnStartRoom()
 	}
 	TestMatch1->SetActorRelativeLocation(FVector(1400.0f, 350.0f, 10.0f));
 	// ~ for test
+	*/
 
 }
 
