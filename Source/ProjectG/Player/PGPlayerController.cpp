@@ -703,6 +703,11 @@ void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 		return;
 	}
 
+	if (bGameStartFirstSpawned)
+	{
+		return;
+	}
+
 	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
 	{
 		HUD->InitPauseMenuWidget();
