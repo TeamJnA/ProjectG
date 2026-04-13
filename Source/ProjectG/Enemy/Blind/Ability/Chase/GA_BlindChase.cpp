@@ -45,13 +45,17 @@ void UGA_BlindChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 		return;
 	}
 
-	// Apply chase state gameplay effect.
-	if (ChaseEffectClass)
-	{
-		UE_LOG(LogTemp, Log, TEXT("DoChase"));
-		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(ChaseEffectClass);
-		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-	}
+    // Roar 동안 이동 정지
+    if (UCharacterMovementComponent* Movement = OwnerPawn->GetCharacterMovement())
+    {
+        Movement->StopMovementImmediately();
+    }
+
+    // AI MoveTo도 정지
+    if (AAIController* AIC = Cast<AAIController>(OwnerPawn->GetController()))
+    {
+        AIC->StopMovement();
+    }
 
 	OwnerPawn->SetSoundState(EBlindSoundState::Silent);
 
@@ -84,13 +88,22 @@ void UGA_BlindChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 
 void UGA_BlindChase::OnRoarMontageCompleted()
 {
-	GetAbilitySystemComponentFromActorInfo()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing")));
-
-	if (APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo()))
+	APGBlindCharacter* OwnerPawn = Cast<APGBlindCharacter>(GetAvatarActorFromActorInfo());
+	if (!OwnerPawn) 
 	{
-		OwnerPawn->SetHuntLevel(EBlindHuntLevel::Chase);
-		OwnerPawn->SetSoundState(EBlindSoundState::Chasing);
+		return;
 	}
+
+	// ChaseEffect는 여기서 적용 (Roar 끝난 뒤)
+	if (ChaseEffectClass)
+	{
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(ChaseEffectClass);
+		ApplyGameplayEffectSpecToOwner(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle);
+	}
+
+	GetAbilitySystemComponentFromActorInfo()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing")));
+	OwnerPawn->SetHuntLevel(EBlindHuntLevel::Chase);
+	OwnerPawn->SetSoundState(EBlindSoundState::Chasing);
 }
 
 void UGA_BlindChase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)

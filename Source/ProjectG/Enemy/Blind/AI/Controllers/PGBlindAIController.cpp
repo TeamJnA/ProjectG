@@ -95,6 +95,15 @@ void APGBlindAIController::SetupPerceptionSystem()
 
 void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
+	// Bite 중에는 새 Stimulus 무시
+	if (OwnerPawn && OwnerPawn->GetAbilitySystemComponent())
+	{
+		if (OwnerPawn->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting"))))
+		{
+			return;
+		}
+	}
+
 	//듣기로 감지된 거면
 	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
 	{
