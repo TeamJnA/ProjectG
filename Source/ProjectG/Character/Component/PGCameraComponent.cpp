@@ -13,6 +13,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
 #include "Enemy/MirrorGhost/Character/PGMirrorGhostCharacter.h"
 
@@ -162,7 +163,7 @@ void UPGCameraComponent::ApplyCameraSettings()
 void UPGCameraComponent::OnEnterTransitionFinished()
 {
     bIsTransitioning = false;
-    bInCameraMode = true;
+    SetInCameraMode(true);
     bPhotoTaken = false;
     CameraElapsedTime = 0.0f;
 
@@ -210,7 +211,7 @@ void UPGCameraComponent::ExitCameraMode()
     Owner->RemoveTagFromCharacter(1, TagContainer);
 
     bIsTransitioning = true;
-    bInCameraMode = false;
+    SetInCameraMode(false);
     bIsTrackingTarget = false;
     TrackedTargetActor.Reset();
     CameraElapsedTime = 0.0f;
@@ -313,7 +314,7 @@ void UPGCameraComponent::ForceExitCameraMode()
 
     // 상태 초기화
     bIsTransitioning = false;
-    bInCameraMode = false;
+    SetInCameraMode(false);
     bIsTrackingTarget = false;
     bPhotoTaken = false;
     TrackedTargetActor.Reset();
@@ -329,6 +330,13 @@ void UPGCameraComponent::ForceExitCameraMode()
 
     // 카메라 설정 즉시 복원
     RestoreCameraSettings();
+}
+
+void UPGCameraComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(UPGCameraComponent, bInCameraMode);
 }
 
 void UPGCameraComponent::ResetProgress()
@@ -772,6 +780,24 @@ void UPGCameraComponent::PlayTrackingSound()
     {
         UGameplayStatics::PlaySound2D(this, TrackingBeepSound);
     }
+}
+
+void UPGCameraComponent::SetInCameraMode(bool bNewMode)
+{
+    // 로컬 클라이언트에서 즉시 변경 (예측)
+    bInCameraMode = bNewMode;
+
+    // 서버에 보고하여 다른 클라이언트들에게 전파하도록 함
+    AActor* Owner = GetOwner();
+    if (Owner && !Owner->HasAuthority())
+    {
+        Server_SetInCameraMode(bNewMode);
+    }
+}
+
+void UPGCameraComponent::Server_SetInCameraMode_Implementation(bool bNewMode)
+{
+    bInCameraMode = bNewMode;
 }
 
 void UPGCameraComponent::SetLocalGhostVisible(bool bVisible)

@@ -554,7 +554,7 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_FireCameraFlash();
 
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGCameraComponent> CameraComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
