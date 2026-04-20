@@ -30,6 +30,8 @@ void UGA_ChargerAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	bMontageEndHandled = false;
+
 	APGChargerCharacter* Charger = Cast<APGChargerCharacter>(ActorInfo->AvatarActor.Get());
 	if (!Charger)
 	{
@@ -44,14 +46,14 @@ void UGA_ChargerAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
-	AIC->GetBlackboardComponent()->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTracking, true);
-
 	UAnimMontage* MontageToPlay = Charger->GetChargeMontage();
 	if (!MontageToPlay)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
+
+	AIC->GetBlackboardComponent()->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTracking, true);
 
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,
@@ -110,6 +112,8 @@ void UGA_ChargerAttack::OnChargeReady()
 	}
 
 	AIC->GetBlackboardComponent()->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTracking, false);
+
+	Charger->ForceOpenDoorsAroundCharacter();
 
 	ChargeDestination = CalculateChargeDestination();
 	Charger->SetMovementSpeed(Charger->GetChargeSpeed());
@@ -220,28 +224,42 @@ void UGA_ChargerAttack::OnChargeFinish()
 		return;
 	}
 
-	APGChargerAIController* AIC = Cast<APGChargerAIController>(Charger->GetController());
-	if (!AIC)
-	{
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
-		return;
-	}
-
 	// 정지 && Charge End Anim
 	Charger->GetCharacterMovement()->StopMovementImmediately();
 	Charger->SetMovementSpeed(Charger->GetPatrolSpeed());
 
-	if (UAnimInstance* AnimInst = Charger->GetMesh()->GetAnimInstance())
+	UAnimInstance* AnimInst = Charger->GetMesh()->GetAnimInstance();
+	UAnimMontage* MontageToPlay = Charger->GetChargeMontage();
+	if (!AnimInst || !MontageToPlay)
 	{
-		if (UAnimMontage* MontageToPlay = Charger->GetChargeMontage())
-		{
-			AnimInst->Montage_JumpToSection(SectionName_End, MontageToPlay);
-		}
+		// 몽타주 재생 불가 시 바로 Turn으로
+		OnMontageEnd();
+		return;
 	}
+
+	// End 섹션 길이 계산 후 Delay Task로 대기
+	AnimInst->Montage_JumpToSection(SectionName_End, MontageToPlay);
+
+	float EndSectionLength = 1.3f;
+	int32 EndIndex = MontageToPlay->GetSectionIndex(SectionName_End);
+	if (EndIndex != INDEX_NONE)
+	{
+		EndSectionLength = MontageToPlay->GetSectionLength(EndIndex);
+	}
+
+	UAbilityTask_WaitDelay* EndDelay = UAbilityTask_WaitDelay::WaitDelay(this, EndSectionLength);
+	EndDelay->OnFinish.AddDynamic(this, &UGA_ChargerAttack::OnMontageEnd);
+	EndDelay->ReadyForActivation();
 }
 
 void UGA_ChargerAttack::OnMontageEnd()
 {
+	if (bMontageEndHandled)
+	{
+		return;
+	}
+	bMontageEndHandled = true;
+
 	APGChargerCharacter* Charger = Cast<APGChargerCharacter>(GetAvatarActorFromActorInfo());
 	if (!Charger)
 	{

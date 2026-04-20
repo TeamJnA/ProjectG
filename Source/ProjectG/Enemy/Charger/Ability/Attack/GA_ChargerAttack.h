@@ -70,4 +70,5 @@ protected:
 private:
 	FVector CalculateChargeDestination();
 	FTimerHandle AttackTimeoutTimerHandle;
+	bool bMontageEndHandled = false;
 };

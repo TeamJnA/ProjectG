@@ -166,6 +166,8 @@ void APGChargerCharacter::SetCurrentState(E_PGChargerState NewState)
 			return;
 		}
 
+		const bool bWasDoorBreak = bDoorBreakOpen;
+
 		CurrentState = NewState;
 		if (CurrentState == E_PGChargerState::Adjusting)
 		{
@@ -177,16 +179,22 @@ void APGChargerCharacter::SetCurrentState(E_PGChargerState NewState)
 			SetMovementSpeed(ChargeSpeed);
 			SetDoorBreak(true);
 		}
-		else if(CurrentState == E_PGChargerState::Staring)
+		else if (CurrentState == E_PGChargerState::Staring)
 		{
 			SoundManagerComponent->TriggerSoundForAllPlayers(HeadRotateStareName, GetActorLocation());
 			SetMovementSpeed(PatrolSpeed);
-			SetDoorBreak(true);
+			SetDoorBreak(false);
 		}
 		else
 		{
 			SetMovementSpeed(PatrolSpeed);
 			SetDoorBreak(false);
+		}
+
+		// DoorBreak가 false -> true로 전환되면 이미 Overlapped 상태인 문 부수기
+		if (!bWasDoorBreak && bDoorBreakOpen)
+		{
+			ForceOpenDoorsAroundCharacter();
 		}
 	}
 }
