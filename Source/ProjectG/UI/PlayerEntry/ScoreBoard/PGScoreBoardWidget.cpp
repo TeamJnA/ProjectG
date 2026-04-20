@@ -29,6 +29,14 @@ void UPGScoreBoardWidget::NativeOnInitialized()
 	}
 }
 
+void UPGScoreBoardWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	bIsFocusable = true;
+	SetKeyboardFocus();
+}
+
 void UPGScoreBoardWidget::NativeDestruct()
 {
 	if (APGGameState* GS = GSRef.Get())
@@ -50,6 +58,24 @@ void UPGScoreBoardWidget::NativeDestruct()
 	}
 
 	Super::NativeDestruct();
+}
+
+FReply UPGScoreBoardWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::V)
+	{
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+			{
+				PGPC->HandlePushToTalkToggle();
+			}
+		}
+
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 /*

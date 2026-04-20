@@ -54,6 +54,12 @@ public:
 	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|Mic")
 	float MicInputGain;
 
+	UPROPERTY(Config)
+	bool bPushToTalk = false;
+
+	void SetPushToTalk(bool bEnable);
+	FORCEINLINE bool IsPushToTalk() const { return bPushToTalk; }
+
 	// -------- Helper --------
 	/** Apply mic CVar settings only */
 	void ApplyMicSettings();	

@@ -25,6 +25,7 @@
 #include "EngineUtils.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Utils/PGVoiceUtils.h"
+#include "Player/PGGameUserSettings.h"
 
 
 APGLobbyPlayerController::APGLobbyPlayerController()
@@ -126,6 +127,8 @@ void APGLobbyPlayerController::SetupInputComponent()
 	{
 		// ESC
 		EnhancedInputComponent->BindAction(ShowPauseMenuAction, ETriggerEvent::Started, this, &APGLobbyPlayerController::OnShowPauseMenu);
+		// PushToTalk
+		EnhancedInputComponent->BindAction(PushToTalkAction, ETriggerEvent::Started, this, &APGLobbyPlayerController::OnPushToTalkToggled);
 	}
 }
 
@@ -157,7 +160,7 @@ void APGLobbyPlayerController::OnRep_Pawn()
 
 void APGLobbyPlayerController::InitLocalVoice()
 {
-	StartTalking();
+	ApplyVoiceMode();
 
 	FTimerHandle InputDeviceTimer;
 	GetWorld()->GetTimerManager().SetTimer(InputDeviceTimer, [this]()
@@ -451,4 +454,94 @@ void APGLobbyPlayerController::Server_RequestSessionDestruction_Implementation(b
 	{
 		GM->RequestSessionDestruction(bServerQuit);
 	}
+}
+
+void APGLobbyPlayerController::ApplyVoiceMode()
+{
+	if (!IsLocalController() || bIsLeavingSession)
+	{
+		return;
+	}
+
+	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	if (!Settings)
+	{
+		return;
+	}
+
+	if (Settings->IsPushToTalk())
+	{
+		StopTalking();  // PTT 모드 -> 기본 Off
+	}
+	else
+	{
+		StartTalking();  // 오픈 마이크 -> 기본 On
+	}
+}
+
+void APGLobbyPlayerController::HandlePushToTalkToggle()
+{
+	OnPushToTalkToggled(FInputActionValue());
+}
+
+void APGLobbyPlayerController::OnPushToTalkToggled(const FInputActionValue& Value)
+{
+	if (bIsLeavingSession)
+	{
+		return;
+	}
+
+	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	if (!Settings || !Settings->IsPushToTalk())
+	{
+		return;
+	}
+
+	if (bPushToTalkActive)
+	{
+		bPushToTalkActive = false;
+		bPushToTalkPrimed = false;
+		StopTalking();
+
+		IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
+		if (VoiceInterface.IsValid())
+		{
+			VoiceInterface->StopNetworkedVoice(0);
+			VoiceInterface->ClearVoicePackets();
+		}
+	}
+	else
+	{
+		bPushToTalkActive = true;
+		bPushToTalkPrimed = false;
+		PushToTalkStartTime = GetWorld()->GetTimeSeconds();
+
+		IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
+		if (VoiceInterface.IsValid())
+		{
+			VoiceInterface->ClearVoicePackets();
+			VoiceInterface->StartNetworkedVoice(0);
+		}
+		StartTalking();
+	}
+}
+
+bool APGLobbyPlayerController::IsPushToTalkReady() const
+{
+	if (!bPushToTalkActive)
+	{
+		return false;
+	}
+
+	return bPushToTalkPrimed;
+}
+
+float APGLobbyPlayerController::GetPushToTalkElapsed() const
+{
+	if (!bPushToTalkActive)
+	{
+		return 0.0f;
+	}
+
+	return GetWorld()->GetTimeSeconds() - PushToTalkStartTime;
 }

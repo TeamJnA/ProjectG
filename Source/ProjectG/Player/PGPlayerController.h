@@ -115,11 +115,24 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SpectatePrevAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> PushToTalkAction;
+
 	int32 CurrentSpectateIndex = -1;
 
 	void OnSpectateNext(const FInputActionValue& Value);
 	void OnSpectatePrev(const FInputActionValue& Value);
 	void OnShowPauseMenu(const FInputActionValue& Value);
+
+	void OnPushToTalkToggled(const FInputActionValue& Value);
+
+public:
+	void ApplyVoiceMode();
+	void HandlePushToTalkToggle();
+	bool IsPushToTalkReady() const;
+	FORCEINLINE bool IsPushToTalkActive() const { return bPushToTalkActive; }
+	void SetPushToTalkPrimed() { bPushToTalkPrimed = true; }
+	float GetPushToTalkElapsed() const;
 
 	///
 	///		Audio comp. Sound parts
@@ -162,5 +175,10 @@ private:
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> Leavers;
 
+	float PushToTalkStartTime = 0.0f;
+
 	bool bIsLeavingSession = false;
+
+	bool bPushToTalkActive = false;
+	bool bPushToTalkPrimed = false;
 };

@@ -30,6 +30,13 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_ShowLoadingScreen();
 
+	void ApplyVoiceMode();
+	void HandlePushToTalkToggle();
+	bool IsPushToTalkReady() const;
+	FORCEINLINE bool IsPushToTalkActive() const { return bPushToTalkActive; }
+	void SetPushToTalkPrimed() { bPushToTalkPrimed = true; }
+	float GetPushToTalkElapsed() const;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PostSeamlessTravel() override;
@@ -48,6 +55,8 @@ protected:
 	void SetupMainMenuView();
 	void OnShowPauseMenu(const FInputActionValue& Value);
 
+	void OnPushToTalkToggled(const FInputActionValue& Value);
+
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	TSubclassOf<ACameraActor> LobbyCameraClass;
 
@@ -57,6 +66,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ShowPauseMenuAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> PushToTalkAction;
 
 public:
 	void RefreshVoiceChannel();
@@ -80,5 +92,10 @@ private:
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> Leavers;
 
+	float PushToTalkStartTime = 0.0f;
+
 	bool bIsLeavingSession = false;
+
+	bool bPushToTalkActive = false;
+	bool bPushToTalkPrimed = false;
 };

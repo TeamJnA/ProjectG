@@ -1837,8 +1837,64 @@ void APGPlayerCharacter::TrySetDeadCharacter()
 
 void APGPlayerCharacter::CheckVoiceAndReportNoise()
 {
+	// PTT 모드에서 키 안 누르면 노이즈 x
+	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	if (Settings && Settings->IsPushToTalk())
+	{
+		APGPlayerController* PGPC = Cast<APGPlayerController>(GetController());
+		APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(GetController());
+
+		bool bActive = false;
+		if (PGPC) 
+		{
+			bActive = PGPC->IsPushToTalkReady();
+		}
+		else if (LobbyPC)
+		{
+			bActive = LobbyPC->IsPushToTalkReady();
+		}
+
+		if (!bActive)
+		{
+			// Primed 시도: 활성화는 됐지만 아직 감쇠 안 끝난 상태
+			const bool bToggleOn = PGPC ? PGPC->IsPushToTalkActive() : (LobbyPC ? LobbyPC->IsPushToTalkActive() : false);
+			if (bToggleOn)
+			{
+				const float RawAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
+				const float Elapsed = PGPC ? PGPC->GetPushToTalkElapsed() : (LobbyPC ? LobbyPC->GetPushToTalkElapsed() : 0.0f);
+
+				if (RawAmplitude < 0.06f || Elapsed >= 0.6f)
+				{
+					if (PGPC)
+					{
+						PGPC->SetPushToTalkPrimed();
+					}
+					else if (LobbyPC)
+					{
+						LobbyPC->SetPushToTalkPrimed();
+					}
+				}
+			}
+
+			CurrentVoiceAmplitude = 0.0f;
+			return;
+		}
+	}
+
+	const float RawAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
+	// 스파이크 필터: 이전 값에서 너무 급격히 상승하면 서서히 따라감
+	const float MaxRiseRate = 0.1f;  // 0.2초당 최대 상승폭
+	if (RawAmplitude > CurrentVoiceAmplitude + MaxRiseRate)
+	{
+		CurrentVoiceAmplitude += MaxRiseRate;
+	}
+	else
+	{
+		CurrentVoiceAmplitude = RawAmplitude;
+	}
+
 	CurrentVoiceAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
-	if (CurrentVoiceAmplitude < 0.02f)
+	if (CurrentVoiceAmplitude < 0.06f)
 	{
 		//UE_LOG(LogTemp, Log, TEXT("[Character]: Too low Amplitude: %.2f"), CurrentVoiceAmplitude);
 		return;
@@ -1857,7 +1913,7 @@ void APGPlayerCharacter::Server_ReportVoiceNoise_Implementation(float Amplitude)
 	// 0.35~ (큰 소리)   → SoundLevel 4, Range 800 (3200)
 	float SoundLevel;
 	float MaxRange;
-	if (ClampedAmplitude < 0.05f)
+	if (ClampedAmplitude < 0.1f)
 	{
 		SoundLevel = 2.0f;
 		MaxRange = 400.0f;
@@ -1896,6 +1952,30 @@ void APGPlayerCharacter::StopVoiceCheck()
 {
 	GetWorldTimerManager().ClearTimer(VoiceCheckTimerHandle);
 	bIsTalking = false;
+}
+
+float APGPlayerCharacter::GetCurrentVoiceAmplitude() const
+{
+	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	if (Settings && Settings->IsPushToTalk())
+	{
+		bool bActive = false;
+		if (APGPlayerController* PGPC = Cast<APGPlayerController>(GetController()))
+		{
+			bActive = PGPC->IsPushToTalkReady();
+		}
+		else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(GetController()))
+		{
+			bActive = LobbyPC->IsPushToTalkReady();
+		}
+
+		if (!bActive)
+		{
+			return 0.0f;
+		}
+	}
+
+	return CurrentVoiceAmplitude;
 }
 
 void APGPlayerCharacter::ToggleCameraMode()

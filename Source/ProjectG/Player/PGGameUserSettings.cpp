@@ -20,6 +20,13 @@ UPGGameUserSettings* UPGGameUserSettings::GetPGGameUserSettings()
 	return Cast<UPGGameUserSettings>(UGameUserSettings::GetGameUserSettings());
 }
 
+void UPGGameUserSettings::SetPushToTalk(bool bEnable)
+{
+	bPushToTalk = bEnable;
+	SaveSettings();
+	SaveConfig();
+}
+
 void UPGGameUserSettings::ApplyMicSettings()
 {
 	IConsoleManager& CM = IConsoleManager::Get();

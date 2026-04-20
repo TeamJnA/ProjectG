@@ -534,7 +534,7 @@ private:
 
 public:
 	FORCEINLINE bool IsTalking() const { return bIsTalking; }
-	FORCEINLINE float GetCurrentVoiceAmplitude() const { return CurrentVoiceAmplitude; }
+	float GetCurrentVoiceAmplitude() const;
 
 public:
 	FORCEINLINE UPGCameraComponent* GetCameraComponent() const { return CameraComp; }

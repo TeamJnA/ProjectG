@@ -8,6 +8,7 @@
 
 class UVerticalBox;
 class USlider;
+class UProgressBar;
 class UButton;
 class UComboBoxString;
 class UWidgetSwitcher;
@@ -28,6 +29,7 @@ class PROJECTG_API UPGSettingMenuWidget : public UUserWidget
 protected:
     virtual void NativeOnInitialized() override;
     virtual void NativeConstruct() override;
+    virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
     virtual void NativeDestruct() override;
 
     // -------- Player Voice List --------
@@ -44,6 +46,9 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UComboBoxString> InputDeviceComboBox;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UPGOptionSwitcherWidget> PushToTalkOption;
 
     // -------- Audio --------
     UPROPERTY(meta = (BindWidget))
@@ -65,6 +70,9 @@ protected:
     // -------- Mic --------
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<USlider> MicSensitivitySlider;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UProgressBar> MicAmplitudeBar;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<USlider> MicVolumeSlider;
@@ -167,6 +175,9 @@ private:
     UFUNCTION()
     void OnOutputDeviceSwapComplete(const FSwapAudioOutputResult& SwapResult);
 
+    UFUNCTION()
+    void OnPushToTalkChanged(int32 OptionIndex);
+
     // -------- Helpers --------
     /** Load saved settings and apply to sliders */
     void LoadAndApplySettings();
@@ -197,6 +208,7 @@ private:
     static constexpr float MicSensitivityMin = 0.001f;
     static constexpr float MicSensitivityMax = 0.02f;
     static constexpr float MicGainMax = 6.0f;
+    float DisplayMicAmplitude = 0.0f;
 
     bool bIsLoadingSettings = false;
 };

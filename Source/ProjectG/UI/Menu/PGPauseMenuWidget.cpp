@@ -89,6 +89,23 @@ FReply UPGPauseMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FK
 		return FReply::Handled();
 	}
 
+	if (InKeyEvent.GetKey() == EKeys::V)
+	{
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+			{
+				PGPC->HandlePushToTalkToggle();
+			}
+			else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+			{
+				LobbyPC->HandlePushToTalkToggle();
+			}
+		}
+
+		return FReply::Handled();
+	}
+
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 

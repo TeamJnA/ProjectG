@@ -6,6 +6,7 @@
 #include "UI/Menu/PGOptionSwitcherWidget.h"
 #include "Components/VerticalBox.h"
 #include "Components/Slider.h"
+#include "Components/ProgressBar.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/ComboBoxString.h"
@@ -14,6 +15,8 @@
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
 #include "Player/PGGameUserSettings.h"
+#include "Player/PGPlayerController.h"
+#include "Player/PGLobbyPlayerController.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
@@ -46,6 +49,11 @@ void UPGSettingMenuWidget::NativeOnInitialized()
     if (InputDeviceComboBox)
     {
         InputDeviceComboBox->OnSelectionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnInputDeviceSelectionChanged);
+    }
+
+    if (PushToTalkOption)
+    {
+        PushToTalkOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnPushToTalkChanged);
     }
 
     // -------- Bind Audio Option Callbacks --------
@@ -136,6 +144,24 @@ void UPGSettingMenuWidget::NativeConstruct()
     UE_LOG(LogTemp, Log, TEXT("[SettingMenu] Update setting menu"));
     LoadAndApplySettings();
     UpdatePlayerVoiceList();
+}
+
+void UPGSettingMenuWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+    Super::NativeTick(MyGeometry, InDeltaTime);
+
+    if (!MicAmplitudeBar)
+    {
+        return;
+    }
+
+    const float RawAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
+
+    const float Speed = (RawAmplitude > DisplayMicAmplitude) ? 9.0f : 5.0f;
+    DisplayMicAmplitude = FMath::FInterpTo(DisplayMicAmplitude, RawAmplitude, InDeltaTime, Speed);
+
+    const float DisplayPercent = FMath::Clamp(DisplayMicAmplitude / 0.3f, 0.0f, 1.0f);
+    MicAmplitudeBar->SetPercent(DisplayPercent);
 }
 
 void UPGSettingMenuWidget::NativeDestruct()
@@ -274,6 +300,11 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
 
     // Find/Set available devices and Load saved device settings
     EnumerateAudioDevices();
+
+    if (PushToTalkOption)
+    {
+        PushToTalkOption->SetSelectedIndex(Settings->IsPushToTalk() ? 1 : 0, false);
+    }
 }
 
 // -------- Gameplay --------
@@ -677,6 +708,35 @@ void UPGSettingMenuWidget::OnInputDeviceSelectionChanged(FString SelectedItem, E
     {
         Settings->InputDeviceId = *DeviceId;
         ApplyAndSaveSettings();
+    }
+}
+
+void UPGSettingMenuWidget::OnPushToTalkChanged(int32 OptionIndex)
+{
+    if (bIsLoadingSettings)
+    {
+        return;
+    }
+
+    UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+    if (!Settings)
+    {
+        return;
+    }
+
+    const bool bEnable = (OptionIndex == 1);
+    Settings->SetPushToTalk(bEnable);
+
+    if (APlayerController* PC = GetOwningPlayer())
+    {
+        if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+        {
+            PGPC->ApplyVoiceMode();
+        }
+        else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+        {
+            LobbyPC->ApplyVoiceMode();
+        }
     }
 }
 

@@ -59,6 +59,24 @@ void UPGFinalScoreBoardWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+FReply UPGFinalScoreBoardWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::V)
+	{
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+			{
+				PGPC->HandlePushToTalkToggle();
+			}
+		}
+
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
 /*
 * 로컬 플레이어에 FinalScoreBoardWidget 생성 이후 플레이어 목록 업데이트
 * GameState의 PlayerList 업데이트 시 전달되는 OnPlayerListUpdated 델리게이트에 업데이트 함수 바인드

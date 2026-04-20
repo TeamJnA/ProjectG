@@ -113,7 +113,12 @@ bool PGVoiceUtils::ChangeInputDevice(UWorld* World, const FString& DeviceName)
 
     if (VoiceInterface.IsValid())
     {
-        VoiceInterface->StartNetworkedVoice(0);
+        // PTT 모드면 다시 시작하지 않음
+        UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+        if (!Settings || !Settings->IsPushToTalk())
+        {
+            VoiceInterface->StartNetworkedVoice(0);
+        }
     }
 
     UE_LOG(LogTemp, Log, TEXT("[InputDevice] Changed to: %s"), *DeviceName);
@@ -134,5 +139,6 @@ float PGVoiceUtils::GetCurrentAmplitude(UWorld* World)
     }
 
     //UE_LOG(LogTemp, Log, TEXT("[PGVoiceUtils] Amplitude: %.2f"), VoiceCapture->GetCurrentAmplitude());
-    return VoiceCapture->GetCurrentAmplitude();
+    const float MaxAmplitude = 0.3f;
+    return FMath::Min(VoiceCapture->GetCurrentAmplitude(), MaxAmplitude);
 }
