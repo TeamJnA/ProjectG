@@ -345,6 +345,7 @@ public:
 
 	// IHandItemInterface 
 	void SetItemMesh(const bool bIsVisible);
+	void SetCameraMeshOnHand(const bool bIsVisible);
 	void SetRightHandIK();
 	// ~ IHandItemInterface
 
@@ -554,7 +555,7 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_FireCameraFlash();
 
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGCameraComponent> CameraComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))

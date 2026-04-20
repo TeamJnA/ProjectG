@@ -24,6 +24,8 @@ public:
     void ExitCameraMode();
     void ForceExitCameraMode();
 
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
     FORCEINLINE bool IsInCameraMode() const { return bInCameraMode; }
     FORCEINLINE bool IsTransitioning() const { return bIsTransitioning; }
     FORCEINLINE bool IsAlreadyCaptured(int32 SubjectID) const { return LocalCapturedIDs.Contains(SubjectID); }
@@ -68,6 +70,13 @@ protected:
     void DrainBattery();
 
     void PlayTrackingSound();
+
+    // 내부적으로 camera mode 변경 시 사용
+    void SetInCameraMode(bool bNewMode);
+
+    // 클라이언트에서 서버에 요청하는 함수.
+    UFUNCTION(Server, Reliable)
+    void Server_SetInCameraMode(bool bNewMode);
 
     AActor* FindClosestSubjectActor() const;
     bool IsTargetValid(AActor* Target) const;
@@ -152,7 +161,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Battery")
     float BatteryDrainRate = 0.01f;  // 초당 소모량
 
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
     bool bInCameraMode = false;
+
     bool bPhotoTaken = false;
 
     // 타겟 추적 상태
