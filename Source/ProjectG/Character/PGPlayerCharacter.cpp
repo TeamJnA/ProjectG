@@ -1185,6 +1185,11 @@ void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 	}
 }
 
+void APGPlayerCharacter::SetCameraMeshOnHand(const bool bIsVisible)
+{
+
+}
+
 void APGPlayerCharacter::SetRightHandIK()
 {
 	InventoryComponent->Server_CheckHeldItemChanged();

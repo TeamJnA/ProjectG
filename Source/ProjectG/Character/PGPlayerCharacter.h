@@ -345,6 +345,7 @@ public:
 
 	// IHandItemInterface 
 	void SetItemMesh(const bool bIsVisible);
+	void SetCameraMeshOnHand(const bool bIsVisible);
 	void SetRightHandIK();
 	// ~ IHandItemInterface
 
