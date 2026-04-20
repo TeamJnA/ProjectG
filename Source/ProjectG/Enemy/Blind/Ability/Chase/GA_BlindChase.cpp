@@ -94,7 +94,6 @@ void UGA_BlindChase::OnRoarMontageCompleted()
 		return;
 	}
 
-	// ChaseEffect는 여기서 적용 (Roar 끝난 뒤)
 	if (ChaseEffectClass)
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(ChaseEffectClass);
