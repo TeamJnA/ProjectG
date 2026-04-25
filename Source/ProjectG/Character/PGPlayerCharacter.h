@@ -296,7 +296,11 @@ public:
 	UFUNCTION()
 	void CacheInteractionTarget(AActor* CacheInteractTarget);
 
-	//Hand Actions
+	/**
+	* Hand Action anim montages
+	*  Pick	*  Change	* Drop * CameraOn * CameraOff
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	TArray<TObjectPtr<UAnimMontage>> HandActionAnimMontages;
 
 	EHandActionMontageType HandActionMontageType;

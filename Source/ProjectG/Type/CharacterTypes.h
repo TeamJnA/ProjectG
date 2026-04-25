@@ -15,7 +15,9 @@ enum class EHandActionMontageType : uint8
 {
 	Pick,
 	Change,
-	Drop
+	Drop,
+	CameraOn,
+	CameraOff
 };
 
 UENUM(BlueprintType)

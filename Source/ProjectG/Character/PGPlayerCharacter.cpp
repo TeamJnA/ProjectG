@@ -153,25 +153,7 @@ APGPlayerCharacter::APGPlayerCharacter()
 	CameraComp = CreateDefaultSubobject<UPGCameraComponent>(TEXT("CameraComponent"));
 
 	// Set hand actions anim montages
-	HandActionMontageType = EHandActionMontageType::Pick;;
-
-	// 0 : Pick Anim Montage
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> PickMontageRef(TEXT("/Game/ProjectG/Character/Animation/Interact/AM_Pick_Item.AM_Pick_Item"));
-	if (PickMontageRef.Object){
-		HandActionAnimMontages.Add(PickMontageRef.Object);
-	}
-
-	// 1 : Change Anim Montage
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> ChangeMontageRef(TEXT("/Game/ProjectG/Character/Animation/Interact/AM_Pick_Item.AM_Pick_Item"));
-	if (ChangeMontageRef.Object){
-		HandActionAnimMontages.Add(ChangeMontageRef.Object);
-	}
-
-	// 2 : Drop Anim Montage
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> DropMontageRef(TEXT("/Game/ProjectG/Character/Animation/Interact/AM_Pick_Item.AM_Pick_Item"));
-	if (DropMontageRef.Object) {
-		HandActionAnimMontages.Add(DropMontageRef.Object);
-	}
+	HandActionMontageType = EHandActionMontageType::Pick;
 }
 
 void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

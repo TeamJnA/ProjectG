@@ -42,6 +42,11 @@ public:
 
     void AdjustZoom(float AxisValue);
 
+    /**
+    * 카메라 드는 모션이 끝나고, HandLock 태그 부여
+    */
+    void CameraHandAnimFinished();
+
     FOnCameraProgressUpdate OnCameraProgressUpdate;
     FOnPhotoTaken OnPhotoTaken;
 
@@ -70,6 +75,8 @@ protected:
     void DrainBattery();
 
     void PlayTrackingSound();
+
+    void SetHandLockTag(bool bHandLock);
 
     // 내부적으로 camera mode 변경 시 사용
     void SetInCameraMode(bool bNewMode);
