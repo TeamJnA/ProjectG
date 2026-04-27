@@ -1169,7 +1169,29 @@ void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 
 void APGPlayerCharacter::SetCameraMeshOnHand(const bool bIsVisible)
 {
+	// Play camera held anim only when held item
+	if (!InventoryComponent->HasCurrentItem())
+	{
+		// If no anim with camera On, HandLock
+		if (bIsVisible && AbilitySystemComponent)
+		{
+			FGameplayTagContainer HandLockTag;
+			HandLockTag.AddTag(FGameplayTag::RequestGameplayTag("Player.Hand.Locked"));
 
+			AbilitySystemComponent->AddLooseGameplayTags(HandLockTag);
+			AddTagToCharacter(1, HandLockTag);
+		}
+		return;
+	}
+
+	if (bIsVisible)
+	{
+		PlayHandActionAnimMontage(EHandActionMontageType::CameraOn);
+	}
+	else
+	{
+		PlayHandActionAnimMontage(EHandActionMontageType::CameraOff);
+	}
 }
 
 void APGPlayerCharacter::SetRightHandIK()

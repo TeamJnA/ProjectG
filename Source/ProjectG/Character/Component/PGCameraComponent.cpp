@@ -95,19 +95,14 @@ void UPGCameraComponent::EnterCameraMode()
     {
         return;
     }
-
-    /*
-    TODO
-    순서 정리 : EnterCamera Mode -> 캐릭터의 HandAction Anim Montage 실행 -> 애님 노티파이 부여 : 애니메이션이 끝날 때 핸드락 부여.
-    애님 노티파이 : 캐릭터에 접근해서, 카메라 컴포넌트 확인 후 상황이  맞으면 핸드락 부여
-
-    여기서 핸드락을 부여하지 말고 그냥 애님 재생시켜서 핸드락 부여 +
-    끝날때즘 애님 노티파이 -> 캐릭터 -> 카메라 컴포넌트 접근해서 핸드락 부여
-
-    TODO : 손에 물건 들고 있을 때, 안들고 있을 때 분기 나누기. 
-    캐릭터에 인터페이스로 접근해서?
-    */
-    Owner->PlayHandActionAnimMontage(EHandActionMontageType::CameraOn);
+    
+    // 여기서 핸드락을 부여하지 말고 그냥 HandAction Anim ability 재생시켜서 핸드락 부여
+    // 끝날때즘 애님 노티파이 -> 캐릭터의 카메라 컴포넌트 접근해서 핸드락 부여
+    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
+    if (HandInterface)
+    {
+        HandInterface->SetCameraMeshOnHand(true);
+    }
     
     bIsTransitioning = true;
 
@@ -209,7 +204,12 @@ void UPGCameraComponent::ExitCameraMode()
 
     SetHandLockTag(false);
 
-    Owner->PlayHandActionAnimMontage(EHandActionMontageType::CameraOff);
+    // 캐릭터가 카메라 내리는 애님
+    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
+    if (HandInterface)
+    {
+        HandInterface->SetCameraMeshOnHand(false);
+    }
 
     bIsTransitioning = true;
     SetInCameraMode(false);
@@ -307,7 +307,12 @@ void UPGCameraComponent::ForceExitCameraMode()
     // 태그 해제
     SetHandLockTag(false);
 
-    Owner->PlayHandActionAnimMontage(EHandActionMontageType::CameraOff);
+    // 캐릭터가 카메라 내리는 애님
+    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
+    if (HandInterface)
+    {
+        HandInterface->SetCameraMeshOnHand(false);
+    }
 
     // 상태 초기화
     bIsTransitioning = false;
