@@ -29,7 +29,10 @@ public:
 protected:
 	void SetSeed();
 	void SpawnStartRoom();
+	void SpawnLoopCorridor();
 	void SpawnNextRoom();
+	int32 GetRoomDepthFromStart(const APGMasterRoom* Room) const;
+	int32 SelectExitPointWithBalancing();
 	void CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck);
 	bool IsLatestRoomOverlapping(const APGMasterRoom* RoomToCheck) const;
 	void SetupLevelEnvironment();
@@ -66,6 +69,9 @@ private:
 	TMap<FName, TSubclassOf<APGMasterRoom>> RoomClassMap;
 
 	TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>> RoomGraph;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Level Generation", meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<APGMasterRoom>> LoopCorridorClassArray;
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> ExitPointsList;

@@ -17,7 +17,7 @@ APGStartRoom::APGStartRoom()
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);
 	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir0->SetRelativeLocation(FVector(945.35f, -1209.3f, 414.0f));
+	ExitDir0->SetRelativeLocation(FVector(1545.4f, -1209.3f, 4.0f));
 	ExitDir0->SetRelativeRotation(FRotator(0.0f, 270.0f, 0.0f));
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->bHiddenInGame = true;
@@ -25,25 +25,32 @@ APGStartRoom::APGStartRoom()
 	ExitDir1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection1"));
 	ExitDir1->SetupAttachment(ExitPointsFolder);
 	ExitDir1->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir1->SetRelativeLocation(FVector(1874.4f, 319.8f, 414.0f));
+	ExitDir1->SetRelativeLocation(FVector(1874.4f, -870.16f, 414.0f));
 	ExitDir1->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir1->bHiddenInGame = true;
 
 	ExitDir2 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection2"));
 	ExitDir2->SetupAttachment(ExitPointsFolder);
 	ExitDir2->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir2->SetRelativeLocation(FVector(1535.3f, 1218.7f, 4.0f));
-	ExitDir2->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+	ExitDir2->SetRelativeLocation(FVector(1874.4f, 929.82f, 414.0f));
 	ExitDir2->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir2->bHiddenInGame = true;
 
 	ExitDir3 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection3"));
 	ExitDir3->SetupAttachment(ExitPointsFolder);
 	ExitDir3->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir3->SetRelativeLocation(FVector(335.3f, 1218.7f, 4.0f));
+	ExitDir3->SetRelativeLocation(FVector(1535.25f, 1218.7f, 4.0f));
 	ExitDir3->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	ExitDir3->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir3->bHiddenInGame = true;
+
+	ExitDir4 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection4"));
+	ExitDir4->SetupAttachment(ExitPointsFolder);
+	ExitDir4->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
+	ExitDir4->SetRelativeLocation(FVector(6.4f, 919.7, 4.0f));
+	ExitDir4->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
+	ExitDir4->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
+	ExitDir4->bHiddenInGame = true;
 
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
@@ -63,8 +70,17 @@ APGStartRoom::APGStartRoom()
 	OverlapBox1->SetCollisionObjectType(ECC_GameTraceChannel1);
 	OverlapBox1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox1->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
-	OverlapBox1->SetRelativeLocation(FVector(2740.0f, 320.0f, -35.0f));
-	OverlapBox1->SetRelativeScale3D(FVector(26.5f, 26.5f, 11.0f));
+	OverlapBox1->SetRelativeLocation(FVector(2527.0f, 320.0f, -35.0f));
+	OverlapBox1->SetRelativeScale3D(FVector(20.0f, 26.5f, 11.0f));
+
+	OverlapBox2 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox2"));
+	OverlapBox2->SetupAttachment(OverlapBoxFolder);
+	OverlapBox2->CanCharacterStepUpOn = ECB_No;
+	OverlapBox2->SetCollisionObjectType(ECC_GameTraceChannel1);
+	OverlapBox2->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	OverlapBox2->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
+	OverlapBox2->SetRelativeLocation(FVector(3577.0f, 320.0f, -851.0f));
+	OverlapBox2->SetRelativeScale3D(FVector(12.6f, 9.5f, 37.0f));
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);
@@ -86,36 +102,24 @@ APGStartRoom::APGStartRoom()
 
 	WindowGimmick0 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick0"));
 	WindowGimmick0->SetupAttachment(Root);
-	WindowGimmick0->SetRelativeLocation(FVector(1811.0f, -741.0f, 480.0f));
+	WindowGimmick0->SetRelativeLocation(FVector(1811.0f, -741.0f, 60.0f));
 	WindowGimmick0->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 
 	WindowGimmick1 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick1"));
 	WindowGimmick1->SetupAttachment(Root);
-	WindowGimmick1->SetRelativeLocation(FVector(1811.0f, -741.0f, 60.0f));
-	WindowGimmick1->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	WindowGimmick1->SetRelativeLocation(FVector(1692.0f, 1155.0f, 480.0f));
+	WindowGimmick1->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 
 	WindowGimmick2 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick2"));
 	WindowGimmick2->SetupAttachment(Root);
-	WindowGimmick2->SetRelativeLocation(FVector(1692.0f, 1155.0f, 480.0f));
-	WindowGimmick2->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-
-	WindowGimmick3 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick3"));
-	WindowGimmick3->SetupAttachment(Root);
-	WindowGimmick3->SetRelativeLocation(FVector(1378.5f, 1155.0f, 480.0f));
-	WindowGimmick3->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-
-	WindowGimmick4 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick4"));
-	WindowGimmick4->SetupAttachment(Root);
-	WindowGimmick4->SetRelativeLocation(FVector(67.0f, 791.5f, 60.0f));
-	WindowGimmick4->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+	WindowGimmick2->SetRelativeLocation(FVector(1388.3f, -1144.0f, 480.0f));
+	WindowGimmick2->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 
 	if (WindowGimmickRef.Succeeded())
 	{
 		WindowGimmick0->SetChildActorClass(WindowGimmickRef.Class);
 		WindowGimmick1->SetChildActorClass(WindowGimmickRef.Class);
 		WindowGimmick2->SetChildActorClass(WindowGimmickRef.Class);
-		WindowGimmick3->SetChildActorClass(WindowGimmickRef.Class);
-		WindowGimmick4->SetChildActorClass(WindowGimmickRef.Class);
 	}
 
 	Bonfire = CreateDefaultSubobject<UChildActorComponent>(TEXT("Bonfire"));
@@ -125,5 +129,41 @@ APGStartRoom::APGStartRoom()
 	if (BonfireRef.Succeeded())
 	{
 		Bonfire->SetChildActorClass(BonfireRef.Class);
+	}
+}
+
+USceneComponent* APGStartRoom::GetExitPoint(EStartRoomExit Exit) const
+{
+	switch (Exit)
+	{
+		case EStartRoomExit::ExitDir0:
+		{
+			return ExitDir0;
+		}
+
+		case EStartRoomExit::ExitDir1:
+		{
+			return ExitDir1;
+		}
+
+		case EStartRoomExit::ExitDir2:
+		{
+			return ExitDir2;
+		}
+
+		case EStartRoomExit::ExitDir3:
+		{
+			return ExitDir3;
+		}
+
+		case EStartRoomExit::ExitDir4:
+		{
+			return ExitDir4;
+		}
+
+		default:
+		{
+			return nullptr;
+		}
 	}
 }

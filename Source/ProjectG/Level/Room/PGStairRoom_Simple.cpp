@@ -14,10 +14,18 @@ APGStairRoom_Simple::APGStairRoom_Simple()
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);
 	ExitDir0->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
-	ExitDir0->SetRelativeLocation(FVector(340.2f, 923.9f, 414.0f));
+	ExitDir0->SetRelativeLocation(FVector(340.2f, 923.9f, 414.9f));
 	ExitDir0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->bHiddenInGame = true;
+
+	ExitDir1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection1"));
+	ExitDir1->SetupAttachment(ExitPointsFolder);
+	ExitDir1->SetArrowColor(FLinearColor(0.2f, 1.0f, 0.0f, 1.0f));
+	ExitDir1->SetRelativeLocation(FVector(338.2f, -334.2f, 414.8f));
+	ExitDir1->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	ExitDir1->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
+	ExitDir1->bHiddenInGame = true;
 
 	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
 	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
@@ -40,10 +48,10 @@ APGStairRoom_Simple::APGStairRoom_Simple()
 	FuseBoxSpawnPoint0->SetArrowColor(FLinearColor(1.0f, 1.0f, 0.0f, 0.0f));
 	FuseBoxSpawnPoint0->bHiddenInGame = true;
 
-	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 480.0f));
-	OverlapBox->SetRelativeScale3D(FVector(19.3f, 19.1f, 14.75f));
+	OverlapBox->SetRelativeLocation(FVector(634.0f, 292.0f, 480.0f));
+	OverlapBox->SetRelativeScale3D(FVector(19.3f, 19.3f, 14.75f));
 
-	EnemySpawnPoint->SetRelativeLocation(FVector(350.0f, 40.0f, 250.0f));
+	EnemySpawnPoint->SetRelativeLocation(FVector(1026.0f, 57.0f, 345.0f));
 
 	RoomDir->SetRelativeLocation(FVector(89.0f, 0.0f, 130.0f));
 	RoomDir->SetRelativeScale3D(FVector(3.0f, 3.0f, 3.0f));

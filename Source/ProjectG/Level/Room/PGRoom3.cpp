@@ -65,8 +65,8 @@ APGRoom3::APGRoom3()
 
 	RoomDir->SetRelativeLocation(FVector(370.0f, 0.0f, 130.0f));
 
-	OverlapBox->SetRelativeLocation(FVector(620.0f, 600.0f, 345.0f));
-	OverlapBox->SetRelativeScale3D(FVector(19.0f, 29.25f, 10.5f));
+	OverlapBox->SetRelativeLocation(FVector(620.0f, 546.0f, 345.0f));
+	OverlapBox->SetRelativeScale3D(FVector(19.0f, 30.25f, 10.5f));
 	
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(GeometryFolder);

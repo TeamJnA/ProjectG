@@ -57,8 +57,8 @@ APGElevatorRoom::APGElevatorRoom()
 	OverlapBox1->SetCollisionObjectType(ECC_GameTraceChannel1);
 	OverlapBox1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox1->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
-	OverlapBox1->SetRelativeLocation(FVector(915.0f, -1240.0f, -200.0f));
-	OverlapBox1->SetRelativeScale3D(FVector(9.5f, 9.75f, 19.0f));
+	OverlapBox1->SetRelativeLocation(FVector(910.0f, -1250.0f, -363.0f));
+	OverlapBox1->SetRelativeScale3D(FVector(12.75f, 10.25f, 24.6f));
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);

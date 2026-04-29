@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "PGMasterRoom.h"
+
+#include "Type/PGStartRoomTypes.h"
+
 #include "PGStartRoom.generated.h"
 
 class UArrowComponent;
@@ -19,6 +22,8 @@ class PROJECTG_API APGStartRoom : public APGMasterRoom
 public:
 	APGStartRoom();
 
+	USceneComponent* GetExitPoint(EStartRoomExit Exit) const;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
 	TObjectPtr<UArrowComponent> ExitDir0;
@@ -32,11 +37,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
 	TObjectPtr<UArrowComponent> ExitDir3;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
+	TObjectPtr<UArrowComponent> ExitDir4;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
 	TObjectPtr<UArrowComponent> ItemSpawnPoint0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "OverlapBox")
 	TObjectPtr<UBoxComponent> OverlapBox1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "OverlapBox")
+	TObjectPtr<UBoxComponent> OverlapBox2;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
@@ -52,12 +63,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
 	TObjectPtr<UChildActorComponent> WindowGimmick2;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
-	TObjectPtr<UChildActorComponent> WindowGimmick3;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
-	TObjectPtr<UChildActorComponent> WindowGimmick4;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Bonfire")
 	TObjectPtr<UChildActorComponent> Bonfire;

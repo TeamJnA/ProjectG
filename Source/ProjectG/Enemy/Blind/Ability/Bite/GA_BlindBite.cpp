@@ -53,7 +53,7 @@ void UGA_BlindBite::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	}
 
 	OwnerPawn->SetSoundState(EBlindSoundState::Attacking);
-	// Play roar sound before chasing.
+
 	UPGSoundManagerComponent* SoundManager = GetAvatarActorFromActorInfo()->FindComponentByClass<UPGSoundManagerComponent>();
 	if (SoundManager)
 	{

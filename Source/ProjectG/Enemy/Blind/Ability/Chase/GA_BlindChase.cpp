@@ -51,7 +51,6 @@ void UGA_BlindChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
         Movement->StopMovementImmediately();
     }
 
-    // AI MoveToµµ Á¤Áö
     if (AAIController* AIC = Cast<AAIController>(OwnerPawn->GetController()))
     {
         AIC->StopMovement();

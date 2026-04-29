@@ -44,7 +44,7 @@ APGLevelGenerator::APGLevelGenerator()
 	RootComponent = Root;
 
 	// max room spawn amount
-	RoomAmount = 26;
+	RoomAmount = 23;
 
 	// reload level if (elpased time > max generation time)
 	MaxGenerateTime = 10.0f;
@@ -86,6 +86,7 @@ void APGLevelGenerator::BeginPlay()
 	{
 		SetSeed();
 		SpawnStartRoom();
+		SpawnLoopCorridor();
 
 		GenerationStartTime = GetWorld()->GetTimeSeconds();
 		StartLevelGenerateTimer();
@@ -245,6 +246,82 @@ void APGLevelGenerator::SpawnStartRoom()
 
 }
 
+void APGLevelGenerator::SpawnLoopCorridor()
+{
+	UWorld* World = GetWorld();
+	if (!World || !StartRoom)
+	{
+		return;
+	}
+
+	if (LoopCorridorClassArray.IsEmpty())
+	{
+		return;
+	}
+
+	const int32 Index = UKismetMathLibrary::RandomIntegerFromStream(Seed, LoopCorridorClassArray.Num());
+	TSubclassOf<APGMasterRoom> LoopClass = LoopCorridorClassArray[Index];
+	if (!LoopClass)
+	{
+		return;
+	}
+
+	APGMasterRoom* DefaultLoop = LoopClass->GetDefaultObject<APGMasterRoom>();
+	if (!DefaultLoop)
+	{
+		return;
+	}
+
+	const EStartRoomExit StartExitEnum = DefaultLoop->GetLoopStartExit();
+	const EStartRoomExit EndExitEnum = DefaultLoop->GetLoopEndExit();
+
+	if (StartExitEnum == EStartRoomExit::None || EndExitEnum == EStartRoomExit::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnLoopCorridor: Loop class has no exit points configured"));
+		return;
+	}
+
+	APGStartRoom* StartRoomTyped = Cast<APGStartRoom>(StartRoom);
+	if (!StartRoomTyped)
+	{
+		return;
+	}
+
+	USceneComponent* StartExit = StartRoomTyped->GetExitPoint(StartExitEnum);
+	USceneComponent* EndExit = StartRoomTyped->GetExitPoint(EndExitEnum);
+	if (!StartExit || !EndExit)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnLoopCorridor: Failed to find exit points"));
+		return;
+	}
+
+	const FTransform SpawnTransform(StartExit->GetComponentRotation(), StartExit->GetComponentLocation());
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	APGMasterRoom* LoopRoom = World->SpawnActor<APGMasterRoom>(LoopClass, SpawnTransform, SpawnParams);
+	if (!LoopRoom)
+	{
+		return;
+	}
+
+	RoomGraph.FindOrAdd(StartRoom).Add(LoopRoom);
+	RoomGraph.FindOrAdd(LoopRoom).Add(StartRoom);
+
+	ExitPointsList.Remove(StartExit);
+	ExitPointsList.Remove(EndExit);
+	DoorPointsList.Add(StartExit);
+	DoorPointsList.Add(EndExit);
+
+	if (const USceneComponent* LoopExitFolder = LoopRoom->GetExitPointsFolder())
+	{
+		const TArray<USceneComponent*>& LoopExits = LoopExitFolder->GetAttachChildren();
+		ExitPointsList.Reserve(ExitPointsList.Num() + LoopExits.Num());
+		ExitPointsList.Append(LoopExits);
+	}
+}
+
 /*
 * 다음 Room 생성
 * RoomAmount > 14(초기단계) -> 복도형 Room만 생성
@@ -265,7 +342,13 @@ void APGLevelGenerator::SpawnNextRoom()
 		return;
 	}
 
-	const TObjectPtr<USceneComponent> SelectedExitPoint = ExitPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, ExitPointsList.Num())];
+	const int32 SelectedIndex = SelectExitPointWithBalancing();
+	if (SelectedIndex == INDEX_NONE)
+	{
+		return;
+	}
+	const TObjectPtr<USceneComponent> SelectedExitPoint = ExitPointsList[SelectedIndex];
+	//const TObjectPtr<USceneComponent> SelectedExitPoint = ExitPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, ExitPointsList.Num())];
 	const FTransform SpawnTransform(SelectedExitPoint->GetComponentRotation(), SelectedExitPoint->GetComponentLocation());
 
 	FActorSpawnParameters spawnParams;
@@ -276,89 +359,84 @@ void APGLevelGenerator::SpawnNextRoom()
 
 	APGMasterRoom* NewRoom = nullptr;
 	// Corridor 3
-	if (RoomAmount > 23)
+	if (RoomAmount > 20)
 {
 		TargetRoomName = TEXT("Room1");
 	}
-	// Coddidor_Dark 2
-	else if (RoomAmount > 21)
+	// Corridor_Dark 2
+	else if (RoomAmount > 18)
 	{
 		TargetRoomName = TEXT("Corridor_Dark");
 	}
 	// Corridor_Simple 1
-	else if (RoomAmount > 20)
+	else if (RoomAmount > 17)
 	{
 		TargetRoomName = TEXT("Corridor_Simple");
 	}
-	// BedRoom 1
-	else if (RoomAmount > 19)
+	// StairRoom_Simple 1
+	else if (RoomAmount > 16)
 	{
-		TargetRoomName = TEXT("Room3");
+		TargetRoomName = TEXT("StairRoom_Simple");
 	}
-	// SmallCorridor_Mannequin 1
-	else if (RoomAmount > 18)
+	// SmallCorridor_Dark 1
+	else if (RoomAmount > 15)
 	{
-		TargetRoomName = TEXT("SmallCorridor_Mannequin");
+		TargetRoomName = TEXT("SmallCorridor_Dark");
 	}
 	// Library 1
-	else if (RoomAmount > 17)
+	else if (RoomAmount > 14)
 	{
 		TargetRoomName = TEXT("LibraryRoom");
 	}
-	// SmallCorridor 2
-	else if (RoomAmount > 15)
+	// SmallCorridor 1
+	else if (RoomAmount > 13)
 	{
 		TargetRoomName = TEXT("Room2");
 	}
 	// DiningRoom 1
-	else if (RoomAmount > 14)
+	else if (RoomAmount > 12)
 	{
 		TargetRoomName = TEXT("DiningRoom");
 	}
 	// Corridor 1
-	else if (RoomAmount > 13)
+	else if (RoomAmount > 11)
 	{
 		TargetRoomName = TEXT("Room1");
 	}
-	// SmallCorridor_Dark 2
-	else if (RoomAmount > 11)
+	// SmallCorridor_Mannequin 1
+	else if (RoomAmount > 10)
 	{
-		TargetRoomName = TEXT("SmallCorridor_Dark");
+		TargetRoomName = TEXT("SmallCorridor_Mannequin");
 	}
 	// Corridor_Dark 1
-	else if (RoomAmount > 10)
+	else if (RoomAmount > 9)
 	{
 		TargetRoomName = TEXT("Corridor_Dark");
 	}
-	// StairRoom_Simple 1
-	else if (RoomAmount > 9)
+	// BedRoom 1
+	else if (RoomAmount > 8)
 	{
-		TargetRoomName = TEXT("StairRoom_Simple");
+		TargetRoomName = TEXT("Room3");
 	}
 	// Storage 1
-	else if (RoomAmount > 8)
+	else if (RoomAmount > 7)
 	{
 		TargetRoomName = TEXT("Storage");
 	}
 	// Corridor_Simple 1
-	else if (RoomAmount > 7)
+	else if (RoomAmount > 6)
 	{
 		TargetRoomName = TEXT("Corridor_Simple");
 	}
 	// StairRoom 1
-	else if (RoomAmount > 6)
+	else if (RoomAmount > 5)
 	{
 		TargetRoomName = TEXT("StairRoom1");
 	}
 	// SmallCorridor_Bonfire 1
-	else if (RoomAmount > 5)
-	{
-		TargetRoomName = TEXT("SmallCorridor_Bonfire");
-	}
-	// SmallCorridor_Mannequin 1
 	else if (RoomAmount > 4)
 	{
-		TargetRoomName = TEXT("SmallCorridor_Mannequin");
+		TargetRoomName = TEXT("SmallCorridor_Bonfire");
 	}
 	// BarrelRoom 1
 	else if (RoomAmount > 3)
@@ -402,6 +480,100 @@ void APGLevelGenerator::SpawnNextRoom()
 		0.1f,
 		false
 	);
+}
+
+int32 APGLevelGenerator::SelectExitPointWithBalancing()
+{
+	if (ExitPointsList.IsEmpty())
+	{
+		return INDEX_NONE;
+	}
+
+	TArray<int32> Depths;
+	Depths.Reserve(ExitPointsList.Num());
+	int32 MaxDepth = 0;
+
+	for (const TObjectPtr<USceneComponent>& ExitPoint : ExitPointsList)
+	{
+		const APGMasterRoom* OwnerRoom = ExitPoint ? Cast<APGMasterRoom>(ExitPoint->GetOwner()) : nullptr;
+		const int32 Depth = GetRoomDepthFromStart(OwnerRoom);
+		Depths.Add(Depth);
+		MaxDepth = FMath::Max(MaxDepth, Depth);
+	}
+
+	TArray<float> Weights;
+	Weights.Reserve(ExitPointsList.Num());
+	float TotalWeight = 0.0f;
+
+	for (int32 Depth : Depths)
+	{
+		const float W = FMath::Pow((float)(MaxDepth - Depth + 1), 2.0f);
+		Weights.Add(W);
+		TotalWeight += W;
+	}
+
+	if (TotalWeight <= 0.0f)
+	{
+		return UKismetMathLibrary::RandomIntegerFromStream(Seed, ExitPointsList.Num());
+	}
+
+	const float Roll = UKismetMathLibrary::RandomFloatInRangeFromStream(Seed, 0.0f, TotalWeight);
+	float Accumulated = 0.0f;
+	for (int32 i = 0; i < ExitPointsList.Num(); ++i)
+	{
+		Accumulated += Weights[i];
+		if (Roll <= Accumulated)
+		{
+			return i;
+		}
+	}
+
+	return ExitPointsList.Num() - 1;
+}
+
+int32 APGLevelGenerator::GetRoomDepthFromStart(const APGMasterRoom* Room) const
+{
+	if (!Room || !StartRoom)
+	{
+		return 0;
+	}
+
+	if (Room == StartRoom)
+	{
+		return 0;
+	}
+
+	TMap<const APGMasterRoom*, int32> Visited;
+	TQueue<const APGMasterRoom*> Queue;
+
+	Visited.Add(StartRoom, 0);
+	Queue.Enqueue(StartRoom);
+
+	while (!Queue.IsEmpty())
+	{
+		const APGMasterRoom* Current;
+		Queue.Dequeue(Current);
+		
+		const int32 CurrentDepth = Visited[Current];
+
+		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(const_cast<APGMasterRoom*>(Current)))
+		{
+			for (const TObjectPtr<APGMasterRoom>& Neighbor : *Neighbors)
+			{
+				if (Neighbor && !Visited.Contains(Neighbor))
+				{
+					Visited.Add(Neighbor, CurrentDepth + 1);
+					if (Neighbor == Room)
+					{
+						return CurrentDepth + 1;
+					}
+					Queue.Enqueue(Neighbor);
+				}
+			}
+		}
+	}
+
+	return 0;
 }
 
 /*
@@ -944,7 +1116,7 @@ void APGLevelGenerator::SpawnFuseBoxes()
 		return;
 	}
 
-	int32 FuseBoxCount = FMath::Min(3, FuseBoxSpawnPointsList.Num());
+	int32 FuseBoxCount = FMath::Min(2, FuseBoxSpawnPointsList.Num());
 	while (FuseBoxCount > 0 && !FuseBoxSpawnPointsList.IsEmpty())
 	{
 		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, FuseBoxSpawnPointsList.Num());

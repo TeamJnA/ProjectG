@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 
 #include "Components/ArrowComponent.h"
+#include "Type/PGStartRoomTypes.h"
 
 #include "PGMasterRoom.generated.h"
 
@@ -30,6 +31,10 @@ public:
 
 	FORCEINLINE FVector GetEnemySpawnLocation() const { return EnemySpawnPoint->GetComponentLocation(); }
 	FORCEINLINE TSubclassOf<AActor> GetWallClass() const { return WallClass; }
+
+	FORCEINLINE EStartRoomExit GetLoopStartExit() const { return LoopStartExit; }
+	FORCEINLINE EStartRoomExit GetLoopEndExit() const { return LoopEndExit; }
+
 	virtual void SpawnPhotoSpots() {}
 
 protected:
@@ -71,4 +76,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "LevelGeneration")
 	TSubclassOf<AActor> WallClass;
+
+	// for loop corridor only
+	UPROPERTY(EditDefaultsOnly, Category = "Loop Corridor")
+	EStartRoomExit LoopStartExit = EStartRoomExit::None;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Loop Corridor")
+	EStartRoomExit LoopEndExit = EStartRoomExit::None;
 };
