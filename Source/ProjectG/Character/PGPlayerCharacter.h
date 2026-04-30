@@ -296,7 +296,11 @@ public:
 	UFUNCTION()
 	void CacheInteractionTarget(AActor* CacheInteractTarget);
 
-	//Hand Actions
+	/**
+	* Hand Action anim montages
+	*  Pick	*  Change	* Drop * CameraOn * CameraOff
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	TArray<TObjectPtr<UAnimMontage>> HandActionAnimMontages;
 
 	EHandActionMontageType HandActionMontageType;
@@ -334,10 +338,6 @@ protected:
 public:
 	void EquipCurrentInventoryItem();
 
-	void AttachMeshOnHand();
-
-	void DetachMeshOnHand();
-
 	void RemoveItemFromInventory();
 
 	UFUNCTION(Server, Reliable)
@@ -348,6 +348,10 @@ public:
 	void SetCameraMeshOnHand(const bool bIsVisible);
 	void SetRightHandIK();
 	// ~ IHandItemInterface
+
+	void AttachItemCameraOnHand(bool bIsCameraOn);
+
+	FTimerHandle EquipCameraTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item)
 	TObjectPtr<UStaticMeshComponent> EquippedItemMesh;
@@ -497,8 +501,11 @@ private:
 
 	UPROPERTY(Replicated)
 	uint8 FlickerLevel = 0;  // 0=없음, 1=멀리, 2=중간, 3=가까이
+		
+///
+///********* Voice Chat ******************
+/// 
 
-// Voice Chat
 protected:
 	UPROPERTY()
 	TObjectPtr<UPGVOIPTalker> VoipTalker;
@@ -537,6 +544,10 @@ public:
 	FORCEINLINE bool IsTalking() const { return bIsTalking; }
 	float GetCurrentVoiceAmplitude() const;
 
+///
+///********* Camera Component ******************
+/// 
+	
 public:
 	FORCEINLINE UPGCameraComponent* GetCameraComponent() const { return CameraComp; }
 	void ToggleCameraMode();
