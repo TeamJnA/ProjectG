@@ -650,10 +650,6 @@ void APGPlayerCharacter::OnRep_PlayerState()
 
 void APGPlayerCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
 {
-	//TODO Meta Sound ... ?
-	// StaminaExhaustedEffect 채우기.
-	// Server : 0일 때, Apply Gameplay Effect
-	// 중복 적용 방지 방안 생각하기....
 	if (HasAuthority())
 	{
 		if (Data.NewValue <= 0.1f)
@@ -1122,20 +1118,7 @@ void APGPlayerCharacter::EquipCurrentInventoryItem()
 	if (InventoryComponent->HasCurrentItem())
 	{
 		InventoryComponent->ActivateCurrentItemAbility();
-		AttachMeshOnHand();
 	}
-}
-
-void APGPlayerCharacter::AttachMeshOnHand()
-{
-	// Attach mesh on hand and multicast
-
-	UE_LOG(LogTemp, Log, TEXT("Attach Item On Hand"));
-}
-
-void APGPlayerCharacter::DetachMeshOnHand()
-{
-	UE_LOG(LogTemp, Log, TEXT("Detach Item On Hand"));
 }
 
 void APGPlayerCharacter::RemoveItemFromInventory()
@@ -1145,7 +1128,6 @@ void APGPlayerCharacter::RemoveItemFromInventory()
 
 void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 {
-	
 	TObjectPtr<UPGItemData> ItemDataToAttach = InventoryComponent->GetCurrentItemMesh();
 	if (!ItemDataToAttach || !bIsVisible)
 	{
@@ -1169,6 +1151,40 @@ void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 
 void APGPlayerCharacter::SetCameraMeshOnHand(const bool bIsVisible)
 {
+	// TODO : 손에 아이템 있으면 0.1초 딜레이 후 메쉬 교체.  없으면 바로 장착
+	// 메쉬 교체나 장착은 함수 하나 호출. AttachItemCameraOnHand(bool IsCamera)
+	// 손에 아이템메쉬 붙이는 건 SetItemMesh 호출하기.
+	// 아 이거 서버 세팅 해야하네
+	// 이거 자체를 멀티캐스트?
+	// PGCameraComp에서 Camera On Off할 때(bInCameraMode) OnRep에서 같이 처리하기? >> SetCameraMeshOnHand를 거기서 호출할 지...
+	// 아 이건 좀 애매하다 Set Camera Mesh를 호출하는 boolean이 있으면 될 듯
+
+	if (!InventoryComponent)
+	{
+		return;
+	}
+
+	if (InventoryComponent->HasCurrentItem())
+	{
+		GetWorldTimerManager().ClearTimer(EquipCameraTimerHandle);
+
+		// 0.1초 딜레이 후 ExecuteEquipAction 함수 호출
+		TWeakObjectPtr<APGPlayerCharacter> WeakThis(this);
+
+		GetWorldTimerManager().SetTimer(EquipCameraTimerHandle, [WeakThis, bIsVisible]()
+			{
+				// 실행 시점에 객체가 살아있는지 체크
+				if (WeakThis.IsValid())
+				{
+					WeakThis->AttachItemCameraOnHand(bIsVisible);
+				}
+			}, 0.1f, false);
+	}
+	else
+	{
+		AttachItemCameraOnHand(bIsVisible);
+	}
+
 	// Play camera held anim only when held item
 	if (!InventoryComponent->HasCurrentItem())
 	{
@@ -1197,6 +1213,31 @@ void APGPlayerCharacter::SetCameraMeshOnHand(const bool bIsVisible)
 void APGPlayerCharacter::SetRightHandIK()
 {
 	InventoryComponent->Server_CheckHeldItemChanged();
+}
+
+void APGPlayerCharacter::AttachItemCameraOnHand(bool bIsCameraOn)
+{
+	if (!CameraComp || !InventoryComponent)
+	{
+		return;
+	}
+
+	if (bIsCameraOn)
+	{
+		// Held camera comp
+		EquippedItemMesh->SetStaticMesh(CameraComp->GetCameraMesh());
+		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
+		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
+		{
+			AnimInterface->SetHandPose(EHandPoseType::Default);
+		}
+	}
+	else // 카메라를 내릴 때
+	{
+		// 만약 아이템이 손에 있어야 하면 SetItemMesh (true) 아니면 (false)
+		bool bHeldItem = InventoryComponent->HasCurrentItem();
+		SetItemMesh(bHeldItem);
+	}
 }
 
 void APGPlayerCharacter::DropItem_Implementation()

@@ -26,6 +26,8 @@ public:
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+    FORCEINLINE TObjectPtr<UStaticMesh> GetCameraMesh() const { return CameraMesh; }
+
     FORCEINLINE bool IsInCameraMode() const { return bInCameraMode; }
     FORCEINLINE bool IsTransitioning() const { return bIsTransitioning; }
     FORCEINLINE bool IsAlreadyCaptured(int32 SubjectID) const { return LocalCapturedIDs.Contains(SubjectID); }
@@ -85,10 +87,21 @@ protected:
     UFUNCTION(Server, Reliable)
     void Server_SetInCameraMode(bool bNewMode);
 
+    UFUNCTION()
+    void OnRep_HandCamera();
+
+    // bHandCamera를 관리하기 위한 서버 함수
+    UFUNCTION(Server, Reliable)
+    void Server_SetHandCamera(bool bInHand);
+
     AActor* FindClosestSubjectActor() const;
     bool IsTargetValid(AActor* Target) const;
 
     void SetLocalGhostVisible(bool bVisible);
+
+    // Camera Mesh
+    UPROPERTY(EditDefaultsOnly, Category = "Mesh")
+    TObjectPtr<UStaticMesh> CameraMesh;
 
     // 클라이언트 로컬 중복 체크용
     TSet<int32> LocalCapturedIDs;
@@ -170,6 +183,9 @@ protected:
 
     UPROPERTY(Replicated, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
     bool bInCameraMode = false;
+
+    UPROPERTY(ReplicatedUsing = "OnRep_HandCamera", BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+    bool bHandCamera = false;
 
     bool bPhotoTaken = false;
 
