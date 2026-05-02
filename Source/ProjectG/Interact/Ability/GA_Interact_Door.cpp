@@ -84,7 +84,7 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
             * Remove key item
             */
             // Play open door animation montage
-            PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+            PGCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
             if (HasAuthority(&CurrentActivationInfo))
             {
@@ -112,7 +112,7 @@ void UGA_Interact_Door::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
         }
         // Play open door animation montage
 
-        PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+        PGCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
         UE_LOG(LogTemp, Warning, TEXT("GA_Interact_Door::ActivateAbility - Calling Door->ToggleDoor() for %s."), *GetNameSafe(Door));
         Door->ToggleDoor(AvatarActor);

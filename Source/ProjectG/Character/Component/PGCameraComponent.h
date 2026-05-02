@@ -31,9 +31,10 @@ public:
     FORCEINLINE bool IsInCameraMode() const { return bInCameraMode; }
     FORCEINLINE bool IsTransitioning() const { return bIsTransitioning; }
     FORCEINLINE bool IsAlreadyCaptured(int32 SubjectID) const { return LocalCapturedIDs.Contains(SubjectID); }
-
+    
     FORCEINLINE bool HasBattery() const { return CurrentBattery > 0.0f; }
     FORCEINLINE float GetBatteryPercent() const { return CurrentBattery; }
+        
     void AddBattery(float Amount);
 
     UFUNCTION(Server, Reliable)
@@ -41,6 +42,10 @@ public:
 
     UFUNCTION(Client, Reliable)
     void Client_PhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 NewTotalScore);
+
+    // bHandCamera를 관리하기 위한 서버 함수. 손에 카메라 메쉬 드는 것을 관리.
+    UFUNCTION(Server, Reliable)
+    void Server_SetHandCameraMesh(bool bInHand);
 
     void AdjustZoom(float AxisValue);
 
@@ -89,10 +94,6 @@ protected:
 
     UFUNCTION()
     void OnRep_HandCamera();
-
-    // bHandCamera를 관리하기 위한 서버 함수
-    UFUNCTION(Server, Reliable)
-    void Server_SetHandCamera(bool bInHand);
 
     AActor* FindClosestSubjectActor() const;
     bool IsTargetValid(AActor* Target) const;
@@ -184,7 +185,14 @@ protected:
     UPROPERTY(Replicated, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
     bool bInCameraMode = false;
 
+    /**
+    * bHandCamera가 같은 변수로 들어와도, 손에 든 메쉬의 상태는 변화시켜야함.
+    * 그래서 Counter를 써서 OnRep을 항상 호출하도록.
+    */
     UPROPERTY(ReplicatedUsing = "OnRep_HandCamera", BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+    uint8 HandCameraRepCounter = 0;
+
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
     bool bHandCamera = false;
 
     bool bPhotoTaken = false;

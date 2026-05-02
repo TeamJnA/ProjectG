@@ -112,7 +112,7 @@ void UGA_Interact_Revive::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 	const FTransform RespawnTransform = FTransform(DeadCharacter->GetActorTransform().GetRotation(), RespawnLocation);
 	GM->RespawnPlayer(DeadPlayerController, RespawnTransform);
 	DeadCharacter->Destroy();
-	PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+	PGCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 	InteractingCharacter->RemoveItemFromInventory();
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);

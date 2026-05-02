@@ -58,7 +58,7 @@ void UGA_Interact_Bonfire::ActivateAbility(const FGameplayAbilitySpecHandle Hand
             EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
             return;
         }
-        PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+        PlayerCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
         PlayerCharacter->RemoveItemFromInventory();
 
         Bonfire->StartBonfire();
