@@ -58,10 +58,10 @@ APGGameMode::APGGameMode()
 		GhostCharacterClass = GhostPawnBPClass.Class;
 	}
 
-	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 20.0f, 0.0f), FVector(2640.0f, 180.0f, -298.6f)));
-	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 0.0f, 0.0f), FVector(2600.0f, 410.0f, -298.6f)));
-	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 50.0f, 0.0f), FVector(2750.0f, -100.0f, -298.6f)));
-	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, -30.0f, 0.0f), FVector(2690.0f, 710.0f, -298.6f)));
+	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 20.0f, 0.0f), FVector(2640.0f, 180.0f, 1701.4f)));
+	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 0.0f, 0.0f), FVector(2600.0f, 410.0f, 1701.4f)));
+	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 50.0f, 0.0f), FVector(2750.0f, -100.0f, 1701.4f)));
+	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, -30.0f, 0.0f), FVector(2690.0f, 710.0f, 1701.4f)));
 
 	DefaultPawnClass = nullptr;
 
@@ -288,7 +288,7 @@ void APGGameMode::SpawnLevelGenerator()
 {
 	check(PGLevelGenerator);
 
-	const FTransform SpawnTransform(FRotator::ZeroRotator, FVector::ZeroVector);	
+	const FTransform SpawnTransform(FRotator::ZeroRotator, FVector(0.0f, 0.0f, 2000.0f));
 	APGLevelGenerator* LG = GetWorld()->SpawnActor<APGLevelGenerator>(PGLevelGenerator, SpawnTransform);
 	if (!LG)
 	{
