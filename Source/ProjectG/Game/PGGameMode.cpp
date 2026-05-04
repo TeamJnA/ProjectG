@@ -257,6 +257,22 @@ void APGGameMode::SpawnAllPlayers()
 	if (GS)
 	{
 		GS->Multicast_PlayerEnterLevelSequence(GetWorld()->GetNumPlayerControllers());
+
+		if (GS->GetCurrentGameState() == EGameState::InGame)
+		{
+			FTimerHandle MaxSanityDecreaseStartHandle;
+			GetWorld()->GetTimerManager().SetTimer(
+				MaxSanityDecreaseStartHandle, [GS]()
+				{
+					if (IsValid(GS))
+					{
+						GS->StartMaxSanityDecreaseTimer();
+					}
+				},
+				5.0f,
+				false
+			);
+		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("GameMode: All players spawned. Spawn GlobalLightManager and SoundManager."));

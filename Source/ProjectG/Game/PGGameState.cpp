@@ -18,10 +18,15 @@
 #include "LevelSequencePlayer.h"
 #include "LevelSequenceActor.h"
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystem/PGAttributeSet.h"
+
+
 void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGGameState, CurrentGameState);
+	DOREPLIFETIME(APGGameState, MaxSanityDecreaseCount);
 }
 
 void APGGameState::BeginPlay()
@@ -43,6 +48,17 @@ void APGGameState::BeginPlay()
 			//UE_LOG(LogTemp, Log, TEXT("GS::BeginPlay: Load game state from GI: %s"), *UEnum::GetValueAsString(TEXT("EGameState"), CurrentGameState));
 		}
 	}
+}
+
+void APGGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(MaxSanityDecreaseTimerHandle);
+		World->GetTimerManager().ClearTimer(BellSequenceTimerHandle);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 /*
@@ -280,6 +296,13 @@ void APGGameState::OnRep_CurrentGameState()
 
 			LocalPC->RefreshVoiceChannel();
 		}
+
+		if (HasAuthority())
+		{
+			GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseTimerHandle);
+			MaxSanityDecreaseCount = 0;
+		}
+		GetWorld()->GetTimerManager().ClearTimer(BellSequenceTimerHandle);
 	}
 }
 
@@ -412,5 +435,145 @@ void APGGameState::DrawDebugWaypoints() const
 		// 웨이포인트: 파란 구체 + 인덱스 표시
 		DrawDebugSphere(GetWorld(), ExplorationWaypoints[i], 80.0f, 12, FColor::Blue, true);
 		DrawDebugString(GetWorld(), ExplorationWaypoints[i] + FVector(0, 0, 100), FString::Printf(TEXT("WP[%d]"), i), nullptr, FColor::Blue, 10.0f);
+	}
+}
+
+void APGGameState::StartMaxSanityDecreaseTimer()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		MaxSanityDecreaseTimerHandle,
+		this,
+		&APGGameState::OnMaxSanityDecreaseTick,
+		MaxSanityDecreaseInterval,
+		true,
+		MaxSanityDecreaseInterval
+	);
+}
+
+void APGGameState::OnMaxSanityDecreaseTick()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (!DecreaseMaxSanityEffectClass)
+	{
+		return;
+	}
+
+	MaxSanityDecreaseCount++;
+
+	for (APlayerState* PS : PlayerArray)
+	{
+		APGPlayerState* PGPS = Cast<APGPlayerState>(PS);
+		if (!PGPS)
+		{
+			continue;
+		}
+
+		if (!PGPS->IsInGame() || PGPS->IsSpectating())
+		{
+			continue;
+		}
+
+		UAbilitySystemComponent* ASC = PGPS->GetAbilitySystemComponent();
+		if (!ASC)
+		{
+			continue;
+		}
+
+		FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+		Context.AddInstigator(this, this);
+
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DecreaseMaxSanityEffectClass, 1.0f, Context);
+		if (SpecHandle.IsValid())
+		{
+			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+
+		if (APGPlayerCharacter* PlayerChar = Cast<APGPlayerCharacter>(PGPS->GetPawn()))
+		{
+			PlayerChar->Client_TriggerMaxSanityDecreaseGlitch(MaxSanityDecreaseCount);
+		}
+	}
+
+	int32 BellCount = 1;
+	bool bUseEerieSound = false;
+
+	if (MaxSanityDecreaseCount <= 4)
+	{
+		// 1~4: 횟수만 증가
+		BellCount = MaxSanityDecreaseCount;
+	}
+	else
+	{
+		// 5+: 4번 + Eerie sound
+		BellCount = 4;
+		bUseEerieSound = true;
+	}
+
+	Multicast_PlaySanityBellSequence(BellCount, bUseEerieSound);
+
+	// 10회 도달 시 타이머 정지
+	if (MaxSanityDecreaseCount >= 10)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseTimerHandle);
+	}
+}
+
+void APGGameState::Multicast_PlaySanityBellSequence_Implementation(int32 BellCount, bool bUseEerieSound)
+{
+	USoundBase* SoundToPlay = bUseEerieSound ? MaxSanityDecreaseEerieBellSound : MaxSanityDecreaseBellSound;
+	if (!SoundToPlay)
+	{
+		return;
+	}
+
+	RemainingBells = BellCount;
+	bCurrentUseEerie = bUseEerieSound;
+
+	UGameplayStatics::PlaySound2D(GetWorld(), SoundToPlay);
+	RemainingBells--;
+
+	if (RemainingBells > 0)
+	{
+		TWeakObjectPtr<APGGameState> WeakThis(this);
+		GetWorld()->GetTimerManager().SetTimer(
+			BellSequenceTimerHandle,
+			[WeakThis]()
+			{
+				APGGameState* Self = WeakThis.Get();
+				if (!Self || !IsValid(Self))
+				{
+					return;
+				}
+
+				UWorld* World = Self->GetWorld();
+				if (!World)
+				{
+					return;
+				}
+
+				USoundBase* Sound = Self->bCurrentUseEerie ? Self->MaxSanityDecreaseEerieBellSound : Self->MaxSanityDecreaseBellSound;
+				if (Sound)
+				{
+					UGameplayStatics::PlaySound2D(World, Sound);
+				}
+				Self->RemainingBells--;
+
+				if (Self->RemainingBells <= 0)
+				{
+					World->GetTimerManager().ClearTimer(Self->BellSequenceTimerHandle);
+				}
+			},
+			BellInterval,
+			true
+		);
 	}
 }

@@ -726,8 +726,6 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 	);
 	SanityChangedDelegateHandle = OnSanityChangedDelegate.AddUObject(this, &APGPlayerCharacter::OnSanityChanged);
 
-	UpdateSanityPostProcessEffect(AttributeSet->GetSanity(), AttributeSet->GetMaxSanity());
-
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetStaminaAttribute())
 		.AddUObject(this, &APGPlayerCharacter::OnStaminaChanged);
 }
@@ -930,6 +928,26 @@ void APGPlayerCharacter::OnRevive()
 	UE_LOG(LogTemp, Log, TEXT("Character::OnRevive: %s - Remove Dead tag."), *GetName());
 	AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(DeadTag);
 	AbilitySystemComponent->RemoveLooseGameplayTag(DeadTag);
+
+	if (HasAuthority())
+	{
+		SyncMaxSanityFromGameState();
+	}
+}
+
+void APGPlayerCharacter::SyncMaxSanityFromGameState()
+{
+	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	if (!GS || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	const int32 DecreaseCount = GS->GetMaxSanityDecreaseCount();
+	const float NewMaxSanity = FMath::Max(100.0f - DecreaseCount * 10.0f, 0.0f);
+
+	AbilitySystemComponent->SetNumericAttributeBase(UPGAttributeSet::GetMaxSanityAttribute(), NewMaxSanity);
+	AbilitySystemComponent->SetNumericAttributeBase(UPGAttributeSet::GetSanityAttribute(), NewMaxSanity);
 }
 
 /*
@@ -1390,6 +1408,12 @@ void APGPlayerCharacter::InitPostProcessMaterial()
 		{
 			FollowCamera->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.0f, SanityNoiseMID));
 		}
+
+		// PostProcess 생성 후 현재 Sanity 값으로 즉시 갱신
+		if (AttributeSet)
+		{
+			UpdateSanityPostProcessEffect(AttributeSet->GetSanity());
+		}
 	}
 }
 
@@ -1400,35 +1424,29 @@ void APGPlayerCharacter::OnSanityChanged(const FOnAttributeChangeData& Data)
 		return;
 	}
 
-	const float CurrentSanity = Data.NewValue;
-	float MaxSanity = 100.0f;
-	if (AttributeSet)
-	{
-		MaxSanity = AttributeSet->GetMaxSanity();
-	}
+	UE_LOG(LogTemp, Warning, TEXT("[Sanity] OnSanityChanged: %.1f -> %.1f"), Data.OldValue, Data.NewValue);
 
-	UpdateSanityPostProcessEffect(CurrentSanity, MaxSanity);
+	const float CurrentSanity = Data.NewValue;
+	UpdateSanityPostProcessEffect(CurrentSanity);
 }
 
-void APGPlayerCharacter::UpdateSanityPostProcessEffect(float CurrentSanity, float MaxSanity)
+void APGPlayerCharacter::UpdateSanityPostProcessEffect(float CurrentSanity)
 {
 	if (!SanityNoiseMID)
 	{
 		return;
 	}
 
-	if (MaxSanity <= 0.0f)
-	{
-		MaxSanity = 100.0f;
-	}
+	UE_LOG(LogTemp, Warning, TEXT("[Sanity] UpdatePostProcess called - CurrentSanity: %.1f, BaseNoise will be: %.3f"),
+		CurrentSanity, FMath::Pow(1.0f - CurrentSanity / 100.0f, 2.0f) * 0.2f);
 
-	const float SanityRatio = FMath::Clamp(CurrentSanity / MaxSanity, 0.0f, 1.0f);
+	const float SanityRatio = FMath::Clamp(CurrentSanity / 100.0f, 0.0f, 1.0f);
 	const float InvertedRatio = 1.0f - SanityRatio;
 	const float CurveExponent = 2.0f;
 	const float CurvedIntensity = FMath::Pow(InvertedRatio, CurveExponent);
 	BaseNoiseIntensity = CurvedIntensity * 0.2f;
 
-	if (bIsGhostGlitching)
+	if (bIsGhostGlitching || bIsMaxSanityDecreaseGlitching)
 	{
 		return;
 	}
@@ -1493,7 +1511,7 @@ void APGPlayerCharacter::StartGlitch()
 	}
 
 	// GhostGlitching 중 일반 Glitch 차단
-	if (bIsGhostGlitching)
+	if (bIsGhostGlitching || bIsMaxSanityDecreaseGlitching)
 	{
 		return;
 	}
@@ -1517,7 +1535,7 @@ void APGPlayerCharacter::StopGlitch()
 	}
 
 	// GhostGlitching 중 일반 Glitch 차단
-	if (bIsGhostGlitching)
+	if (bIsGhostGlitching || bIsMaxSanityDecreaseGlitching)
 	{
 		return;
 	}
@@ -1539,10 +1557,12 @@ void APGPlayerCharacter::Client_TriggerGhostGlitch_Implementation()
 
 	bIsGhostGlitching = true;
 	bIsGlitching = true;
+	bIsMaxSanityDecreaseGlitching = false;
 	CurrentGhostGlitchIntensity = 1.5f;
 
 	GetWorld()->GetTimerManager().ClearTimer(GlitchIntervalTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(GlitchDurationTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseGlitchTimerHandle);
 
 	SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), 1.5f);
 	ApplyFilmGrain();
@@ -1575,12 +1595,82 @@ void APGPlayerCharacter::UpdateGhostGlitchFadeOut()
 
 		if (AttributeSet)
 		{
-			UpdateSanityPostProcessEffect(AttributeSet->GetSanity(), AttributeSet->GetMaxSanity());
+			UpdateSanityPostProcessEffect(AttributeSet->GetSanity());
 		}
 	}
 	else
 	{
 		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), CurrentGhostGlitchIntensity);
+		ApplyFilmGrain();
+	}
+}
+
+void APGPlayerCharacter::Client_TriggerMaxSanityDecreaseGlitch_Implementation(int32 CurrentDecreaseCount)
+{
+	if (!SanityNoiseMID)
+	{
+		return;
+	}
+
+	if (bIsGhostGlitching)
+	{
+		return;
+	}
+
+	const float Ratio = FMath::Clamp((float)CurrentDecreaseCount / 10.0f, 0.0f, 1.0f);
+	CurrentMaxSanityDecreaseGlitchIntensity = FMath::Lerp(0.4f, 1.5f, Ratio);
+
+	bIsMaxSanityDecreaseGlitching = true;
+	bIsGlitching = true;
+
+	GetWorld()->GetTimerManager().ClearTimer(GlitchIntervalTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(GlitchDurationTimerHandle);
+
+	SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), CurrentMaxSanityDecreaseGlitchIntensity);
+	ApplyFilmGrain();
+
+	GetWorld()->GetTimerManager().SetTimer(MaxSanityDecreaseGlitchTimerHandle, this, &APGPlayerCharacter::StartMaxSanityDecreaseGlitchFadeOut, 1.5f, false);
+}
+
+void APGPlayerCharacter::StartMaxSanityDecreaseGlitchFadeOut()
+{
+	GetWorld()->GetTimerManager().SetTimer(MaxSanityDecreaseGlitchTimerHandle, this, &APGPlayerCharacter::UpdateMaxSanityDecreaseGlitchFadeOut, 0.05f, true, 0.5f);
+}
+
+void APGPlayerCharacter::UpdateMaxSanityDecreaseGlitchFadeOut()
+{
+	if (!SanityNoiseMID)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseGlitchTimerHandle);
+		return;
+	}
+
+	// GhostGlitch가 중간에 발동되면 즉시 종료
+	if (bIsGhostGlitching)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseGlitchTimerHandle);
+		bIsMaxSanityDecreaseGlitching = false;
+		return;
+	}
+
+	CurrentMaxSanityDecreaseGlitchIntensity -= 0.05f;
+	if (CurrentMaxSanityDecreaseGlitchIntensity <= BaseNoiseIntensity)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseGlitchTimerHandle);
+		bIsMaxSanityDecreaseGlitching = false;
+		bIsGlitching = false;
+
+		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), BaseNoiseIntensity);
+		ApplyFilmGrain();
+
+		if (AttributeSet)
+		{
+			UpdateSanityPostProcessEffect(AttributeSet->GetSanity());
+		}
+	}
+	else
+	{
+		SanityNoiseMID->SetScalarParameterValue(FName("NoiseIntensity"), CurrentMaxSanityDecreaseGlitchIntensity);
 		ApplyFilmGrain();
 	}
 }
@@ -1596,6 +1686,7 @@ void APGPlayerCharacter::ApplyFilmGrain()
 	float FinalGrainIntensity = 0.2f;  // 기본값
 	FinalGrainIntensity = FMath::Max(FinalGrainIntensity, CameraModeFilmGrainIntensity);
 	FinalGrainIntensity = FMath::Max(FinalGrainIntensity, bIsGhostGlitching ? CurrentGhostGlitchIntensity : 0.0f);
+	FinalGrainIntensity = FMath::Max(FinalGrainIntensity, bIsMaxSanityDecreaseGlitching ? CurrentMaxSanityDecreaseGlitchIntensity : 0.0f);
 
 	if (FirstPersonCamera)
 	{

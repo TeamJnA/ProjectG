@@ -18,6 +18,7 @@ class APGPlayerController;
 class APGPlayerCharacter;
 class ULevelSequence;
 class ULevelSequencePlayer;
+class UGameplayEffect;
 
 UENUM(BlueprintType)
 enum class EGameState : uint8
@@ -70,6 +71,7 @@ public:
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// ----- Player List ---------
 	virtual void AddPlayerState(APlayerState* PlayerState) override;
@@ -132,4 +134,42 @@ public:
 protected:
 	UPROPERTY()
 	TArray<FVector> ExplorationWaypoints;
+
+public:
+	void StartMaxSanityDecreaseTimer();
+	FORCEINLINE int32 GetMaxSanityDecreaseCount() const { return MaxSanityDecreaseCount; }
+
+private:
+	void OnMaxSanityDecreaseTick();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlaySanityBellSequence(int32 BellCount, bool bUseEerieSound);
+
+	FTimerHandle MaxSanityDecreaseTimerHandle;
+	FTimerHandle BellSequenceTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	TSubclassOf<UGameplayEffect> DecreaseMaxSanityEffectClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	TObjectPtr<USoundBase> MaxSanityDecreaseBellSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	TObjectPtr<USoundBase> MaxSanityDecreaseEerieBellSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	float MaxSanityDecreaseInterval = 150.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	float MaxSanityDecreasePerTick = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	float BellInterval = 3.0f;
+
+	UPROPERTY(Replicated)
+	int32 MaxSanityDecreaseCount = 0;
+
+	int32 RemainingBells = 0;
+
+	bool bCurrentUseEerie = false;
 };

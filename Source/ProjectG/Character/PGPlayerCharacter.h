@@ -423,21 +423,28 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_TriggerGhostGlitch();
 
+	UFUNCTION(Client, Reliable)
+	void Client_TriggerMaxSanityDecreaseGlitch(int32 CurrentDecreaseCount);
+
 protected:
+	void SyncMaxSanityFromGameState();
+
 	void InitPostProcessMaterial();
 
 	void OnSanityChanged(const FOnAttributeChangeData& Data);
-
-	void UpdateSanityPostProcessEffect(float CurrentSanity, float MaxSanity);
+	void UpdateSanityPostProcessEffect(float CurrentSanity);
 
 	void ScheduleNextGlitch();
 	void StartGlitch();
 	void StopGlitch();
 
-	void ApplyFilmGrain();
-
 	void StartGhostGlitchFadeOut();
 	void UpdateGhostGlitchFadeOut();
+
+	void StartMaxSanityDecreaseGlitchFadeOut();
+	void UpdateMaxSanityDecreaseGlitchFadeOut();
+
+	void ApplyFilmGrain();
 
 	UPROPERTY(EditDefaultsOnly, Category = "PostProcess")
 	TObjectPtr<UMaterialInterface> SanityNoiseMaterialClass;
@@ -448,18 +455,22 @@ protected:
 	FDelegateHandle SanityChangedDelegateHandle;
 
 	FTimerHandle GlitchIntervalTimerHandle;
-
 	FTimerHandle GlitchDurationTimerHandle;
-
 	FTimerHandle GhostGlitchTimerHandle;
+	FTimerHandle MaxSanityDecreaseGlitchTimerHandle;
 
 	float GlitchThresholdSanity = 60.0f;
 	float BaseNoiseIntensity = 0.0f;
+
 	float CurrentGhostGlitchIntensity = 1.5f;
+
+	float CurrentMaxSanityDecreaseGlitchIntensity = 1.5f;
+
 	float CameraModeFilmGrainIntensity = 0.2f;
 
 	bool bIsGlitching = false;
 	bool bIsGhostGlitching = false;
+	bool bIsMaxSanityDecreaseGlitching = false;
 
 // Ghost Overlap
 public:

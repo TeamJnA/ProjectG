@@ -40,6 +40,19 @@ void UPGAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxSanity());
 	}
+	else if (Attribute == GetMaxSanityAttribute())
+	{
+		// MaxSanity 줄어들 때 현재 Sanity가 새 MaxSanity보다 크면 같이 줄이기
+		NewValue = FMath::Max(NewValue, 0.0f);
+		if (GetSanity() > NewValue)
+		{
+			UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
+			if (ASC)
+			{
+				ASC->SetNumericAttributeBase(GetSanityAttribute(), NewValue);
+			}
+		}
+	}
 }
 
 void UPGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)

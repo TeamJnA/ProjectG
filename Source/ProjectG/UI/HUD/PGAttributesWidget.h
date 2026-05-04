@@ -31,4 +31,7 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	float SanityPercent;
+
+	UPROPERTY(BlueprintReadOnly)
+	float MaxSanityPercent;
 };
