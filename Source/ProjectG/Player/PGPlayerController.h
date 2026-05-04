@@ -57,9 +57,6 @@ public:
 
 	virtual void OnRep_Pawn() override;
 
-	UFUNCTION(Client, Reliable)
-	void Client_DisplayJumpscare(UTexture2D* JumpscareTexture); 
-
 	void SetupPlayerForGameplay();
 
 	// Check player was spawned with game start or revive.

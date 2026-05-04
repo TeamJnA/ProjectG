@@ -76,6 +76,7 @@ void APGMirrorGhostCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGMirrorGhostCharacter, bIsFrozen);
 	DOREPLIFETIME(APGMirrorGhostCharacter, TargetPlayer);
+	DOREPLIFETIME(APGMirrorGhostCharacter, CurrentSpeedMultiplier);
 }
 
 void APGMirrorGhostCharacter::Tick(float DeltaTime)
@@ -84,8 +85,136 @@ void APGMirrorGhostCharacter::Tick(float DeltaTime)
 
 	if (HasAuthority() && TargetPlayer)
 	{
+		// 플레이어가 안 보고 있을 때만 시간 누적
+		if (!bIsFrozen)
+		{
+			ActiveTime += DeltaTime;
+
+			const float Ratio = FMath::Clamp(ActiveTime / TimeToReachMaxSpeed, 0.0f, 1.0f);
+			const float NewMultiplier = FMath::Lerp(InitialSpeedMultiplier, MaxSpeedMultiplier, Ratio);
+
+			// 변경 감지 후 리플리케이션 (값이 충분히 바뀌었을 때만)
+			if (FMath::Abs(NewMultiplier - CurrentSpeedMultiplier) > 0.05f)
+			{
+				CurrentSpeedMultiplier = NewMultiplier;
+				OnRep_CurrentSpeedMultiplier();
+			}
+		}
+
 		UpdateMovement(DeltaTime);
 	}
+}
+
+void APGMirrorGhostCharacter::OnRep_CurrentSpeedMultiplier()
+{
+	UpdateAnimationRate();
+}
+
+void APGMirrorGhostCharacter::UpdateAnimationRate()
+{
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->GlobalAnimRateScale = bIsFrozen ? 0.0f : CurrentSpeedMultiplier;
+	}
+}
+
+void APGMirrorGhostCharacter::UpdateMovement(float DeltaTime)
+{
+	const bool bLooking = IsPlayerLooking();
+	if (bIsFrozen != bLooking)
+	{
+		bIsFrozen = bLooking;
+		OnRep_IsFrozen();
+	}
+
+	if (bIsFrozen)
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		return;
+	}
+
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed * CurrentSpeedMultiplier;
+
+	const float Distance = FVector::Dist2D(GetActorLocation(), TargetPlayer->GetActorLocation());
+	if (Distance > AttackDistance)
+	{
+		const FVector Direction = (TargetPlayer->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		AddMovementInput(Direction, 1.0f);
+
+		const FRotator LookAtRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TargetPlayer->GetActorLocation());
+		SetActorRotation(FRotator(0.0f, LookAtRot.Yaw, 0.0f));
+	}
+	else
+	{
+		OnReachPlayer();
+	}
+}
+
+bool APGMirrorGhostCharacter::IsPlayerLooking() const
+{
+	if (!TargetPlayer || !TargetPlayer->GetController())
+	{
+		return false;
+	}
+
+	FVector CameraLoc;
+	FRotator CameraRot;
+	TargetPlayer->GetController()->GetPlayerViewPoint(CameraLoc, CameraRot);
+
+	const FVector DirToGhost = (GetActorLocation() - CameraLoc).GetSafeNormal();
+	const float DotResult = FVector::DotProduct(CameraRot.Vector(), DirToGhost);
+
+	if (DotResult > StopAngleThreshold)
+	{
+		FHitResult Hit;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(TargetPlayer);
+		Params.AddIgnoredActor(this);
+
+		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CameraLoc, GetActorLocation(), ECC_Visibility, Params);
+
+		return !bHit;
+	}
+
+	return false;
+}
+
+void APGMirrorGhostCharacter::OnRep_IsFrozen()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	MeshComp->bPauseAnims = bIsFrozen;
+	MeshComp->GlobalAnimRateScale = bIsFrozen ? 0.0f : CurrentSpeedMultiplier;
+}
+
+void APGMirrorGhostCharacter::OnReachPlayer()
+{
+	if (!TargetPlayer || !AttackEffectClass)
+	{
+		Destroy();
+		return;
+	}
+
+	TargetPlayer->Client_TriggerGhostGlitch();
+
+	UAbilitySystemComponent* TargetASC = TargetPlayer->GetAbilitySystemComponent();
+	if (TargetASC)
+	{
+		FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
+		ContextHandle.AddInstigator(this, this);
+
+		FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(AttackEffectClass, 1.0f, ContextHandle);
+		if (SpecHandle.IsValid())
+		{
+			TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+	}
+
+	Destroy();
 }
 
 void APGMirrorGhostCharacter::SetTargetPlayer(APGPlayerCharacter* InTargetPlayer)
@@ -147,106 +276,4 @@ void APGMirrorGhostCharacter::SetCameraModeVisible(bool bVisible)
 	{
 		MirrorGhostMID->SetScalarParameterValue(FName("CameraModeVisible"), bVisible ? 1.0f : 0.0f);
 	}
-}
-
-void APGMirrorGhostCharacter::UpdateMovement(float DeltaTime)
-{
-	const bool bLooking = IsPlayerLooking();
-	if (bIsFrozen != bLooking)
-	{
-		bIsFrozen = bLooking;
-		OnRep_IsFrozen();
-	}
-
-	if (bIsFrozen)
-	{
-		GetCharacterMovement()->StopMovementImmediately();
-		return;
-	}
-
-	const float Distance = FVector::Dist2D(GetActorLocation(), TargetPlayer->GetActorLocation());
-
-	if (Distance > AttackDistance)
-	{
-		const FVector Direction = (TargetPlayer->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-		AddMovementInput(Direction, 1.0f);
-
-		const FRotator LookAtRot = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TargetPlayer->GetActorLocation());
-		SetActorRotation(FRotator(0.0f, LookAtRot.Yaw, 0.0f));
-	}
-	else
-	{
-		JumpscareAndDestroy();
-	}
-}
-
-bool APGMirrorGhostCharacter::IsPlayerLooking() const
-{
-	if (!TargetPlayer || !TargetPlayer->GetController())
-	{
-		return false;
-	}
-
-	FVector CameraLoc;
-	FRotator CameraRot;
-	TargetPlayer->GetController()->GetPlayerViewPoint(CameraLoc, CameraRot);
-
-	const FVector DirToGhost = (GetActorLocation() - CameraLoc).GetSafeNormal();
-	const float DotResult = FVector::DotProduct(CameraRot.Vector(), DirToGhost);
-
-	if (DotResult > StopAngleThreshold)
-	{
-		FHitResult Hit;
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(TargetPlayer);
-		Params.AddIgnoredActor(this);
-
-		bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CameraLoc, GetActorLocation(), ECC_Visibility, Params);
-
-		return !bHit;
-	}
-
-	return false;
-}
-
-void APGMirrorGhostCharacter::JumpscareAndDestroy()
-{
-	if (!TargetPlayer || !AttackEffectClass)
-	{
-		Destroy();
-		return;
-	}
-
-	APGPlayerController* TargetPC = Cast<APGPlayerController>(TargetPlayer->GetController());
-	if (TargetPC)
-	{
-		TargetPC->Client_DisplayJumpscare(MirrorGhostJumpscareTexture);
-	}
-
-	UAbilitySystemComponent* TargetASC = TargetPlayer->GetAbilitySystemComponent();
-	if (TargetASC)
-	{
-		FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
-		ContextHandle.AddInstigator(this, this);
-
-		FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(AttackEffectClass, 1.0f, ContextHandle);
-		if (SpecHandle.IsValid())
-		{
-			TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		}
-	}
-
-	Destroy();
-}
-
-void APGMirrorGhostCharacter::OnRep_IsFrozen()
-{
-	USkeletalMeshComponent* MeshComp = GetMesh();
-	if (!MeshComp)
-	{
-		return;
-	}
-
-	MeshComp->bPauseAnims = bIsFrozen;
-	MeshComp->GlobalAnimRateScale = bIsFrozen ? 0.0f : 1.0f;
 }

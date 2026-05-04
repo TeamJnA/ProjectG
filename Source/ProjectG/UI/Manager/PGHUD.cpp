@@ -19,7 +19,6 @@
 #include "UI/HUD/PGCrosshairWidget.h"
 #include "UI/HUD/PGPhotoAlertWidget.h"
 #include "UI/HUD/PGBackgroundBlurWidget.h"
-#include "UI/Screen/PGJumpscareWidget.h"
 
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
@@ -340,25 +339,6 @@ void APGHUD::DisplayInteractionFailedMessage(const FText& Message, float Duratio
 	if (MessageManagerWidget)
 	{
 		MessageManagerWidget->ShowFailureMessage(Message, Duration);
-	}
-}
-
-void APGHUD::DisplayJumpscare(UTexture2D* JumpscareTexture)
-{
-	if (!GetOwningPlayerController() || !JumpscareWidgetClass || !JumpscareTexture)
-	{
-		return;
-	}
-
-	if (!JumpscareWidget)
-	{
-		JumpscareWidget = CreateWidget<UPGJumpscareWidget>(GetOwningPlayerController(), JumpscareWidgetClass);
-	}
-
-	if (JumpscareWidget && !JumpscareWidget->IsInViewport())
-	{
-		JumpscareWidget->Init(JumpscareTexture);
-		JumpscareWidget->AddToViewport(100);
 	}
 }
 

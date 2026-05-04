@@ -43,19 +43,22 @@ protected:
 
 	void UpdateMovement(float DeltaTime);
 	bool IsPlayerLooking() const;
-	void JumpscareAndDestroy();
+
+	UFUNCTION()
+	void OnRep_CurrentSpeedMultiplier();
+
+	void UpdateAnimationRate();
 
 	UFUNCTION()
 	void OnRep_IsFrozen();
+
+	void OnReachPlayer();
 
 	UFUNCTION()
 	void OnRep_TargetPlayer();
 
 	UPROPERTY(ReplicatedUsing = OnRep_TargetPlayer)
 	TObjectPtr<APGPlayerCharacter> TargetPlayer;
-
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UTexture2D> MirrorGhostJumpscareTexture;
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> MirrorGhostMID;
@@ -68,6 +71,23 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	float StopAngleThreshold = 0.6f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	float InitialSpeedMultiplier = 0.1f;  // 시작 속도 배율
+
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	float MaxSpeedMultiplier = 1.0f;  // 최대 속도 배율
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentSpeedMultiplier)
+	float CurrentSpeedMultiplier = 0.1f; // 현재 속도 배율
+
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	float TimeToReachMaxSpeed = 10.0f;  // 최대 속도 도달 시간
+
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	float BaseMovementSpeed = 1000.0f;
+
+	float ActiveTime = 0.0f;  // 속도 증가 누적 시간
 
 	UPROPERTY(ReplicatedUsing = OnRep_IsFrozen)
 	bool bIsFrozen = false;

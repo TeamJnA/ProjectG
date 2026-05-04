@@ -23,7 +23,6 @@ class UPGSpectatorWidget;
 class UPGScoreBoardWidget;
 class UPGFinalScoreBoardWidget;
 class UPGPauseMenuWidget;
-class UPGJumpscareWidget;
 
 /**
  * 
@@ -43,7 +42,6 @@ public:
 	void InitPauseMenuWidget();
 	void UpdateInteractionProgress(float Progress);
 	void DisplayInteractionFailedMessage(const FText& Message, float Duration);
-	void DisplayJumpscare(UTexture2D* JumpscareTexture);
 
 	void ClearViewport();
 	void ForceCleanupHUD();
@@ -111,9 +109,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGPauseMenuWidget> PauseMenuWidgetClass;
 
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGJumpscareWidget> JumpscareWidgetClass;
-
 private:
 	UPROPERTY()
 	TObjectPtr<UPGAttributesWidget> AttributeWidget;
@@ -159,7 +154,4 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGPauseMenuWidget> PauseMenuWidget;
-
-	UPROPERTY()
-	TObjectPtr<UPGJumpscareWidget> JumpscareWidget;
 };

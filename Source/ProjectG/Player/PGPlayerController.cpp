@@ -183,17 +183,6 @@ void APGPlayerController::SetupPlayerForGameplay()
 	bGameStartFirstSpawned = false;
 }
 
-void APGPlayerController::Client_DisplayJumpscare_Implementation(UTexture2D* JumpscareTexture)
-{
-	if (IsLocalController())
-	{
-		if (APGHUD* HUD = GetHUD<APGHUD>())
-		{
-			HUD->DisplayJumpscare(JumpscareTexture);
-		}
-	}
-}
-
 void APGPlayerController::ReplaceInputMappingContext(const APawn* PawnType)
 {
 	if (!PawnType)
