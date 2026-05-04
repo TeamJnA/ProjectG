@@ -57,7 +57,7 @@ void UGA_Unlock_Exit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
         UE_LOG(LogTemp, Log, TEXT("Cannot do %s during hand action."), *GetName());
         return;
     }
-    PGCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+    PGCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
     if (PGExitPoint->Unlock())
     {

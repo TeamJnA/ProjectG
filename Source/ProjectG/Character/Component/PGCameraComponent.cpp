@@ -100,14 +100,12 @@ void UPGCameraComponent::EnterCameraMode()
     
     // 여기서 핸드락을 부여하지 말고 그냥 HandAction Anim ability 재생시켜서 핸드락 부여
     // 끝날때즘 애님 노티파이 -> 캐릭터의 카메라 컴포넌트 접근해서 핸드락 부여
-    /*
+    
     IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
     if (HandInterface)
     {
         HandInterface->SetCameraMeshOnHand(true);
     }
-    */
-    Server_SetInCameraMode(true);
     
     bIsTransitioning = true;
 
@@ -210,14 +208,12 @@ void UPGCameraComponent::ExitCameraMode()
     SetHandLockTag(false);
 
     // 캐릭터가 카메라 내리는 애님
-    /*
+    
     IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
     if (HandInterface)
     {
         HandInterface->SetCameraMeshOnHand(false);
     }
-    */
-    Server_SetInCameraMode(false);
 
     bIsTransitioning = true;
     SetInCameraMode(false);
@@ -316,14 +312,12 @@ void UPGCameraComponent::ForceExitCameraMode()
     SetHandLockTag(false);
 
     // 캐릭터가 카메라 내리는 애님
-    /*
+    
     IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
     if (HandInterface)
     {
         HandInterface->SetCameraMeshOnHand(false);
     }
-    */
-    Server_SetInCameraMode(true);
 
     // 상태 초기화
     bIsTransitioning = false;
@@ -351,6 +345,7 @@ void UPGCameraComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
     DOREPLIFETIME(UPGCameraComponent, bInCameraMode);
     DOREPLIFETIME(UPGCameraComponent, bHandCamera);
+    DOREPLIFETIME(UPGCameraComponent, HandCameraRepCounter);
 }
 
 void UPGCameraComponent::ResetProgress()
@@ -505,16 +500,19 @@ void UPGCameraComponent::OnRep_HandCamera()
 {
     if (APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner()))
     {
-        Owner->SetCameraMeshOnHand(bHandCamera);
+        Owner->AttachItemCameraOnHand(bHandCamera);
     }
 }
 
-void UPGCameraComponent::Server_SetHandCamera_Implementation(bool bInHand)
+void UPGCameraComponent::Server_SetHandCameraMesh_Implementation(bool bInHand)
 {
     bHandCamera = bInHand;
+    HandCameraRepCounter++;
 
+    UE_LOG(LogTemp, Log, TEXT("Server_SetHandCameraMesh : HasAuthority ? %d"), GetOwner()->HasAuthority());
     if (GetOwner() && GetOwner()->HasAuthority())
     {
+        UE_LOG(LogTemp, Log, TEXT("Server_SetHandCameraMesh : HasAuthority true"));
         OnRep_HandCamera();
     }
 }
