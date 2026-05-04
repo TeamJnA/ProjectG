@@ -1081,9 +1081,9 @@ void APGPlayerCharacter::CacheInteractionTarget(AActor* CacheInteractTarget)
 	InteractionTargetActor = CacheInteractTarget;
 }
 
-TObjectPtr<UAnimMontage> APGPlayerCharacter::GetHandActionAnimMontages()
+TObjectPtr<UAnimMontage> APGPlayerCharacter::GetHandActionAnimMontages(EHandActionMontageType _HandActionMontageType)
 {
-	const int32 Index = static_cast<int32>(HandActionMontageType);
+	const int32 Index = static_cast<int32>(_HandActionMontageType);
 
 	if (HandActionAnimMontages.IsValidIndex(Index))
 	{
@@ -1102,6 +1102,7 @@ void APGPlayerCharacter::SetHandActionAnimMontage(EHandActionMontageType _HandAc
 
 void APGPlayerCharacter::Server_PlayHandActionAnimMontage_Implementation(EHandActionMontageType _HandActionMontageType)
 {
+	/*
 	SetHandActionAnimMontage(_HandActionMontageType);
 
 	FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
@@ -1110,6 +1111,20 @@ void APGPlayerCharacter::Server_PlayHandActionAnimMontage_Implementation(EHandAc
 	HandActionTagContainer.AddTag(HandActionTag);
 
 	ActivateAbilityByTag(HandActionTagContainer);
+
+	///////////////////////////////////////
+	*/
+
+	FGameplayTag HandActionEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Ability.HandAction"));
+
+	FGameplayEventData EventData;
+	EventData.EventMagnitude = static_cast<float>(_HandActionMontageType);
+
+	if (AbilitySystemComponent)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Server_PlayHandActionAnimMontage :: HandleGameplayEvent"));
+		AbilitySystemComponent->HandleGameplayEvent(HandActionEventTag, &EventData);
+	}
 }
 
 // After HandAction, this function is called to activate currentitem's ability.

@@ -16,6 +16,14 @@ UGA_HandAction::UGA_HandAction()
 	ActivationOwnedTags.AddTag(HandActionActivateTag);
 
 	ActivationBlockedTags.AddTag(HandActionActivateTag);
+
+	//Add Event trigger
+	FGameplayTag TriggerTag = FGameplayTag::RequestGameplayTag(FName("Event.Ability.HandAction"));
+	FAbilityTriggerData TriggerData;
+	TriggerData.TriggerTag = TriggerTag;
+	TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
+
+	AbilityTriggers.Add(TriggerData);
 }
 
 void UGA_HandAction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -29,7 +37,12 @@ void UGA_HandAction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	APGPlayerCharacter* PGPC = Cast<APGPlayerCharacter>(AvatarActor);
 	PG_CHECK_VALID_HANDACTION(PGPC);
 
-	UAnimMontage* HandActionAnimMontage = PGPC->GetHandActionAnimMontages();
+	check(TriggerEventData);
+	EHandActionMontageType HandActionMontageType = static_cast<EHandActionMontageType>((int32)TriggerEventData->EventMagnitude);
+
+	UE_LOG(LogTemp, Log, TEXT("Handaction : %d"),(int32)HandActionMontageType);
+
+	UAnimMontage* HandActionAnimMontage = PGPC->GetHandActionAnimMontages(HandActionMontageType);
 	PG_CHECK_VALID_HANDACTION(HandActionAnimMontage);
 
 	//Prevent ability ended twice.

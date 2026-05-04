@@ -305,7 +305,7 @@ public:
 
 	EHandActionMontageType HandActionMontageType;
 
-	TObjectPtr<UAnimMontage> GetHandActionAnimMontages();
+	TObjectPtr<UAnimMontage> GetHandActionAnimMontages(EHandActionMontageType _HandActionMontageType);
 
 	void SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
 
