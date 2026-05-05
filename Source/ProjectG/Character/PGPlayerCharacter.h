@@ -309,8 +309,7 @@ public:
 
 	void SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
 
-	UFUNCTION(Server, Reliable)
-	void Server_PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
+	void PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
 
 protected:
 	//The interactive actor currently watching

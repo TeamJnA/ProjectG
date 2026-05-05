@@ -24,6 +24,10 @@ UGA_HandAction::UGA_HandAction()
 	TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
 
 	AbilityTriggers.Add(TriggerData);
+
+	// 서버가 먼저 handaction을 실행시키고 클라가 따라오도록
+	// HandleGameplayEvent로 핸드액션 어빌을 실행시키는데, 이벤트를 보내는 경우는 local predict가 불가능
+	// NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerInitiated;
 }
 
 void UGA_HandAction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)

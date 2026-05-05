@@ -31,7 +31,7 @@ void UGA_Interact_GimmickBase::ActivateAbility(const FGameplayAbilitySpecHandle 
 	{
 		if (APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(ActorInfo->AvatarActor.Get()))
 		{
-			Player->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+			Player->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 		}
 
 		IGBase->GimmickInteract();

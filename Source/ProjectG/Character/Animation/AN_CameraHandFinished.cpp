@@ -11,9 +11,10 @@ void UAN_CameraHandFinished::Notify(USkeletalMeshComponent* MeshComp, UAnimSeque
 	Super::Notify(MeshComp, Animation);
 
 	UE_LOG(LogPGAnimNotify, Log, TEXT("Play CameraHandFinished Notify"));
+	UE_LOG(LogPGAnimNotify, Log, TEXT("Notify Called by Mesh: %s"), *MeshComp->GetName());
 
 	AActor* OwnerActor = MeshComp->GetOwner();
-	if (!OwnerActor)
+	if (!OwnerActor || !OwnerActor->HasAuthority())
 	{
 		return;
 	}

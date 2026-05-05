@@ -759,6 +759,7 @@ void UPGCameraComponent::CameraHandAnimFinished()
 {
     if (bInCameraMode)
     {
+        UE_LOG(LogTemp, Log, TEXT("CameraHandAnimFinished %d"), GetOwner()->HasAuthority());
         SetHandLockTag(true);
     }
 }
@@ -839,12 +840,12 @@ void UPGCameraComponent::SetHandLockTag(bool bHandLock)
 
     if (bHandLock)
     {
-        ASC->AddLooseGameplayTags(TagContainer);
+        // ASC->AddLooseGameplayTags(TagContainer);
         Owner->AddTagToCharacter(1, TagContainer);
     }
     else
     {
-        ASC->RemoveLooseGameplayTags(TagContainer);
+        // ASC->RemoveLooseGameplayTags(TagContainer);
         Owner->RemoveTagFromCharacter(1, TagContainer);
     }
 }

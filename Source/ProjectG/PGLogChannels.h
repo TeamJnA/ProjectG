@@ -4,6 +4,7 @@
 
 #define ECC_FootStep ECC_GameTraceChannel6
 
+DECLARE_LOG_CATEGORY_EXTERN(LogPGPlayerCharacter, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogPGAbility, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogPGAbilityTask, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogItem, Log, All);
