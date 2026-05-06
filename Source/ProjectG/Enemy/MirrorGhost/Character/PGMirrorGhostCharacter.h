@@ -82,7 +82,7 @@ protected:
 	float CurrentSpeedMultiplier = 0.1f; // 현재 속도 배율
 
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
-	float TimeToReachMaxSpeed = 10.0f;  // 최대 속도 도달 시간
+	float TimeToReachMaxSpeed = 15.0f;  // 최대 속도 도달 시간
 
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	float BaseMovementSpeed = 1000.0f;

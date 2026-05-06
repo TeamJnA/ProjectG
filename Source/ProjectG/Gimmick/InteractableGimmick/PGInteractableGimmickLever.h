@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickBase.h"
+#include "Interface/HoldInteractProgressHandler.h"
 #include "PGInteractableGimmickLever.generated.h"
 
 class APGMirrorRoom;
@@ -12,7 +13,7 @@ class APGMirrorRoom;
  * 
  */
 UCLASS()
-class PROJECTG_API APGInteractableGimmickLever : public APGInteractableGimmickBase
+class PROJECTG_API APGInteractableGimmickLever : public APGInteractableGimmickBase, public IHoldInteractProgressHandler
 {
 	GENERATED_BODY()
 	
@@ -26,15 +27,63 @@ public:
 
 	void ActivateLever();
 
+	// IHoldInteractProgressHandler~
+	virtual void UpdateHoldProgress(float Progress) override;
+	virtual void StopHoldProress() override;
+	// ~IHoldInteractProgressHandler
+
+protected:
+	virtual void BeginPlay() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Glass")
+	TObjectPtr<UStaticMeshComponent> GlassPlane;
+
 private:
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ActivatePhysics();
+	void Multicast_SetCrackStage(int32 Stage);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_OnInteractionComplete();
+
+	void DisableShakeEffect();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
-	FName FrameFallSound;
+	FName FrameFallSound = FName("LEVEL_MirrorRoom_FrameFall");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Crack")
+	FName CrackScale = FName("CrackScale");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Crack")
+	FName HoleAmountParamName = FName("HoleAmount");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shake")
+	FName ShakeParameterName = FName("WPOPower");
+
+	UPROPERTY(EditDefaultsOnly, Category = "PaintFade")
+	FName PaintFadeParameterName = FName("FadeAmount");
 
 	UPROPERTY()
 	TWeakObjectPtr<APGMirrorRoom> MasterRoom;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Crack")
+	TArray<float> CrackStageThresholds = { 0.33f, 0.66f, 1.0f };
+
+	UPROPERTY(EditDefaultsOnly, Category = "Crack")
+	TArray<float> CrackStageValues = { 0.8f, 1.6f, 2.4f };
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> CrackMID;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> PaintMID;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> FrameMID;
+
+	float ShakeIntensity = 0.5f;
+	float ShakeDuration = 0.1f;
+
+	int32 CurrentCrackStage = -1;
 
 	UPROPERTY(Replicated)
 	bool bIsActivated = false;

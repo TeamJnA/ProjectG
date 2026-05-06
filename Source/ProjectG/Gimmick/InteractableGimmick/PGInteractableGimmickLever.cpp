@@ -17,10 +17,28 @@ APGInteractableGimmickLever::APGInteractableGimmickLever()
 
 	InteractAbility = UGA_Interact_Lever::StaticClass();
 
-	FrameFallSound = FName(TEXT("LEVEL_MirrorRoom_FrameFall"));
-
 	StaticMesh->SetRenderCustomDepth(true);
-	StaticMesh->SetCustomDepthStencilValue(0);
+	StaticMesh->SetCustomDepthStencilValue(1);
+
+	GlassPlane = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GlassPlane"));
+	GlassPlane->SetupAttachment(StaticMesh);
+	GlassPlane->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void APGInteractableGimmickLever::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (StaticMesh && StaticMesh->GetNumMaterials() > 1)
+	{
+		FrameMID = StaticMesh->CreateDynamicMaterialInstance(0);
+		PaintMID = StaticMesh->CreateDynamicMaterialInstance(1);
+	}
+
+	if (GlassPlane && GlassPlane->GetNumMaterials() > 0)
+	{
+		CrackMID = GlassPlane->CreateDynamicMaterialInstance(0);
+	}
 }
 
 void APGInteractableGimmickLever::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -53,14 +71,12 @@ FInteractionInfo APGInteractableGimmickLever::GetInteractionInfo() const
 
 void APGInteractableGimmickLever::ActivateLever()
 {
-	//Play Sound
-	
+	//Play Sound	
 	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
 	{
 		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
 		{
-			FVector SoundPlayLocation = GetActorLocation() - FVector::ZAxisVector * ( - 200);
-			SoundManager->PlaySoundForAllPlayers(FrameFallSound, SoundPlayLocation);
+			SoundManager->PlaySoundForAllPlayers(FrameFallSound, GetActorLocation());
 		}
 	}
 
@@ -72,18 +88,103 @@ void APGInteractableGimmickLever::ActivateLever()
 			Room->SolveGimmick();
 		}
 
-		Multicast_ActivatePhysics();
+		Multicast_OnInteractionComplete();
 	}
 }
 
-void APGInteractableGimmickLever::Multicast_ActivatePhysics_Implementation()
+void APGInteractableGimmickLever::UpdateHoldProgress(float Progress)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (bIsActivated)
+	{
+		return;
+	}
+
+	int32 NewStage = -1;
+	for (int32 i = 0; i < CrackStageThresholds.Num(); i++)
+	{
+		if (Progress >= CrackStageThresholds[i])
+		{
+			NewStage = i;
+		}
+	}
+
+	if (NewStage != CurrentCrackStage)
+	{
+		CurrentCrackStage = NewStage;
+		Multicast_SetCrackStage(NewStage);
+	}
+}
+
+void APGInteractableGimmickLever::StopHoldProress()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (bIsActivated)
+	{
+		return;
+	}
+
+	CurrentCrackStage = -1;
+	Multicast_SetCrackStage(-1);
+}
+
+void APGInteractableGimmickLever::Multicast_SetCrackStage_Implementation(int32 Stage)
+{
+	if (!CrackMID) 
+	{
+		return;
+	}
+
+	float CrackValue = 0.0f;
+	if (Stage >= 0 && Stage < CrackStageValues.Num())
+	{
+		CrackValue = CrackStageValues[Stage];
+	}
+
+	CrackMID->SetScalarParameterValue(CrackScale, CrackValue);
+}
+
+void APGInteractableGimmickLever::Multicast_OnInteractionComplete_Implementation()
 {
 	SelfHighlightOff();
-
-	StaticMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-	StaticMesh->SetSimulatePhysics(true);
-	StaticMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	StaticMesh->SetCollisionProfileName(TEXT("Item"));
 	StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-	StaticMesh->AddImpulse(GetActorRightVector() * -200.0f, NAME_None, true);
+
+	if (FrameMID)
+	{
+		FrameMID->SetScalarParameterValue(ShakeParameterName, ShakeIntensity);
+	}
+
+	if (PaintMID)
+	{
+		PaintMID->SetScalarParameterValue(ShakeParameterName, ShakeIntensity);
+		PaintMID->SetScalarParameterValue(PaintFadeParameterName, 1.0f);
+	}
+
+	if (CrackMID)
+	{
+		CrackMID->SetScalarParameterValue(ShakeParameterName, ShakeIntensity);
+		CrackMID->SetScalarParameterValue(HoleAmountParamName, 1.0f);
+	}
+
+	FTimerHandle ShakeEffectTimerHandle;
+	GetWorldTimerManager().SetTimer(ShakeEffectTimerHandle, this, &APGInteractableGimmickLever::DisableShakeEffect, ShakeDuration, false);
+}
+
+void APGInteractableGimmickLever::DisableShakeEffect()
+{
+	if (FrameMID && PaintMID && CrackMID)
+	{
+		FrameMID->SetScalarParameterValue(ShakeParameterName, 0.0f);
+		PaintMID->SetScalarParameterValue(ShakeParameterName, 0.0f);
+		CrackMID->SetScalarParameterValue(ShakeParameterName, 0.0f);
+	}
 }

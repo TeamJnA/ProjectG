@@ -43,12 +43,16 @@ private:
 	void OnEntryTriggerEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	void StartGimmick();
-	void SpawnMirrorGhost(APGPlayerCharacter* Player, const FTransform& SpawnTransforms);
 
-	void UpdateGateMovement();
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetInvisibleBlock(bool bEnable);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetGateState(bool bLock);
+
+	void UpdateGateMovement();
+
+	void SpawnMirrorGhost(APGPlayerCharacter* Player, const FTransform& SpawnTransforms);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	FPhotoSpotConfig PhotoSpotConfig;
@@ -75,6 +79,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gate")
 	TObjectPtr<UStaticMeshComponent> GateMesh;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gate")
+	TObjectPtr<UBoxComponent> InvisibleBlock;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
 	TObjectPtr<USceneComponent> MirrorGhostSpawnPointFolder;
 
@@ -83,12 +90,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
 	TObjectPtr<UArrowComponent> MirrorGhostSpawnPoint1;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
-	TObjectPtr<UArrowComponent> MirrorGhostSpawnPoint2;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
-	TObjectPtr<UArrowComponent> MirrorGhostSpawnPoint3;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Setup")
 	TObjectPtr<UChildActorComponent> LeverComponent;

@@ -34,8 +34,8 @@ APGMirrorRoom::APGMirrorRoom()
 
 	RoomDir->SetRelativeLocation(FVector(370.0f, 0.0f, 130.0f));
 
-	OverlapBox->SetRelativeLocation(FVector(641.5f, 620.0f, 345.0f));
-	OverlapBox->SetRelativeScale3D(FVector(19.75f, 32.75f, 10.5f));
+	OverlapBox->SetRelativeLocation(FVector(996.5f, -10.0f, 345.0f));
+	OverlapBox->SetRelativeScale3D(FVector(30.5f, 27.75f, 10.4f));
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(GeometryFolder);
@@ -43,7 +43,7 @@ APGMirrorRoom::APGMirrorRoom()
 	{
 		Mesh->SetChildActorClass(MeshRef.Class);
 	}
-	Mesh->SetRelativeLocation(FVector(643.5f, 551.0f, 0.0f));
+	Mesh->SetRelativeLocation(FVector(603.4f, 549.9f, 0.0f));
 	Mesh->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 
 	EntryTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("EntryTrigger"));
@@ -52,8 +52,8 @@ APGMirrorRoom::APGMirrorRoom()
 	EntryTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	EntryTrigger->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	EntryTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Overlap);
-	EntryTrigger->SetRelativeLocation(FVector(650.0f, 591.0f, 165.0f));
-	EntryTrigger->SetRelativeScale3D(FVector(17.5f, 27.5f, 5.0f));
+	EntryTrigger->SetRelativeLocation(FVector(955.0f, 0.0f, 165.0f));
+	EntryTrigger->SetRelativeScale3D(FVector(28.0f, 22.0f, 5.0f));
 
 	GateMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateMesh"));
 	GateMesh->SetupAttachment(Root);
@@ -69,36 +69,29 @@ APGMirrorRoom::APGMirrorRoom()
 	GateMesh->SetRelativeLocation(FVector(15.0f, 0.0f, 320.0f));
 	GateMesh->SetRelativeScale3D(FVector(1.0f, 1.6f, 2.05f));
 
+	InvisibleBlock = CreateDefaultSubobject<UBoxComponent>(TEXT("InvisibleBlock"));
+	InvisibleBlock->SetupAttachment(Root);
+	InvisibleBlock->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	InvisibleBlock->SetHiddenInGame(true);
+	InvisibleBlock->SetRelativeLocation(FVector(15.0f, 0.0f, 165.0f));
+	InvisibleBlock->SetRelativeScale3D(FVector(0.305f, 3.25f, 5.0f));
+
 	MirrorGhostSpawnPointFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GhostSpawnPoints"));
 	MirrorGhostSpawnPointFolder->SetupAttachment(Root);
 
 	MirrorGhostSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("GhostSpawnPoint0"));
 	MirrorGhostSpawnPoint0->SetupAttachment(MirrorGhostSpawnPointFolder);
 	MirrorGhostSpawnPoint0->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
-	MirrorGhostSpawnPoint0->SetRelativeLocation(FVector(1000.0f, 1175.0f, 150.0f));
-	MirrorGhostSpawnPoint0->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	MirrorGhostSpawnPoint0->SetRelativeLocation(FVector(1920.0f, -300.0f, 160.0f));
+	MirrorGhostSpawnPoint0->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 	MirrorGhostSpawnPoint0->bHiddenInGame = true;
 
 	MirrorGhostSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("GhostSpawnPoint1"));
 	MirrorGhostSpawnPoint1->SetupAttachment(MirrorGhostSpawnPointFolder);
 	MirrorGhostSpawnPoint1->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
-	MirrorGhostSpawnPoint1->SetRelativeLocation(FVector(845.0f, 1175.0f, 150.0f));
-	MirrorGhostSpawnPoint1->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	MirrorGhostSpawnPoint1->SetRelativeLocation(FVector(1920.0f, 300.0f, 160.0f));
+	MirrorGhostSpawnPoint1->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 	MirrorGhostSpawnPoint1->bHiddenInGame = true;
-
-	MirrorGhostSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("GhostSpawnPoint2"));
-	MirrorGhostSpawnPoint2->SetupAttachment(MirrorGhostSpawnPointFolder);
-	MirrorGhostSpawnPoint2->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
-	MirrorGhostSpawnPoint2->SetRelativeLocation(FVector(630.0f, 1175.0f, 150.0f));
-	MirrorGhostSpawnPoint2->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	MirrorGhostSpawnPoint2->bHiddenInGame = true;
-
-	MirrorGhostSpawnPoint3 = CreateDefaultSubobject<UArrowComponent>(TEXT("GhostSpawnPoint3"));
-	MirrorGhostSpawnPoint3->SetupAttachment(MirrorGhostSpawnPointFolder);
-	MirrorGhostSpawnPoint3->SetArrowColor(FLinearColor(0.2f, 0.0f, 1.0f, 0.0f));
-	MirrorGhostSpawnPoint3->SetRelativeLocation(FVector(440.0f, 1175.0f, 150.0f));
-	MirrorGhostSpawnPoint3->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	MirrorGhostSpawnPoint3->bHiddenInGame = true;
 
 	LeverComponent = CreateDefaultSubobject<UChildActorComponent>(TEXT("Lever"));
 	LeverComponent->SetupAttachment(Root);
@@ -106,9 +99,9 @@ APGMirrorRoom::APGMirrorRoom()
 	{
 		LeverComponent->SetChildActorClass(LeverRef.Class);
 	}
-	LeverComponent->SetRelativeLocation(FVector(1162.0f, 1304.0f, 216.0f));
-	LeverComponent->SetRelativeRotation(FRotator(0.0f, -65.0f, -3.0f));
-	LeverComponent->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
+	LeverComponent->SetRelativeLocation(FVector(1743.0f, 0.0f, 113.0f));
+	LeverComponent->SetRelativeRotation(FRotator(0.0f, -90.0f, 20.0f));
+	LeverComponent->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 
 	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
 	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
@@ -121,7 +114,7 @@ APGMirrorRoom::APGMirrorRoom()
 	DoorCloseSound = FName(TEXT("LEVEL_MirrorRoom_DoorClose"));
 	DoorOpenSound = FName(TEXT("LEVEL_MirrorRoom_DoorOpen"));
 
-	PhotoSpotConfig = { PhotoID::Room_Ghost, 100, FVector(1150.0f, 1280.0f, 160.0f), FRotator(0.0f, 15.0f, 0.0f) };
+	PhotoSpotConfig = { PhotoID::Room_Ghost, 100, FVector(1720.0f, 0.0f, 100.0f) };
 }
 
 void APGMirrorRoom::SpawnPhotoSpots()
@@ -188,7 +181,7 @@ void APGMirrorRoom::OnEntryTriggerOverlap(UPrimitiveComponent* OverlappedCompone
 
 	if (!GetWorld()->GetTimerManager().IsTimerActive(LockTriggerTimerHandle))
 	{
-		GetWorld()->GetTimerManager().SetTimer(LockTriggerTimerHandle, this, &APGMirrorRoom::StartGimmick, 2.0f, false);
+		GetWorld()->GetTimerManager().SetTimer(LockTriggerTimerHandle, this, &APGMirrorRoom::StartGimmick, 0.5f, false);
 	}
 }
 
@@ -288,6 +281,7 @@ void APGMirrorRoom::StartGimmick()
 	}
 
 	bIsLocked = true;
+	Multicast_SetInvisibleBlock(true);
 	Multicast_SetGateState(true);
 	
 	for (APGPlayerCharacter* Target : ValidTargets)
@@ -298,11 +292,19 @@ void APGMirrorRoom::StartGimmick()
 	}
 }
 
+void APGMirrorRoom::Multicast_SetInvisibleBlock_Implementation(bool bEnable)
+{
+	if (InvisibleBlock)
+	{
+		InvisibleBlock->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+	}
+}
+
 void APGMirrorRoom::SpawnMirrorGhost(APGPlayerCharacter* Player, const FTransform& SpawnTransform)
 {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	APGMirrorGhostCharacter* NewGhost = GetWorld()->SpawnActor<APGMirrorGhostCharacter>(MirrorGhostClass, SpawnTransform, SpawnParams);
 	if (NewGhost)
@@ -353,6 +355,7 @@ void APGMirrorRoom::SolveGimmick()
 	bIsSolved = true;
 	bIsLocked = false;
 
+	Multicast_SetInvisibleBlock(false);
 	Multicast_SetGateState(false);
 
 	// Play Gate Open Sound
