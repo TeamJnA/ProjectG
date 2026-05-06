@@ -31,8 +31,20 @@ public:
 		const FGameplayEventData* TriggerEventData) override;
 
 private:
-	bool bAbilityEnded;
-
 	UFUNCTION()
 	void OnCompletedAnimMontage();
+
+	/**
+	* Hand Action anim montages
+	*  Pick	*  Change	* Drop * CameraOn * CameraOff
+	*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<UAnimMontage>> HandActionAnimMontages;
+
+	bool bCameraOnEnded;
+
+	bool bAbilityEnded;
+
+	// CameraOn이 Event로 들어올 경우, 어빌리티가 끝날 때 HandLock을 해줘야 함.
+	bool bIsCameraOn;
 };

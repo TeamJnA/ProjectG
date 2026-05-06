@@ -95,7 +95,7 @@ void UPGInventoryComponent::ChangeCurrentInventoryIndex(const int32 NewInventory
 	{
 		// Play HandAction with Change anim.
 		// After HandAction, activate new ability and change mesh on hand at PGPlayerCharacter::EquipCurrentInventoryItem.
-		PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Change);
+		PlayerCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Change);
 
 		if (UPGSoundManagerComponent* SoundManagerComp = GetOwner()->FindComponentByClass<UPGSoundManagerComponent>())
 		{
@@ -124,7 +124,7 @@ void UPGInventoryComponent::SetCurrentInventoryIndex_Implementation(const int32 
 void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 {
 	// Play HandAction with Pick anim.
-	PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+	PlayerCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
 	if (bInventoryFull)
 	{
@@ -246,7 +246,7 @@ void UPGInventoryComponent::DropItemByIndex(const FVector DropLocation, const FR
 	}
 
 	// Play HandAction with Drop anim.
-	PlayerCharacter->PlayHandActionAnimMontage(EHandActionMontageType::Drop);
+	PlayerCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Drop);
 
 	// Spawn Item
 	UWorld* World = GetWorld();

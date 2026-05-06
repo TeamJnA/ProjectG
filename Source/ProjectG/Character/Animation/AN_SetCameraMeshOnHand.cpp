@@ -14,7 +14,7 @@ void UAN_SetCameraMeshOnHand::Notify(USkeletalMeshComponent* MeshComp, UAnimSequ
 {
 	Super::Notify(MeshComp, Animation);
 
-	UE_LOG(LogPGAnimNotify, Log, TEXT("Play SetCameraMeshOnHand Notify"));
+	UE_LOG(LogPGAnimNotify, Log, TEXT("Play SetCameraMeshOnHand Notify."));
 
 	AActor* OwnerActor = MeshComp->GetOwner();
 	if (!OwnerActor)

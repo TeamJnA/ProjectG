@@ -153,9 +153,6 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeartBeatAudioComponent->bAutoActivate = false;
 
 	CameraComp = CreateDefaultSubobject<UPGCameraComponent>(TEXT("CameraComponent"));
-
-	// Set hand actions anim montages
-	HandActionMontageType = EHandActionMontageType::Pick;
 }
 
 void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -1101,40 +1098,38 @@ void APGPlayerCharacter::CacheInteractionTarget(AActor* CacheInteractTarget)
 	InteractionTargetActor = CacheInteractTarget;
 }
 
-TObjectPtr<UAnimMontage> APGPlayerCharacter::GetHandActionAnimMontages(EHandActionMontageType _HandActionMontageType)
+void APGPlayerCharacter::Server_SetHandLockByGameplayEffect_Implementation(bool bHandLock)
 {
-	const int32 Index = static_cast<int32>(_HandActionMontageType);
-
-	if (HandActionAnimMontages.IsValidIndex(Index))
+	if (bHandLock)
 	{
-		return HandActionAnimMontages[Index];
+		if (HandLockGameplayEffectClass && AbilitySystemComponent)
+		{
+			UE_LOG(LogPGPlayerCharacter, Log, TEXT("SetHandLockByGameplayEffect true"));
+
+			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+			Context.AddInstigator(this, this);
+
+			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(HandLockGameplayEffectClass, 1.0f, Context);
+
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
 	}
-	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("There's no anim montage in HandActionAnimMontages."));
-	return nullptr;
+	else
+	{
+		if (AbilitySystemComponent)
+		{
+			UE_LOG(LogPGPlayerCharacter, Log, TEXT("SetHandLockByGameplayEffect Remove HandLock"));
+
+			FGameplayTagContainer TargetTags;
+			TargetTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked")));
+
+			AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(TargetTags);
+		}
+	}
 }
 
-void APGPlayerCharacter::SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType)
+void APGPlayerCharacter::Server_PlayHandActionAnimMontage_Implementation(EHandActionMontageType _HandActionMontageType)
 {
-	// EHandActionMontageType 
-	// 0 : Pick		1 : Change 	 2 : Drop
-	HandActionMontageType = _HandActionMontageType;
-}
-
-void APGPlayerCharacter::PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType)
-{
-	/*
-	SetHandActionAnimMontage(_HandActionMontageType);
-
-	FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
-
-	FGameplayTagContainer HandActionTagContainer;
-	HandActionTagContainer.AddTag(HandActionTag);
-
-	ActivateAbilityByTag(HandActionTagContainer); >> 		AbilitySystemComponent->TryActivateAbilitiesByTag(Tag, true);
-
-	///////////////////////////////////////
-	*/
-
 	FGameplayTag HandActionEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Ability.HandAction"));
 
 	FGameplayEventData EventData;
@@ -1142,7 +1137,7 @@ void APGPlayerCharacter::PlayHandActionAnimMontage(EHandActionMontageType _HandA
 
 	if (AbilitySystemComponent)
 	{
-		UE_LOG(LogPGPlayerCharacter, Log, TEXT("PlayHandActionAnimMontage::HandleGameplayEvent : %d"), static_cast<int32>(_HandActionMontageType));
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Server_PlayHandActionAnimMontage::HandleGameplayEvent  Type::[%d]"), static_cast<int32>(_HandActionMontageType));
 		AbilitySystemComponent->HandleGameplayEvent(HandActionEventTag, &EventData);
 	}
 
@@ -1188,42 +1183,28 @@ void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 void APGPlayerCharacter::SetCameraMeshOnHand(const bool bIsVisible)
 {
 	// 손에 아무것도 없으면 CameraComponent에서 OnRep시켜서 바로 AttachItemCameraOnHand를 장착시키고 
-	// 손에 아이템을 들고 있으면 PlayHandActionAnimMontage으로 애님을 재생시키면서 AnimNotify로 AttachItemCameraOnHand 호출
+	// 손에 아이템을 들고 있으면 Server_PlayHandActionAnimMontage으로 애님을 재생시키면서 AnimNotify로 AttachItemCameraOnHand 호출
 	// 애님 노티파이는 서버와 클라 모든 곳에서 진행되므로 OnRep 관계 없이 그냥 바로 AttachItemCameraOnHand 호출하면 됨.
-
-	//  TODO : 0503 해결 완
-	// 현재 서버는 뭐 없을 때 카메라 키면 메쉬 안생김. 템 들다 카메라 키면 메쉬 생김 <<Server_SetHandCameraMesh에서  bHandCamera가 Replicate되지 않음.
-	// >> bHandCamera = bInHand;도 레플리케이션 적용시키면 됨.
-	// 클라는 템 들다 카메라 키면 메쉬 안생김. 뭐 없을 때 카메라 키면 메쉬 생김. << HandAction Replicate 관련 문제였음
-	// >> PlayHandActionAnimMontage를 서버 함수로 실행시키기? [했음]
-
-	// TODO : 
-	// HasItem일때, 클라에서 카메라 들어갔다 나올 때, HandLock이 안풀림.
-	// 아 이거 PlayHandActionAnimMontage로 실행시켜도 어차피 HandActionMontageType이 클라에서는 안변했네...
-	// 클로드 참고해서 해결하기
-
-	// 아니 이거 혹시 인벤토리에 현재 아이템 있는지도 레플리케이션 안되는거였나?
+	
+	// TODO : 0506
+	// zz연타하면 핸드락이 안풀림.
 
 	if (!InventoryComponent)
 	{
 		return;
 	}
 
-	UE_LOG(LogPGPlayerCharacter, Log, TEXT("Play SetCameraMeshOnHand : HasAuthority (%d) "), HasAuthority());
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[SetCameraMeshOnHand] Play : HasAuthority (%d) "), HasAuthority());
 
 	// Play camera held anim only when held item
+	// 손에 카메라가 없으면, 따로 애님 없이 바로 AnimBP로 블렌드.
 	if (!InventoryComponent->HasCurrentItem())
 	{
-		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Inventory Component doesn't have current item : HasAuthority (%d) "), HasAuthority());
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("[SetCameraMeshOnHand] Inventory Component doesn't have current item : HasAuthority (%d) "), HasAuthority());
 
-		// If no anim with camera On, HandLock
-		if (bIsVisible && AbilitySystemComponent)
+		if (bIsVisible)
 		{
-			FGameplayTagContainer HandLockTag;
-			HandLockTag.AddTag(FGameplayTag::RequestGameplayTag("Player.Hand.Locked"));
-
-			AbilitySystemComponent->AddLooseGameplayTags(HandLockTag);
-			AddTagToCharacter(1, HandLockTag);
+			Server_SetHandLockByGameplayEffect(true);
 		}
 
 		if (CameraComp)
@@ -1236,11 +1217,11 @@ void APGPlayerCharacter::SetCameraMeshOnHand(const bool bIsVisible)
 
 	if (bIsVisible)
 	{
-		PlayHandActionAnimMontage(EHandActionMontageType::CameraOn);
+		Server_PlayHandActionAnimMontage(EHandActionMontageType::CameraOn);
 	}
 	else
 	{
-		PlayHandActionAnimMontage(EHandActionMontageType::CameraOff);
+		Server_PlayHandActionAnimMontage(EHandActionMontageType::CameraOff);
 	}
 }
 

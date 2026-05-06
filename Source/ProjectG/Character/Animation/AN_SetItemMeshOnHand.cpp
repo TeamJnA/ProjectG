@@ -22,6 +22,8 @@ void UAN_SetItemMeshOnHand::Notify(USkeletalMeshComponent* MeshComp, UAnimSequen
 		return;
 	}
 
+	UE_LOG(LogPGAnimNotify, Log, TEXT("[HasAuthority:%d] [bIsVisible:%d]"), OwnerActor->HasAuthority(), bIsVisible);
+
 	if (IHandItemInterface* HandItemInterface = Cast<IHandItemInterface>(OwnerActor))
 	{
 		if (bIsVisible)

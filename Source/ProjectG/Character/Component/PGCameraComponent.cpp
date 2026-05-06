@@ -205,15 +205,11 @@ void UPGCameraComponent::ExitCameraMode()
         return;
     }
 
-    SetHandLockTag(false);
+    // Remove Handlock
+    Owner->Server_SetHandLockByGameplayEffect(false);
 
     // 캐릭터가 카메라 내리는 애님
-    
-    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
-    if (HandInterface)
-    {
-        HandInterface->SetCameraMeshOnHand(false);
-    }
+    Owner->SetCameraMeshOnHand(false);
 
     bIsTransitioning = true;
     SetInCameraMode(false);
@@ -309,15 +305,10 @@ void UPGCameraComponent::ForceExitCameraMode()
     }
 
     // 태그 해제
-    SetHandLockTag(false);
+    Owner->Server_SetHandLockByGameplayEffect(false);
 
     // 캐릭터가 카메라 내리는 애님
-    
-    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
-    if (HandInterface)
-    {
-        HandInterface->SetCameraMeshOnHand(false);
-    }
+    Owner->SetCameraMeshOnHand(false);
 
     // 상태 초기화
     bIsTransitioning = false;
@@ -755,15 +746,6 @@ void UPGCameraComponent::AdjustZoom(float AxisValue)
     }
 }
 
-void UPGCameraComponent::CameraHandAnimFinished()
-{
-    if (bInCameraMode)
-    {
-        UE_LOG(LogTemp, Log, TEXT("CameraHandAnimFinished %d"), GetOwner()->HasAuthority());
-        SetHandLockTag(true);
-    }
-}
-
 void UPGCameraComponent::DrainBattery()
 {
     CurrentBattery -= BatteryDrainRate * 0.1f;  // 0.1초 간격
@@ -818,35 +800,6 @@ void UPGCameraComponent::PlayTrackingSound()
     if (TrackingBeepSound && bIsTrackingTarget)
     {
         UGameplayStatics::PlaySound2D(this, TrackingBeepSound);
-    }
-}
-
-void UPGCameraComponent::SetHandLockTag(bool bHandLock)
-{
-    APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
-    if (!Owner)
-    {
-        return;
-    }
-    
-    UAbilitySystemComponent* ASC = Owner->GetAbilitySystemComponent();
-    if (!ASC)
-    {
-        return;
-    }
-
-    FGameplayTagContainer TagContainer;
-    TagContainer.AddTag(FGameplayTag::RequestGameplayTag("Player.Hand.Locked"));
-
-    if (bHandLock)
-    {
-        // ASC->AddLooseGameplayTags(TagContainer);
-        Owner->AddTagToCharacter(1, TagContainer);
-    }
-    else
-    {
-        // ASC->RemoveLooseGameplayTags(TagContainer);
-        Owner->RemoveTagFromCharacter(1, TagContainer);
     }
 }
 

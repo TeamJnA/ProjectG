@@ -296,24 +296,18 @@ public:
 	UFUNCTION()
 	void CacheInteractionTarget(AActor* CacheInteractTarget);
 
-	/**
-	* Hand Action anim montages
-	*  Pick	*  Change	* Drop * CameraOn * CameraOff
-	*/
-	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	TArray<TObjectPtr<UAnimMontage>> HandActionAnimMontages;
+	UFUNCTION(Server, Reliable)
+	void Server_PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
 
-	EHandActionMontageType HandActionMontageType;
-
-	TObjectPtr<UAnimMontage> GetHandActionAnimMontages(EHandActionMontageType _HandActionMontageType);
-
-	void SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
-
-	void PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
+	UFUNCTION(Server, Reliable)
+	void Server_SetHandLockByGameplayEffect(bool bHandLock);
 
 protected:
 	//The interactive actor currently watching
 	TObjectPtr<AActor> InteractionTargetActor;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> HandLockGameplayEffectClass;
 
 // ------------ HeadLight --------------------
 public:

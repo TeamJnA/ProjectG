@@ -31,5 +31,4 @@ void UAN_CameraHandFinished::Notify(USkeletalMeshComponent* MeshComp, UAnimSeque
 		return;
 	}
 
-	CameraComp->CameraHandAnimFinished();
 }

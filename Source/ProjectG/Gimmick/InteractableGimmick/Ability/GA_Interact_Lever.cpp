@@ -30,7 +30,7 @@ void UGA_Interact_Lever::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	{
 		if (APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(ActorInfo->AvatarActor.Get()))
 		{
-			Player->PlayHandActionAnimMontage(EHandActionMontageType::Pick);
+			Player->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 		}
 
 		Lever->ActivateLever();
