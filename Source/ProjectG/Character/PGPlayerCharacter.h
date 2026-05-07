@@ -122,6 +122,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -600,6 +601,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	TObjectPtr<UBoxComponent> PhotoDetectionBox;
 
+	void InitPhotoDetection();
+	void EnablePhotoDetection();
+
 	UFUNCTION()
 	void OnPhotoDetectionBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
@@ -619,8 +623,8 @@ protected:
 	UPROPERTY()
 	TArray<TWeakObjectPtr<AActor>> NearbyPhotographables;
 
-	FTimerHandle PhotoDetectionTimerHandle;
+	FTimerHandle ValidatePhotoDetectionTimerHandle;
+	FTimerHandle EnablePhotoDetectionTimerHandle;
 
-	void InitPhotoDetection();
 	bool bPhotoDetectionInitialized = false;
 };

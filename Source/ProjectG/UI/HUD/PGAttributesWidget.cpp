@@ -44,7 +44,8 @@ void UPGAttributesWidget::BindToAttributes()
 	SanityChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
 	{
 		SanityPercent = Data.NewValue / AS->GetMaxSanityAttribute().GetNumericValue(AS);
-		MaxSanityPercent = AS->GetMaxSanityAttribute().GetNumericValue(AS);
+		MaxSanityValue = AS->GetMaxSanityAttribute().GetNumericValue(AS);
+		SanityValue = AS->GetSanityAttribute().GetNumericValue(AS);
 	});
 
 	LastBoundASC = ASC;

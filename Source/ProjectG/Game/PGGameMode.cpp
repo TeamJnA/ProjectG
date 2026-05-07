@@ -102,6 +102,16 @@ void APGGameMode::BeginPlay()
 	);
 }
 
+void APGGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(InGameStartTimerHandle);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void APGGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
@@ -230,14 +240,19 @@ void APGGameMode::SpawnAllPlayers()
 	check(HasAuthority());
 
 	int32 PlayerIndex = 0;
-
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		APGPlayerController* PC = Cast<APGPlayerController>(It->Get());
 		if (!PC || !PC->PlayerState)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("GameMode: SpawnAllPlayers: PlayerController is nullptr."));
-			return;
+			continue;
+		}
+
+		if (PlayerIndex >= PlayerSpawnTransforms.Num())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GameMode: SpawnAllPlayers: Not enough spawn transforms"));
+			break;
 		}
 
 		APGPlayerCharacter* NewPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, PlayerSpawnTransforms[PlayerIndex]);
@@ -246,10 +261,7 @@ void APGGameMode::SpawnAllPlayers()
 			PC->Possess(NewPawn);
 			PC->Client_PlayGameplayBGM();
 		}
-
 		PlayerIndex++;
-
-
 		PC->Client_HideLoadingScreen();
 	}
 
@@ -260,16 +272,30 @@ void APGGameMode::SpawnAllPlayers()
 
 		if (GS->GetCurrentGameState() == EGameState::InGame)
 		{
-			FTimerHandle MaxSanityDecreaseStartHandle;
 			GetWorld()->GetTimerManager().SetTimer(
-				MaxSanityDecreaseStartHandle, [GS]()
+				InGameStartTimerHandle, [this, GS]()
 				{
-					if (IsValid(GS))
+					if (!IsValid(GS))
 					{
-						GS->StartMaxSanityDecreaseTimer();
+						return;
+					}
+
+					GS->StartMaxSanityDecreaseTimer();
+
+					const FGameplayTag InGameTag = FGameplayTag::RequestGameplayTag(FName("Player.State.InGame"));
+					for (APlayerState* PS : GS->PlayerArray)
+					{
+						if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+						{
+							if (UAbilitySystemComponent* ASC = PGPS->GetAbilitySystemComponent())
+							{
+								ASC->AddLooseGameplayTag(InGameTag);
+								ASC->AddReplicatedLooseGameplayTag(InGameTag);
+							}
+						}
 					}
 				},
-				5.0f,
+				10.0f,
 				false
 			);
 		}

@@ -42,6 +42,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void Logout(AController* Exiting) override;
 	// virtual void PostLogin(APlayerController* NewPlayer) override;
@@ -95,6 +96,8 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
 	TSubclassOf<APGLevelGenerator> PGLevelGenerator;
+
+	FTimerHandle InGameStartTimerHandle;
 
 	ECleanupActionType PendingActionType = ECleanupActionType::None;
 

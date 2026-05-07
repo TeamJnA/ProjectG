@@ -301,6 +301,20 @@ void APGGameState::OnRep_CurrentGameState()
 		{
 			GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseTimerHandle);
 			MaxSanityDecreaseCount = 0;
+
+			// 모든 플레이어 InGame 태그 제거
+			const FGameplayTag InGameTag = FGameplayTag::RequestGameplayTag(FName("Player.State.InGame"));
+			for (APlayerState* PS : PlayerArray)
+			{
+				if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+				{
+					if (UAbilitySystemComponent* ASC = PGPS->GetAbilitySystemComponent())
+					{
+						ASC->RemoveLooseGameplayTag(InGameTag);
+						ASC->RemoveReplicatedLooseGameplayTag(InGameTag);
+					}
+				}
+			}
 		}
 		GetWorld()->GetTimerManager().ClearTimer(BellSequenceTimerHandle);
 	}

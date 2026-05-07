@@ -184,6 +184,16 @@ void APGPlayerCharacter::BeginPlay()
 	}
 }
 
+void APGPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearAllTimersForObject(this);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
@@ -2241,18 +2251,18 @@ void APGPlayerCharacter::InitPhotoDetection()
 
 	PhotoDetectionBox->OnComponentBeginOverlap.AddDynamic(this, &APGPlayerCharacter::OnPhotoDetectionBeginOverlap);
 	PhotoDetectionBox->OnComponentEndOverlap.AddDynamic(this, &APGPlayerCharacter::OnPhotoDetectionEndOverlap);
-	GetWorldTimerManager().SetTimer(PhotoDetectionTimerHandle, this, &APGPlayerCharacter::ValidateNearbyPhotographables, 1.0f, true);
+	GetWorldTimerManager().SetTimer(EnablePhotoDetectionTimerHandle, this, &APGPlayerCharacter::EnablePhotoDetection, 2.0f, false);
+	GetWorldTimerManager().SetTimer(ValidatePhotoDetectionTimerHandle, this, &APGPlayerCharacter::ValidateNearbyPhotographables, 1.0f, true);
+}
 
-	FTimerHandle PhotoDetectionDelayHandle;
-	GetWorldTimerManager().SetTimer(PhotoDetectionDelayHandle, [this]()
+void APGPlayerCharacter::EnablePhotoDetection()
+{
+	if (PhotoDetectionBox)
 	{
-		if (PhotoDetectionBox)
-		{
-			PhotoDetectionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-			PhotoDetectionBox->SetGenerateOverlapEvents(true);
-			PhotoDetectionBox->UpdateOverlaps();
-		}
-	}, 2.0f, false);
+		PhotoDetectionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		PhotoDetectionBox->SetGenerateOverlapEvents(true);
+		PhotoDetectionBox->UpdateOverlaps();
+	}
 }
 
 void APGPlayerCharacter::OnPhotoDetectionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
