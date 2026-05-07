@@ -68,12 +68,6 @@ void UPGCameraComponent::EnterCameraMode()
         return;
     }
 
-    // 배터리 체크
-    if (CurrentBattery <= 0.0f)
-    {
-        return;
-    }
-
     APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
     if (!Owner)
     {
@@ -97,15 +91,17 @@ void UPGCameraComponent::EnterCameraMode()
     {
         return;
     }
+
+    // 배터리 체크
+    if (CurrentBattery <= 0.03f)
+    {
+        //TODO : 경고음과 함께 카메라 안 켜지도록
+        return;
+    }
     
     // 여기서 핸드락을 부여하지 말고 그냥 HandAction Anim ability 재생시켜서 핸드락 부여
     // 끝날때즘 애님 노티파이 -> 캐릭터의 카메라 컴포넌트 접근해서 핸드락 부여
-    
-    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
-    if (HandInterface)
-    {
-        HandInterface->SetCameraMeshOnHand(true);
-    }
+    Owner->SetCameraMeshOnHand(true);
     
     bIsTransitioning = true;
 
@@ -201,6 +197,12 @@ void UPGCameraComponent::ExitCameraMode()
 
     APGHUD* HUD = Cast<APGHUD>(PC->GetHUD());
     if (!HUD)
+    {
+        return;
+    }
+
+    UAbilitySystemComponent* ASC = Owner->GetAbilitySystemComponent();
+    if (!ASC || !ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Gameplay.State.CameraOn")))
     {
         return;
     }

@@ -106,11 +106,6 @@ void UGA_HandAction::OnCompletedAnimMontage()
 	{
 		PGPC->Server_SetHandLockByGameplayEffect(true);
 	}
-	else
-	{
-		// 강제 HandLock 종료.
-		PGPC->Server_SetHandLockByGameplayEffect(false);
-	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, false);
 }

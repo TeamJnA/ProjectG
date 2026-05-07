@@ -299,6 +299,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
 
+	/*
+	* 현재는 HandLock과 함께 State Camera까지 부여중....
+	*/
 	UFUNCTION(Server, Reliable)
 	void Server_SetHandLockByGameplayEffect(bool bHandLock);
 

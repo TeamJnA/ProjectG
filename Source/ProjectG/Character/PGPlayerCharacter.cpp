@@ -1098,6 +1098,9 @@ void APGPlayerCharacter::CacheInteractionTarget(AActor* CacheInteractTarget)
 	InteractionTargetActor = CacheInteractTarget;
 }
 
+/*
+* 현재는 HandLock과 함께 State Camera까지 부여중....
+*/
 void APGPlayerCharacter::Server_SetHandLockByGameplayEffect_Implementation(bool bHandLock)
 {
 	if (bHandLock)
