@@ -24,6 +24,12 @@ UPGCameraComponent::UPGCameraComponent()
     SetIsReplicatedByDefault(true);
 
     bHandCamera = false;
+
+    CameraTransform = FTransform(
+        FRotator(-64.481403f, 120.417069f, 102.291763f),  // Rotation
+        FVector(-5.7f, 11.68f, -2.85f),                   // Location
+        FVector(0.35f, 0.35f, 0.35f)                      // Scale
+    );
 }
 
 void UPGCameraComponent::InitCameraComponent()

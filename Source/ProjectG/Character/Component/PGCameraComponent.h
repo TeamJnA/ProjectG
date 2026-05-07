@@ -27,6 +27,8 @@ public:
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     FORCEINLINE TObjectPtr<UStaticMesh> GetCameraMesh() const { return CameraMesh; }
+    // Return camera's inhand transform
+    FORCEINLINE FTransform GetCameraTransform() const { return CameraTransform; }
 
     FORCEINLINE bool IsInCameraMode() const { return bInCameraMode; }
     FORCEINLINE bool IsTransitioning() const { return bIsTransitioning; }
@@ -93,9 +95,12 @@ protected:
 
     void SetLocalGhostVisible(bool bVisible);
 
-    // Camera Mesh
+    // Camera Mesh and Inhand transform
     UPROPERTY(EditDefaultsOnly, Category = "Mesh")
     TObjectPtr<UStaticMesh> CameraMesh;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Mesh")
+    FTransform  CameraTransform;
 
     // 클라이언트 로컬 중복 체크용
     TSet<int32> LocalCapturedIDs;

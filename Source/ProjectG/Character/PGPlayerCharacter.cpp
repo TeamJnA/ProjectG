@@ -1188,9 +1188,6 @@ void APGPlayerCharacter::SetCameraMeshOnHand(const bool bIsVisible)
 	// 손에 아무것도 없으면 CameraComponent에서 OnRep시켜서 바로 AttachItemCameraOnHand를 장착시키고 
 	// 손에 아이템을 들고 있으면 Server_PlayHandActionAnimMontage으로 애님을 재생시키면서 AnimNotify로 AttachItemCameraOnHand 호출
 	// 애님 노티파이는 서버와 클라 모든 곳에서 진행되므로 OnRep 관계 없이 그냥 바로 AttachItemCameraOnHand 호출하면 됨.
-	
-	// TODO : 0506
-	// zz연타하면 핸드락이 안풀림.
 
 	if (!InventoryComponent)
 	{
@@ -1257,7 +1254,7 @@ void APGPlayerCharacter::AttachItemCameraOnHand(bool bIsCameraOn)
 		UE_LOG(LogPGPlayerCharacter, Log, TEXT("AttachItemCameraOnHand::HeldCamera"));
 
 		EquippedItemMesh->SetStaticMesh(CameraComp->GetCameraMesh());
-		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
+		EquippedItemMesh->SetRelativeTransform(CameraComp->GetCameraTransform());
 		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
 		{
 			AnimInterface->SetHandPose(EHandPoseType::Default);
