@@ -24,6 +24,12 @@ UPGCameraComponent::UPGCameraComponent()
     SetIsReplicatedByDefault(true);
 
     bHandCamera = false;
+
+    CameraTransform = FTransform(
+        FRotator(-64.481403f, 120.417069f, 102.291763f),  // Rotation
+        FVector(-5.7f, 11.68f, -2.85f),                   // Location
+        FVector(0.35f, 0.35f, 0.35f)                      // Scale
+    );
 }
 
 void UPGCameraComponent::InitCameraComponent()
@@ -68,12 +74,6 @@ void UPGCameraComponent::EnterCameraMode()
         return;
     }
 
-    // 배터리 체크
-    if (CurrentBattery <= 0.0f)
-    {
-        return;
-    }
-
     APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
     if (!Owner)
     {
@@ -97,15 +97,17 @@ void UPGCameraComponent::EnterCameraMode()
     {
         return;
     }
+
+    // 배터리 체크
+    if (CurrentBattery <= 0.03f)
+    {
+        //TODO : 경고음과 함께 카메라 안 켜지도록
+        return;
+    }
     
     // 여기서 핸드락을 부여하지 말고 그냥 HandAction Anim ability 재생시켜서 핸드락 부여
     // 끝날때즘 애님 노티파이 -> 캐릭터의 카메라 컴포넌트 접근해서 핸드락 부여
-    
-    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
-    if (HandInterface)
-    {
-        HandInterface->SetCameraMeshOnHand(true);
-    }
+    Owner->SetCameraMeshOnHand(true);
     
     bIsTransitioning = true;
 
@@ -205,15 +207,17 @@ void UPGCameraComponent::ExitCameraMode()
         return;
     }
 
-    SetHandLockTag(false);
+    UAbilitySystemComponent* ASC = Owner->GetAbilitySystemComponent();
+    if (!ASC || !ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Gameplay.State.CameraOn")))
+    {
+        return;
+    }
+
+    // Remove Handlock
+    Owner->Server_SetHandLockByGameplayEffect(false);
 
     // 캐릭터가 카메라 내리는 애님
-    
-    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
-    if (HandInterface)
-    {
-        HandInterface->SetCameraMeshOnHand(false);
-    }
+    Owner->SetCameraMeshOnHand(false);
 
     bIsTransitioning = true;
     SetInCameraMode(false);
@@ -309,15 +313,10 @@ void UPGCameraComponent::ForceExitCameraMode()
     }
 
     // 태그 해제
-    SetHandLockTag(false);
+    Owner->Server_SetHandLockByGameplayEffect(false);
 
     // 캐릭터가 카메라 내리는 애님
-    
-    IHandItemInterface* HandInterface = Cast<IHandItemInterface>(Owner);
-    if (HandInterface)
-    {
-        HandInterface->SetCameraMeshOnHand(false);
-    }
+    Owner->SetCameraMeshOnHand(false);
 
     // 상태 초기화
     bIsTransitioning = false;
@@ -755,14 +754,6 @@ void UPGCameraComponent::AdjustZoom(float AxisValue)
     }
 }
 
-void UPGCameraComponent::CameraHandAnimFinished()
-{
-    if (bInCameraMode)
-    {
-        SetHandLockTag(true);
-    }
-}
-
 void UPGCameraComponent::DrainBattery()
 {
     CurrentBattery -= BatteryDrainRate * 0.1f;  // 0.1초 간격
@@ -817,35 +808,6 @@ void UPGCameraComponent::PlayTrackingSound()
     if (TrackingBeepSound && bIsTrackingTarget)
     {
         UGameplayStatics::PlaySound2D(this, TrackingBeepSound);
-    }
-}
-
-void UPGCameraComponent::SetHandLockTag(bool bHandLock)
-{
-    APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
-    if (!Owner)
-    {
-        return;
-    }
-    
-    UAbilitySystemComponent* ASC = Owner->GetAbilitySystemComponent();
-    if (!ASC)
-    {
-        return;
-    }
-
-    FGameplayTagContainer TagContainer;
-    TagContainer.AddTag(FGameplayTag::RequestGameplayTag("Player.Hand.Locked"));
-
-    if (bHandLock)
-    {
-        ASC->AddLooseGameplayTags(TagContainer);
-        Owner->AddTagToCharacter(1, TagContainer);
-    }
-    else
-    {
-        ASC->RemoveLooseGameplayTags(TagContainer);
-        Owner->RemoveTagFromCharacter(1, TagContainer);
     }
 }
 

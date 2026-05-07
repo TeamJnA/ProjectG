@@ -51,6 +51,8 @@
 #include "Utils/PGVoiceUtils.h"
 #include "Perception/AISense_Hearing.h"
 
+#include "PGLogChannels.h"
+
 
 APGPlayerCharacter::APGPlayerCharacter()
 {
@@ -151,9 +153,6 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeartBeatAudioComponent->bAutoActivate = false;
 
 	CameraComp = CreateDefaultSubobject<UPGCameraComponent>(TEXT("CameraComponent"));
-
-	// Set hand actions anim montages
-	HandActionMontageType = EHandActionMontageType::Pick;
 }
 
 void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -251,7 +250,7 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	}
 	else
 	{
-		//UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		//UE_LOG(, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
 
@@ -259,7 +258,7 @@ bool APGPlayerCharacter::IsValidAttackableTarget() const
 {
 	if (!AbilitySystemComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Player::IsValidAttackableTarget: no ASC"));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("Player::IsValidAttackableTarget: no ASC"));
 		return false;
 	}
 	// Check player is valid by checking gameplay tag.
@@ -279,7 +278,7 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
 
 	FGameplayTag AttackedTag = FGameplayTag::RequestGameplayTag("Player.State.OnAttacked");
 	AbilitySystemComponent->AddLooseGameplayTag(AttackedTag);
@@ -370,7 +369,7 @@ void APGPlayerCharacter::OnAttackFinished()
 {
 	if (!HasAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("OnAttackFinished function is must be called on server."));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("OnAttackFinished function is must be called on server."));
 		return;
 	}
 
@@ -378,7 +377,7 @@ void APGPlayerCharacter::OnAttackFinished()
 
 	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s already dead, but OnAttacked."), *GetNameSafe(this));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("%s already dead, but OnAttacked."), *GetNameSafe(this));
 		return;
 	}
 
@@ -513,7 +512,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			// When spawned first time, wait input for play level sequence
 			if (PC->bGameStartFirstSpawned)
 			{
-				UE_LOG(LogTemp, Log, TEXT("Server Player spawned first time. Stop input for play level sequence."));
+				UE_LOG(LogPGPlayerCharacter, Log, TEXT("Server Player spawned first time. Stop input for play level sequence."));
 
 				DisableInput(PC);
 
@@ -530,7 +529,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			}
 			else
 			{
-				UE_LOG(LogTemp, Log, TEXT("Server Player spawned not first. InitHUD."));
+				UE_LOG(LogPGPlayerCharacter, Log, TEXT("Server Player spawned not first. InitHUD."));
 
 				InitHUD();
 			}
@@ -540,7 +539,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			InitHUD();
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::PossessedBy: Init PostProcess [%s]"), *GetNameSafe(this)); //
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("APGPlayerCharacter::PossessedBy: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
 		InitLensDistortionMaterial();
 
@@ -565,7 +564,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[Character] PossessedBy: Camera Comp is not valid"));
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] PossessedBy: Camera Comp is not valid"));
 		}
 	}
 
@@ -583,7 +582,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	
 	if (!GetPlayerState())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Character] OnRep_PlayerState: PS is not valid"));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] OnRep_PlayerState: PS is not valid"));
 		return;
 	}
 
@@ -599,7 +598,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 			// When spawned first time, wait input for play level sequence
 			if (PC->bGameStartFirstSpawned)
 			{
-				UE_LOG(LogTemp, Log, TEXT("Client Player spawned first time. Stop input for play level sequence."));
+				UE_LOG(LogPGPlayerCharacter, Log, TEXT("Client Player spawned first time. Stop input for play level sequence."));
 
 				DisableInput(PC);
 
@@ -616,7 +615,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 			}
 			else
 			{
-				UE_LOG(LogTemp, Log, TEXT("Client Player spawned not first. InitHUD."));
+				UE_LOG(LogPGPlayerCharacter, Log, TEXT("Client Player spawned not first. InitHUD."));
 
 				InitHUD();
 			}
@@ -626,7 +625,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 			InitHUD();
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init PostProcess [%s]"), *GetNameSafe(this)); //
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
 		InitLensDistortionMaterial();
 
@@ -651,7 +650,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[Character] OnRep_PlayerState: Camera Comp is not valid"));
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] OnRep_PlayerState: Camera Comp is not valid"));
 		}
 	}
 
@@ -708,14 +707,14 @@ void APGPlayerCharacter::InitAbilitySystemComponent()
 	APGPlayerState* PGPlayerState = GetPlayerState<APGPlayerState>();
 	if (!PGPlayerState)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("There's no PGPlayerState!!!"));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("There's no PGPlayerState!!!"));
 		if (HasAuthority())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("In the Server!!!"));
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("In the Server!!!"));
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("In the Client!!!"));
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("In the Client!!!"));
 		}
 		return;
 	}
@@ -762,7 +761,7 @@ void APGPlayerCharacter::InitHUD()
 			}
 			else
 			{
-				UE_LOG(LogTemp, Error, TEXT("APGPlayerCharacter::InitHUD: MessageManagerWidget is NULL in HUD!")); //
+				UE_LOG(LogPGPlayerCharacter, Error, TEXT("APGPlayerCharacter::InitHUD: MessageManagerWidget is NULL in HUD!")); //
 			}
 
 			UPGInventoryWidget* InventoryWidget = HUD->GetInventoryWidget();
@@ -772,7 +771,7 @@ void APGPlayerCharacter::InitHUD()
 			}
 			else
 			{
-				UE_LOG(LogTemp, Error, TEXT("APGPlayerCharacter::InitHUD: InventoryWidget is NULL in HUD!")); //
+				UE_LOG(LogPGPlayerCharacter, Error, TEXT("APGPlayerCharacter::InitHUD: InventoryWidget is NULL in HUD!")); //
 			}
 		}
 	}
@@ -803,7 +802,7 @@ void APGPlayerCharacter::UpdateAutomatedMovement()
 	const FVector CurrentLocation = GetActorLocation();
 	if (FVector::DistSquared2D(CurrentLocation, AutomatedMoveTarget) < FMath::Square(50.0f))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Character::UpdateAutomatedMovement: End move"))
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Character::UpdateAutomatedMovement: End move"))
 		bIsMovingAutomated = false;
 		GetWorld()->GetTimerManager().ClearTimer(AutomatedMoveTimer);
 
@@ -814,7 +813,7 @@ void APGPlayerCharacter::UpdateAutomatedMovement()
 		FVector DirectionToTarget = AutomatedMoveTarget - CurrentLocation;
 		DirectionToTarget.Z = 0.0f;
 		const FVector WorldDirectionToTarget = DirectionToTarget.GetSafeNormal();
-		UE_LOG(LogTemp, Log, TEXT("Character::UpdateAutomatedMovement: moving"));
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Character::UpdateAutomatedMovement: moving"));
 
 		AddMovementInput(WorldDirectionToTarget, 1.0f);
 	}
@@ -919,23 +918,23 @@ void APGPlayerCharacter::OnRevive()
 	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
 	if (!PS)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Character::OnRevive: No valid PS"));
+		UE_LOG(LogPGPlayerCharacter, Error, TEXT("Character::OnRevive: No valid PS"));
 		return;
 	}
 
 	if (!AbilitySystemComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Character::OnRevive: No valid ASC"));
+		UE_LOG(LogPGPlayerCharacter, Error, TEXT("Character::OnRevive: No valid ASC"));
 		return;
 	}	
 
 	const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("Player.State.Dead"));
 	if (!AbilitySystemComponent->HasMatchingGameplayTag(DeadTag))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Character::OnRevive: No dead tag"));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("Character::OnRevive: No dead tag"));
 		return;
 	}
-	UE_LOG(LogTemp, Log, TEXT("Character::OnRevive: %s - Remove Dead tag."), *GetName());
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("Character::OnRevive: %s - Remove Dead tag."), *GetName());
 	AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(DeadTag);
 	AbilitySystemComponent->RemoveLooseGameplayTag(DeadTag);
 
@@ -1075,7 +1074,7 @@ void APGPlayerCharacter::AddTagToCharacter_Implementation(const FInputActionValu
 {
 	if (AbilitySystemComponent && InputActionAbilityTag.IsValid())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Add tag to character : %s"), *InputActionAbilityTag.ToString());
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Add tag to character : %s"), *InputActionAbilityTag.ToString());
 		AbilitySystemComponent->AddReplicatedLooseGameplayTags(InputActionAbilityTag);
 		AbilitySystemComponent->AddLooseGameplayTags(InputActionAbilityTag);
 	}
@@ -1085,7 +1084,7 @@ void APGPlayerCharacter::RemoveTagFromCharacter_Implementation(const FInputActio
 {
 	if (AbilitySystemComponent && InputActionAbilityTag.IsValid())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Remove tag from character : %s"), *InputActionAbilityTag.ToString());
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Remove tag from character : %s"), *InputActionAbilityTag.ToString());
 		AbilitySystemComponent->RemoveReplicatedLooseGameplayTags(InputActionAbilityTag);
 		AbilitySystemComponent->RemoveLooseGameplayTags(InputActionAbilityTag);
 	}
@@ -1109,40 +1108,41 @@ void APGPlayerCharacter::CacheInteractionTarget(AActor* CacheInteractTarget)
 	InteractionTargetActor = CacheInteractTarget;
 }
 
-TObjectPtr<UAnimMontage> APGPlayerCharacter::GetHandActionAnimMontages(EHandActionMontageType _HandActionMontageType)
+/*
+* 현재는 HandLock과 함께 State Camera까지 부여중....
+*/
+void APGPlayerCharacter::Server_SetHandLockByGameplayEffect_Implementation(bool bHandLock)
 {
-	const int32 Index = static_cast<int32>(_HandActionMontageType);
-
-	if (HandActionAnimMontages.IsValidIndex(Index))
+	if (bHandLock)
 	{
-		return HandActionAnimMontages[Index];
-	}
-	UE_LOG(LogTemp, Warning, TEXT("There's no anim montage in HandActionAnimMontages."));
-	return nullptr;
-}
+		if (HandLockGameplayEffectClass && AbilitySystemComponent)
+		{
+			UE_LOG(LogPGPlayerCharacter, Log, TEXT("SetHandLockByGameplayEffect true"));
 
-void APGPlayerCharacter::SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType)
-{
-	// EHandActionMontageType 
-	// 0 : Pick		1 : Change 	 2 : Drop
-	HandActionMontageType = _HandActionMontageType;
+			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+			Context.AddInstigator(this, this);
+
+			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(HandLockGameplayEffectClass, 1.0f, Context);
+
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+	}
+	else
+	{
+		if (AbilitySystemComponent)
+		{
+			UE_LOG(LogPGPlayerCharacter, Log, TEXT("SetHandLockByGameplayEffect Remove HandLock"));
+
+			FGameplayTagContainer TargetTags;
+			TargetTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Player.Hand.Locked")));
+
+			AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(TargetTags);
+		}
+	}
 }
 
 void APGPlayerCharacter::Server_PlayHandActionAnimMontage_Implementation(EHandActionMontageType _HandActionMontageType)
 {
-	/*
-	SetHandActionAnimMontage(_HandActionMontageType);
-
-	FGameplayTag HandActionTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.Ability.HandAction"));
-
-	FGameplayTagContainer HandActionTagContainer;
-	HandActionTagContainer.AddTag(HandActionTag);
-
-	ActivateAbilityByTag(HandActionTagContainer);
-
-	///////////////////////////////////////
-	*/
-
 	FGameplayTag HandActionEventTag = FGameplayTag::RequestGameplayTag(FName("Event.Ability.HandAction"));
 
 	FGameplayEventData EventData;
@@ -1150,9 +1150,10 @@ void APGPlayerCharacter::Server_PlayHandActionAnimMontage_Implementation(EHandAc
 
 	if (AbilitySystemComponent)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Server_PlayHandActionAnimMontage :: HandleGameplayEvent"));
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Server_PlayHandActionAnimMontage::HandleGameplayEvent  Type::[%d]"), static_cast<int32>(_HandActionMontageType));
 		AbilitySystemComponent->HandleGameplayEvent(HandActionEventTag, &EventData);
 	}
+
 }
 
 // After HandAction, this function is called to activate currentitem's ability.
@@ -1198,36 +1199,22 @@ void APGPlayerCharacter::SetCameraMeshOnHand(const bool bIsVisible)
 	// 손에 아이템을 들고 있으면 Server_PlayHandActionAnimMontage으로 애님을 재생시키면서 AnimNotify로 AttachItemCameraOnHand 호출
 	// 애님 노티파이는 서버와 클라 모든 곳에서 진행되므로 OnRep 관계 없이 그냥 바로 AttachItemCameraOnHand 호출하면 됨.
 
-	//  TODO : 0503 해결 완
-	// 현재 서버는 뭐 없을 때 카메라 키면 메쉬 안생김. 템 들다 카메라 키면 메쉬 생김 <<Server_SetHandCameraMesh에서  bHandCamera가 Replicate되지 않음.
-	// >> bHandCamera = bInHand;도 레플리케이션 적용시키면 됨.
-	// 클라는 템 들다 카메라 키면 메쉬 안생김. 뭐 없을 때 카메라 키면 메쉬 생김. << HandAction Replicate 관련 문제였음
-	// >> Server_PlayHandActionAnimMontage를 서버 함수로 실행시키기? [했음]
-
-	// TODO : 
-	// HasItem일때, 클라에서 카메라 들어갔다 나올 때, HandLock이 안풀림.
-	// 아 이거 Server_PlayHandActionAnimMontage로 실행시켜도 어차피 HandActionMontageType이 클라에서는 안변했네...
-	// 클로드 참고해서 해결하기
-
-
 	if (!InventoryComponent)
 	{
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Play SetCameraMeshOnHand : %d"), HasAuthority());
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[SetCameraMeshOnHand] Play : HasAuthority (%d) "), HasAuthority());
 
 	// Play camera held anim only when held item
+	// 손에 카메라가 없으면, 따로 애님 없이 바로 AnimBP로 블렌드.
 	if (!InventoryComponent->HasCurrentItem())
 	{
-		// If no anim with camera On, HandLock
-		if (bIsVisible && AbilitySystemComponent)
-		{
-			FGameplayTagContainer HandLockTag;
-			HandLockTag.AddTag(FGameplayTag::RequestGameplayTag("Player.Hand.Locked"));
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("[SetCameraMeshOnHand] Inventory Component doesn't have current item : HasAuthority (%d) "), HasAuthority());
 
-			AbilitySystemComponent->AddLooseGameplayTags(HandLockTag);
-			AddTagToCharacter(1, HandLockTag);
+		if (bIsVisible)
+		{
+			Server_SetHandLockByGameplayEffect(true);
 		}
 
 		if (CameraComp)
@@ -1263,21 +1250,21 @@ void APGPlayerCharacter::AttachItemCameraOnHand(bool bIsCameraOn)
 	// 로컬 환경에서는 카메라 들 때 손에 아무것도 들지 않도록 한다. 자기 손에 아무것도 안보이게 하기 위해서.
 	if (IsLocallyControlled() && bIsCameraOn)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Local AttachItemCameraOnHand and bOnCamera"));
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Local AttachItemCameraOnHand and bOnCamera"));
 
 		SetItemMesh(false);
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Not Local AttachItemCameraOnHand"));
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("Not Local AttachItemCameraOnHand"));
 
 	if (bIsCameraOn)
 	{
 		// Held camera comp
-		UE_LOG(LogTemp, Log, TEXT("AttachItemCameraOnHand::HeldCamera"));
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("AttachItemCameraOnHand::HeldCamera"));
 
 		EquippedItemMesh->SetStaticMesh(CameraComp->GetCameraMesh());
-		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
+		EquippedItemMesh->SetRelativeTransform(CameraComp->GetCameraTransform());
 		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
 		{
 			AnimInterface->SetHandPose(EHandPoseType::Default);
@@ -1298,7 +1285,7 @@ void APGPlayerCharacter::DropItem_Implementation()
 
 	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionActivateTag))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Cannot drop item during a HandAction."));
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Cannot drop item during a HandAction."));
 		return;
 	}
 
@@ -1417,7 +1404,7 @@ void APGPlayerCharacter::Server_Debug_DecreaseSanity_Implementation()
 	if (SpecHandle.IsValid())
 	{
 		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		UE_LOG(LogTemp, Log, TEXT("Character::Server_Debug_DecreaseSanity: Applied Sanity Decrease Effect to %s"), *GetNameSafe(this));
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Character::Server_Debug_DecreaseSanity: Applied Sanity Decrease Effect to %s"), *GetNameSafe(this));
 	}
 }
 
@@ -1457,7 +1444,7 @@ void APGPlayerCharacter::OnSanityChanged(const FOnAttributeChangeData& Data)
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Sanity] OnSanityChanged: %.1f -> %.1f"), Data.OldValue, Data.NewValue);
+	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Sanity] OnSanityChanged: %.1f -> %.1f"), Data.OldValue, Data.NewValue);
 
 	const float CurrentSanity = Data.NewValue;
 	UpdateSanityPostProcessEffect(CurrentSanity);
@@ -1470,7 +1457,7 @@ void APGPlayerCharacter::UpdateSanityPostProcessEffect(float CurrentSanity)
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Sanity] UpdatePostProcess called - CurrentSanity: %.1f, BaseNoise will be: %.3f"),
+	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Sanity] UpdatePostProcess called - CurrentSanity: %.1f, BaseNoise will be: %.3f"),
 		CurrentSanity, FMath::Pow(1.0f - CurrentSanity / 100.0f, 2.0f) * 0.2f);
 
 	const float SanityRatio = FMath::Clamp(CurrentSanity / 100.0f, 0.0f, 1.0f);
@@ -1891,12 +1878,12 @@ float APGPlayerCharacter::GetFlickerInterval() const
 void APGPlayerCharacter::TryInitVoiceSettings()
 {
 	FString NetModeStr = (GetNetMode() == NM_Client) ? TEXT("Client") : TEXT("Server");
-	UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] TryInitVoiceSettings triggered!"), *NetModeStr);
+	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[VoiceDebug] [%s] TryInitVoiceSettings triggered!"), *NetModeStr);
 
 	APlayerController* LocalPC = GetWorld()->GetFirstPlayerController();
 	if (!LocalPC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] LocalPC not found! Retrying in 0.1s..."), *NetModeStr);
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[VoiceDebug] [%s] LocalPC not found! Retrying in 0.1s..."), *NetModeStr);
 		FTimerHandle RetryHandle;
 		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
 		return;
@@ -1906,7 +1893,7 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 	APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(LocalPC);
 	if (!InGamePC && !LobbyPC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] Valid PC not found! Retrying in 0.1s..."), *NetModeStr);
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[VoiceDebug] [%s] Valid PC not found! Retrying in 0.1s..."), *NetModeStr);
 		FTimerHandle RetryHandle;
 		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
 		return;
@@ -1919,13 +1906,13 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 		APGPlayerState* TargetPS = GetPlayerState<APGPlayerState>();
 		if (TargetPS && TargetPS->IsInactive())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] TargetPS is Inactive. Aborting voice setup."));
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[VoiceDebug] TargetPS is Inactive. Aborting voice setup."));
 			return;
 		}
 
 		if (!TargetPS || !TargetPS->GetUniqueId().IsValid()) 
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] [%s] TargetPS not found! Retrying in 0.1s..."), *NetModeStr);
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[VoiceDebug] [%s] TargetPS not found! Retrying in 0.1s..."), *NetModeStr);
 			FTimerHandle RetryHandle;
 			GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
 			return;
@@ -1936,7 +1923,7 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 			VoipTalker = UPGVOIPTalker::CreateTalkerForPlayer(TargetPS);
 			if (!VoipTalker)
 			{
-				UE_LOG(LogTemp, Error, TEXT("[VoiceDebug] Failed to create Talker. Retrying..."));
+				UE_LOG(LogPGPlayerCharacter, Error, TEXT("[VoiceDebug] Failed to create Talker. Retrying..."));
 				FTimerHandle RetryHandle;
 				GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitVoiceSettings, 0.1f, false);
 				return;
@@ -1948,12 +1935,12 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 
 	if (InGamePC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] RefreshVoiceChannel PGPC"));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[VoiceDebug] RefreshVoiceChannel PGPC"));
 		InGamePC->RefreshVoiceChannel();
 	}
 	else if (LobbyPC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] RefreshVoiceChannel LobbyPC"));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[VoiceDebug] RefreshVoiceChannel LobbyPC"));
 		LobbyPC->RefreshVoiceChannel();
 	}
 }
@@ -1962,14 +1949,14 @@ void APGPlayerCharacter::UpdateVoipSettings()
 {
 	if (!VoipTalker)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[UpdateVoipSettings] No valid VOIP."));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[UpdateVoipSettings] No valid VOIP."));
 		return;
 	}
 
 	APGPlayerState* TargetPS = GetPlayerState<APGPlayerState>();
 	if (!TargetPS || TargetPS->IsInactive())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VoiceDebug] TargetPS is Inactive. Aborting voip update."));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[VoiceDebug] TargetPS is Inactive. Aborting voip update."));
 		return;
 	}
 
@@ -1993,20 +1980,20 @@ void APGPlayerCharacter::TrySetDeadCharacter()
 	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
 	if (PS && PS->IsInactive())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[TrySetDeadCharacter] PS is Inactive (Player Left). Aborting."));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[TrySetDeadCharacter] PS is Inactive (Player Left). Aborting."));
 		return;
 	}
 
 	if (!PS || !PS->GetUniqueId().IsValid())	
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[TrySetDeadCharacter] PS not found! Retrying in 0.1s..."));
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[TrySetDeadCharacter] PS not found! Retrying in 0.1s..."));
 		FTimerHandle RetryHandle;
 		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TrySetDeadCharacter, 0.1f, false);
 		return;
 	}
 
 	PS->SetPlayerCharacter(this);
-	UE_LOG(LogTemp, Log, TEXT("[TrySetDeadCharacter] SUCCESS: Set Dead Character to %s for PS(%s)"), *GetName(), *PS->GetPlayerName());
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[TrySetDeadCharacter] SUCCESS: Set Dead Character to %s for PS(%s)"), *GetName(), *PS->GetPlayerName());
 }
 
 void APGPlayerCharacter::CheckVoiceAndReportNoise()
@@ -2070,11 +2057,11 @@ void APGPlayerCharacter::CheckVoiceAndReportNoise()
 	CurrentVoiceAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
 	if (CurrentVoiceAmplitude < 0.06f)
 	{
-		//UE_LOG(LogTemp, Log, TEXT("[Character]: Too low Amplitude: %.2f"), CurrentVoiceAmplitude);
+		//UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Character]: Too low Amplitude: %.2f"), CurrentVoiceAmplitude);
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[Character]: Amplitude: %.2f"), CurrentVoiceAmplitude);
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Character]: Amplitude: %.2f"), CurrentVoiceAmplitude);
 	Server_ReportVoiceNoise(CurrentVoiceAmplitude);
 }
 
@@ -2103,7 +2090,7 @@ void APGPlayerCharacter::Server_ReportVoiceNoise_Implementation(float Amplitude)
 		MaxRange = 800.0f;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[Character_Server]: SoundLevel: %.1f | MaxRange: %.1f"), SoundLevel, MaxRange);
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Character_Server]: SoundLevel: %.1f | MaxRange: %.1f"), SoundLevel, MaxRange);
 
 	UAISense_Hearing::ReportNoiseEvent(
 		GetWorld(),

@@ -297,25 +297,21 @@ public:
 	UFUNCTION()
 	void CacheInteractionTarget(AActor* CacheInteractTarget);
 
-	/**
-	* Hand Action anim montages
-	*  Pick	*  Change	* Drop * CameraOn * CameraOff
-	*/
-	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	TArray<TObjectPtr<UAnimMontage>> HandActionAnimMontages;
-
-	EHandActionMontageType HandActionMontageType;
-
-	TObjectPtr<UAnimMontage> GetHandActionAnimMontages(EHandActionMontageType _HandActionMontageType);
-
-	void SetHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
-
 	UFUNCTION(Server, Reliable)
 	void Server_PlayHandActionAnimMontage(EHandActionMontageType _HandActionMontageType);
+
+	/*
+	* 현재는 HandLock과 함께 State Camera까지 부여중....
+	*/
+	UFUNCTION(Server, Reliable)
+	void Server_SetHandLockByGameplayEffect(bool bHandLock);
 
 protected:
 	//The interactive actor currently watching
 	TObjectPtr<AActor> InteractionTargetActor;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> HandLockGameplayEffectClass;
 
 // ------------ HeadLight --------------------
 public:
