@@ -11,6 +11,7 @@ class UBoxComponent;
 class UPointLightComponent;
 class UGameplayEffect;
 class UNiagaraComponent;
+class APGPlayerCharacter;
 
 /**
  * 
@@ -37,7 +38,25 @@ public:
 	void StopBonfire();
 
 protected:
+	UFUNCTION()
+	void OnHealAreaBeginOverlap(UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnHealAreaEndOverlap(UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex);
+
 	void OnHealTick();
+	void UpdateBonfireLit();
+
+	UPROPERTY()
+	TSet<TWeakObjectPtr<APGPlayerCharacter>> PlayersInHealArea;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonfire")
 	TObjectPtr<USphereComponent> SanityHealAreaSphere;
@@ -74,11 +93,15 @@ protected:
 
 	float FadeSpeed = 3.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Bonfire|Vignette")
+	float VignetteUpdateInterval = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Bonfire|Vignette")
+	float VignetteIntensity = 0.6f;
+
 	UPROPERTY(ReplicatedUsing = OnRep_IsLit, VisibleAnywhere, BlueprintReadOnly, Category = "Bonfire")
 	bool bIsLit = false;
 
 	UFUNCTION()
 	void OnRep_IsLit();
-
-	void UpdateBonfireLit();
 };

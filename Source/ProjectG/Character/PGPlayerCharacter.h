@@ -623,4 +623,26 @@ protected:
 	FTimerHandle EnablePhotoDetectionTimerHandle;
 
 	bool bPhotoDetectionInitialized = false;
+
+///
+///********* Bonfire Vignette ******************
+///
+
+public:
+	UFUNCTION(Client, Reliable)
+	void Client_SetBonfireVignetteIntensity(float Intensity);
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "PostProcess")
+	TObjectPtr<UMaterialInterface> BonfireVignetteMaterialClass;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> BonfireVignetteMID;
+
+	void InitBonfireVignetteMaterial();
+	void UpdateBonfireVignetteFade();
+
+	FTimerHandle BonfireVignetteFadeTimerHandle;
+	float CurrentBonfireVignetteIntensity = 0.0f;
+	float TargetBonfireVignetteIntensity = 0.0f;
 };

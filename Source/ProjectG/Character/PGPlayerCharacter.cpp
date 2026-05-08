@@ -542,6 +542,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 		UE_LOG(LogPGPlayerCharacter, Log, TEXT("APGPlayerCharacter::PossessedBy: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
 		InitLensDistortionMaterial();
+		InitBonfireVignetteMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
 		FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.Dead"));
@@ -628,6 +629,7 @@ void APGPlayerCharacter::OnRep_PlayerState()
 		UE_LOG(LogPGPlayerCharacter, Log, TEXT("APGPlayerCharacter::OnRep_PlayerState: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
 		InitLensDistortionMaterial();
+		InitBonfireVignetteMaterial();
 
 		// Bind "Player.State.Dead" to handle player death when the  tag is applied.
 		FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.Dead"));
@@ -1410,6 +1412,11 @@ void APGPlayerCharacter::Server_Debug_DecreaseSanity_Implementation()
 
 void APGPlayerCharacter::InitPostProcessMaterial()
 {
+	if (SanityNoiseMID)
+	{
+		return;
+	}
+
 	if (!SanityNoiseMaterialClass)
 	{
 		return;
@@ -2170,6 +2177,11 @@ void APGPlayerCharacter::ToggleCameraMode()
 
 void APGPlayerCharacter::InitLensDistortionMaterial()
 {
+	if (LensDistortionMID)
+	{
+		return;
+	}
+
 	if (!LensDistortionMaterialClass)
 	{
 		return;
@@ -2349,5 +2361,55 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 		{
 			HUD->SetPhotoAlertVisible(bHasPhotographable);
 		}
+	}
+}
+
+void APGPlayerCharacter::InitBonfireVignetteMaterial()
+{
+	if (BonfireVignetteMID)
+	{
+		return;
+	}
+
+	if (!BonfireVignetteMaterialClass)
+	{
+		return;
+	}
+
+	BonfireVignetteMID = UMaterialInstanceDynamic::Create(BonfireVignetteMaterialClass, this);
+	if (BonfireVignetteMID)
+	{
+		BonfireVignetteMID->SetScalarParameterValue(FName("VignetteIntensity"), 0.0f);
+
+		if (FirstPersonCamera)
+		{
+			FirstPersonCamera->PostProcessSettings.WeightedBlendables.Array.Add(FWeightedBlendable(1.0f, BonfireVignetteMID));
+		}
+	}
+}
+
+void APGPlayerCharacter::Client_SetBonfireVignetteIntensity_Implementation(float Intensity)
+{
+	TargetBonfireVignetteIntensity = Intensity;
+	GetWorldTimerManager().SetTimer(BonfireVignetteFadeTimerHandle, this, &APGPlayerCharacter::UpdateBonfireVignetteFade, 0.02f, true);
+}
+
+void APGPlayerCharacter::UpdateBonfireVignetteFade()
+{
+	CurrentBonfireVignetteIntensity = FMath::FInterpTo(CurrentBonfireVignetteIntensity, TargetBonfireVignetteIntensity, 0.02f, 1.0f);
+
+	if (BonfireVignetteMID)
+	{
+		BonfireVignetteMID->SetScalarParameterValue(FName("VignetteIntensity"), CurrentBonfireVignetteIntensity);
+	}
+
+	if (FMath::IsNearlyEqual(CurrentBonfireVignetteIntensity, TargetBonfireVignetteIntensity, 0.01f))
+	{
+		CurrentBonfireVignetteIntensity = TargetBonfireVignetteIntensity;
+		if (BonfireVignetteMID)
+		{
+			BonfireVignetteMID->SetScalarParameterValue(FName("VignetteIntensity"), CurrentBonfireVignetteIntensity);
+		}
+		GetWorldTimerManager().ClearTimer(BonfireVignetteFadeTimerHandle);
 	}
 }

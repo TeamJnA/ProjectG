@@ -21,6 +21,7 @@ APGInteractableGimmickBonfire::APGInteractableGimmickBonfire()
 	SanityHealAreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("SanityHealAreaSphere"));
 	SanityHealAreaSphere->SetupAttachment(RootComponent);
 	SanityHealAreaSphere->SetSphereRadius(500.0f);
+	SanityHealAreaSphere->SetGenerateOverlapEvents(true);
 
 	InteractCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractCollisionBox"));
 	InteractCollisionBox->SetupAttachment(RootComponent);
@@ -47,6 +48,12 @@ void APGInteractableGimmickBonfire::BeginPlay()
 		{
 			BonfireMID->SetScalarParameterValue(FName("EmissiveValue"), 0.0f);
 		}
+	}
+
+	if (HasAuthority())
+	{
+		SanityHealAreaSphere->OnComponentBeginOverlap.AddDynamic(this, &APGInteractableGimmickBonfire::OnHealAreaBeginOverlap);
+		SanityHealAreaSphere->OnComponentEndOverlap.AddDynamic(this, &APGInteractableGimmickBonfire::OnHealAreaEndOverlap);
 	}
 }
 
@@ -123,6 +130,18 @@ void APGInteractableGimmickBonfire::StartBonfire()
 	bIsLit = true;
 	UpdateBonfireLit();
 
+	// 이미 범위 안에 있는 플레이어 추적, Vignette on
+	TArray<AActor*> OverlappingActors;
+	SanityHealAreaSphere->GetOverlappingActors(OverlappingActors, APGPlayerCharacter::StaticClass());
+	for (AActor* Actor : OverlappingActors)
+	{
+		if (APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(Actor))
+		{
+			PlayersInHealArea.Add(Player);
+			Player->Client_SetBonfireVignetteIntensity(VignetteIntensity);
+		}
+	}
+
 	// Sanity Heal Timer
 	GetWorld()->GetTimerManager().SetTimer(SanityHealTimerHandle, this, &APGInteractableGimmickBonfire::OnHealTick, SanityHealInterval, true);
 	// Bonfire Duration Timer
@@ -138,9 +157,59 @@ void APGInteractableGimmickBonfire::StopBonfire()
 
 	GetWorld()->GetTimerManager().ClearTimer(SanityHealTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(BoneFireDurationTimerHandle);
+
+	// 추적 중인 플레이어들 Vignette off
+	for (const TWeakObjectPtr<APGPlayerCharacter>& WeakPlayer : PlayersInHealArea)
+	{
+		if (APGPlayerCharacter* Player = WeakPlayer.Get())
+		{
+			Player->Client_SetBonfireVignetteIntensity(0.0f);
+		}
+	}
+	PlayersInHealArea.Empty();
 	
 	bIsLit = false;
 	UpdateBonfireLit();
+}
+
+void APGInteractableGimmickBonfire::OnHealAreaBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!HasAuthority() || !bIsLit)
+	{
+		return;
+	}
+
+	APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(OtherActor);
+	if (!Player)
+	{
+		return;
+	}
+
+	if (!PlayersInHealArea.Contains(Player))
+	{
+		PlayersInHealArea.Add(Player);
+		Player->Client_SetBonfireVignetteIntensity(VignetteIntensity);
+	}
+}
+
+void APGInteractableGimmickBonfire::OnHealAreaEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(OtherActor);
+	if (!Player)
+	{
+		return;
+	}
+
+	if (PlayersInHealArea.Contains(Player))
+	{
+		PlayersInHealArea.Remove(Player);
+		Player->Client_SetBonfireVignetteIntensity(0.0f);
+	}
 }
 
 void APGInteractableGimmickBonfire::OnHealTick()
@@ -150,15 +219,16 @@ void APGInteractableGimmickBonfire::OnHealTick()
 		return;
 	}
 
-	TArray<AActor*> OverlappingActors;
-	SanityHealAreaSphere->GetOverlappingActors(OverlappingActors, APGPlayerCharacter::StaticClass());
-	for (AActor* Actor : OverlappingActors)
+	for (auto It = PlayersInHealArea.CreateIterator(); It; ++It)
 	{
-		APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(Actor);
-		if (Player)
+		APGPlayerCharacter* Player = It->Get();
+		if (!Player)
 		{
-			Player->Server_ApplyGameplayEffectToSelf(SanityHealEffectClass);
+			It.RemoveCurrent();
+			continue;
 		}
+
+		Player->Server_ApplyGameplayEffectToSelf(SanityHealEffectClass);
 	}
 }
 
