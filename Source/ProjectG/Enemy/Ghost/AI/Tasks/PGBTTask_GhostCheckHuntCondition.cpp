@@ -14,6 +14,7 @@
 #include "Enemy/Ghost/Ability/Track/GA_GhostTrack.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
 
+
 UPGBTTask_GhostCheckHuntCondition::UPGBTTask_GhostCheckHuntCondition()
 {
 	NodeName = TEXT("Check Hunt Conditions");
@@ -56,20 +57,37 @@ EBTNodeResult::Type UPGBTTask_GhostCheckHuntCondition::ExecuteTask(UBehaviorTree
 	}
 
 	const float CurrentSanity = PGPS->GetAttributeSet()->GetSanity();
-
 	if (CurrentSanity < GhostAIC->GetSanityChaseThreshold())
 	{
 		BB->SetValueAsObject(GhostAIC->GetBlackboardKey_TargetPawn(), TargetPawn);
 
-		const float Distance = FVector::Dist(GhostCharacter->GetActorLocation(), TargetPawn->GetActorLocation());
-				
-		if (Distance <= GhostAIC->GetChaseStartLimitDistance())
+		const FVector GhostLoc = GhostCharacter->GetActorLocation();
+		const FVector TargetLoc = TargetPawn->GetActorLocation();
+
+		// 직선거리로 빠르게 1차 체크 (충분히 가까우면 NavMesh 계산 스킵)
+		const float DirectDistance = FVector::Dist(GhostLoc, TargetLoc);
+		if (DirectDistance < GhostAIC->GetChaseStartLimitDistance() * 0.5f)
 		{
-			UE_LOG(LogTemp, Log, TEXT("PGBTTask_CheckHuntConditions: Too close (%.0f). Re-Exploring."), Distance);
+			// 직선거리만으로도 너무 가까움 -> 무조건 가깝다고 판단
+			UE_LOG(LogTemp, Log, TEXT("PGBTTask_CheckHuntConditions: Too close (Direct: %.0f). Re-Exploring."), DirectDistance);
+			return EBTNodeResult::Succeeded;
+		}
+
+		// NavMesh 상 거리 계산(정밀 측정)
+		const float PathDistance = GhostAIC->GetNavPathDistanceToTarget(GhostLoc, TargetLoc);
+		if (PathDistance < 0.0f)
+		{
+			UE_LOG(LogTemp, Log, TEXT("PGBTTask_CheckHuntConditions: No valid path. Re-Exploring."));
+			return EBTNodeResult::Succeeded;
+		}
+
+		if (PathDistance <= GhostAIC->GetChaseStartLimitDistance())
+		{
+			UE_LOG(LogTemp, Log, TEXT("PGBTTask_CheckHuntConditions: Too close (%.0f). Re-Exploring."), PathDistance);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("PGBTTask_CheckHuntConditions: Starting Track (Dist: %.0f)"), Distance);
+			UE_LOG(LogTemp, Warning, TEXT("PGBTTask_CheckHuntConditions: Starting Track (Dist: %.0f)"), PathDistance);
 			GhostASC->TryActivateAbilityByClass(UGA_GhostTrack::StaticClass(), true);
 		}
 	}

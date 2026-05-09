@@ -5,8 +5,8 @@
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "Enemy/Ghost/Ability/Chase/GA_GhostPostChase.h"
-#include "AIController.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
+#include "Enemy/Ghost/AI/Controllers/PGGhostAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
 
@@ -44,8 +44,10 @@ void UGA_GhostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 
 	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (AAIController* AIC = Cast<AAIController>(Ghost->GetController()))
+		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
 		{
+			AIC->StopChaseDistanceCheck();
+
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
 				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Chasing);
@@ -86,7 +88,7 @@ void UGA_GhostChase::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 
 	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		if (AAIController* AIC = Cast<AAIController>(Ghost->GetController()))
+		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
 		{
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{

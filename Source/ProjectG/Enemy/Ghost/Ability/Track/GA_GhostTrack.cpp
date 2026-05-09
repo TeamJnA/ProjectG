@@ -43,7 +43,7 @@ void UGA_GhostTrack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 				Ghost->SetGhostState(E_PGGhostState::Tracking);
 			}
 
-			AIC->SetSightEnable(true);
+			AIC->StartChaseDistanceCheck();
 		}
 	}
 
@@ -60,7 +60,7 @@ void UGA_GhostTrack::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 	{
 		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Char->GetController()))
 		{
-			AIC->SetSightEnable(false);
+			AIC->StopChaseDistanceCheck();
 		}
 	}
 

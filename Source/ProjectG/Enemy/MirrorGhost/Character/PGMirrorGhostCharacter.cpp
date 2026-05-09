@@ -69,6 +69,15 @@ void APGMirrorGhostCharacter::BeginPlay()
 	UE_LOG(LogTemp, Log, TEXT("[MirrorGhost] BeginPlay"));
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	if (GetMesh() && GetMesh()->GetNumMaterials() > 0)
+	{
+		MirrorGhostMID = GetMesh()->CreateDynamicMaterialInstance(0);
+		if (MirrorGhostMID)
+		{
+			MirrorGhostMID->SetScalarParameterValue(FName("CameraModeOpacity"), 0.0f);
+		}
+	}
 }
 
 void APGMirrorGhostCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -264,16 +273,8 @@ void APGMirrorGhostCharacter::UpdateVisibility()
 
 void APGMirrorGhostCharacter::SetCameraModeVisible(bool bVisible)
 {
-	if (!MirrorGhostMID)
-	{
-		if (GetMesh() && GetMesh()->GetNumMaterials() > 0)
-		{
-			MirrorGhostMID = GetMesh()->CreateDynamicMaterialInstance(0);
-		}
-	}
-
 	if (MirrorGhostMID)
 	{
-		MirrorGhostMID->SetScalarParameterValue(FName("CameraModeVisible"), bVisible ? 1.0f : 0.0f);
+		MirrorGhostMID->SetScalarParameterValue(FName("CameraModeOpacity"), bVisible ? CameraModeOpacity : 0.0f);
 	}
 }

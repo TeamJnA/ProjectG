@@ -4,10 +4,10 @@
 #include "Enemy/Ghost/Ability/Chase/GA_GhostStopChase.h"
 #include "AbilitySystemComponent.h"
 #include "Enemy/Common/AbilitySystem/GA_Exploration.h"
-#include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
+#include "Enemy/Ghost/AI/Controllers/PGGhostAIController.h"
 
 UGA_GhostStopChase::UGA_GhostStopChase()
 {
@@ -23,10 +23,13 @@ void UGA_GhostStopChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
+	APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo());
+	if (Ghost)
 	{
-		if (AAIController* AIC = Cast<AAIController>(Ghost->GetController()))
+		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
 		{
+			AIC->StopChaseDistanceCheck();
+
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 			{
 				BB->ClearValue(TEXT("TargetPlayerPawn"));
@@ -37,4 +40,13 @@ void UGA_GhostStopChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	}
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+
+	// EndAbility 후에 Exploration 재활성화 -> Speed 145로 복원
+	if (Ghost)
+	{
+		if (UAbilitySystemComponent* ASC = Ghost->GetAbilitySystemComponent())
+		{
+			ASC->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
+		}
+	}
 }

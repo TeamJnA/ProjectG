@@ -109,6 +109,9 @@ protected:
 	TObjectPtr<APlayerState> TargetPlayerState;
 
 	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> GhostMID;
+
+	UPROPERTY()
 	TWeakObjectPtr<APlayerState> LocalPlayerStateCache;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ghost|AI", meta = (AllowPrivateAccess = "true"))
@@ -121,6 +124,9 @@ protected:
 	float JumpscareCooldown = 5.0f;
 
 	float LastJumpscareTime = -1.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|Visibility")
+	float CameraModeOpacity = 0.2f;
 
 	UPROPERTY(ReplicatedUsing = OnRep_GhostState)
 	E_PGGhostState CurrentGhostState = E_PGGhostState::Exploring;

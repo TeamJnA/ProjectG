@@ -89,6 +89,9 @@ protected:
 
 	float ActiveTime = 0.0f;  // 속도 증가 누적 시간
 
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	float CameraModeOpacity = 0.4f;
+
 	UPROPERTY(ReplicatedUsing = OnRep_IsFrozen)
 	bool bIsFrozen = false;
 

@@ -53,6 +53,11 @@ void APGGhostCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
+    if (GetMesh() && GetMesh()->GetNumMaterials() > 0)
+    {
+        GhostMID = GetMesh()->CreateDynamicMaterialInstance(0);
+    }
+
     UpdateGhostVisibility();
 
     APlayerController* LocalPC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
@@ -174,15 +179,18 @@ void APGGhostCharacter::OnRep_GhostState()
 void APGGhostCharacter::UpdateGhostVisibility()
 {
     bool bShouldBeVisible = false;
+    float Opacity = 0.0f;
 
     if (CurrentGhostState == E_PGGhostState::Chasing || CurrentGhostState == E_PGGhostState::Attacking)
     {
         bShouldBeVisible = true;
+        Opacity = 1.0f;
     }
 
     if (bCameraModeVisible)
     {
         bShouldBeVisible = true;
+        Opacity = CameraModeOpacity;
     }
 
     if (HasAuthority())
@@ -195,6 +203,11 @@ void APGGhostCharacter::UpdateGhostVisibility()
     }
 
     GetMesh()->SetVisibility(bShouldBeVisible);
+
+    if (GhostMID)
+    {
+        GhostMID->SetScalarParameterValue(FName("CameraModeOpacity"), Opacity);
+    }
 }
 
 void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -236,7 +249,7 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
         return;
     }
 
-    // Exploring/Waiting 상태에서 터치 → 글리치 + Sanity 감소
+    // Exploring/Waiting 상태에서 터치 -> 글리치 + Sanity 감소
     const float CurrentTime = GetWorld()->GetTimeSeconds();
     if (LastJumpscareTime > 0.0f && (CurrentTime - LastJumpscareTime) < JumpscareCooldown)
     {

@@ -87,7 +87,7 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
     FNavLocation Loc;
     if (NavSys->GetRandomPointInNavigableRadius(CurrentLocation, ExplorationRadius, Loc))
     {
-#if !UE_BUILD_SHIPPING
+#if WITH_EDITOR
         DrawDebugLine(GetWorld(), CurrentLocation, Loc.Location, FColor::White, false, 5.0f, 0, 2.0f);
         DrawDebugSphere(GetWorld(), Loc.Location, 50.0f, 8, FColor::White, false, 5.0f);
         DrawDebugString(GetWorld(), Loc.Location + FVector(0, 0, 70), TEXT("Fallback"), nullptr, FColor::White, 5.0f);

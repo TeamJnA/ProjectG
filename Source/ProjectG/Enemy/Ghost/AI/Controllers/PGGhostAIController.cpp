@@ -9,21 +9,21 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
-#include "Perception/AIPerceptionComponent.h"
-#include "Perception/AISenseConfig_Sight.h"
-
 #include "Enemy/Ghost/Ability/Chase/GA_GhostChase.h"
 #include "Enemy/Ghost/Ability/Chase/GA_GhostStopChase.h"
 #include "Enemy/Ghost/Ability/Track/GA_GhostTrack.h"
 #include "Enemy/Common/AbilitySystem/GA_Exploration.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
 
+#include "NavigationSystem.h"
+#include "NavigationPath.h"
+
+
 APGGhostAIController::APGGhostAIController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, BlackboardKey_AIState(FName(TEXT("AIState")))
 	, BlackboardKey_TargetPawn(FName(TEXT("TargetPlayerPawn")))
 {
-	SetupPerceptionSystem();
 }
 
 void APGGhostAIController::SetupTarget(APlayerState* NewTargetPS)
@@ -70,15 +70,6 @@ void APGGhostAIController::SetupTarget(APlayerState* NewTargetPS)
 	}
 }
 
-void APGGhostAIController::SetSightEnable(bool bEnable)
-{
-	if (SightConfig)
-	{
-		UE_LOG(LogTemp, Log, TEXT("APGGhostAIController::SetSightEnabled: Sight sense %s"), bEnable ? TEXT("Enabled") : TEXT("Disabled"));
-		GetPerceptionComponent()->SetSenseEnabled(UAISense_Sight::StaticClass(), bEnable);
-	}
-}
-
 void APGGhostAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
@@ -105,6 +96,8 @@ void APGGhostAIController::OnPossess(APawn* InPawn)
 
 void APGGhostAIController::OnUnPossess()
 {
+	StopChaseDistanceCheck();
+
 	if (HasAuthority())
 	{
 		if (TargetPlayerASC.IsValid() && SanityChangedDelegateHandle.IsValid())
@@ -123,60 +116,6 @@ void APGGhostAIController::OnUnPossess()
 	TargetPlayerASC.Reset();
 
 	Super::OnUnPossess();
-}
-
-void APGGhostAIController::SetupPerceptionSystem()
-{
-	SetPerceptionComponent(*CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionComponent")));
-	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
-	if (SightConfig)
-	{
-		SightConfig->SightRadius = ChaseStartDistance;
-		SightConfig->LoseSightRadius = ChaseStartDistance;
-		SightConfig->PeripheralVisionAngleDegrees = 360.0f;
-		SightConfig->SetMaxAge(5.0f);
-
-		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
-		SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
-		SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
-
-		GetPerceptionComponent()->SetDominantSense(*SightConfig->GetSenseImplementation());
-		GetPerceptionComponent()->ConfigureSense(*SightConfig);
-	}
-
-	GetPerceptionComponent()->OnTargetPerceptionUpdated.AddDynamic(this, &APGGhostAIController::OnTargetDetected);
-	GetPerceptionComponent()->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
-}
-
-void APGGhostAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
-{
-	UBlackboardComponent* BB = GetBlackboardComponent();
-	if (!BB || !OwnerGhostCharacter)
-	{
-		return;
-	}
-
-	APlayerState* TargetPS = OwnerGhostCharacter->GetTargetPlayerState();
-	if (!TargetPS || !TargetPS->GetPawn())
-	{
-		return;
-	}
-
-	if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>() 
-		&& Stimulus.WasSuccessfullySensed() 
-		&& Actor == TargetPS->GetPawn())
-	{
-		const E_PGGhostState CurrentState = (E_PGGhostState)BB->GetValueAsEnum(BlackboardKey_AIState);
-
-		if (CurrentState == E_PGGhostState::Tracking)
-		{
-			if (UAbilitySystemComponent* GhostASC = OwnerGhostCharacter->GetAbilitySystemComponent())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Target sighted while Tracking. Upgrading to Chase."));
-				GhostASC->TryActivateAbilityByClass(UGA_GhostChase::StaticClass(), true);
-			}
-		}
-	}
 }
 
 void APGGhostAIController::OnTargetSanityChanged(const FOnAttributeChangeData& Data)
@@ -200,10 +139,90 @@ void APGGhostAIController::OnTargetSanityChanged(const FOnAttributeChangeData& D
 
 	if (NewSanity >= SanityChaseThreshold)
 	{
-		if (CurrentState != E_PGGhostState::Exploring)
+		// Attacking, Exploring 상태는 제외
+		if (CurrentState != E_PGGhostState::Attacking && CurrentState != E_PGGhostState::Exploring)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Sanity recovered (%.1f). Stopping hunt."), NewSanity);
 			GhostASC->TryActivateAbilityByClass(UGA_GhostStopChase::StaticClass(), true);
 		}
 	}
+}
+
+void APGGhostAIController::StartChaseDistanceCheck()
+{
+	GetWorld()->GetTimerManager().SetTimer(ChaseDistanceCheckTimerHandle, this, &APGGhostAIController::CheckChaseDistance, ChaseDistanceCheckInterval, true);
+}
+
+void APGGhostAIController::StopChaseDistanceCheck()
+{
+	GetWorld()->GetTimerManager().ClearTimer(ChaseDistanceCheckTimerHandle);
+}
+
+void APGGhostAIController::CheckChaseDistance()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] CheckChaseDistance"));
+	if (!OwnerGhostCharacter)
+	{
+		return;
+	}
+
+	APlayerState* TargetPS = OwnerGhostCharacter->GetTargetPlayerState();
+	if (!TargetPS || !TargetPS->GetPawn())
+	{
+		return;
+	}
+
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	if (!BB)
+	{
+		return;
+	}
+
+	const E_PGGhostState CurrentState = (E_PGGhostState)BB->GetValueAsEnum(BlackboardKey_AIState);
+	if (CurrentState != E_PGGhostState::Tracking)
+	{
+		return;
+	}
+
+	const FVector GhostLoc = OwnerGhostCharacter->GetActorLocation();
+	const FVector TargetLoc = TargetPS->GetPawn()->GetActorLocation();
+
+	// 직선거리로 빠르게 1차 체크 (충분히 멀면 NavMesh 계산 없이 Tracking 유지)
+	const float DirectDistance = FVector::Dist(GhostLoc, TargetLoc);
+	if (DirectDistance > ChaseStartDistance * 2.0f)
+	{
+		return;
+	}
+
+	const float PathDistance = GetNavPathDistanceToTarget(GhostLoc, TargetLoc);
+	if (PathDistance < 0.0f)
+	{
+		return;
+	}
+
+	if (PathDistance <= ChaseStartDistance)
+	{
+		if (UAbilitySystemComponent* GhostASC = OwnerGhostCharacter->GetAbilitySystemComponent())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Target within chase distance (Path: %.0f). Upgrading to Chase."), PathDistance);
+			GhostASC->TryActivateAbilityByClass(UGA_GhostChase::StaticClass(), true);
+		}
+	}
+}
+
+float APGGhostAIController::GetNavPathDistanceToTarget(const FVector& StartLocation, const FVector& TargetLocation) const
+{
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!NavSys)
+	{
+		return -1.0f;
+	}
+
+	UNavigationPath* NavPath = NavSys->FindPathToLocationSynchronously(GetWorld(), StartLocation, TargetLocation);
+	if (!NavPath || !NavPath->IsValid() || NavPath->IsPartial())
+	{
+		return -1.0f;
+	}
+
+	return NavPath->GetPathLength();
 }

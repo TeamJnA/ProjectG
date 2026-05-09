@@ -6,7 +6,6 @@
 #include "Enemy/Common/AI/Controllers/PGEnemyAIControllerBase.h"
 
 #include "GameplayTagContainer.h"
-#include "Perception/AIPerceptionTypes.h"
 
 #include "PGGhostAIController.generated.h"
 
@@ -28,7 +27,6 @@ public:
 	explicit APGGhostAIController(const FObjectInitializer& ObjectInitializer);
 
 	void SetupTarget(APlayerState* NewTargetPS);
-	void SetSightEnable(bool bEnable);
 
 	FORCEINLINE float GetChaseStartDistance() const { return ChaseStartDistance; }
 	FORCEINLINE float GetSanityChaseThreshold() const { return SanityChaseThreshold; }
@@ -36,26 +34,28 @@ public:
 	FORCEINLINE FName GetBlackboardKey_AIState() const { return BlackboardKey_AIState; }
 	FORCEINLINE FName GetBlackboardKey_TargetPawn() const { return BlackboardKey_TargetPawn; }
 
+	float GetNavPathDistanceToTarget(const FVector& StartLocation, const FVector& TargetLocation) const;
+
+	void StartChaseDistanceCheck();
+	void StopChaseDistanceCheck();
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
-	virtual void SetupPerceptionSystem() override;
-
-	UFUNCTION()
-	virtual void OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus) override;
 
 	void OnTargetSanityChanged(const FOnAttributeChangeData& Data);
+
+	UFUNCTION()
+	void CheckChaseDistance();
 
 	UPROPERTY()
 	TObjectPtr<APGGhostCharacter> OwnerGhostCharacter;
 
 	FDelegateHandle SanityChangedDelegateHandle;
+	FTimerHandle ChaseDistanceCheckTimerHandle;
 
 	UPROPERTY()
 	TWeakObjectPtr<UAbilitySystemComponent> TargetPlayerASC;
-
-	UPROPERTY()
-	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GhostAI")
 	float ChaseStartDistance = 1500.0f;
@@ -65,6 +65,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GhostAI")
 	float SanityChaseThreshold = 50.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "GhostAI")
+	float ChaseDistanceCheckInterval = 0.5f;
 
 	const FName BlackboardKey_AIState = FName(TEXT("AIState"));
 	const FName BlackboardKey_TargetPawn = FName(TEXT("TargetPlayerPawn"));
