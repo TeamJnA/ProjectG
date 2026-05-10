@@ -123,6 +123,14 @@ void APGPlayerState::OnRep_PhotoScoreUpdated()
 	OnPlayerStateUpdated.Broadcast();
 }
 
+void APGPlayerState::OnRep_ReadyToReturnLobby()
+{
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		GS->NotifyReadyToReturnLobbyChanged();
+	}
+}
+
 bool APGPlayerState::IsMyPlayerState() const
 {
 	if (APlayerController* PC = GetPlayerController())

@@ -100,6 +100,12 @@ void APGGameState::RemovePlayerState(APlayerState* PlayerState)
 			SetCurrentGameState(EGameState::EndGame);
 			NotifyGameFinished();
 		}
+
+		if (CurrentGameState == EGameState::EndGame && !PlayerArray.IsEmpty())
+		{
+			UE_LOG(LogTemp, Log, TEXT("GS::RemovePlayerState: EndGame state - reset all ready votes"));
+			ResetAllReadyToReturnLobby();
+		}
 	}
 }
 
@@ -134,6 +140,46 @@ void APGGameState::NotifyPlayerArrayUpdated()
 {
 	UE_LOG(LogTemp, Log, TEXT("GS::UpdatePlayerArrayVersion: Player array updated | %d"), HasAuthority());
 	OnPlayerArrayChanged.Broadcast();
+}
+
+void APGGameState::NotifyReadyToReturnLobbyChanged()
+{
+	OnReadyToReturnLobbyChanged.Broadcast();
+}
+
+int32 APGGameState::GetReadyToReturnLobbyCount() const
+{
+	int32 Count = 0;
+	for (const APlayerState* PS : PlayerArray)
+	{
+		if (const APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+		{
+			if (PGPS->IsReadyToReturnLobby())
+			{
+				Count++;
+			}
+		}
+	}
+	return Count;
+}
+
+void APGGameState::ResetAllReadyToReturnLobby()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	for (APlayerState* PS : PlayerArray)
+	{
+		if (APGPlayerState* PGPS = Cast<APGPlayerState>(PS))
+		{
+			if (PGPS->IsReadyToReturnLobby())
+			{
+				PGPS->SetReadyToReturnLobby(false);
+			}
+		}
+	}
 }
 
 /*

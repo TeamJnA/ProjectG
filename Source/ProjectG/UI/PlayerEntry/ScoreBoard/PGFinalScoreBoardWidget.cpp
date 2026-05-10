@@ -5,7 +5,9 @@
 #include "UI/PlayerEntry/PGPlayerEntryWidget.h"
 #include "UI/Menu/PGConfirmWidget.h"
 #include "Components/VerticalBox.h"
+#include "Components/HorizontalBox.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
 
 #include "Game/PGGameState.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
@@ -54,6 +56,7 @@ void UPGFinalScoreBoardWidget::NativeDestruct()
 	if (APGGameState* GS = GSRef.Get())
 	{
 		GS->OnPlayerArrayChanged.RemoveAll(this);
+		GS->OnReadyToReturnLobbyChanged.RemoveAll(this);
 	}
 
 	Super::NativeDestruct();
@@ -89,6 +92,7 @@ void UPGFinalScoreBoardWidget::BindPlayerEntry()
 	{
 		GSRef = GS;
 		GS->OnPlayerArrayChanged.AddUniqueDynamic(this, &UPGFinalScoreBoardWidget::UpdatePlayerEntry);
+		GS->OnReadyToReturnLobbyChanged.AddUniqueDynamic(this, &UPGFinalScoreBoardWidget::UpdateReadyCheckboxes);
 	}
 
 	UpdatePlayerEntry();
@@ -148,6 +152,8 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 		{
 			ReturnToMainMenuButton->SetVisibility(ESlateVisibility::Visible);
 		}
+
+		RebuildReadyCheckboxes();
 	}
 	else
 	{
@@ -232,6 +238,71 @@ void UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked()
 	}
 }
 
+void UPGFinalScoreBoardWidget::RebuildReadyCheckboxes()
+{
+	if (!ReadyCheckboxContainer)
+	{
+		return;
+	}
+
+	APGGameState* GS = GSRef.Get();
+	if (!GS)
+	{
+		return;
+	}
+
+	ReadyCheckboxContainer->ClearChildren();
+	ReadyCheckboxes.Empty();
+
+	const int32 NumPlayers = GS->PlayerArray.Num();
+	for (int32 i = 0; i < NumPlayers; i++)
+	{
+		UImage* Checkbox = NewObject<UImage>(this);
+		if (Checkbox)
+		{
+			if (CheckboxEmptyImage)
+			{
+				Checkbox->SetBrushFromMaterial(CheckboxEmptyImage);
+				Checkbox->SetBrushSize(FVector2D(64.0f, 64.0f));
+			}
+			ReadyCheckboxContainer->AddChild(Checkbox);
+			ReadyCheckboxes.Add(Checkbox);
+		}
+	}
+
+	UpdateReadyCheckboxes();
+}
+
+void UPGFinalScoreBoardWidget::UpdateReadyCheckboxes()
+{
+	if (!bStampCompleted)
+	{
+		return;
+	}
+
+	APGGameState* GS = GSRef.Get();
+	if (!GS)
+	{
+		return;
+	}
+
+	const int32 ReadyCount = GS->GetReadyToReturnLobbyCount();
+	for (int32 i = 0; i < ReadyCheckboxes.Num(); i++)
+	{
+		if (!ReadyCheckboxes[i])
+		{
+			continue;
+		}
+
+		UMaterialInterface* CheckboxImage = (i < ReadyCount) ? CheckboxCheckedImage : CheckboxEmptyImage;
+		if (CheckboxImage)
+		{
+			ReadyCheckboxes[i]->SetBrushFromMaterial(CheckboxImage);
+			ReadyCheckboxes[i]->SetBrushSize(FVector2D(64.0f, 64.0f));
+		}
+	}
+}
+
 void UPGFinalScoreBoardWidget::PlaySequentialStampEffects()
 {
 	for (UPGPlayerEntryWidget* Entry : PlayerEntries)
@@ -270,6 +341,8 @@ void UPGFinalScoreBoardWidget::StampNextEntry()
 		{
 			ReturnToMainMenuButton->SetVisibility(ESlateVisibility::Visible);
 		}
+
+		RebuildReadyCheckboxes();
 
 		return;
 	}

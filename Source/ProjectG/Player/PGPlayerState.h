@@ -40,7 +40,7 @@ public:
 	void SetIsDead(bool bInIsDead) { bIsDead = bInIsDead; OnRep_PlayerStateUpdated(); }
 
 	FORCEINLINE bool IsReadyToReturnLobby() const { return bIsReadyToReturnLobby; }
-	void SetReadyToReturnLobby(bool bInIsReadyToReturnLobby) { bIsReadyToReturnLobby = bInIsReadyToReturnLobby; }
+	void SetReadyToReturnLobby(bool bInIsReadyToReturnLobby) { bIsReadyToReturnLobby = bInIsReadyToReturnLobby; OnRep_ReadyToReturnLobby(); }
 
 	FORCEINLINE bool IsEscaping() const { return bIsEscaping; }
 	FORCEINLINE void SetIsEscaping(bool bInIsEscaping) { bIsEscaping = bInIsEscaping; OnRep_PlayerStateUpdated(); }
@@ -104,7 +104,7 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
 	bool bIsDead = false;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_ReadyToReturnLobby)
 	bool bIsReadyToReturnLobby = false;
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerStateUpdated)
@@ -118,4 +118,7 @@ protected:
 
 	UFUNCTION()
 	void OnRep_PhotoScoreUpdated();
+
+	UFUNCTION()
+	void OnRep_ReadyToReturnLobby();
 };

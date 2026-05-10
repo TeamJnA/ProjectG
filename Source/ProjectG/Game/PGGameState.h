@@ -13,6 +13,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerArrayChangedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReadyToReturnLobbyChanged);
 
 class APGPlayerController;
 class APGPlayerCharacter;
@@ -50,9 +51,17 @@ public:
 
 	// ----- Player List ---------
 	FOnPlayerArrayChangedDelegate OnPlayerArrayChanged;
-	
+
 	void NotifyPlayerArrayUpdated();
 	// ----- Player List ---------
+
+	// ----- Return To Lobby ---------
+	FOnReadyToReturnLobbyChanged OnReadyToReturnLobbyChanged;
+
+	void NotifyReadyToReturnLobbyChanged();
+	int32 GetReadyToReturnLobbyCount() const;
+	void ResetAllReadyToReturnLobby();
+	// ----- Return To Lobby ---------
 
 	FORCEINLINE void RegisterExitCamera(EExitPointType Type, AActor* CameraActor)
 	{

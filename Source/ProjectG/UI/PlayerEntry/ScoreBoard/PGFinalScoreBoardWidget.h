@@ -11,7 +11,9 @@
 class UPGPlayerEntryWidget;
 class APGPlayerCharacter;
 class UVerticalBox;
+class UHorizontalBox;
 class UButton;
+class UImage;
 class UPGConfirmWidget;
 class UPGAdvancedFriendsGameInstance;
 class APGGameState;
@@ -45,6 +47,11 @@ protected:
 	UFUNCTION()
 	void OnReturnToLobbyButtonClicked();
 
+	void RebuildReadyCheckboxes();
+
+	UFUNCTION()
+	void UpdateReadyCheckboxes();
+
 	void PlaySequentialStampEffects();
 	void StampNextEntry();
 
@@ -62,6 +69,18 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> ReturnToLobbyButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UHorizontalBox> ReadyCheckboxContainer;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TObjectPtr<UMaterialInterface> CheckboxEmptyImage;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TObjectPtr<UMaterialInterface> CheckboxCheckedImage;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UImage>> ReadyCheckboxes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;
