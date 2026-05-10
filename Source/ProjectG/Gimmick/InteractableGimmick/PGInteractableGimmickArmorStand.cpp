@@ -6,6 +6,7 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Camera/CameraShakeSourceComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/PGSoundManager.h"
 #include "PGLogChannels.h"
 
 APGInteractableGimmickArmorStand::APGInteractableGimmickArmorStand()
@@ -17,6 +18,8 @@ APGInteractableGimmickArmorStand::APGInteractableGimmickArmorStand()
     CameraShakeSource->SetupAttachment(RootComponent);
 
     bIsCollisionDisabled = false;
+
+    bAlreadyCollapsed = false;
 }
 
 void APGInteractableGimmickArmorStand::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -58,11 +61,20 @@ void APGInteractableGimmickArmorStand::PostInitializeComponents()
 
 void APGInteractableGimmickArmorStand::GimmickInteract()
 {
+    if (bAlreadyCollapsed)
+    {
+        return;
+    }
     CollapseArmor();
 }
 
 void APGInteractableGimmickArmorStand::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+    if (bAlreadyCollapsed)
+    {
+        return;
+    }
+
     // Check it is brick or player character
     // APGProjectileItemBase     APGPlayerCharacter
     UE_LOG(LogPGInteractableGimmick, Log, TEXT("ArmorStand OnHit"));
@@ -85,6 +97,10 @@ void APGInteractableGimmickArmorStand::CollapseArmor()
 {
     UE_LOG(LogPGInteractableGimmick, Log, TEXT("Armor has collapsed."));
 
+    check(HasAuthority());
+
+    bAlreadyCollapsed = true;
+
     for (UStaticMeshComponent* ArmorMesh : ArmorMeshs)
     {
         if (ArmorMesh)
@@ -96,8 +112,10 @@ void APGInteractableGimmickArmorStand::CollapseArmor()
     }
 
     bIsCollisionDisabled = true;
-    ArmorBoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
-    CameraShakeSource->Start();
+    OnRep_CollisionDisabled();
+
+    // Play Sound
+    SoundManager->PlaySoundWithNoise(ArmorStandCollapseSound, GetActorLocation());
 
     // Highlight ²ô±â
     HighlightOff();

@@ -10,6 +10,7 @@ class APGMasterRoom;
 class APGBlindCharacter;
 class APGChargerCharacter;
 class APGTriggerGimmickMannequin;
+class APGInteractableGimmickArmorStand;
 class APGDoor1;
 class APGFuseBox;
 class APGWaiterStand;
@@ -41,6 +42,7 @@ protected:
 	void SpawnDoors();
 	void SpawnItems();
 	void SpawnMannequins();
+	void SpawnArmorStands();
 	void SpawnFuseBoxes();
 	void SpawnWaiterStands();
 	void SpawnHideProps();
@@ -97,6 +99,9 @@ private:
 	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
 
 	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> ArmorStandSpawnPointsList;
+
+	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> FuseBoxSpawnPointsList;
 
 	UPROPERTY()
@@ -116,6 +121,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<APGHideProp>> HidePropClasses;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ArmorStand", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<APGInteractableGimmickArmorStand> ArmorStandClass;
 
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;

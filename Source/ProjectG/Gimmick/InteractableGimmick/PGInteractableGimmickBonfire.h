@@ -53,7 +53,7 @@ protected:
 		int32 OtherBodyIndex);
 
 	void OnHealTick();
-	void UpdateBonfireLit();
+	void SetBonfireLit();
 
 	UPROPERTY()
 	TSet<TWeakObjectPtr<APGPlayerCharacter>> PlayersInHealArea;
@@ -75,6 +75,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bonfire")
 	TSubclassOf<UGameplayEffect> SanityHealEffectClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	FName BoneFireStartSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	FName BoneFireLoopSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	FName BoneFireEndSound;
 
 	FTimerHandle SanityHealTimerHandle;
 	FTimerHandle BoneFireDurationTimerHandle;

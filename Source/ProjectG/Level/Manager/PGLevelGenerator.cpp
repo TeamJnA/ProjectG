@@ -25,6 +25,7 @@
 #include "Enemy/Charger/Character/PGChargerCharacter.h"
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickMannequin.h"
 #include "Gimmick/InteractableGimmick/PGFuseBox.h"
+#include "Gimmick/InteractableGimmick/PGInteractableGimmickArmorStand.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameMode.h"
@@ -154,6 +155,15 @@ void APGLevelGenerator::SpawnStartRoom()
 		const TArray<USceneComponent*>& ExitPoints = ExitPointsFolder->GetAttachChildren();
 		ExitPointsList.Reserve(ExitPointsList.Num() + ExitPoints.Num());
 		ExitPointsList.Append(ExitPoints);
+	}
+
+
+	// TODO : for test ~ need to remove
+	if (const USceneComponent* ArmorStandSpawnPointFolder = NewRoom->GetArmorStandSpawnPointsFolder())
+	{
+		const TArray<USceneComponent*>& ArmorStandSpawnPoints = ArmorStandSpawnPointFolder->GetAttachChildren();
+		ArmorStandSpawnPointsList.Reserve(ArmorStandSpawnPointsList.Num() + ArmorStandSpawnPoints.Num());
+		ArmorStandSpawnPointsList.Append(ArmorStandSpawnPoints);
 	}
 
 	/*
@@ -642,6 +652,14 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 			MannequinSpawnPointsList.Append(MannequinSpawnPoints);
 		}
 
+		// ArmorStandPoints
+		if (const USceneComponent* ArmorStandSpawnPointFolder = RoomToCheck->GetArmorStandSpawnPointsFolder())
+		{
+			const TArray<USceneComponent*>& ArmorStandSpawnPoints = ArmorStandSpawnPointFolder->GetAttachChildren();
+			ArmorStandSpawnPointsList.Reserve(ArmorStandSpawnPointsList.Num() + ArmorStandSpawnPoints.Num());
+			ArmorStandSpawnPointsList.Append(ArmorStandSpawnPoints);
+		}
+
 		// FuseBox points
 		if (const USceneComponent* FuseBoxSpawnPointFolder = RoomToCheck->GetFuseBoxSpawnPointsFolder())
 		{
@@ -734,6 +752,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	SpawnDoors();
 	SpawnItems();
 	//SpawnMannequins();
+	SpawnArmorStands();
 	SpawnFuseBoxes();
 	SpawnWaiterStands();
 	SpawnHideProps();
@@ -1105,6 +1124,28 @@ void APGLevelGenerator::SpawnMannequins()
 			World->SpawnActor<APGTriggerGimmickMannequin>(MannequinClass, SpawnTransform, SpawnParams);
 			MannequinAmount--;
 		}
+	}
+}
+
+void APGLevelGenerator::SpawnArmorStands()
+{
+	UE_LOG(LogTemp, Log, TEXT("Spawn Armor Stand function"));
+	UWorld* World = GetWorld();
+	if (!World || ArmorStandSpawnPointsList.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Cannot Spawn Armor Stand"));
+		return;
+	}
+
+	for (TObjectPtr<USceneComponent> SelectedPoint : ArmorStandSpawnPointsList)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Spawn Armor Stand"));
+		const FTransform SpawnTransform(SelectedPoint->GetComponentTransform());
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		World->SpawnActor<APGInteractableGimmickArmorStand>(ArmorStandClass, SpawnTransform, SpawnParams);
 	}
 }
 
