@@ -373,6 +373,8 @@ void APGGameMode::SpawnGhost(const FTransform& SpawnTransform)
 
 				NewGhost->SetTargetPlayerState(PS);
 
+				NewGhost->InitSoundManager(GetSoundManager());
+
 				UE_LOG(LogTemp, Log, TEXT("APGGameMode: Spawned Ghost (%s) and assigned to Player (%s)"), *NewGhost->GetName(), *PS->GetPlayerName());
 			}
 		}
