@@ -10,6 +10,7 @@ class APGPlayerCharacter;
 class UPGInventoryComponent;
 class UPGInventorySlotWidget;
 class UPGItemData;
+class UTextBlock;
 struct FInventoryItem;
 
 /**
@@ -46,6 +47,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UPGInventorySlotWidget> InventorySlot4;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> CurrentItemNameText;
+
 	TWeakObjectPtr<UPGInventoryComponent> InventoryRef;
 
 	UFUNCTION()
@@ -53,4 +57,8 @@ protected:
 
 	UFUNCTION()
 	void HandleOnCurrentSlotIndexChanged(int32 NewIndex);
+
+	void UpdateCurrentItemName(const TArray<FInventoryItem>& InventoryItems, int32 CurrentIndex);
+
+	int32 CurrentSlotIndex = 0;
 };

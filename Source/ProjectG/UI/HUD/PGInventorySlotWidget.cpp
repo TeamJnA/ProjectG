@@ -2,7 +2,6 @@
 
 
 #include "UI/HUD/PGInventorySlotWidget.h"
-#include "PGInventorySlotWidget.h"
 #include "Item/PGItemData.h"
 #include "Components/Border.h"
 
@@ -15,12 +14,10 @@ void UPGInventorySlotWidget::UpdateSlot(UPGItemData* ItemData)
 {
 	if (ItemData)
 	{
-		ItemName = ItemData->ItemName;
 		ItemImage = ItemData->ItemTexture2D;
 	}
 	else
 	{
-		ItemName = FText::GetEmpty();
 		ItemImage = nullptr;
 	}	
 }

@@ -3,8 +3,10 @@
 
 #include "UI/HUD/PGInventoryWidget.h"
 #include "UI/HUD/PGInventorySlotWidget.h"
+#include "Components/TextBlock.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
+#include "Item/PGItemData.h"
 
 void UPGInventoryWidget::NativeOnInitialized()
 {
@@ -22,7 +24,10 @@ void UPGInventoryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	InventorySlot0->HighlightSlot();
+	if (InventorySlot0)
+	{
+		InventorySlot0->HighlightSlot();
+	}
 }
 
 void UPGInventoryWidget::NativeDestruct()
@@ -33,11 +38,13 @@ void UPGInventoryWidget::NativeDestruct()
 		Inventory->OnCurrentSlotIndexChanged.RemoveAll(this);
 	}
 
-	InventorySlot0->UnhighlightSlot();
-	InventorySlot1->UnhighlightSlot();
-	InventorySlot2->UnhighlightSlot();
-	InventorySlot3->UnhighlightSlot();
-	InventorySlot4->UnhighlightSlot();
+	for (auto& InventorySlot : InventorySlots)
+	{
+		if (InventorySlot)
+		{
+			InventorySlot->UnhighlightSlot();
+		}
+	}
 
 	Super::NativeDestruct();
 }
@@ -62,6 +69,9 @@ void UPGInventoryWidget::BindInventorySlots(APGPlayerCharacter* PlayerCharacter)
 
 		Inventory->OnCurrentSlotIndexChanged.RemoveAll(this);
 		Inventory->OnCurrentSlotIndexChanged.AddDynamic(this, &UPGInventoryWidget::HandleOnCurrentSlotIndexChanged);
+
+		HandleOnInventoryUpdate(Inventory->GetInventoryItems());
+		HandleOnCurrentSlotIndexChanged(Inventory->GetCurrentInventoryIndex());
 	}
 	else
 	{
@@ -85,6 +95,8 @@ void UPGInventoryWidget::HandleOnInventoryUpdate(const TArray<FInventoryItem>& I
 			InventorySlots[i]->UpdateSlot(InventoryItems[i].ItemData);
 		}
 	}
+
+	UpdateCurrentItemName(InventoryItems, CurrentSlotIndex);
 }
 
 /*
@@ -93,6 +105,8 @@ void UPGInventoryWidget::HandleOnInventoryUpdate(const TArray<FInventoryItem>& I
 */
 void UPGInventoryWidget::HandleOnCurrentSlotIndexChanged(int32 NewIndex)
 {
+	CurrentSlotIndex = NewIndex;
+
 	for (int32 i = 0; i < InventorySlots.Num(); i++)
 	{
 		if (InventorySlots.IsValidIndex(i))
@@ -106,5 +120,27 @@ void UPGInventoryWidget::HandleOnCurrentSlotIndexChanged(int32 NewIndex)
 				InventorySlots[i]->UnhighlightSlot();
 			}
 		}
+	}
+
+	if (UPGInventoryComponent* Inventory = InventoryRef.Get())
+	{
+		UpdateCurrentItemName(Inventory->GetInventoryItems(), NewIndex);
+	}
+}
+
+void UPGInventoryWidget::UpdateCurrentItemName(const TArray<FInventoryItem>& InventoryItems, int32 CurrentIndex)
+{
+	if (!CurrentItemNameText)
+	{
+		return;
+	}
+
+	if (InventoryItems.IsValidIndex(CurrentIndex) && InventoryItems[CurrentIndex].ItemData)
+	{
+		CurrentItemNameText->SetText(InventoryItems[CurrentIndex].ItemData->ItemName);
+	}
+	else
+	{
+		CurrentItemNameText->SetText(FText::GetEmpty());
 	}
 }

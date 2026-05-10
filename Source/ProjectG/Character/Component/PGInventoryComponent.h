@@ -28,7 +28,6 @@ struct FInventoryItem
 };
 
 
-DECLARE_DYNAMIC_DELEGATE(FOnInventoryComponentReady);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCurrentSlotIndexChanged, int32, NewIndex);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryItemUpdate, const TArray<FInventoryItem>&, InventoryItems);
 
@@ -72,13 +71,16 @@ public:
 
 	void DropAllItems(const FVector DropLocation);
 
-	FORCEINLINE bool IsInventoryFull() const { return	bInventoryFull; };
-
-	FORCEINLINE bool HasCurrentItem() const { return InventoryItems[CurrentInventoryIndex].ItemData != nullptr; };
+	FORCEINLINE bool IsInventoryFull() const { return bInventoryFull; }
+	FORCEINLINE bool HasCurrentItem() const
+	{
+		return InventoryItems.IsValidIndex(CurrentInventoryIndex) &&
+			InventoryItems[CurrentInventoryIndex].ItemData != nullptr;
+	}
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	UFUNCTION(Server, Unreliable)
+	UFUNCTION(Server, Reliable)
 	void Server_CheckHeldItemChanged();
 
 	// Anim instance에서 구독 중. 이 스테이트가 변하면 HandIK 진행
@@ -86,6 +88,9 @@ public:
 	FOnItemHeldStateChanged OnItemHeldStateChanged;
 
 	TObjectPtr<UPGItemData> GetCurrentItemMesh() const;
+
+	FORCEINLINE const TArray<FInventoryItem>& GetInventoryItems() const { return InventoryItems; }
+	FORCEINLINE int32 GetCurrentInventoryIndex() const { return CurrentInventoryIndex; }
 
 private:
 	void DropItemByIndex(const FVector DropLocation, const FRotator DropRotation, const int32 DropItemIndex);
@@ -125,9 +130,6 @@ protected:
 	UI part
 */
 public:
-	UPROPERTY()
-	FOnInventoryComponentReady OnInventoryComponentReady;
-
 	UPROPERTY()
 	FOnInventoryItemUpdate OnInventoryItemUpdate;
 

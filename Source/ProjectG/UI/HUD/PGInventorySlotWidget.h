@@ -25,9 +25,6 @@ public:
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
-	FText ItemName;
-
-	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UTexture2D> ItemImage;
 
 	UPROPERTY(meta = (BindWidget))

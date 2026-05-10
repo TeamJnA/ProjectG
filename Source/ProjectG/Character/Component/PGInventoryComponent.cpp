@@ -337,14 +337,11 @@ void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 TObjectPtr<UPGItemData> UPGInventoryComponent::GetCurrentItemMesh() const
 {
-	if (InventoryItems[CurrentInventoryIndex].ItemData)
-	{
-		return InventoryItems[CurrentInventoryIndex].ItemData;
-	}
-	else
+	if (!InventoryItems.IsValidIndex(CurrentInventoryIndex))
 	{
 		return nullptr;
 	}
+	return InventoryItems[CurrentInventoryIndex].ItemData;
 }
 
 void UPGInventoryComponent::Server_CheckHeldItemChanged_Implementation()
