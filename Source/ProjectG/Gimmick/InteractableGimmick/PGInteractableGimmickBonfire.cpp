@@ -68,8 +68,6 @@ void APGInteractableGimmickBonfire::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	UE_LOG(LogTemp, Warning, TEXT("Bonfire::Tick"));
-
 	CurrentLightIntensity = FMath::FInterpTo(CurrentLightIntensity, TargetLightIntensity, DeltaTime, FadeSpeed);
 	CurrentEmissiveValue = FMath::FInterpTo(CurrentEmissiveValue, TargetEmissiveValue, DeltaTime, FadeSpeed);
 
@@ -128,7 +126,7 @@ void APGInteractableGimmickBonfire::StartBonfire()
 	}
 
 	bIsLit = true;
-	UpdateBonfireLit();
+	OnRep_IsLit();
 
 	// 이미 범위 안에 있는 플레이어 추적, Vignette on
 	TArray<AActor*> OverlappingActors;
@@ -169,7 +167,7 @@ void APGInteractableGimmickBonfire::StopBonfire()
 	PlayersInHealArea.Empty();
 	
 	bIsLit = false;
-	UpdateBonfireLit();
+	OnRep_IsLit();
 }
 
 void APGInteractableGimmickBonfire::OnHealAreaBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -234,10 +232,10 @@ void APGInteractableGimmickBonfire::OnHealTick()
 
 void APGInteractableGimmickBonfire::OnRep_IsLit()
 {
-	UpdateBonfireLit();
+	SetBonfireLit();
 }
 
-void APGInteractableGimmickBonfire::UpdateBonfireLit()
+void APGInteractableGimmickBonfire::SetBonfireLit()
 {
 	if (bIsLit)
 	{
@@ -246,6 +244,8 @@ void APGInteractableGimmickBonfire::UpdateBonfireLit()
 		TargetEmissiveValue = 8.0f;
 
 		SelfHighlightOff();
+
+		PlayLocalSound(BoneFireStartSound, GetActorLocation());
 	}
 	else
 	{
@@ -254,6 +254,8 @@ void APGInteractableGimmickBonfire::UpdateBonfireLit()
 		TargetEmissiveValue = 0.0f;
 
 		SelfHighlightOn();
+
+		PlayLocalSound(BoneFireEndSound, GetActorLocation());
 	}
 
 	SetActorTickEnabled(true);

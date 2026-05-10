@@ -11,6 +11,7 @@
 
 class UGameplayAbility;
 class UAbilitySystemComponent;
+class APGSoundManager;
 
 UCLASS(Abstract)
 class PROJECTG_API APGInteractableGimmickBase : public AActor, public IInteractableActorInterface
@@ -22,6 +23,8 @@ public:
 	APGInteractableGimmickBase();
 
 	virtual void GimmickInteract();
+
+	void InitSoundManager();
 
 	// IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
@@ -35,6 +38,11 @@ public:
 	void SelfHighlightOff();
 
 protected:
+	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	void PlayLocalSound(FName SoundName, FVector SoundLocation);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> Root;
 
@@ -43,6 +51,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "InteractAbility")
 	TSubclassOf<UGameplayAbility> InteractAbility;
+
+	UPROPERTY(Replicated)
+	TObjectPtr<APGSoundManager> SoundManager;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "InteractAbility")
 	FText FailReasonText = FText::FromString(TEXT("Cannot Interact"));

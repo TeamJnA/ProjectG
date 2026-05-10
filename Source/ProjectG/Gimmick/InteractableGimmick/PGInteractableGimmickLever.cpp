@@ -74,9 +74,9 @@ void APGInteractableGimmickLever::ActivateLever()
 	//Play Sound	
 	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
 	{
-		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		if (APGSoundManager* LeverSoundManager = GameModeSoundManagerInterface->GetSoundManager())
 		{
-			SoundManager->PlaySoundForAllPlayers(FrameFallSound, GetActorLocation());
+			LeverSoundManager->PlaySoundForAllPlayers(FrameFallSound, GetActorLocation());
 		}
 	}
 

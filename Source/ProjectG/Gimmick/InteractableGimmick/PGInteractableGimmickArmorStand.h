@@ -56,9 +56,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraShakeSourceComponent> CameraShakeSource;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName ArmorStandCollapseSound;
+
 	UPROPERTY(ReplicatedUsing = OnRep_CollisionDisabled)
 	bool bIsCollisionDisabled;
 
 	UFUNCTION()
 	void OnRep_CollisionDisabled();
+
+	bool bAlreadyCollapsed;
 };
