@@ -29,7 +29,7 @@ class PROJECTG_API UPGPlayerEntryWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void SetupEntry(const APGPlayerState* InPlayerState, UTexture2D* InAvatarTexture, EPlayerEntryContext Context = EPlayerEntryContext::Lobby);
+	void SetupEntry(APGPlayerState* InPlayerState, UTexture2D* InAvatarTexture, EPlayerEntryContext Context = EPlayerEntryContext::Lobby);
 
 	void HighlightEntry();
 	void UnhighlightEntry();

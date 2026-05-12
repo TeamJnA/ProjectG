@@ -6,6 +6,7 @@
 #include "UI/Menu/PGConfirmWidget.h"
 #include "Components/VerticalBox.h"
 #include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
 
@@ -57,6 +58,11 @@ void UPGFinalScoreBoardWidget::NativeDestruct()
 	{
 		GS->OnPlayerArrayChanged.RemoveAll(this);
 		GS->OnReadyToReturnLobbyChanged.RemoveAll(this);
+	}
+
+	if (ConfirmWidgetInstance && ConfirmWidgetInstance->IsInViewport())
+	{
+		ConfirmWidgetInstance->RemoveFromParent();
 	}
 
 	Super::NativeDestruct();
@@ -171,73 +177,6 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 	}
 }
 
-/*
-* 메인 메뉴 버튼 -> 세션 종료 후 메인 메뉴로 이동
-*/
-void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()
-{
-	UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToMainMenuButtonClicked: Clicked"));
-
-	if (!ConfirmWidgetClass)
-	{
-		return;
-	}
-
-	if (!ConfirmWidgetInstance)
-	{
-		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
-	}
-
-	if (ConfirmWidgetInstance)
-	{
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return To MainMenu?")));
-		ConfirmWidgetInstance->SetReturnFocusWidget(this);
-		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
-		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::ReturnToMainMenu);
-		if (!ConfirmWidgetInstance->IsInViewport())
-		{
-			ConfirmWidgetInstance->AddToViewport();
-		}
-	}
-}
-
-void UPGFinalScoreBoardWidget::ReturnToMainMenu()
-{
-	APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer());
-	if (!PC) 
-	{
-		return;
-	}
-
-	if (PC->HasAuthority())
-	{
-		PC->Server_RequestSessionDestruction(false);
-	}
-	else
-	{
-		PC->Server_RequestSoloLeave(ECleanupActionType::Solo_ReturnToMainMenu);
-	}
-}
-
-/*
-* 로비로 나가기 버튼 -> 세션을 유지한 채 로비로 이동
-* 다른 플레이어들의 선택을 기다린 후 
-* 로비로 나가기 버튼을 클릭한 플레이어들에 대해 세션을 유지한 채 로비로 이동
-*/
-void UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked()
-{
-	UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: Clicked"));
-
-	if (APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer()))
-	{
-		PC->NotifyReadyToReturnLobby();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: PC Ref is not PG class"));
-	}
-}
-
 void UPGFinalScoreBoardWidget::RebuildReadyCheckboxes()
 {
 	if (!ReadyCheckboxContainer)
@@ -265,7 +204,12 @@ void UPGFinalScoreBoardWidget::RebuildReadyCheckboxes()
 				Checkbox->SetBrushFromMaterial(CheckboxEmptyImage);
 				Checkbox->SetBrushSize(FVector2D(64.0f, 64.0f));
 			}
-			ReadyCheckboxContainer->AddChild(Checkbox);
+
+			UHorizontalBoxSlot* CheckboxSlot = ReadyCheckboxContainer->AddChildToHorizontalBox(Checkbox);
+			if (CheckboxSlot)
+			{
+				CheckboxSlot->SetPadding(FMargin(8.0f, 0.0f));
+			}
 			ReadyCheckboxes.Add(Checkbox);
 		}
 	}
@@ -299,6 +243,18 @@ void UPGFinalScoreBoardWidget::UpdateReadyCheckboxes()
 		{
 			ReadyCheckboxes[i]->SetBrushFromMaterial(CheckboxImage);
 			ReadyCheckboxes[i]->SetBrushSize(FVector2D(64.0f, 64.0f));
+		}
+	}
+
+	if (APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer()))
+	{
+		if (APGPlayerState* MyPS = PC->GetPlayerState<APGPlayerState>())
+		{
+			const bool bMyReady = MyPS->IsReadyToReturnLobby();
+			if (ReturnToLobbyButton)
+			{
+				ReturnToLobbyButton->SetIsEnabled(!bMyReady);
+			}
 		}
 	}
 }
@@ -353,4 +309,76 @@ void UPGFinalScoreBoardWidget::StampNextEntry()
 	}
 
 	CurrentStampIndex++;
+}
+
+/*
+* 메인 메뉴 버튼 -> 세션 종료 후 메인 메뉴로 이동
+*/
+void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()
+{
+	UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToMainMenuButtonClicked: Clicked"));
+
+	if (!ConfirmWidgetClass)
+	{
+		return;
+	}
+
+	if (!ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance = CreateWidget<UPGConfirmWidget>(this, ConfirmWidgetClass);
+	}
+
+	if (ConfirmWidgetInstance)
+	{
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return To MainMenu?")));
+		ConfirmWidgetInstance->SetReturnFocusWidget(this);
+		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
+		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::ReturnToMainMenu);
+		if (!ConfirmWidgetInstance->IsInViewport())
+		{
+			ConfirmWidgetInstance->AddToViewport();
+		}
+	}
+}
+
+void UPGFinalScoreBoardWidget::ReturnToMainMenu()
+{
+	APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer());
+	if (!PC)
+	{
+		return;
+	}
+
+	if (PC->HasAuthority())
+	{
+		PC->Server_RequestSessionDestruction(false);
+	}
+	else
+	{
+		PC->Server_RequestSoloLeave(ECleanupActionType::Solo_ReturnToMainMenu);
+	}
+}
+
+/*
+* 로비로 나가기 버튼 -> 세션을 유지한 채 로비로 이동
+* 다른 플레이어들의 선택을 기다린 후
+* 로비로 나가기 버튼을 클릭한 플레이어들에 대해 세션을 유지한 채 로비로 이동
+*/
+void UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked()
+{
+	UE_LOG(LogTemp, Log, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: Clicked"));
+
+	if (APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer()))
+	{
+		PC->NotifyReadyToReturnLobby();
+
+		if (ReturnToLobbyButton)
+		{
+			ReturnToLobbyButton->SetIsEnabled(false);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: PC Ref is not PG class"));
+	}
 }

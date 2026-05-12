@@ -16,18 +16,16 @@
 * 탈출/사망 상태 -> ScoreBoardWidget, FinalScoreBoardWidget
 * 호스트 여부 -> LobbyWidget
 */
-void UPGPlayerEntryWidget::SetupEntry(const APGPlayerState* InPlayerState, UTexture2D* InAvatarTexture, EPlayerEntryContext Context)
-{
-	UE_LOG(LogTemp, Log, TEXT("PlayerEntryWidget::SetupEntry: [%s]"), *InPlayerState->GetPlayerName());
-	
+void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D* InAvatarTexture, EPlayerEntryContext Context)
+{	
 	if (!InPlayerState || !PlayerNameText || !PlayerAvatar || !StatusText || !ScoreText)
 	{
 		return;
 	}
-	PlayerStateRef = const_cast<APGPlayerState*>(InPlayerState);
+	UE_LOG(LogTemp, Log, TEXT("PlayerEntryWidget::SetupEntry: [%s]"), *InPlayerState->GetPlayerName());
 
+	PlayerStateRef = InPlayerState;
 	PlayerNameText->SetText(FText::FromString(InPlayerState->GetPlayerName()));
-
 	const bool bHasAvatar = (InAvatarTexture != nullptr);
 	if (bHasAvatar)
 	{

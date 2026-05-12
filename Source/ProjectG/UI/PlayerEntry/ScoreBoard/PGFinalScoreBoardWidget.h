@@ -38,6 +38,14 @@ protected:
 	virtual void NativeDestruct() override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
+	void RebuildReadyCheckboxes();
+
+	UFUNCTION()
+	void UpdateReadyCheckboxes();
+
+	void PlaySequentialStampEffects();
+	void StampNextEntry();
+
 	UFUNCTION()
 	void OnReturnToMainMenuButtonClicked();
 
@@ -46,14 +54,6 @@ protected:
 
 	UFUNCTION()
 	void OnReturnToLobbyButtonClicked();
-
-	void RebuildReadyCheckboxes();
-
-	UFUNCTION()
-	void UpdateReadyCheckboxes();
-
-	void PlaySequentialStampEffects();
-	void StampNextEntry();
 
 	UPROPERTY()
 	TArray<TObjectPtr<UPGPlayerEntryWidget>> PlayerEntries;
