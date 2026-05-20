@@ -73,13 +73,20 @@ FInteractionInfo APGFuseBox::GetInteractionInfo() const
     return FInteractionInfo(EInteractionType::Hold, 10.0f);
 }
 
-bool APGFuseBox::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+FText APGFuseBox::GetInteractionText() const
+{
+    return (FuseBoxState != EFuseBoxState::Closed) ? FText::GetEmpty() : OpenText;
+}
+
+bool APGFuseBox::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
     if (FuseBoxState != EFuseBoxState::Closed)
     {
-        OutFailureMessage = FText::FromString(TEXT("Already opened"));
+        OutFailurePrompt.Icon = nullptr;
+        OutFailurePrompt.IconSize = FVector2D::ZeroVector;
         return false;
     }
+
     return true;
 }
 

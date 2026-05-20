@@ -41,7 +41,8 @@ public:
 	void InitFinalScoreBoardWidget();
 	void InitPauseMenuWidget();
 	void UpdateInteractionProgress(float Progress);
-	void DisplayInteractionFailedMessage(const FText& Message, float Duration);
+	void DisplayInteractionFailedIcon(UMaterialInterface* Icon, FVector2D IconSize, float Duration, bool bAffectInteractPrompt = true);
+	void SetCrosshairVisible(bool bVisible);
 
 	void ClearViewport();
 	void ForceCleanupHUD();
@@ -54,6 +55,8 @@ public:
 	UPGScoreBoardWidget* GetScoreBoardWidget() const { return ScoreBoardWidget; }
 	// CameraWidgetGetter
 	UPGCameraWidget* GetCameraWidget() const { return CameraWidget; }
+	// CrosshairWidget Getter
+	UPGCrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }
 
 	void EnterCameraMode();
 	void ExitCameraMode();

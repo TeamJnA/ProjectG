@@ -149,3 +149,8 @@ FInteractionInfo APGInteractableGimmickArmorStand::GetInteractionInfo() const
 {
     return FInteractionInfo(EInteractionType::Instant);
 }
+
+FText APGInteractableGimmickArmorStand::GetInteractionText() const
+{
+    return BreakText;
+}

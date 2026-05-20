@@ -882,7 +882,12 @@ FInteractionInfo APGPlayerCharacter::GetInteractionInfo() const
 	return FInteractionInfo();
 }
 
-bool APGPlayerCharacter::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+FText APGPlayerCharacter::GetInteractionText() const
+{
+	return bIsRagdoll ? ReviveText : FText::GetEmpty();
+}
+
+bool APGPlayerCharacter::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	if (bIsRagdoll)
 	{
@@ -890,7 +895,9 @@ bool APGPlayerCharacter::CanStartInteraction(UAbilitySystemComponent* Interactin
 		{
 			return true;
 		}
-		OutFailureMessage = FText::FromString(TEXT("Need Revive Kit"));
+
+		OutFailurePrompt.Icon = ReviveKitIcon;
+		OutFailurePrompt.IconSize = ReviveKitIconSize;
 		return false;
 	}
 	return false;
@@ -964,7 +971,7 @@ void APGPlayerCharacter::SyncMaxSanityFromGameState()
 /*
 * 실패 메시지 디스플레이
 */
-void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(const FText& Message)
+void APGPlayerCharacter::Client_DisplayInteractionFailedIcon_Implementation(UMaterialInterface* Icon, FVector2D IconSize)
 {
 	if (IsLocallyControlled())
 	{
@@ -972,7 +979,7 @@ void APGPlayerCharacter::Client_DisplayInteractionFailedMessage_Implementation(c
 		{
 			if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
 			{
-				HUD->DisplayInteractionFailedMessage(Message, 1.0f);
+				HUD->DisplayInteractionFailedIcon(Icon, IconSize, 1.0f);
 			}
 		}
 	}
@@ -1070,6 +1077,40 @@ void APGPlayerCharacter::Client_PlayerStareAtTarget_Implementation(AActor* Targe
 	// 현재 바라보는 대상 캐싱, 메시지 팝업
 	StaringTargetActor = TargetActor;
 	OnStareTargetUpdate.Broadcast(StaringTargetActor);
+}
+
+void APGPlayerCharacter::NotifyLocalPlayerStareRefresh(AActor* InteractableActor)
+{
+	if (!InteractableActor)
+	{
+		return;
+	}
+
+	UWorld* World = InteractableActor->GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	APlayerController* LocalPC = World->GetFirstPlayerController();
+	if (!LocalPC)
+	{
+		return;
+	}
+
+	APGPlayerCharacter* LocalChar = Cast<APGPlayerCharacter>(LocalPC->GetPawn());
+	if (LocalChar && LocalChar->GetStaringTarget() == InteractableActor)
+	{
+		LocalChar->RefreshStarePrompt();
+	}
+}
+
+void APGPlayerCharacter::RefreshStarePrompt()
+{
+	if (IsLocallyControlled())
+	{
+		OnStareTargetUpdate.Broadcast(StaringTargetActor);
+	}
 }
 
 void APGPlayerCharacter::AddTagToCharacter_Implementation(const FInputActionValue& Value, FGameplayTagContainer InputActionAbilityTag)
@@ -2166,7 +2207,7 @@ void APGPlayerCharacter::ToggleCameraMode()
 			{
 				if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
 				{
-					HUD->DisplayInteractionFailedMessage(FText::FromString(TEXT("Battery Empty")), 1.0f);
+					HUD->DisplayInteractionFailedIcon(NoBatteryIcon, NoBatteryIconSize, 1.0f, false);
 				}
 			}
 			return;

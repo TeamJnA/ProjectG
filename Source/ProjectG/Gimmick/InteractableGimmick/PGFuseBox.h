@@ -34,7 +34,8 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual FText GetInteractionText() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	// ~IInteractableActorInterface
 
 	// IHoldInteractProgressHandler~
@@ -109,6 +110,9 @@ protected:
 	// Cover Shake
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> MIDCover;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText OpenText = FText::FromString(TEXT("Open"));
 
 	FTimerHandle ShakeEffectTimerHandle;
 

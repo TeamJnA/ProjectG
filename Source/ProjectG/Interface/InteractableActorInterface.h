@@ -17,6 +17,20 @@ enum class EInteractionType : uint8
 };
 
 USTRUCT(BlueprintType)
+struct FInteractionPromptInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UMaterialInterface> Icon = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "Icon != nullptr"))
+	FVector2D IconSize = FVector2D(32.0f, 32.0f);
+
+	bool IsValid() const { return Icon != nullptr; }
+};
+
+USTRUCT(BlueprintType)
 struct FInteractionInfo
 {
 	GENERATED_BODY()
@@ -63,11 +77,10 @@ public:
 	virtual void HighlightOn() const = 0;
 	virtual void HighlightOff() const = 0;
 	virtual FInteractionInfo GetInteractionInfo() const = 0;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+	virtual FText GetInteractionText() const { return FText::GetEmpty(); }
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 	{
 		return true;
 	}
-	virtual void InteractionFailed()
-	{
-	}
+	virtual void InteractionFailed() {}
 };

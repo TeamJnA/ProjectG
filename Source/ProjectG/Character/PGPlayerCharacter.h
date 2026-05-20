@@ -197,7 +197,8 @@ public:
 	// IInteractableActorInterface ~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual FText GetInteractionText() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	//~ IInteractableActorInterface end
@@ -372,8 +373,13 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_PlayerStareAtTarget(AActor* TargetActor);
 
+	static void NotifyLocalPlayerStareRefresh(AActor* InteractableActor);
+	void RefreshStarePrompt();
+
+	FORCEINLINE AActor* GetStaringTarget() const { return StaringTargetActor; }
+
 	UFUNCTION(Client, Reliable)
-	void Client_DisplayInteractionFailedMessage(const FText& Message);
+	void Client_DisplayInteractionFailedIcon(UMaterialInterface* Icon, FVector2D IconSize);
 
 	UPROPERTY()
 	FOnStareTargetUpdate OnStareTargetUpdate;
@@ -387,6 +393,21 @@ public:
 protected:
 	UPROPERTY()
 	TObjectPtr<AActor> StaringTargetActor = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> ReviveKitIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> NoBatteryIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D ReviveKitIconSize = FVector2D(70.0f, 70.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D NoBatteryIconSize = FVector2D(85.0f, 45.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText ReviveText = FText::FromString(TEXT("Revive"));
 
 public:
 	UPROPERTY()

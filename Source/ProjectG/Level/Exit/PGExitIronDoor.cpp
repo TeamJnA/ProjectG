@@ -98,6 +98,7 @@ void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
     DOREPLIFETIME(APGExitIronDoor, CurrentDoorHeight);
     DOREPLIFETIME(APGExitIronDoor, CurrentWheelQuat);
     DOREPLIFETIME(APGExitIronDoor, CurrentLockPhase);
+    DOREPLIFETIME(APGExitIronDoor, bDoorForceOpen);
 }
 
 void APGExitIronDoor::HighlightOn() const
@@ -193,7 +194,34 @@ FInteractionInfo APGExitIronDoor::GetInteractionInfo() const
     return FInteractionInfo(EInteractionType::Hold, Duration);
 }
 
-bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+FText APGExitIronDoor::GetInteractionText() const
+{
+    switch (CurrentLockPhase)
+    {
+        case E_LockPhase::E_ChainLock:
+        {
+            return UnlockText;
+        }
+        case E_LockPhase::E_WheelAttach:
+        {
+            return AttatchHandleText;
+        }
+        case E_LockPhase::E_OilApplied:
+        {
+            return OilText;
+        }
+        case E_LockPhase::E_Unlocked:
+        {
+            return CrankHandleText;
+        }
+        default:
+        {
+            return FText::GetEmpty();
+        }
+    }
+}
+
+bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
     switch (CurrentLockPhase)
     {
@@ -204,8 +232,9 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
             UE_LOG(LogPGExitPoint, Log, TEXT("CanStartInteraction ChainLock"));
             return true;
         }
-        OutFailureMessage = FText::FromString(TEXT("Chain is locked"));
 
+        OutFailurePrompt.Icon = KeyIcon;
+        OutFailurePrompt.IconSize = KeyIconSize;
         return false;
     }
     case E_LockPhase::E_WheelAttach:
@@ -215,8 +244,9 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
             UE_LOG(LogPGExitPoint, Log, TEXT("CanStartInteraction WheelPoint"));
             return true;
         }
-        OutFailureMessage = FText::FromString(TEXT("Required Wheel"));
 
+        OutFailurePrompt.Icon = HandleIcon;
+        OutFailurePrompt.IconSize = HandleIconSize;
         return false;
     }
     case E_LockPhase::E_OilApplied:
@@ -226,8 +256,9 @@ bool APGExitIronDoor::CanStartInteraction(UAbilitySystemComponent* InteractingAS
             UE_LOG(LogPGExitPoint, Log, TEXT("CanStartInteraction HandWheel"));
             return true;
         }
-        OutFailureMessage = FText::FromString(TEXT("Required Oil to remove rust"));
 
+        OutFailurePrompt.Icon = OilIcon;
+        OutFailurePrompt.IconSize = OilIconSize;
         return false;
     }
     case E_LockPhase::E_Unlocked:
@@ -386,10 +417,8 @@ bool APGExitIronDoor::Unlock()
             StopHoldProress();
 
             FTimerManager& TimerManager = GetWorldTimerManager();
-
             FTimerDelegate TimerDelegate;
             TimerDelegate.BindUFunction(this, FName("DoorForceClose"));
-
             // 타이머 설정 및 카운트다운 오디오 시작
             TimerManager.SetTimer(
                 DoorForceOpenTimerHandle, 
@@ -399,6 +428,7 @@ bool APGExitIronDoor::Unlock()
             );
 
             bDoorForceOpen = true;
+            OnRep_DoorForceOpen();
 
             Multicast_StartCloseCountSound();
 
@@ -653,6 +683,13 @@ void APGExitIronDoor::OnRep_CurrentLockPhase()
         HighlightOn();        
     }
     */
+
+    if (CurrentLockPhase == E_LockPhase::E_Unlocked)
+    {
+        SetInteractionTraceable(!bDoorForceOpen);
+    }
+
+    APGPlayerCharacter::NotifyLocalPlayerStareRefresh(this);
 }
 
 void APGExitIronDoor::InitMIDs()
@@ -721,16 +758,36 @@ void APGExitIronDoor::OnRep_CurrentWheelQuat()
 
 void APGExitIronDoor::DoorForceClose()
 {
-    bDoorForceOpen = false;
     DoorAutoCloseSpeed = 250.0f;
-
     GetWorldTimerManager().ClearTimer(DoorForceOpenTimerHandle);
+
+    bDoorForceOpen = false;
+    OnRep_DoorForceOpen();
 
     Multicast_StopCloseCountSound();
 
     PlaySound(DoorCloseStartSound, IronDoorSoundPlayOffset->GetComponentLocation());
 
     UE_LOG(LogPGExitPoint, Log, TEXT("Start Door force close."));
+}
+
+void APGExitIronDoor::OnRep_DoorForceOpen()
+{
+    if (CurrentLockPhase != E_LockPhase::E_Unlocked)
+    {
+        return;
+    }
+
+    SetInteractionTraceable(!bDoorForceOpen);
+}
+
+void APGExitIronDoor::SetInteractionTraceable(bool bTraceable)
+{
+    const ECollisionResponse Response = bTraceable ? ECR_Block : ECR_Ignore;
+    if (HandWheelLubricantPoint)
+    {
+        HandWheelLubricantPoint->SetCollisionResponseToChannel(ECC_Visibility, Response);
+    }
 }
 
 void APGExitIronDoor::CleanSoundChecker()

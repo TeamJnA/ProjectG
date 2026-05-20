@@ -48,7 +48,8 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual FText GetInteractionText() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	virtual void InteractionFailed() override;
 	//IInteractableActorInterface end
 	
@@ -81,12 +82,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> KeyIcon;
+
 	UPROPERTY(ReplicatedUsing = OnRep_DesiredTransform)
 	FTransform DesiredTransform;
 
 	FTransform ClosedTransform;
 	FTransform OpenedTransform_A;
 	FTransform OpenedTransform_B;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D KeyIconSize = FVector2D(40.0f, 40.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText OpenDoorText = FText::FromString(TEXT("Open"));
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText CloseDoorText = FText::FromString(TEXT("Close"));
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DoorState", meta = (AllowPrivateAccess = "true"), Replicated)
 	bool bIsOpen = false;

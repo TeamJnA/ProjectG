@@ -36,7 +36,8 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual FText GetInteractionText() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	virtual void InteractionFailed() override;
 	// ~IInteractableActorInterface
 
@@ -176,7 +177,13 @@ private:
 	UFUNCTION()
 	void DoorForceClose();
 
+	UPROPERTY(ReplicatedUsing = OnRep_DoorForceOpen)
 	bool bDoorForceOpen;
+
+	UFUNCTION()
+	void OnRep_DoorForceOpen();
+
+	void SetInteractionTraceable(bool bTraceable);
 
 	float DoorAutoCloseSpeed;
 
@@ -247,4 +254,34 @@ private:
 		int32 OtherBodyIndex, 
 		bool bFromSweep, 
 		const FHitResult& SweepResult);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> KeyIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> HandleIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> OilIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D KeyIconSize = FVector2D(90.0f, 40.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D HandleIconSize = FVector2D(80.0f, 80.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D OilIconSize = FVector2D(60.0f, 70.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText UnlockText = FText::FromString(TEXT("Unlock"));
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText AttatchHandleText = FText::FromString(TEXT("Attatch"));
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText OilText = FText::FromString(TEXT("Oiling"));
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText CrankHandleText = FText::FromString(TEXT("Open"));
 };

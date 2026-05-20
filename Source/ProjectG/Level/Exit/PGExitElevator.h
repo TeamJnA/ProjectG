@@ -30,7 +30,8 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual FText GetInteractionText() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	virtual void InteractionFailed() override;
 	// ~IInteractableActorInterface
 
@@ -144,4 +145,16 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	FName ElevatorDoorCloseSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> FuseIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D FuseIconSize = FVector2D(45.0f, 65.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText FuseText = FText::FromString(TEXT("Insert"));
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText ActivateText = FText::FromString(TEXT("Activate"));
 };

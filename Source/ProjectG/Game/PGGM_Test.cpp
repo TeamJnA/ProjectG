@@ -90,7 +90,7 @@ void APGGM_Test::BeginPlay()
 void APGGM_Test::InitWorld()
 {
 	InitSoundManagerToPlayers();
-	SpawnGhost();
+	//SpawnGhost();
 }
 
 void APGGM_Test::InitSoundManagerToPlayers()

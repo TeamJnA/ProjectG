@@ -32,6 +32,10 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> RadioIcon;
 
+	// V key hint
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> KeyHintIcon;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Voice")
 	float TalkingThreshold = 0.02f;
 
@@ -39,15 +43,25 @@ protected:
 	float DangerThreshold = 0.06f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	float ActiveOpacity = 0.3f;
+	float ActiveOpacity = 0.8f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	float InactiveOpacity = 0.01f;
+	float ReadyOpacity = 0.4f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Voice")
+	float InactiveOpacity = 0.1f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Voice")
 	float FadeSpeed = 10.0f;
 
 private:
+	bool IsPushToTalkEnabled() const;
+	bool IsMicReady() const;
+	void ApplyKeyHintVisibility(bool bPushToTalk);
+
 	float DisplayAmplitude = 0.0f;
 	float CurrentOpacity = 0.01f;
+
+	bool bCachedPushToTalk = false;
+	bool bKeyHintInitialized = false;
 };

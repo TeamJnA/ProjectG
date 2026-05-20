@@ -7,6 +7,7 @@
 #include "PGPhotoAlertWidget.generated.h"
 
 class UImage;
+class UPGCameraComponent;
 
 /**
  * 
@@ -21,11 +22,26 @@ public:
     void StopBlinking();
 
 protected:
+    virtual void NativeTick(const FGeometry & MyGeometry, float InDeltaTime) override;
+
+    void RefreshBlinkState();
+    UPGCameraComponent* ResolveCameraComponent();
+
+    UPROPERTY(EditAnywhere, Category = "UI")
+    FLinearColor NormalTint = FLinearColor::White;
+
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UImage> CameraIcon;
 
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     TObjectPtr<UWidgetAnimation> BlinkAnim;
 
-    bool bIsBlinking = false;	
+    TWeakObjectPtr<UPGCameraComponent> CachedCam;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Photo")
+    float DisabledOpacity = 0.2f;
+
+    bool bBlinkRequested = false;
+    bool bCanUseCamera = false;
+    bool bAnimActive = false;
 };

@@ -99,7 +99,12 @@ void APGInteractableGimmickBonfire::Tick(float DeltaTime)
 	}
 }
 
-bool APGInteractableGimmickBonfire::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+FText APGInteractableGimmickBonfire::GetInteractionText() const
+{
+	return bIsLit ? FText::GetEmpty() : FireText;
+}
+
+bool APGInteractableGimmickBonfire::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	if (!bIsLit)
 	{
@@ -107,15 +112,15 @@ bool APGInteractableGimmickBonfire::CanStartInteraction(UAbilitySystemComponent*
 		{
 			return true;
 		}
+
+		OutFailurePrompt.Icon = MatchIcon;
+		OutFailurePrompt.IconSize = MatchIconSize;
+		return false;
 	}
 	else
 	{
-		OutFailureMessage = FText::FromString(TEXT("Already fire"));
 		return false;
 	}
-
-	OutFailureMessage = FText::FromString(TEXT("Cannot fire"));
-	return false;
 }
 
 void APGInteractableGimmickBonfire::StartBonfire()
@@ -244,6 +249,14 @@ void APGInteractableGimmickBonfire::SetBonfireLit()
 		TargetEmissiveValue = 8.0f;
 
 		SelfHighlightOff();
+		if (StaticMesh)
+		{
+			StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+		}
+		if (InteractCollisionBox)
+		{
+			InteractCollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+		}
 
 		PlayLocalSound(BoneFireStartSound, GetActorLocation());
 	}
@@ -254,6 +267,14 @@ void APGInteractableGimmickBonfire::SetBonfireLit()
 		TargetEmissiveValue = 0.0f;
 
 		SelfHighlightOn();
+		if (StaticMesh)
+		{
+			StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+		}
+		if (InteractCollisionBox)
+		{
+			InteractCollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+		}
 
 		PlayLocalSound(BoneFireEndSound, GetActorLocation());
 	}

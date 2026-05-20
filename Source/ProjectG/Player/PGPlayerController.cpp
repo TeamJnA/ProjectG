@@ -9,6 +9,7 @@
 #include "Player/PGPlayerState.h"
 #include "Character/PGSpectatorPawn.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGCameraComponent.h"
 
 #include "Level/Exit/PGExitPointBase.h"
 
@@ -438,6 +439,16 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation(const EExitP
 		return;
 	}
 	///////// 유효성 검사 끝
+
+	if (UPGCameraComponent* CameraComp = PlayerCharacter->GetCameraComponent())
+	{
+		CameraComp->ForceExitCameraMode();
+	}
+
+	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
+	{
+		HUD->ForceCleanupHUD();
+	}
 
 	// Get Camera and Start Spectate
 	AActor* ExitCamera = GS->GetExitCameraByEnum(ExitPoint);
@@ -954,11 +965,13 @@ void APGPlayerController::ApplyVoiceMode()
 	if (Settings->IsPushToTalk())
 	{
 		bPushToTalkActive = false;
+		bPushToTalkPrimed = false;
 		StopTalking();  // PTT 모드 -> 기본 Off
 	}
 	else
 	{
 		bPushToTalkActive = false;
+		bPushToTalkPrimed = false;
 		StartTalking();  // 오픈 마이크 -> 기본 On
 	}
 }

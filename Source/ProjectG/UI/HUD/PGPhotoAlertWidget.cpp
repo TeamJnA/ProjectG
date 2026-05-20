@@ -3,44 +3,95 @@
 
 #include "UI/HUD/PGPhotoAlertWidget.h"
 #include "Components/Image.h"
+#include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGCameraComponent.h"
 
 
-void UPGPhotoAlertWidget::StartBlinking()
+void UPGPhotoAlertWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
-    if (bIsBlinking)
+    Super::NativeTick(MyGeometry, InDeltaTime);
+
+    const UPGCameraComponent* Cam = ResolveCameraComponent();
+    if (!Cam)
     {
         return;
     }
 
-    bIsBlinking = true;
-
-    //if (CameraIcon)
-    //{
-    //    CameraIcon->SetVisibility(ESlateVisibility::Visible);
-    //}
-
-    if (BlinkAnim)
+    const bool bCanUse = Cam->HasBattery();
+    if (bCanUse != bCanUseCamera)
     {
-        PlayAnimation(BlinkAnim, 0.0f, 0);  // 0 = 무한 반복
+        bCanUseCamera = bCanUse;
+
+        RefreshBlinkState();
+
+        if (CameraIcon)
+        {
+            CameraIcon->SetRenderOpacity(bCanUse ? 1.0f : DisabledOpacity);
+        }
     }
+}
+
+UPGCameraComponent* UPGPhotoAlertWidget::ResolveCameraComponent()
+{
+    if (CachedCam.IsValid())
+    {
+        return CachedCam.Get();
+    }
+
+    APGPlayerCharacter* Player = GetOwningPlayerPawn<APGPlayerCharacter>();
+    if (!Player)
+    {
+        if (APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+        {
+            Player = Cast<APGPlayerCharacter>(PC->GetPawn());
+        }
+    }
+
+    if (Player)
+    {
+        if (UPGCameraComponent* Cam = Player->GetCameraComponent())
+        {
+            CachedCam = Cam;
+            return Cam;
+        }
+    }
+
+    return nullptr;
+}
+
+void UPGPhotoAlertWidget::StartBlinking()
+{
+    bBlinkRequested = true;
+    RefreshBlinkState();
 }
 
 void UPGPhotoAlertWidget::StopBlinking()
 {
-    if (!bIsBlinking)
+    bBlinkRequested = false;
+    RefreshBlinkState();
+}
+
+void UPGPhotoAlertWidget::RefreshBlinkState()
+{
+    if (!BlinkAnim)
     {
         return;
     }
 
-    bIsBlinking = false;
-
-    if (BlinkAnim)
+    const bool bShouldPlay = bBlinkRequested && bCanUseCamera;
+    if (bShouldPlay && !bAnimActive)
+    {
+        PlayAnimation(BlinkAnim, 0.0f, 0);
+        bAnimActive = true;
+    }
+    else if (!bShouldPlay && bAnimActive)
     {
         StopAnimation(BlinkAnim);
-    }
+        bAnimActive = false;
 
-    //if (CameraIcon)
-    //{
-    //    CameraIcon->SetVisibility(ESlateVisibility::Collapsed);
-    //}
+        if (CameraIcon)
+        {
+            CameraIcon->SetColorAndOpacity(NormalTint);
+        }
+    }
 }

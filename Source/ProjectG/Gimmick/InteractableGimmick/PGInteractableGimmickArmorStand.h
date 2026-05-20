@@ -29,6 +29,7 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
+	virtual FText GetInteractionText() const override;
 	// virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
 	// ~IInteractableActorInterface
 
@@ -58,6 +59,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	FName ArmorStandCollapseSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText BreakText = FText::FromString(TEXT("Break"));
 
 	UPROPERTY(ReplicatedUsing = OnRep_CollisionDisabled)
 	bool bIsCollisionDisabled;

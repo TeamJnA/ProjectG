@@ -28,6 +28,7 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
+	virtual FText GetInteractionText() const override;
 	//~IInteractableActorInterface end
 
 	//IItemInteractInterface~
@@ -65,10 +66,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemSound", meta = (AllowPrivateAccess = "true"))
-	FName ItemDropSound;
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText PickupText = FText::FromString(TEXT("Pickup"));
 
 	FTimerHandle HighlightOnTimer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemSound", meta = (AllowPrivateAccess = "true"))
+	FName ItemDropSound;
 
 	bool bOwned = false;
 };

@@ -77,11 +77,17 @@ FInteractionInfo APGLobbyDoor::GetInteractionInfo() const
 	return FInteractionInfo(EInteractionType::Hold, 3.0f);
 }
 
-bool APGLobbyDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+FText APGLobbyDoor::GetInteractionText() const
+{
+	return StartGameText;
+}
+
+bool APGLobbyDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	if (!InteractingASC)
 	{
-		OutFailureMessage = FText::FromString(TEXT("Error"));
+		OutFailurePrompt.Icon = nullptr;
+		OutFailurePrompt.IconSize = FVector2D::ZeroVector;
 		return false;
 	}
 
@@ -93,7 +99,8 @@ bool APGLobbyDoor::CanStartInteraction(UAbilitySystemComponent* InteractingASC, 
 	}
 	else
 	{
-		OutFailureMessage = FText::FromString(TEXT("Only host can start game"));
+		OutFailurePrompt.Icon = HostOnlyIcon;
+		OutFailurePrompt.IconSize = HostOnlyIconSize;
 		return false;
 	}
 }

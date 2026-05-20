@@ -22,8 +22,11 @@ public:
 
 	void SetMasterRoom(APGMirrorRoom* InRoom);
 
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	// IInteractableActorInterface~
 	virtual FInteractionInfo GetInteractionInfo() const override;
+	virtual FText GetInteractionText() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
+	// ~IInteractableActorInterface
 
 	void ActivateLever();
 
@@ -79,6 +82,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> FrameMID;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText BreakText = FText::FromString(TEXT("Break"));
 
 	float ShakeIntensity = 0.5f;
 	float ShakeDuration = 0.1f;

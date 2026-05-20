@@ -471,10 +471,14 @@ void APGLobbyPlayerController::ApplyVoiceMode()
 
 	if (Settings->IsPushToTalk())
 	{
+		bPushToTalkActive = false;
+		bPushToTalkPrimed = false;
 		StopTalking();  // PTT 모드 -> 기본 Off
 	}
 	else
 	{
+		bPushToTalkActive = false;
+		bPushToTalkPrimed = false;
 		StartTalking();  // 오픈 마이크 -> 기본 On
 	}
 }

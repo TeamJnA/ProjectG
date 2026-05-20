@@ -142,7 +142,12 @@ FInteractionInfo APGExitElevator::GetInteractionInfo() const
 	return FInteractionInfo(EInteractionType::Hold, Duration);
 }
 
-bool APGExitElevator::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+FText APGExitElevator::GetInteractionText() const
+{
+	return (FuseState <= 1) ? FuseText : ActivateText;
+}
+
+bool APGExitElevator::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	// Fuse를 껴야하는 단계
 	if (FuseState <= 1)
@@ -152,7 +157,8 @@ bool APGExitElevator::CanStartInteraction(UAbilitySystemComponent* InteractingAS
 			UE_LOG(LogPGExitPoint, Log, TEXT("PGExitElevator CanStartInteraction Fuse"));
 			return true;
 		}
-		OutFailureMessage = FText::FromString(TEXT("Require Fuse"));
+		OutFailurePrompt.Icon = FuseIcon;
+		OutFailurePrompt.IconSize = FuseIconSize;
 	}
 	else if (FuseState > 1)
 	{
@@ -220,6 +226,8 @@ void APGExitElevator::OnRep_FuseState()
 			ExecuteEscapeSequence();
 		}
 	}
+
+	APGPlayerCharacter::NotifyLocalPlayerStareRefresh(this);
 }
 
 void APGExitElevator::ExecuteEscapeSequence()

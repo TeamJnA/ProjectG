@@ -2,6 +2,7 @@
 
 
 #include "Level/Misc/PGDoor1.h"
+#include "Character/PGPlayerCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Physics/PGChaosCacheManager.h"
@@ -461,6 +462,16 @@ FInteractionInfo APGDoor1::GetInteractionInfo() const
 	return FInteractionInfo(EInteractionType::Hold, Duration);
 }
 
+FText APGDoor1::GetInteractionText() const
+{
+	if (bDoorBroken.bIsBroken)
+	{
+		return FText::GetEmpty();
+	}
+
+	return bIsOpen ? CloseDoorText : OpenDoorText;
+}
+
 /*
 * 잠긴 문인 경우
 *	상호작용 시도 플레이어가 Key를 들고 있으면 상호작용 가능
@@ -468,7 +479,7 @@ FInteractionInfo APGDoor1::GetInteractionInfo() const
 * 잠기지 않은 문인 경우
 *	상호작용 가능
 */
-bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	if (bIsLocked)
 	{
@@ -476,13 +487,13 @@ bool APGDoor1::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FTex
 		{
 			return true;
 		}
-		OutFailureMessage = FText::FromString(TEXT("Door is locked"));
 
+		OutFailurePrompt.Icon = KeyIcon;
+		OutFailurePrompt.IconSize = KeyIconSize;
 		return false;
 	}
 	else if (bDoorBroken.bIsBroken)
 	{
-		OutFailureMessage = FText::FromString(TEXT(""));
 		return false;
 	}
 
@@ -499,6 +510,8 @@ void APGDoor1::InteractionFailed()
 void APGDoor1::OnRep_DesiredTransform()
 {
 	DoorHinge->SetRelativeTransform(DesiredTransform);
+
+	APGPlayerCharacter::NotifyLocalPlayerStareRefresh(this);
 }
 
 // Client action after change lock state

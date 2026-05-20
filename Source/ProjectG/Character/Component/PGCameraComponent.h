@@ -34,7 +34,7 @@ public:
     FORCEINLINE bool IsTransitioning() const { return bIsTransitioning; }
     FORCEINLINE bool IsAlreadyCaptured(int32 SubjectID) const { return LocalCapturedIDs.Contains(SubjectID); }
     
-    FORCEINLINE bool HasBattery() const { return CurrentBattery > 0.0f; }
+    FORCEINLINE bool HasBattery() const { return CurrentBattery > MinBatteryToEnter; }
     FORCEINLINE float GetBatteryPercent() const { return CurrentBattery; }
         
     void AddBattery(float Amount);
@@ -179,6 +179,9 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Battery")
     float BatteryDrainRate = 0.01f;  // 초당 소모량
+
+    UPROPERTY(EditDefaultsOnly, Category = "Battery")
+    float MinBatteryToEnter = 0.03f;
 
     UPROPERTY(Replicated, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
     bool bInCameraMode = false;

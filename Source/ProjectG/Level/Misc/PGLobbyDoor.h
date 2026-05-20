@@ -23,7 +23,8 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual FText GetInteractionText() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	// ~IInteractableActorInterface
 
 protected:
@@ -39,4 +40,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> HostOnlyIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D HostOnlyIconSize = FVector2D(70.0f, 70.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText StartGameText = FText::FromString(TEXT("Start Game"));
 };

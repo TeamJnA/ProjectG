@@ -105,11 +105,12 @@ FInteractionInfo APGInteractableGimmickBase::GetInteractionInfo() const
 	return FInteractionInfo(EInteractionType::Hold, 1.0f);
 }
 
-bool APGInteractableGimmickBase::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+bool APGInteractableGimmickBase::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	if (!InteractAbility)
 	{
-		OutFailureMessage = FailReasonText;
+		OutFailurePrompt.Icon = nullptr;
+		OutFailurePrompt.IconSize = FVector2D::ZeroVector;
 		return false;
 	}
 	return true;

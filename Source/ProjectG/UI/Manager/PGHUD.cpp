@@ -329,7 +329,7 @@ void APGHUD::UpdateInteractionProgress(float Progress)
 /*
 * 실패 메시지 디스플레이
 */
-void APGHUD::DisplayInteractionFailedMessage(const FText& Message, float Duration)
+void APGHUD::DisplayInteractionFailedIcon(UMaterialInterface* Icon, FVector2D IconSize, float Duration, bool bAffectInteractPrompt)
 {
 	if (!MessageManagerWidget)
 	{
@@ -338,7 +338,7 @@ void APGHUD::DisplayInteractionFailedMessage(const FText& Message, float Duratio
 
 	if (MessageManagerWidget)
 	{
-		MessageManagerWidget->ShowFailureMessage(Message, Duration);
+		MessageManagerWidget->ShowFailureIcon(Icon, IconSize, Duration, bAffectInteractPrompt);
 	}
 }
 
@@ -569,5 +569,13 @@ void APGHUD::SetPhotoAlertVisible(bool bVisible)
 	else
 	{
 		PhotoAlertWidget->StopBlinking();
+	}
+}
+
+void APGHUD::SetCrosshairVisible(bool bVisible)
+{
+	if (CrosshairWidget)
+	{
+		CrosshairWidget->SetCrosshairVisible(bVisible);
 	}
 }

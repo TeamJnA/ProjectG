@@ -48,7 +48,7 @@ FInteractionInfo APGExitPointBase::GetInteractionInfo() const
 	return FInteractionInfo();
 }
 
-bool APGExitPointBase::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+bool APGExitPointBase::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	return false;
 }

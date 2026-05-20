@@ -66,6 +66,11 @@ FInteractionInfo APGItemActor::GetInteractionInfo() const
 	return FInteractionInfo(EInteractionType::Instant);
 }
 
+FText APGItemActor::GetInteractionText() const
+{
+	return PickupText;
+}
+
 /*
 * 로드한 아이템 데이터로 생성한 아이템 세팅
 */

@@ -31,7 +31,8 @@ protected:
 
 public:
 	// IInteractableActorInterface~
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual FText GetInteractionText() const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	// ~IInteractableActorInterface
 
 	void StartBonfire();
@@ -75,6 +76,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bonfire")
 	TSubclassOf<UGameplayEffect> SanityHealEffectClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	TObjectPtr<UMaterialInterface> MatchIcon;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Icons")
+	FVector2D MatchIconSize = FVector2D(70.0f, 60.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
+	FText FireText = FText::FromString(TEXT("Fire"));
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
 	FName BoneFireStartSound;

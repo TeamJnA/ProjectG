@@ -31,7 +31,7 @@ public:
 	virtual void HighlightOn() const override;
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
-	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
+	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	// ~IInteractableActorInterface
 
 	void SelfHighlightOn();
@@ -54,7 +54,4 @@ protected:
 
 	UPROPERTY(Replicated)
 	TObjectPtr<APGSoundManager> SoundManager;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "InteractAbility")
-	FText FailReasonText = FText::FromString(TEXT("Cannot Interact"));
 };

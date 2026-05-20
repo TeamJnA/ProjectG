@@ -52,21 +52,27 @@ void APGInteractableGimmickLever::SetMasterRoom(APGMirrorRoom* InRoom)
 	MasterRoom = InRoom;
 }
 
-bool APGInteractableGimmickLever::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const
+FInteractionInfo APGInteractableGimmickLever::GetInteractionInfo() const
+{
+	return FInteractionInfo(EInteractionType::Hold, 1.0f);
+}
+
+FText APGInteractableGimmickLever::GetInteractionText() const
+{
+	return bIsActivated ? FText::GetEmpty() : BreakText;
+}
+
+bool APGInteractableGimmickLever::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	if (bIsActivated)
 	{
-		OutFailureMessage = FText::FromString(TEXT("Already Activated"));
+		OutFailurePrompt.Icon = nullptr;
+		OutFailurePrompt.IconSize = FVector2D::ZeroVector;
 		return false;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[Lever] not activated"));
-	return Super::CanStartInteraction(InteractingASC, OutFailureMessage);
-}
-
-FInteractionInfo APGInteractableGimmickLever::GetInteractionInfo() const
-{
-	return FInteractionInfo(EInteractionType::Hold, 1.0f);
+	return Super::CanStartInteraction(InteractingASC, OutFailurePrompt);
 }
 
 void APGInteractableGimmickLever::ActivateLever()

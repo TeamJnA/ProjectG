@@ -141,8 +141,8 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 	*/
 	if (IInteractableActorInterface* InteractableInterface = Cast<IInteractableActorInterface>(TargetActor))
 	{
-		FText FailureMesage;
-		const bool bCanStartInteraction = InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailureMesage);
+		FInteractionPromptInfo FailurePrompt;
+		const bool bCanStartInteraction = InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailurePrompt);
 		if (bCanStartInteraction)
 		{
 			const FInteractionInfo Info = InteractableInterface->GetInteractionInfo();
@@ -233,10 +233,10 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 	}
 
 	// 현재 시점에서 Interact 가능한지(Target이 잠긴 문인 경우 플레이어가 열쇠를 들고 있는 상태인지) 재검사
-	FText Failuremessage;
-	if (!InteractInterface->CanStartInteraction(ASC, Failuremessage))
+	FInteractionPromptInfo FailurePrompt;
+	if (!InteractInterface->CanStartInteraction(ASC, FailurePrompt))
 	{
-		OwnerCharacter->Client_DisplayInteractionFailedMessage(Failuremessage);
+		OwnerCharacter->Client_DisplayInteractionFailedIcon(FailurePrompt.Icon, FailurePrompt.IconSize);
 		return;
 	}
 
@@ -304,10 +304,10 @@ void UGA_Interact::HandleFailedInteractionAttempt(AActor* TargetActor)
 		return;
 	}
 
-	FText FailureMessage;
-	InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailureMessage);
+	FInteractionPromptInfo FailurePrompt;
+	InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailurePrompt);
 	InteractableInterface->InteractionFailed();
-	OwnerCharacter->Client_DisplayInteractionFailedMessage(FailureMessage);
+	OwnerCharacter->Client_DisplayInteractionFailedIcon(FailurePrompt.Icon, FailurePrompt.IconSize);
 }
 
 /*

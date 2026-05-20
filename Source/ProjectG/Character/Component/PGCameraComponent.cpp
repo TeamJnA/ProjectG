@@ -99,7 +99,7 @@ void UPGCameraComponent::EnterCameraMode()
     }
 
     // 배터리 체크
-    if (CurrentBattery <= 0.03f)
+    if (!HasBattery())
     {
         //TODO : 경고음과 함께 카메라 안 켜지도록
         return;
