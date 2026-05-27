@@ -3,6 +3,7 @@
 #include "Logging/LogMacros.h"
 
 #define ECC_FootStep ECC_GameTraceChannel6
+#define ECC_ThrownItem  ECC_GameTraceChannel2
 
 DECLARE_LOG_CATEGORY_EXTERN(LogPGPlayerCharacter, Log, All);
 DECLARE_LOG_CATEGORY_EXTERN(LogPGAbility, Log, All);

@@ -34,6 +34,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void BreakDoorTEST(AActor* InteractInvestigator);
 
+	UFUNCTION(BlueprintCallable)
+	void SpawnTestItem(FName InName = FName("GlassBottle"), FVector InVector = FVector::ZeroVector);
+
 protected:
 	virtual void BeginPlay() override;
 

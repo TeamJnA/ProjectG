@@ -22,6 +22,7 @@ APGSearchableBase::APGSearchableBase()
     MainBodyMesh->SetupAttachment(Root);
 }
 
+
 // Called when the game starts or when spawned
 void APGSearchableBase::BeginPlay()
 {
@@ -32,6 +33,27 @@ void APGSearchableBase::BeginPlay()
     {
         InitSlots();
     }
+}
+
+APGSearchableSlotBase* APGSearchableBase::GetRandomSlot() const
+{
+    TArray<APGSearchableSlotBase*> ValidSlots;
+    for (APGSearchableSlotBase* Slot : SpawnedSlots)
+    {
+        if (IsValid(Slot))
+        {
+            ValidSlots.Add(Slot);
+        }
+    }
+
+    if (ValidSlots.IsEmpty())
+    {
+        return nullptr;
+    }
+
+    // 무작위로 하나 선택
+    const int32 RandomIndex = FMath::RandRange(0, ValidSlots.Num() - 1);
+    return ValidSlots[RandomIndex];
 }
 
 void APGSearchableBase::OnConstruction(const FTransform& Transform)

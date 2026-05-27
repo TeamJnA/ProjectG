@@ -7,6 +7,8 @@
 #include "Gimmick/TriggerGimmick/PGTriggerGimmickBase.h"
 #include "Sound/PGSoundManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Game/PGAdvancedFriendsGameInstance.h"
+#include "Item/PGItemActor.h"
 
 #include "Level/Misc/PGDoor1.h"
 
@@ -69,6 +71,34 @@ void APGGM_Test::BreakDoorTEST(AActor* InteractInvestigator)
 			// break; 
 		}
 	}
+}
+
+void APGGM_Test::SpawnTestItem(FName InName, FVector InVector)
+{
+	UWorld* World = GetWorld();
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI || !World)
+	{
+		return;
+	}
+
+	const FTransform SpawnTransform(FRotator::ZeroRotator, InVector);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	GI->RequestLoadItemData(InName, FOnItemDataLoaded::CreateLambda([World, SpawnTransform, SpawnParams,  this](UPGItemData* LoadedItemData)
+		{
+			if (LoadedItemData)
+			{
+				APGItemActor* NewItem = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
+				if (NewItem)
+				{
+					NewItem->InitWithData(LoadedItemData);
+				}
+			}
+		}));
 }
 
 void APGGM_Test::BeginPlay()
