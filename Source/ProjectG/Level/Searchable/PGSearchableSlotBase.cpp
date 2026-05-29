@@ -15,23 +15,46 @@ APGSearchableSlotBase::APGSearchableSlotBase()
 
 	bReplicates = true;
 
-	SlotMesh1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SlotMesh1"));
-	SetRootComponent(SlotMesh1);
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	SetRootComponent(Root);
 
-	SlotMesh2 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SlotMesh2"));
-	SlotMesh2->SetupAttachment(SlotMesh1);
+	SlotMesh1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SlotMesh1"));
+	SlotMesh1->SetupAttachment(Root);
 
 	ItemSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSpawnPoint"));
-	ItemSpawnPoint->SetupAttachment(SlotMesh1);
+	ItemSpawnPoint->SetupAttachment(Root);
 
 	OpenDirectionArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("OpenDirectionArrow"));
-	OpenDirectionArrow->SetupAttachment(SlotMesh1);
+	OpenDirectionArrow->SetupAttachment(Root);
 
 	MovementTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("MovementTimeline"));
 
 	bIsDrawn = false;
 
 	DrawLength = 100.0f;
+
+	// Set base Slot Mesh Map
+	const UEnum* SlotMeshEnum = StaticEnum<ESlotMeshType>();
+	if (SlotMeshEnum)
+	{
+		for (int32 i = 0; i < SlotMeshEnum->NumEnums() - 1; ++i)
+		{
+			ESlotMeshType EnumValue = static_cast<ESlotMeshType>(SlotMeshEnum->GetValueByIndex(i));
+
+			if (!SlotMeshMap.Contains(EnumValue))
+			{
+				SlotMeshMap.Add(EnumValue, FSlotVisualData());
+			}
+		}
+	}
+}
+
+void APGSearchableSlotBase::SetCurrentSlotMesh(ESlotMeshType _InSlotMesh)
+{
+	check(HasAuthority());
+
+	CurrentSlotMesh = _InSlotMesh;
+	OnRep_SlotMesh();
 }
 
 void APGSearchableSlotBase::InteractSlot()
@@ -68,11 +91,6 @@ void APGSearchableSlotBase::HighlightOn() const
 		SlotMesh1->SetCustomDepthStencilValue(0);
 		SlotMesh1->SetRenderCustomDepth(true);
 	}
-	if (SlotMesh2)
-	{
-		SlotMesh2->SetCustomDepthStencilValue(0);
-		SlotMesh2->SetRenderCustomDepth(true);
-	}
 }
 
 void APGSearchableSlotBase::HighlightOff() const
@@ -80,10 +98,6 @@ void APGSearchableSlotBase::HighlightOff() const
 	if (SlotMesh1)
 	{
 		SlotMesh1->SetRenderCustomDepth(false);
-	}
-	if (SlotMesh2)
-	{
-		SlotMesh2->SetRenderCustomDepth(false);
 	}
 }
 
@@ -114,19 +128,7 @@ void APGSearchableSlotBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// 월드 기준 초기 위치 및 정면(Forward Vector) 방향으로 100만큼 앞선 목표 위치 계산
-	InitialLocation = GetActorLocation();
-	TargetLocation = InitialLocation + (OpenDirectionArrow->GetForwardVector() * DrawLength);
-
-	if (DrawCurve)
-	{
-		FOnTimelineFloat TimelineProgress;
-		TimelineProgress.BindDynamic(this, &APGSearchableSlotBase::UpdateTimeline);
-		MovementTimeline->AddInterpFloat(DrawCurve, TimelineProgress);
-
-		// Timeline이 마지막 key 값에 끝나도록
-		MovementTimeline->SetTimelineLengthMode(TL_LastKeyFrame);
-	}
+	MovementTimeline->SetTimelineLengthMode(TL_LastKeyFrame);
 }
 
 void APGSearchableSlotBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -134,10 +136,36 @@ void APGSearchableSlotBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APGSearchableSlotBase, bIsDrawn);
+	DOREPLIFETIME(APGSearchableSlotBase, SlotInteractionType);
+}
+
+void APGSearchableSlotBase::OnRep_SlotMesh()
+{
+	if (!SlotMesh1)
+	{
+		return;
+	}
+
+	// TMap에 해당 테마가 세팅되어 있는지 확인
+	if (const FSlotVisualData* VisualData = SlotMeshMap.Find(CurrentSlotMesh))
+	{
+		if (VisualData->Mesh)
+		{
+			SlotMesh1->SetStaticMesh(VisualData->Mesh);
+		}
+
+		if (VisualData->Material)
+		{
+			SlotMesh1->SetMaterial(0, VisualData->Material);
+		}
+	}
 }
 
 void APGSearchableSlotBase::OnRep_IsDrawn()
 {
+	// SlotInteractionType에 맞춰 타임라인 세팅
+	SetupTimeline();
+
 	if (MovementTimeline && DrawCurve)
 	{
 		MovementTimeline->Play();
@@ -151,18 +179,51 @@ void APGSearchableSlotBase::OnRep_IsDrawn()
 		SlotMesh1->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 		SlotMesh1->SetCollisionResponseToChannel(ECC_ThrownItem, ECR_Block);
 	}
-	if (SlotMesh2)
+}
+
+void APGSearchableSlotBase::SetupTimeline()
+{
+	if (SlotInteractionType == ESlotInteractType::Draw)
 	{
-		SlotMesh2->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-		SlotMesh2->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
-		SlotMesh2->SetCollisionResponseToChannel(ECC_ThrownItem, ECR_Block);
+		InitialLocation = GetActorLocation();
+		TargetLocation = InitialLocation + (OpenDirectionArrow->GetForwardVector() * DrawLength);
+
+		if (DrawCurve)
+		{
+			FOnTimelineFloat TimelineProgress;
+			TimelineProgress.BindDynamic(this, &APGSearchableSlotBase::UpdateDrawTimeline);
+			MovementTimeline->AddInterpFloat(DrawCurve, TimelineProgress);
+		}
+	}
+	else if (SlotInteractionType == ESlotInteractType::Open)
+	{
+		if (SlotMesh1)
+		{
+			InitialRotation = SlotMesh1->GetRelativeRotation();
+			TargetRotation = InitialRotation + FRotator(0.0f, OpenAngle, 0.0f);
+		}
+
+		if (OpenCurve)
+		{
+			FOnTimelineFloat TimelineProgress;
+			TimelineProgress.BindDynamic(this, &APGSearchableSlotBase::UpdateOpenTimeline);
+			MovementTimeline->AddInterpFloat(OpenCurve, TimelineProgress);
+		}
 	}
 }
 
-void APGSearchableSlotBase::UpdateTimeline(float Value)
+void APGSearchableSlotBase::UpdateDrawTimeline(float Value)
 {
 	FVector NewLocation = FMath::Lerp(InitialLocation, TargetLocation, Value);
 
 	SetActorLocation(NewLocation);
 }
 
+void APGSearchableSlotBase::UpdateOpenTimeline(float Value)
+{
+	if (SlotMesh1)
+	{
+		FRotator NewRot1 = FMath::Lerp(InitialRotation, TargetRotation, Value);
+		SlotMesh1->SetRelativeRotation(NewRot1);
+	}
+}

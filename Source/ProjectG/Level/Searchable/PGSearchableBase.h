@@ -11,7 +11,6 @@ class APGItemActor;
 class APGSearchableSlotBase;
 
 
-
 USTRUCT(BlueprintType)
 struct FSearchableSlotConfig
 {
@@ -26,9 +25,8 @@ struct FSearchableSlotConfig
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Slot Config")
     FTransform ItemSpawnLocalTransform = FTransform::Identity;
 
-    /**
-    * TODO : 그거 해야 할듯? 메쉬나 마테리얼 수정할 경우를 위한 ENUM 같은 느낌
-    */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Slot Config")
+    ESlotMeshType SlotMeshType = ESlotMeshType::Cabinet_Door;
 };
 
 UCLASS()

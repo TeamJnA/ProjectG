@@ -109,8 +109,11 @@ void APGSearchableBase::InitSlots()
 
             if (SpawnedSlot)
             {
+                // Slot의 Type 지정, Slot의 Item Spawn Point 지정, Slot을 배열에 저장
                 // SpawnedSlot->AttachToComponent(MainBodyMesh, FAttachmentTransformRules::KeepWorldTransform);
                SpawnedSlot->SetSlotInteractionType(Config.InteractionType);
+
+               SpawnedSlot->SetCurrentSlotMesh(Config.SlotMeshType);
 
                 if (USceneComponent* SpawnPointComp = SpawnedSlot->GetItemSpawnPoint())
                 {
