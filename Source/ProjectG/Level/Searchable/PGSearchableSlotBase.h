@@ -28,8 +28,7 @@ enum class ESlotMeshType : uint8
 	Cabinet_Door   UMETA(DisplayName = "Cabinet Door"),
 
 	// 드레서1
-	Dresser1_Door_Left		UMETA(DisplayName = "Dresser1 Door Left"),
-	Dresser1_Door_Right	UMETA(DisplayName = "Dresser1 Door Right"),
+	Dresser1_Door		UMETA(DisplayName = "Dresser1 Door (Sides)"),
 	Dresser1_Drawer			UMETA(DisplayName = "Dresser1 Drawer (Middle)"),
 
 	// 드레서2
@@ -71,7 +70,10 @@ public:
 
 	FORCEINLINE void SetSlotInteractionType(ESlotInteractType _SlotInteractionType)  { SlotInteractionType = _SlotInteractionType; }
 
+	void SetSlotMeshTransform(const FTransform& NewTransform);
+
 	FORCEINLINE TObjectPtr<USceneComponent> GetItemSpawnPoint() const { return ItemSpawnPoint; }
+	void SetItemSpawnPointTransform(const FTransform& NewTransform);
 
 	void SetCurrentSlotMesh(ESlotMeshType _InSlotMesh);
 
@@ -132,6 +134,19 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "InteractAbility")
 	TSubclassOf<UGameplayAbility> InteractAbility;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SlotMeshTransform)
+	FTransform SlotMeshTransform;
+
+	UFUNCTION()
+	void OnRep_SlotMeshTransform();
+
+	// Item Spawn Point를 Spawn 할 때  외부에서 접근하여 위치를 조절해 준다.
+	UPROPERTY(ReplicatedUsing = OnRep_ItemSpawnTransform)
+	FTransform ItemSpawnTransform;
+
+	UFUNCTION()
+	void OnRep_ItemSpawnTransform();
 
 	///
 	///	Timeline

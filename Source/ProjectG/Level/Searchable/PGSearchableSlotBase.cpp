@@ -22,7 +22,7 @@ APGSearchableSlotBase::APGSearchableSlotBase()
 	SlotMesh1->SetupAttachment(Root);
 
 	ItemSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSpawnPoint"));
-	ItemSpawnPoint->SetupAttachment(Root);
+	ItemSpawnPoint->SetupAttachment(SlotMesh1);
 
 	OpenDirectionArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("OpenDirectionArrow"));
 	OpenDirectionArrow->SetupAttachment(Root);
@@ -49,6 +49,42 @@ APGSearchableSlotBase::APGSearchableSlotBase()
 	}
 }
 
+void APGSearchableSlotBase::SetSlotMeshTransform(const FTransform& NewTransform)
+{
+	SlotMeshTransform = NewTransform;
+
+	if (HasAuthority())
+	{
+		OnRep_SlotMeshTransform();
+	}
+}
+
+void APGSearchableSlotBase::OnRep_SlotMeshTransform()
+{
+	if (SlotMesh1)
+	{
+		SlotMesh1->SetRelativeTransform(SlotMeshTransform);
+	}
+}
+
+void APGSearchableSlotBase::SetItemSpawnPointTransform(const FTransform& NewTransform)
+{
+	ItemSpawnTransform = NewTransform;
+
+	if (HasAuthority())
+	{
+		OnRep_ItemSpawnTransform();
+	}
+}
+
+void APGSearchableSlotBase::OnRep_ItemSpawnTransform()
+{
+	if (ItemSpawnPoint)
+	{
+		ItemSpawnPoint->SetRelativeTransform(ItemSpawnTransform);
+	}
+}
+
 void APGSearchableSlotBase::SetCurrentSlotMesh(ESlotMeshType _InSlotMesh)
 {
 	check(HasAuthority());
@@ -70,7 +106,7 @@ void APGSearchableSlotBase::InteractSlot()
 
 void APGSearchableSlotBase::AttachSpawnedItem(AActor* Item)
 {
-	if (IsValid(Item) && IsValid(ItemSpawnPoint))
+	if (IsValid(Item) && IsValid(ItemSpawnPoint) && SlotInteractionType == ESlotInteractType::Draw)
 	{
 		Item->AttachToComponent(ItemSpawnPoint, FAttachmentTransformRules::KeepWorldTransform);
 
@@ -137,6 +173,8 @@ void APGSearchableSlotBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 
 	DOREPLIFETIME(APGSearchableSlotBase, bIsDrawn);
 	DOREPLIFETIME(APGSearchableSlotBase, SlotInteractionType);
+	DOREPLIFETIME(APGSearchableSlotBase, ItemSpawnTransform);
+	DOREPLIFETIME(APGSearchableSlotBase, SlotMeshTransform);
 }
 
 void APGSearchableSlotBase::OnRep_SlotMesh()

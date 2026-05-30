@@ -100,13 +100,12 @@ void APGSearchableBase::InitSlots()
             const FSearchableSlotConfig& Config = SlotConfigs[ConfigIndex];
 
             FTransform FinalSpawnTransform = Config.SlotLocalTransform * Arrow->GetComponentTransform();
-
             APGSearchableSlotBase* SpawnedSlot = GetWorld()->SpawnActor<APGSearchableSlotBase>(
                 SlotClassToSpawn,
                 FinalSpawnTransform,
                 SpawnParams
             );
-
+            
             if (SpawnedSlot)
             {
                 // Slot의 Type 지정, Slot의 Item Spawn Point 지정, Slot을 배열에 저장
@@ -115,10 +114,7 @@ void APGSearchableBase::InitSlots()
 
                SpawnedSlot->SetCurrentSlotMesh(Config.SlotMeshType);
 
-                if (USceneComponent* SpawnPointComp = SpawnedSlot->GetItemSpawnPoint())
-                {
-                    SpawnPointComp->SetRelativeTransform(Config.ItemSpawnLocalTransform);
-                }
+               SpawnedSlot->SetItemSpawnPointTransform(Config.ItemSpawnLocalTransform);
 
                 SpawnedSlots[ConfigIndex] = SpawnedSlot;
             }
