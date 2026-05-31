@@ -155,6 +155,9 @@ protected:
 	// Open / Draw에 따른 타임라인 바인딩 및 목표 위치/회전값 계산을 처리할 함수
 	void SetupTimeline();
 
+	// Timelint Set은 처음 한 번만.
+	bool bIsTimelineSetup = false;
+
 	// 타임라인 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Searchable|Timeline")
 	TObjectPtr<UTimelineComponent> MovementTimeline;
@@ -181,6 +184,9 @@ protected:
 
 	UFUNCTION()
 	void UpdateOpenTimeline(float Value);
+
+	UFUNCTION()
+	void OnTimelineFinished();
 
 	// Draw의 월드 기준 이동을 위한 변수
 	FVector InitialLocation;

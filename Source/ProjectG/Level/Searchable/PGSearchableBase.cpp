@@ -20,6 +20,7 @@ APGSearchableBase::APGSearchableBase()
 
     MainBodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MainBodyMesh"));
     MainBodyMesh->SetupAttachment(Root);
+    MainBodyMesh->SetCollisionObjectType(ECC_WorldStatic);
 }
 
 

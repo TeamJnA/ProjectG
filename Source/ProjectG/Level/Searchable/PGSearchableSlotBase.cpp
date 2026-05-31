@@ -21,6 +21,9 @@ APGSearchableSlotBase::APGSearchableSlotBase()
 	SlotMesh1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SlotMesh1"));
 	SlotMesh1->SetupAttachment(Root);
 
+	SlotMesh1->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	SlotMesh1->SetCollisionResponseToChannel(ECC_ThrownItem, ECR_Block);
+
 	ItemSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSpawnPoint"));
 	ItemSpawnPoint->SetupAttachment(SlotMesh1);
 
@@ -97,11 +100,13 @@ void APGSearchableSlotBase::InteractSlot()
 {
 	check(HasAuthority());
 
-	if (!bIsDrawn)
+	if (MovementTimeline && MovementTimeline->IsPlaying())
 	{
-		bIsDrawn = true;
-		OnRep_IsDrawn();
+		return;
 	}
+
+	bIsDrawn = !bIsDrawn;
+	OnRep_IsDrawn();
 }
 
 void APGSearchableSlotBase::AttachSpawnedItem(AActor* Item)
@@ -144,13 +149,22 @@ FInteractionInfo APGSearchableSlotBase::GetInteractionInfo() const
 
 FText APGSearchableSlotBase::GetInteractionText() const
 {
-	// TODO : Open 이나 Draw로 변수에 맞춰.
+	if (bIsDrawn)
+	{
+		return FText::FromString(TEXT("Close"));
+	}
 	return FText::FromString(TEXT("Open"));
 }
 
 bool APGSearchableSlotBase::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
 {
 	if (!InteractAbility)
+	{
+		OutFailurePrompt.Icon = nullptr;
+		OutFailurePrompt.IconSize = FVector2D::ZeroVector;
+		return false;
+	}
+	if (MovementTimeline && MovementTimeline->IsPlaying())
 	{
 		OutFailurePrompt.Icon = nullptr;
 		OutFailurePrompt.IconSize = FVector2D::ZeroVector;
@@ -201,12 +215,11 @@ void APGSearchableSlotBase::OnRep_SlotMesh()
 
 void APGSearchableSlotBase::OnRep_IsDrawn()
 {
-	// SlotInteractionType에 맞춰 타임라인 세팅
-	SetupTimeline();
-
-	if (MovementTimeline && DrawCurve)
+	// SlotInteractionType에 맞춰 타임라인 세팅. 1회만.
+	if (!bIsTimelineSetup)
 	{
-		MovementTimeline->Play();
+		SetupTimeline();
+		bIsTimelineSetup = true;
 	}
 
 	HighlightOff();
@@ -214,10 +227,23 @@ void APGSearchableSlotBase::OnRep_IsDrawn()
 	if (SlotMesh1)
 	{
 		SlotMesh1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-		SlotMesh1->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
-		SlotMesh1->SetCollisionResponseToChannel(ECC_ThrownItem, ECR_Block);
+	}
+
+	if (MovementTimeline)
+	{
+		if (bIsDrawn)
+		{
+			// 열기 (정방향 재생, Timeline Progress 0 -> 1)
+			MovementTimeline->Play();
+		}
+		else
+		{
+			// 닫기 (역방향 재생, Timeline Progress 1 -> 0)
+			MovementTimeline->Reverse();
+		}
 	}
 }
+
 
 void APGSearchableSlotBase::SetupTimeline()
 {
@@ -248,6 +274,11 @@ void APGSearchableSlotBase::SetupTimeline()
 			MovementTimeline->AddInterpFloat(OpenCurve, TimelineProgress);
 		}
 	}
+
+	// Timeline end event.
+	FOnTimelineEvent TimelineFinishedEvent;
+	TimelineFinishedEvent.BindDynamic(this, &APGSearchableSlotBase::OnTimelineFinished);
+	MovementTimeline->SetTimelineFinishedFunc(TimelineFinishedEvent);
 }
 
 void APGSearchableSlotBase::UpdateDrawTimeline(float Value)
@@ -255,6 +286,14 @@ void APGSearchableSlotBase::UpdateDrawTimeline(float Value)
 	FVector NewLocation = FMath::Lerp(InitialLocation, TargetLocation, Value);
 
 	SetActorLocation(NewLocation);
+
+	/*
+	if (SlotMesh1)
+	{
+		FVector NewLocation = FMath::Lerp(InitialLocation, TargetLocation, Value);
+		SlotMesh1->SetRelativeLocation(NewLocation);
+	}
+	*/
 }
 
 void APGSearchableSlotBase::UpdateOpenTimeline(float Value)
@@ -263,5 +302,13 @@ void APGSearchableSlotBase::UpdateOpenTimeline(float Value)
 	{
 		FRotator NewRot1 = FMath::Lerp(InitialRotation, TargetRotation, Value);
 		SlotMesh1->SetRelativeRotation(NewRot1);
+	}
+}
+
+void APGSearchableSlotBase::OnTimelineFinished()
+{
+	if (SlotMesh1)
+	{
+		SlotMesh1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	}
 }

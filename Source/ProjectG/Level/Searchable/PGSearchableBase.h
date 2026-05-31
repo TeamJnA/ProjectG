@@ -20,16 +20,16 @@ struct FSearchableSlotConfig
     ESlotInteractType InteractionType = ESlotInteractType::Draw;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Slot Config")
+    ESlotMeshType SlotMeshType = ESlotMeshType::Cabinet_Door;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Slot Config")
     FTransform SlotLocalTransform = FTransform::Identity;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Slot Config")
     FTransform ItemSpawnLocalTransform = FTransform::Identity;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Slot Config")
-    ESlotMeshType SlotMeshType = ESlotMeshType::Cabinet_Door;
 };
 
-UCLASS()
+UCLASS(PrioritizeCategories = "Slot")
 class PROJECTG_API APGSearchableBase : public AActor
 {
 	GENERATED_BODY()
