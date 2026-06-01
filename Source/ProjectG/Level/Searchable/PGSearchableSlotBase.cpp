@@ -179,6 +179,9 @@ void APGSearchableSlotBase::BeginPlay()
 	Super::BeginPlay();
 	
 	MovementTimeline->SetTimelineLengthMode(TL_LastKeyFrame);
+
+	// Slot Mesh √ ±‚»≠. 
+	OnRep_SlotMesh();
 }
 
 void APGSearchableSlotBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -189,6 +192,7 @@ void APGSearchableSlotBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(APGSearchableSlotBase, SlotInteractionType);
 	DOREPLIFETIME(APGSearchableSlotBase, ItemSpawnTransform);
 	DOREPLIFETIME(APGSearchableSlotBase, SlotMeshTransform);
+	DOREPLIFETIME(APGSearchableSlotBase, CurrentSlotMesh);
 }
 
 void APGSearchableSlotBase::OnRep_SlotMesh()
