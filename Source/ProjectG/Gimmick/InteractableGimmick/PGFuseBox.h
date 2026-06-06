@@ -67,7 +67,6 @@ protected:
 	void OnRep_ShakeStep();
 
 	void DisableShakeEffect();
-	void ReportNoiseToInvestigator(AActor* Investigator, FName SoundName);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Fuse")
 	TSoftObjectPtr<UPGItemData> FuseItemDataPath;

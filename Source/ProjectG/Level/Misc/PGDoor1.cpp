@@ -3,7 +3,6 @@
 
 #include "Level/Misc/PGDoor1.h"
 #include "Character/PGPlayerCharacter.h"
-#include "Character/Component/PGSoundManagerComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Physics/PGChaosCacheManager.h"
@@ -174,8 +173,7 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 
 		if (bIsPlayer)
 		{
-			PlayDoorSound(DoorOpenSound);
-			ReportNoiseToInvestigator(InteractInvestigator, DoorOpenSound);
+			PlayDoorSound(DoorOpenSound, true, InteractInvestigator);
 		}
 		else
 		{
@@ -210,11 +208,7 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 	}
 	else
 	{
-		PlayDoorSound(DoorCloseSound);
-		if (bIsPlayer)
-		{
-			ReportNoiseToInvestigator(InteractInvestigator, DoorCloseSound);
-		}
+		PlayDoorSound(DoorCloseSound, true, InteractInvestigator);
 
 		DesiredTransform = ClosedTransform;
 		DoorOpenType = EDoorOpenType::Closed;
@@ -223,38 +217,6 @@ void APGDoor1::SetDoorState(bool InbIsOpen, AActor* InteractInvestigator)
 	}
 
 	OnRep_DesiredTransform();
-}
-
-void APGDoor1::ReportNoiseToInvestigator(AActor* Investigator, const FName& SoundName)
-{
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(Investigator);
-	if (!Char)
-	{
-		return;
-	}
-
-	UPGSoundManagerComponent* SMComp = Char->GetSoundManagerComponent();
-	if (!SMComp) 
-	{
-		return;
-	}
-
-	if (ISoundManagerInterface* SMI = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
-	{
-		if (APGSoundManager* SM = SMI->GetSoundManager())
-		{
-			const uint8 Level = SM->GetSoundLevel(SoundName);
-			if (Level > 0)
-			{
-				SMComp->Client_ReportSelfNoise(Level);
-			}
-		}
-	}
 }
 
 void APGDoor1::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -570,7 +532,7 @@ void APGDoor1::UnLock()
 	OnRep_LockState();
 }
 
-void APGDoor1::PlayDoorSound(const FName& SoundName, const bool IsEnemyHear)
+void APGDoor1::PlayDoorSound(const FName& SoundName, const bool IsEnemyHear, AActor* Investigator)
 {
 	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
 	{
@@ -578,7 +540,7 @@ void APGDoor1::PlayDoorSound(const FName& SoundName, const bool IsEnemyHear)
 		{
 			if (IsEnemyHear)
 			{
-				SoundManager->PlaySoundWithNoise(SoundName, GetActorLocation());
+				SoundManager->PlaySoundWithNoise(SoundName, GetActorLocation(), false, Investigator);
 			}
 			else
 			{

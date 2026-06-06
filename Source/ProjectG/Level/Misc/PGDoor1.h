@@ -60,7 +60,7 @@ public:
 	void Lock() { bIsLocked = true; OnRep_LockState(); }
 	void UnLock();
 
-	void PlayDoorSound(const FName& SoundName, const bool IsEnemyHear = true);
+	void PlayDoorSound(const FName& SoundName, const bool IsEnemyHear = true, AActor* Investigator = nullptr);
 
 	void OpenDoorByEnemy(AActor* InteractInvestigator);
 
@@ -114,8 +114,6 @@ protected:
 	void OnRep_LockState();
 
 	void SetDoorState(bool _bIsOpen, AActor* InteractInvestigator);
-
-	void ReportNoiseToInvestigator(AActor* Investigator, const FName& SoundName);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 

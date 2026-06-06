@@ -2,6 +2,8 @@
 
 
 #include "Sound/PGSoundManager.h"
+#include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DataTable.h"
@@ -62,7 +64,7 @@ void APGSoundManager::PlaySoundForAllPlayers_Implementation(const FName& SoundNa
 	PlaySoundMulticast(SoundName, SoundLocation);
 }
 
-void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, const FVector& SoundLocation, bool bIntensedSound)
+void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, const FVector& SoundLocation, bool bIntensedSound, AActor* Investigator)
 {
 	PlaySoundMulticast(SoundName, SoundLocation);
 
@@ -105,6 +107,8 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 		SoundName
     );
 
+	ReportSelfNoise(Investigator, SoundName);
+
 #if WITH_EDITOR
 	// Draw debug sphere of makenoise range
 	if (bDebugSoundRange)
@@ -121,6 +125,21 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 		}
 	}
 #endif
+}
+
+void APGSoundManager::ReportSelfNoise(AActor* Investigator, FName SoundName) const
+{
+	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(Investigator))
+	{
+		if (UPGSoundManagerComponent* SMComp = Char->GetSoundManagerComponent())
+		{
+			const uint8 Level = GetSoundLevel(SoundName);
+			if (Level > 0)
+			{
+				SMComp->Client_ReportSelfNoise(Level);
+			}
+		}
+	}
 }
 
 void APGSoundManager::PlaySoundMulticast_Implementation(const FName& SoundName, const FVector& SoundLocation)

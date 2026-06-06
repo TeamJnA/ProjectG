@@ -59,13 +59,7 @@ void UPGSoundManagerComponent::TriggerSoundWithNoise_Implementation(FName SoundN
 		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *SoundName.ToString());
 		return;
 	}
-	SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, bIntensedSound);
-
-	const uint8 Level = SoundManager->GetSoundLevel(SoundName);
-	if (Level > 0)
-	{
-		Client_ReportSelfNoise(Level);
-	}
+	SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, bIntensedSound, GetOwner());
 }
 
 void UPGSoundManagerComponent::Client_ReportSelfNoise_Implementation(uint8 SoundLevel)

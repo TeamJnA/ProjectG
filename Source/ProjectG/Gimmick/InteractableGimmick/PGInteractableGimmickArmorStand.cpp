@@ -9,6 +9,7 @@
 #include "Sound/PGSoundManager.h"
 #include "PGLogChannels.h"
 
+
 APGInteractableGimmickArmorStand::APGInteractableGimmickArmorStand()
 {
     ArmorBoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ArmorBoxCollision"));
@@ -119,8 +120,7 @@ void APGInteractableGimmickArmorStand::CollapseArmor(AActor* Investigator)
     OnRep_CollisionDisabled();
 
     // Play Sound
-    SoundManager->PlaySoundWithNoise(ArmorStandCollapseSound, GetActorLocation());
-    ReportNoiseToInvestigator(Investigator, ArmorStandCollapseSound);
+    SoundManager->PlaySoundWithNoise(ArmorStandCollapseSound, GetActorLocation(), false, Investigator);
 
     // Highlight ²ô±â
     HighlightOff();

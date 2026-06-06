@@ -7,6 +7,7 @@
 #include "PGProjectileItemGlass.generated.h"
 
 class UNiagaraComponent;
+
 /**
  * 
  */

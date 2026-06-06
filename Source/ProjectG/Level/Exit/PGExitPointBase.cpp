@@ -8,7 +8,6 @@
 #include "Player/PGPlayerController.h"
 #include "Interface/SoundManagerInterface.h"
 #include "Sound/PGSoundManager.h"
-#include "Character/Component/PGSoundManagerComponent.h"
 #include "Game/PGGameState.h"
 #include "Type/PGPhotoTypes.h"
 
@@ -91,29 +90,11 @@ bool APGExitPointBase::Unlock(AActor* Investigator)
 
 void APGExitPointBase::PlaySound(const FName& SoundName, const FVector& SoundLocation, AActor* Investigator)
 {
-	ISoundManagerInterface* SMI = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode());
-	if (!SMI)
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
 	{
-		return;
-	}
-
-	APGSoundManager* SM = SMI->GetSoundManager();
-	if (!SM)
-	{
-		return;
-	}
-
-	SM->PlaySoundWithNoise(SoundName, SoundLocation, false);
-
-	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(Investigator))
-	{
-		if (UPGSoundManagerComponent* SMComp = Char->GetSoundManagerComponent())
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
 		{
-			const uint8 Level = SM->GetSoundLevel(SoundName);
-			if (Level > 0)
-			{
-				SMComp->Client_ReportSelfNoise(Level);
-			}
+			SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, false, Investigator);
 		}
 	}
 }

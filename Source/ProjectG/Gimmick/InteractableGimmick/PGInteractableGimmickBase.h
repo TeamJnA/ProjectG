@@ -42,7 +42,6 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void PlayLocalSound(FName SoundName, FVector SoundLocation);
-	void ReportNoiseToInvestigator(AActor* Investigator, FName SoundName);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> Root;

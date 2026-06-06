@@ -31,7 +31,7 @@ public:
 
 	// Play sound for all players and make noise. All players and enemy AI can hear sound.
 	UFUNCTION(Server, Reliable)
-	void 	PlaySoundWithNoise(const FName& SoundName, const FVector& SoundLocation, const bool bIntensedSound = false);
+	void PlaySoundWithNoise(const FName& SoundName, const FVector& SoundLocation, const bool bIntensedSound = false, AActor* Investigator = nullptr);
 
 	uint8 GetSoundLevel(FName SoundName) const;
 
@@ -40,6 +40,8 @@ private:
 	void PlaySoundMulticast(const FName& SoundName, const FVector& SoundLocation);
 
 	void PGPlaySound(const FName& SoundName, const FVector& SoundLocation);
+
+	void ReportSelfNoise(AActor* Investigator, FName SoundName) const;
 
 	UPROPERTY()
 	TMap<FName, FPGSoundPlayData> SoundDataMap;
