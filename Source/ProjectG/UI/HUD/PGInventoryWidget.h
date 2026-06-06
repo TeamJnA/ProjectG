@@ -79,6 +79,7 @@ protected:
 
 	TWeakObjectPtr<UPGInventoryComponent> InventoryRef;
 	TWeakObjectPtr<UPGGameUserSettings> CachedSettings;
+	TWeakObjectPtr<UPGItemData> LastGuideItemData;
 
 	int32 CurrentSlotIndex = 0;
 };

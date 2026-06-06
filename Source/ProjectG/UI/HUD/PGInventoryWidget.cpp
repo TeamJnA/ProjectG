@@ -185,6 +185,12 @@ void UPGInventoryWidget::RebuildItemActionGuide(UPGItemData* CurrentItemData)
 		return;
 	}
 
+	if (LastGuideItemData.Get() == CurrentItemData)
+	{
+		return;
+	}
+	LastGuideItemData = CurrentItemData;
+
 	ItemActionGuideBox->ClearChildren();
 
 	if (!CurrentItemData || !ActionGuideEntryClass)

@@ -67,14 +67,20 @@ void APGHUD::Init()
 		IndicatorContainerWidget->AddToViewport();
 	}
 
-	if (!AlertContainerWidget)
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
-		AlertContainerWidget = CreateWidget<UPGAlertContainerWidget>(PC, AlertContainerWidgetClass);
-	}
+		if (GS->GetCurrentGameState() != EGameState::Lobby)
+		{
+			if (!AlertContainerWidget)
+			{
+				AlertContainerWidget = CreateWidget<UPGAlertContainerWidget>(PC, AlertContainerWidgetClass);
+			}
 
-	if (AlertContainerWidget && !AlertContainerWidget->IsInViewport())
-	{
-		AlertContainerWidget->AddToViewport(10);
+			if (AlertContainerWidget && !AlertContainerWidget->IsInViewport())
+			{
+				AlertContainerWidget->AddToViewport(10);
+			}
+		}
 	}
 
 	if (!InventoryWidget)
@@ -467,6 +473,7 @@ void APGHUD::ClearViewport()
 	}
 }
 
+// Å»Ãâ/»ç¸Á
 void APGHUD::ForceCleanupHUD()
 {
 	// Ä«¸Þ¶ó À§Á¬ Áï½Ã Á¦°Å
@@ -686,17 +693,6 @@ void APGHUD::SetCrosshairVisible(bool bVisible)
 
 void APGHUD::ToggleHelperWidget()
 {
-	APlayerController* PC = GetOwningPlayerController();
-	if (!PC)
-	{
-		return;
-	}
-
-	if (AlertContainerWidget && AlertContainerWidget->IsHelperOpen())
-	{
-		return;
-	}
-
 	if (!CanOpenHelperWidget())
 	{
 		return;
@@ -721,6 +717,11 @@ bool APGHUD::CanOpenHelperWidget() const
 		}
 	}
 
+	if (!AlertContainerWidget)
+	{
+		return false;
+	}
+
 	if (ScoreBoardWidget && ScoreBoardWidget->IsInViewport())
 	{
 		return false;
@@ -737,6 +738,11 @@ bool APGHUD::CanOpenHelperWidget() const
 	}
 
 	if (CameraWidget && CameraWidget->IsInViewport())
+	{
+		return false;
+	}
+
+	if (AlertContainerWidget && AlertContainerWidget->IsHelperOpen())
 	{
 		return false;
 	}
