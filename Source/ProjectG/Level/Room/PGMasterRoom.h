@@ -24,6 +24,7 @@ public:
 	FORCEINLINE const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
 	FORCEINLINE const USceneComponent* GetOverlapBoxFolder() const { return OverlapBoxFolder; }
 	FORCEINLINE const USceneComponent* GetItemSpawnPointsFolder() const { return ItemSpawnPointsFolder; }
+	FORCEINLINE const USceneComponent* GetSearchableSpawnPointsFolder() const { return SearchableSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetArmorStandSpawnPointsFolder() const { return ArmorStandSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetFuseBoxSpawnPointsFolder() const { return FuseBoxSpawnPointsFolder; }
@@ -59,6 +60,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> ItemSpawnPointsFolder;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
+	TObjectPtr<USceneComponent> SearchableSpawnPointsFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> MannequinSpawnPointsFolder;
