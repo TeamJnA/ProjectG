@@ -13,7 +13,6 @@ class UVerticalBox;
 class UMediaPlayer;
 class UMediaSource;
 class UImage;
-class UPGAttributesWidget;
 
 DECLARE_DYNAMIC_DELEGATE(FOnCameraTransitionFinished);
 
@@ -98,9 +97,6 @@ protected:
 
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     TObjectPtr<UWidgetAnimation> WhiteFlashAnim;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UPGAttributesWidget> AttributesWidget;
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera")
     float FocusFrameMaxScale = 1.5f;  // ¡‹ √÷¥Î πË¿≤

@@ -45,6 +45,7 @@ namespace PhotoID
     constexpr int32 Room_Blind = 320;
     constexpr int32 Room_Ghost = 330;
     constexpr int32 Room_Elevator = 340;
+    constexpr int32 ExitDoor = 350;
 
     // 카테고리 판별
     FORCEINLINE bool IsMonster(int32 ID) { return ID / 100 == 1; }
@@ -52,6 +53,7 @@ namespace PhotoID
     FORCEINLINE bool IsRoom(int32 ID) { return ID / 100 == 3; }
     FORCEINLINE int32 GetRoomCategory(int32 ID) { return ID / 10; }
     FORCEINLINE bool IsSameRoomCategory(int32 A, int32 B) { return GetRoomCategory(A) == GetRoomCategory(B); }
+    FORCEINLINE int32 GetSpeciesKey(int32 ID) { return IsRoom(ID) ? ID : (ID / 10); }
 }
 
 namespace PhotoGrade

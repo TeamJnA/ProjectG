@@ -98,7 +98,7 @@ void APGInteractableGimmickLever::ActivateLever()
 	}
 }
 
-void APGInteractableGimmickLever::UpdateHoldProgress(float Progress)
+void APGInteractableGimmickLever::UpdateHoldProgress(float Progress, AActor* Investigator)
 {
 	if (!HasAuthority())
 	{

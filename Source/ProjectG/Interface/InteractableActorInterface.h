@@ -83,4 +83,7 @@ public:
 		return true;
 	}
 	virtual void InteractionFailed() {}
+
+	// only exits
+	virtual void NotifyInteractionAttempted(ACharacter* InteractingPlayer) {}
 };

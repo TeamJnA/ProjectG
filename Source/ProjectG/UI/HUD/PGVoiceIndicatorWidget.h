@@ -6,7 +6,6 @@
 #include "Blueprint/UserWidget.h"
 #include "PGVoiceIndicatorWidget.generated.h"
 
-class UProgressBar;
 class UImage;
 
 /**
@@ -20,48 +19,43 @@ class PROJECTG_API UPGVoiceIndicatorWidget : public UUserWidget
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	FLinearColor NormalColor = FLinearColor::White;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	FLinearColor DangerColor = FLinearColor::Red;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UProgressBar> VoiceAmplitudeBar;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UImage> RadioIcon;
-
-	// V key hint
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UImage> KeyHintIcon;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	float TalkingThreshold = 0.02f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	float DangerThreshold = 0.06f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	float ActiveOpacity = 0.8f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	float ReadyOpacity = 0.4f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	float InactiveOpacity = 0.1f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Voice")
-	float FadeSpeed = 10.0f;
-
-private:
 	bool IsPushToTalkEnabled() const;
 	bool IsMicReady() const;
-	void ApplyKeyHintVisibility(bool bPushToTalk);
 
-	float DisplayAmplitude = 0.0f;
-	float CurrentOpacity = 0.01f;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> NoiseBar;
 
-	bool bCachedPushToTalk = false;
-	bool bKeyHintInitialized = false;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> MicModeIcon;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> BarMID;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator")
+	FName FillRatioParam = TEXT("FillRatio");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator")
+	float VoiceMaxAmplitude = 0.25f; // 이 이상이면 VoiceMaxLevel
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator")
+	float VoiceMaxLevel = 4.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator")
+	float MaxDisplayLevel = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator")
+	float FallInterpSpeed = 6.0f;
+
+	float DisplayLevel = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator|Mic")
+	float MicActiveOpaciity = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator|Mic")
+	float MicInactiveOpacity = 0.1f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator|Mic")
+	float MicOpacityInterpSpeed = 10.0f;
+
+	float CurrentMicOpacity = 1.0f;
 };

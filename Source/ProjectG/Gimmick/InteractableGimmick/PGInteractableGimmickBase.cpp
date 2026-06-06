@@ -4,11 +4,14 @@
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickBase.h"
 
 #include "GameFramework/GameModeBase.h"
+#include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 #include "Sound/PGSoundManager.h"
 #include "Interface/SoundManagerInterface.h"
 
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
+
 
 // Sets default values
 APGInteractableGimmickBase::APGInteractableGimmickBase()
@@ -50,7 +53,30 @@ void APGInteractableGimmickBase::PlayLocalSound(FName _SoundName, FVector _Sound
 	}
 }
 
-void APGInteractableGimmickBase::GimmickInteract()
+void APGInteractableGimmickBase::ReportNoiseToInvestigator(AActor* Investigator, FName SoundName)
+{
+	if (!HasAuthority() || !SoundManager)
+	{
+		return;
+	}
+
+	APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(Investigator);
+	if (!Char)
+	{
+		return;
+	}
+
+	if (UPGSoundManagerComponent* SMComp = Char->GetSoundManagerComponent())
+	{
+		const uint8 Level = SoundManager->GetSoundLevel(SoundName);
+		if (Level > 0)
+		{
+			SMComp->Client_ReportSelfNoise(Level);
+		}
+	}
+}
+
+void APGInteractableGimmickBase::GimmickInteract(AActor* Investigator)
 {
 }
 

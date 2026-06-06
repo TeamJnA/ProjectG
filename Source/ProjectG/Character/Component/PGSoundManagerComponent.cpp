@@ -60,6 +60,44 @@ void UPGSoundManagerComponent::TriggerSoundWithNoise_Implementation(FName SoundN
 		return;
 	}
 	SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, bIntensedSound);
+
+	const uint8 Level = SoundManager->GetSoundLevel(SoundName);
+	if (Level > 0)
+	{
+		Client_ReportSelfNoise(Level);
+	}
+}
+
+void UPGSoundManagerComponent::Client_ReportSelfNoise_Implementation(uint8 SoundLevel)
+{
+	const float Existing = GetCurrentActionNoiseLevel();
+	CurrentActionNoiseLevel = FMath::Max(static_cast<float>(SoundLevel), Existing);
+	if (const UWorld* World = GetWorld())
+	{
+		ActionNoiseReportedTime = World->GetTimeSeconds();
+	}
+}
+
+float UPGSoundManagerComponent::GetCurrentActionNoiseLevel() const
+{
+	const UWorld* World = GetWorld();
+	if (!World || ActionNoiseDecayDuration <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	const float Elapsed = World->GetTimeSeconds() - ActionNoiseReportedTime;
+	if (Elapsed <= ActionNoiseHoldDuration)
+	{
+		return CurrentActionNoiseLevel;
+	}
+
+	const float DecayElapsed = Elapsed - ActionNoiseHoldDuration;
+	if (DecayElapsed >= ActionNoiseDecayDuration)
+	{
+		return 0.0f;
+	}
+	return CurrentActionNoiseLevel * (1.0f - Elapsed / ActionNoiseDecayDuration);
 }
 
 void UPGSoundManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -15,6 +15,7 @@
 #include "Interface/InteractableActorInterface.h"
 #include "Interface/HoldInteractProgressHandler.h"
 
+
 /*
 * 라인 트레이스 태스크를 활성화하여 플레이어 캐릭터 카메라 정면 탐지
 */
@@ -165,6 +166,7 @@ void UGA_Interact::WaitInteractionInput(AActor* TargetActor)
 
 					WaitForHoldInputTask = UAT_WaitForHoldInput::WaitForHoldInput(this, Info.HoldDuration, CachedHoldTargetActor.Get());
 					WaitForHoldInputTask->OnHoldInputProgressUpdated.AddDynamic(this, &UGA_Interact::UpdateInteractionUI);
+					WaitForHoldInputTask->OnHoldInputStarted.AddDynamic(this, &UGA_Interact::OnHoldInputStarted);
 					WaitForHoldInputTask->OnHoldInputCompleted.AddDynamic(this, &UGA_Interact::OnHoldInputCompleted);
 					WaitForHoldInputTask->OnHoldInputEnd.AddDynamic(this, &UGA_Interact::OnHoldInputEnded);
 					
@@ -231,6 +233,8 @@ void UGA_Interact::InteractWithTarget(AActor* TargetActor)
 	{
 		return;
 	}
+
+	InteractInterface->NotifyInteractionAttempted(OwnerCharacter);
 
 	// 현재 시점에서 Interact 가능한지(Target이 잠긴 문인 경우 플레이어가 열쇠를 들고 있는 상태인지) 재검사
 	FInteractionPromptInfo FailurePrompt;
@@ -304,6 +308,8 @@ void UGA_Interact::HandleFailedInteractionAttempt(AActor* TargetActor)
 		return;
 	}
 
+	InteractableInterface->NotifyInteractionAttempted(OwnerCharacter);
+
 	FInteractionPromptInfo FailurePrompt;
 	InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailurePrompt);
 	InteractableInterface->InteractionFailed();
@@ -326,7 +332,7 @@ void UGA_Interact::UpdateInteractionUI(float Progress)
 	// Do some progress hold actions
 	if (IHoldInteractProgressHandler* ProgressHander = Cast<IHoldInteractProgressHandler>(CachedHoldTargetActor))
 	{
-		ProgressHander->UpdateHoldProgress(Progress);
+		ProgressHander->UpdateHoldProgress(Progress, OwnerCharacter);
 	}
 }
 
@@ -338,6 +344,25 @@ void UGA_Interact::OnHoldInputCompleted()
 	InteractWithTarget(CachedTargetActor.Get());
 
 	CachedHoldTargetActor = nullptr;
+}
+
+void UGA_Interact::OnHoldInputStarted()
+{
+	if (!CachedHoldTargetActor.IsValid())
+	{
+		return;
+	}
+
+	APGPlayerCharacter* OwnerCharacter = Cast<APGPlayerCharacter>(GetAvatarActorFromActorInfo());
+	if (!OwnerCharacter)
+	{
+		return;
+	}
+
+	if (IInteractableActorInterface* InteractableInterface = Cast<IInteractableActorInterface>(CachedHoldTargetActor.Get()))
+	{
+		InteractableInterface->NotifyInteractionAttempted(OwnerCharacter);
+	}
 }
 
 /*

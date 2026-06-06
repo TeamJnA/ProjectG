@@ -3,10 +3,15 @@
 
 #include "UI/HUD/PGInventoryWidget.h"
 #include "UI/HUD/PGInventorySlotWidget.h"
+#include "UI/HUD/PGItemActionGuideWidget.h"
 #include "Components/TextBlock.h"
+#include "Components/Widget.h"
+#include "Components/VerticalBox.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
+#include "Player/PGGameUserSettings.h"
 #include "Item/PGItemData.h"
+
 
 void UPGInventoryWidget::NativeOnInitialized()
 {
@@ -28,6 +33,14 @@ void UPGInventoryWidget::NativeConstruct()
 	{
 		InventorySlot0->HighlightSlot();
 	}
+
+	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		CachedSettings = Settings;
+		Settings->OnPushToTalkModeChanged.AddUniqueDynamic(this, &UPGInventoryWidget::HandlePushToTalkModeChanged);
+	}
+
+	RefreshVoiceKeyGuide();
 }
 
 void UPGInventoryWidget::NativeDestruct()
@@ -36,6 +49,11 @@ void UPGInventoryWidget::NativeDestruct()
 	{
 		Inventory->OnInventoryItemUpdate.RemoveAll(this);
 		Inventory->OnCurrentSlotIndexChanged.RemoveAll(this);
+	}
+
+	if (UPGGameUserSettings* Settings = CachedSettings.Get())
+	{
+		Settings->OnPushToTalkModeChanged.RemoveAll(this);
 	}
 
 	for (auto& InventorySlot : InventorySlots)
@@ -47,6 +65,27 @@ void UPGInventoryWidget::NativeDestruct()
 	}
 
 	Super::NativeDestruct();
+}
+
+void UPGInventoryWidget::HandlePushToTalkModeChanged(bool bIsPushToTalk)
+{
+	RefreshVoiceKeyGuide();
+}
+
+void UPGInventoryWidget::RefreshVoiceKeyGuide()
+{
+	if (!VoiceKeyGuide)
+	{
+		return;
+	}
+
+	bool bPushToTalk = false;
+	if (const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		bPushToTalk = Settings->IsPushToTalk();
+	}
+
+	VoiceKeyGuide->SetVisibility(bPushToTalk ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 }
 
 /*
@@ -130,17 +169,35 @@ void UPGInventoryWidget::HandleOnCurrentSlotIndexChanged(int32 NewIndex)
 
 void UPGInventoryWidget::UpdateCurrentItemName(const TArray<FInventoryItem>& InventoryItems, int32 CurrentIndex)
 {
-	if (!CurrentItemNameText)
+	UPGItemData* CurrentData = InventoryItems.IsValidIndex(CurrentIndex) ? InventoryItems[CurrentIndex].ItemData : nullptr;
+	if (CurrentItemNameText)
+	{
+		CurrentItemNameText->SetText(CurrentData ? CurrentData->ItemName : FText::GetEmpty());
+	}
+
+	RebuildItemActionGuide(CurrentData);
+}
+
+void UPGInventoryWidget::RebuildItemActionGuide(UPGItemData* CurrentItemData)
+{
+	if (!ItemActionGuideBox)
 	{
 		return;
 	}
 
-	if (InventoryItems.IsValidIndex(CurrentIndex) && InventoryItems[CurrentIndex].ItemData)
+	ItemActionGuideBox->ClearChildren();
+
+	if (!CurrentItemData || !ActionGuideEntryClass)
 	{
-		CurrentItemNameText->SetText(InventoryItems[CurrentIndex].ItemData->ItemName);
+		return;
 	}
-	else
+
+	for (const FItemActionGuide& Guide : CurrentItemData->ActionGuides)
 	{
-		CurrentItemNameText->SetText(FText::GetEmpty());
+		if (UPGItemActionGuideWidget* Entry = CreateWidget<UPGItemActionGuideWidget>(this, ActionGuideEntryClass))
+		{
+			Entry->Setup(Guide.ActionText, Guide.KeyIcon, Guide.KeyIconSize);
+			ItemActionGuideBox->InsertChildAt(0, Entry);
+		}
 	}
 }

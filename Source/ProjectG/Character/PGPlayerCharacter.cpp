@@ -2335,6 +2335,35 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 		return;
 	}
 
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC)
+	{
+		return;
+	}
+
+	APGHUD* HUD = Cast<APGHUD>(PC->GetHUD());
+	if (!HUD)
+	{
+		return;
+	}
+	
+	if (!CameraComp)
+	{
+		HUD->SetPhotoAlertVisible(false);
+		return;
+	}
+
+	if (CameraComp->IsInCameraMode())
+	{
+		return;
+	}
+
+	if (!CameraComp->HasBattery())
+	{
+		HUD->SetPhotoAlertVisible(false);
+		return;
+	}
+
 	bool bHasPhotographable = false;
 
 	const FVector CameraLocation = FirstPersonCamera->GetComponentLocation();
@@ -2356,13 +2385,10 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 		}
 
 		// 이미 찍은 대상 스킵
-		if (CameraComp)
+		FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
+		if (CameraComp->IsAlreadyCaptured(Info.SubjectID))
 		{
-			FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
-			if (CameraComp->IsAlreadyCaptured(Info.SubjectID))
-			{
-				continue;
-			}
+			continue;
 		}
 
 		// 거리 체크 (촬영 알림용)
@@ -2396,13 +2422,7 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 		break;
 	}
 
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
-		{
-			HUD->SetPhotoAlertVisible(bHasPhotographable);
-		}
-	}
+	HUD->SetPhotoAlertVisible(bHasPhotographable);
 }
 
 void APGPlayerCharacter::InitBonfireVignetteMaterial()

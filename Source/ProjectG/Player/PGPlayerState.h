@@ -14,6 +14,7 @@ class UPGAbilitySystemComponent;
 class UPGAttributeSet;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerStateUpdatedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCapturedSubjectsChangedDelegate);
 
 UCLASS()
 class PROJECTG_API APGPlayerState : public APlayerState, public IAbilitySystemInterface
@@ -65,6 +66,7 @@ public:
 	FORCEINLINE const TArray<int32>& GetCapturedIDs() const { return CapturedSubjectIDArray; }
 
 	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
+	FOnCapturedSubjectsChangedDelegate OnCapturedSubjectsChanged;
 
 protected:
 	virtual void BeginPlay() override;
@@ -74,7 +76,7 @@ protected:
 	TSet<int32> CapturedSubjectIDs;
 
 	// 리플리케이션용
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_CapturedSubjects)
 	TArray<int32> CapturedSubjectIDArray;
 
 	UPROPERTY()
@@ -121,4 +123,7 @@ protected:
 
 	UFUNCTION()
 	void OnRep_ReadyToReturnLobby();
+
+	UFUNCTION()
+	void OnRep_CapturedSubjects();
 };

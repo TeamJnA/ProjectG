@@ -115,6 +115,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> PushToTalkAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ToggleHelperAction;
+
 	int32 CurrentSpectateIndex = -1;
 
 	void OnSpectateNext(const FInputActionValue& Value);
@@ -122,6 +125,8 @@ protected:
 	void OnShowPauseMenu(const FInputActionValue& Value);
 
 	void OnPushToTalkToggled(const FInputActionValue& Value);
+
+	void OnToggleHelper(const FInputActionValue& Value);
 
 public:
 	void ApplyVoiceMode();
@@ -178,4 +183,8 @@ private:
 
 	bool bPushToTalkActive = false;
 	bool bPushToTalkPrimed = false;
+
+public:
+	UFUNCTION(Client, Reliable)
+	void Client_NotifyExitInteractionDiscovery(int32 SubjectID);
 };

@@ -59,13 +59,13 @@ void APGInteractableGimmickArmorStand::PostInitializeComponents()
     }
 }
 
-void APGInteractableGimmickArmorStand::GimmickInteract()
+void APGInteractableGimmickArmorStand::GimmickInteract(AActor* Investigator)
 {
     if (bAlreadyCollapsed)
     {
         return;
     }
-    CollapseArmor();
+    CollapseArmor(Investigator);
 }
 
 void APGInteractableGimmickArmorStand::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -83,7 +83,11 @@ void APGInteractableGimmickArmorStand::OnHit(UPrimitiveComponent* HitComp, AActo
     {
         UE_LOG(LogPGInteractableGimmick, Log, TEXT("ArmorStand OnHit by proper actor"));
 
-        CollapseArmor();
+        CollapseArmor(OtherActor->GetInstigator());
+    }
+    else if (OtherActor->IsA<APGPlayerCharacter>())
+    {
+        CollapseArmor(OtherActor);
     }
 }
 
@@ -93,7 +97,7 @@ void APGInteractableGimmickArmorStand::OnRep_CollisionDisabled()
     CameraShakeSource->Start();
 }
 
-void APGInteractableGimmickArmorStand::CollapseArmor()
+void APGInteractableGimmickArmorStand::CollapseArmor(AActor* Investigator)
 {
     UE_LOG(LogPGInteractableGimmick, Log, TEXT("Armor has collapsed."));
 
@@ -116,6 +120,7 @@ void APGInteractableGimmickArmorStand::CollapseArmor()
 
     // Play Sound
     SoundManager->PlaySoundWithNoise(ArmorStandCollapseSound, GetActorLocation());
+    ReportNoiseToInvestigator(Investigator, ArmorStandCollapseSound);
 
     // Highlight ²ô±â
     HighlightOff();

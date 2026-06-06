@@ -22,6 +22,6 @@ class PROJECTG_API IHoldInteractProgressHandler
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void UpdateHoldProgress(float Progress) = 0;
+	virtual void UpdateHoldProgress(float Progress, AActor* Investigator) = 0;
 	virtual void StopHoldProress() = 0;
 };

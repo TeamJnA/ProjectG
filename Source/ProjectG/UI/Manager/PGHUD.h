@@ -7,15 +7,15 @@
 #include "Type/PGPhotoTypes.h"
 #include "PGHUD.generated.h"
 
-class UPGAttributesWidget;
+class UPGIndicatorContainerWidget;
+class UPGAlertContainerWidget;
 class UPGInventoryWidget;
 class UPGInventoryComponent;
 class UPGMessageManagerWidget;
 class UPGInteractionProgressWidget;
-class UPGVoiceIndicatorWidget;
 class UPGCameraWidget;
 class UPGCrosshairWidget;
-class UPGPhotoAlertWidget;
+class APGExitPointBase;
 class UPGBackgroundBlurWidget;
 class UPGMainMenuWidget;
 class UPGLobbyWidget;
@@ -62,13 +62,34 @@ public:
 	void ExitCameraMode();
 	void UpdateCameraProgress(float Progress);
 	void DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 TotalScore);
+
+	// -------- AlertWidget(PhotoAlert, Toast, Helper) --------
+	void BeginExitCameraTransition();
 	void SetPhotoAlertVisible(bool bVisible);
+	void ToggleHelperWidget();
+	void CloseHelperWidgetIfOpen();
+	bool CanOpenHelperWidget() const;
+	void NotifyNewlyCapturedSpeciesKeys(const TArray<int32>& Keys);
 
 protected:
 	APGHUD();
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	UFUNCTION()
+	void HandleExitLockStateChanged(APGExitPointBase* ExitActor);
+
+	void TryBindExits();
+	void UnbindExits();
+
+	void DisplayExitToast();
+	void DisplayEnemyToast(const FText& TooltipText);
+
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGAttributesWidget> AttributeWidgetClass;
+	TSubclassOf<UPGIndicatorContainerWidget> IndicatorContainerWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPGAlertContainerWidget> AlertContainerWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGInventoryWidget> InventoryWidgetClass;
@@ -80,16 +101,16 @@ protected:
 	TSubclassOf<UPGInteractionProgressWidget> InteractionProgressWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGVoiceIndicatorWidget> VoiceIndicatorWidgetClass;
-
-	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGCameraWidget> CameraWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGCrosshairWidget> CrosshairWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UPGPhotoAlertWidget> PhotoAlertWidgetClass;
+	TObjectPtr<UDataTable> HelperCatalogTable;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UDataTable> EnemyCatalogTable;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPGBackgroundBlurWidget> BackgroundBlurWidgetClass;
@@ -114,7 +135,10 @@ protected:
 
 private:
 	UPROPERTY()
-	TObjectPtr<UPGAttributesWidget> AttributeWidget;
+	TObjectPtr<UPGIndicatorContainerWidget> IndicatorContainerWidget;
+
+	UPROPERTY()
+	TObjectPtr<UPGAlertContainerWidget> AlertContainerWidget;
 
 	UPROPERTY()
 	TObjectPtr<UPGInventoryWidget> InventoryWidget;
@@ -126,16 +150,10 @@ private:
 	TObjectPtr<UPGInteractionProgressWidget> InteractionProgressWidget;
 
 	UPROPERTY()
-	TObjectPtr<UPGVoiceIndicatorWidget> VoiceIndicatorWidget;
-
-	UPROPERTY()
 	TObjectPtr<UPGCameraWidget> CameraWidget;
 
 	UPROPERTY()
 	TObjectPtr<UPGCrosshairWidget> CrosshairWidget;
-
-	UPROPERTY()
-	TObjectPtr<UPGPhotoAlertWidget> PhotoAlertWidget;
 
 	UPROPERTY()
 	TObjectPtr<UPGBackgroundBlurWidget> BackgroundBlurWidget;
@@ -157,4 +175,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UPGPauseMenuWidget> PauseMenuWidget;
+
+	TArray<TWeakObjectPtr<APGExitPointBase>> HUDSubscribedExits;
+
+	FTimerHandle ExitBindRetryHandle;
+
+	int32 ExitBindRetries = 0;
 };

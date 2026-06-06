@@ -9,6 +9,7 @@
 // delegate for broadcast hold input progress
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHoldInputProgress, float, Progress);
 // delegate for broadcast hold input complete
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldInputStarted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldInputCompleted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldInputCancelled);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHoldInputEnd);
@@ -24,6 +25,9 @@ class PROJECTG_API UAT_WaitForHoldInput : public UAbilityTask
 public:
 	UPROPERTY(BlueprintAssignable)
 	FOnHoldInputProgress OnHoldInputProgressUpdated;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnHoldInputStarted OnHoldInputStarted;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnHoldInputCompleted OnHoldInputCompleted;

@@ -4,94 +4,112 @@
 #include "UI/HUD/PGPhotoAlertWidget.h"
 #include "Components/Image.h"
 #include "Character/PGPlayerCharacter.h"
-#include "Character/Component/PGCameraComponent.h"
 
 
-void UPGPhotoAlertWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UPGPhotoAlertWidget::NativeOnInitialized()
 {
-    Super::NativeTick(MyGeometry, InDeltaTime);
+    Super::NativeOnInitialized();
 
-    const UPGCameraComponent* Cam = ResolveCameraComponent();
-    if (!Cam)
+    FWidgetAnimationDynamicEvent Finished;
+    Finished.BindDynamic(this, &UPGPhotoAlertWidget::HandleSlideAnimFinished);
+
+    if (SlideInAnim)
+    {
+        BindToAnimationFinished(SlideInAnim, Finished);
+    }
+
+    if (SlideOutAnim)
+    {
+        BindToAnimationFinished(SlideOutAnim, Finished);
+    }
+}
+
+void UPGPhotoAlertWidget::SetPhotoAlertActive(bool bActive)
+{
+    if (bActive == bShown)
     {
         return;
     }
+    bShown = bActive;
 
-    const bool bCanUse = Cam->HasBattery();
-    if (bCanUse != bCanUseCamera)
+    if (bShown)
     {
-        bCanUseCamera = bCanUse;
-
-        RefreshBlinkState();
-
-        if (CameraIcon)
+        if (SlideOutAnim && IsAnimationPlaying(SlideOutAnim))
         {
-            CameraIcon->SetRenderOpacity(bCanUse ? 1.0f : DisabledOpacity);
+            StopAnimation(SlideOutAnim);
+        }
+
+        if (SlideInAnim)
+        {
+            PlayAnimation(SlideInAnim);
+        }
+
+        if (BlinkAnim)
+        {
+            PlayAnimation(BlinkAnim, 0.0f, 0);
         }
     }
-}
-
-UPGCameraComponent* UPGPhotoAlertWidget::ResolveCameraComponent()
-{
-    if (CachedCam.IsValid())
+    else
     {
-        return CachedCam.Get();
-    }
-
-    APGPlayerCharacter* Player = GetOwningPlayerPawn<APGPlayerCharacter>();
-    if (!Player)
-    {
-        if (APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+        if (SlideInAnim && IsAnimationPlaying(SlideInAnim))
         {
-            Player = Cast<APGPlayerCharacter>(PC->GetPawn());
+            StopAnimation(SlideInAnim);
         }
-    }
 
-    if (Player)
-    {
-        if (UPGCameraComponent* Cam = Player->GetCameraComponent())
+        if (BlinkAnim)
         {
-            CachedCam = Cam;
-            return Cam;
+            StopAnimation(BlinkAnim);
         }
-    }
-
-    return nullptr;
-}
-
-void UPGPhotoAlertWidget::StartBlinking()
-{
-    bBlinkRequested = true;
-    RefreshBlinkState();
-}
-
-void UPGPhotoAlertWidget::StopBlinking()
-{
-    bBlinkRequested = false;
-    RefreshBlinkState();
-}
-
-void UPGPhotoAlertWidget::RefreshBlinkState()
-{
-    if (!BlinkAnim)
-    {
-        return;
-    }
-
-    const bool bShouldPlay = bBlinkRequested && bCanUseCamera;
-    if (bShouldPlay && !bAnimActive)
-    {
-        PlayAnimation(BlinkAnim, 0.0f, 0);
-        bAnimActive = true;
-    }
-    else if (!bShouldPlay && bAnimActive)
-    {
-        StopAnimation(BlinkAnim);
-        bAnimActive = false;
 
         if (CameraIcon)
         {
             CameraIcon->SetColorAndOpacity(NormalTint);
         }
+
+        if (SlideOutAnim)
+        {
+            PlayAnimation(SlideOutAnim);
+        }
     }
+}
+
+void UPGPhotoAlertWidget::HandleSlideAnimFinished()
+{
+    if (!bShown)
+    {
+        SnapToHiddenState();
+    }
+}
+
+void UPGPhotoAlertWidget::SnapToHiddenState()
+{
+    if (AlertRoot)
+    {
+        AlertRoot->SetRenderTranslation(HiddenTranslation);
+    }
+}
+
+void UPGPhotoAlertWidget::CollapseForCameraMode()
+{
+    SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UPGPhotoAlertWidget::RestoreFromCameraMode()
+{
+    StopAnimation(SlideInAnim);
+    StopAnimation(SlideOutAnim);
+
+    if (BlinkAnim)
+    {
+        StopAnimation(BlinkAnim);
+    }
+
+    if (CameraIcon)
+    {
+        CameraIcon->SetColorAndOpacity(NormalTint);
+    }
+
+    bShown = false;
+    SnapToHiddenState();
+    SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 }

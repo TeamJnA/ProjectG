@@ -3,6 +3,8 @@
 
 #include "Item/ItemActor/PGProjectileItemGlass.h"
 #include "Interface/SoundManagerInterface.h"
+#include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 #include "Sound/PGSoundManager.h"
 #include "GameFramework/GameModeBase.h"
 #include "NiagaraComponent.h"
@@ -49,11 +51,22 @@ void APGProjectileItemGlass::OnHit(UPrimitiveComponent* HitComponent, AActor* Ot
 
 void APGProjectileItemGlass::PlaySound_Implementation(const FVector& HitLocation)
 {
-	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	if (ISoundManagerInterface* SMI = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
 	{
-		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		if (APGSoundManager* SM = SMI->GetSoundManager())
 		{
-			SoundManager->PlaySoundWithNoise(ItemHitSound, HitLocation, false);
+			SM->PlaySoundWithNoise(ItemHitSound, HitLocation, false);
+			if (APGPlayerCharacter* Thrower = Cast<APGPlayerCharacter>(GetInstigator()))
+			{
+				if (UPGSoundManagerComponent* SMComp = Thrower->GetSoundManagerComponent())
+				{
+					const uint8 Level = SM->GetSoundLevel(ItemHitSound);
+					if (Level > 0)
+					{
+						SMComp->Client_ReportSelfNoise(Level);
+					}
+				}
+			}
 		}
 	}
 }

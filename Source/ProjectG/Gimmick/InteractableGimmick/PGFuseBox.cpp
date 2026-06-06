@@ -9,6 +9,8 @@
 #include "Item/PGItemData.h"
 #include "Interface/LightEffectInterface.h"
 
+#include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 #include "Interface/SoundManagerInterface.h"
 #include "Sound/PGSoundManager.h"
 #include "GameFramework/GameModeBase.h"
@@ -90,7 +92,7 @@ bool APGFuseBox::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FI
     return true;
 }
 
-void APGFuseBox::OpenBox()
+void APGFuseBox::OpenBox(AActor* Investigator)
 {
     if (!HasAuthority() || FuseBoxState != EFuseBoxState::Closed)
     {
@@ -106,10 +108,10 @@ void APGFuseBox::OpenBox()
             SoundManager->PlaySoundWithNoise(CoverFallSound, SoundPlayLocation);
         }
     }
+    ReportNoiseToInvestigator(Investigator, CoverFallSound);
 
     FuseBoxState = EFuseBoxState::Opened;
     OnRep_FuseBoxState();
-
     SpawnFuseItem();
 }
 
@@ -223,7 +225,7 @@ void APGFuseBox::TurnOffRoomLights()
     }
 }
 
-void APGFuseBox::UpdateHoldProgress(float Progress)
+void APGFuseBox::UpdateHoldProgress(float Progress, AActor* Investigator)
 {
     uint8 NewStep = 0;
     if (Progress >= 0.9f)
@@ -248,6 +250,7 @@ void APGFuseBox::UpdateHoldProgress(float Progress)
                 SoundManager->PlaySoundWithNoise(CoverShakeSound, GetActorLocation());
             }
         }
+        ReportNoiseToInvestigator(Investigator, CoverShakeSound);
 
         ShakeStep = NewStep;
         OnRep_ShakeStep();
@@ -301,4 +304,36 @@ void APGFuseBox::StopHoldProress()
         MIDCover->SetScalarParameterValue(ShakeParameterName, 0.0f);
     }
     GetWorldTimerManager().ClearTimer(ShakeEffectTimerHandle);
+}
+
+void APGFuseBox::ReportNoiseToInvestigator(AActor* Investigator, FName SoundName)
+{
+    if (!HasAuthority())
+    {
+        return;
+    }
+
+    APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(Investigator);
+    if (!Char)
+    {
+        return;
+    }
+
+    UPGSoundManagerComponent* SMComp = Char->GetSoundManagerComponent();
+    if (!SMComp)
+    {
+        return;
+    }
+
+    if (ISoundManagerInterface* SMI = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+    {
+        if (APGSoundManager* SM = SMI->GetSoundManager())
+        {
+            const uint8 Level = SM->GetSoundLevel(SoundName);
+            if (Level > 0)
+            {
+                SMComp->Client_ReportSelfNoise(Level);
+            }
+        }
+    }
 }

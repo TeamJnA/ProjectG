@@ -35,7 +35,9 @@ public:
 	virtual void InteractionFailed() override;
 	// ~IInteractableActorInterface
 
-	virtual bool Unlock() override;
+	virtual bool Unlock(AActor* Investigator) override;
+	virtual TSet<FName> GetUnlockedItemIds() const override;
+	virtual bool IsExitDepleted() const override;
 
 private:
 

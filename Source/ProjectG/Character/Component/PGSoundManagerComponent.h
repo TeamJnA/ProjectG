@@ -31,6 +31,11 @@ public:
 	UFUNCTION(BlueprintCallable, Server, Reliable)
 	void TriggerSoundWithNoise(FName InSoundName, FVector SoundLocation, bool bIntensedSound = false);
 
+	UFUNCTION(Client, Unreliable)
+	void Client_ReportSelfNoise(uint8 SoundLevel);
+
+	float GetCurrentActionNoiseLevel() const;
+
 protected:
 	// Called when the game starts
 	// virtual void BeginPlay() override;
@@ -39,4 +44,13 @@ protected:
 	TObjectPtr<APGSoundManager> SoundManager;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	float CurrentActionNoiseLevel = 0.0f;
+	float ActionNoiseReportedTime = -10.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Noise")
+	float ActionNoiseDecayDuration = 0.4f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Noise")
+	float ActionNoiseHoldDuration = 0.15f;
 };

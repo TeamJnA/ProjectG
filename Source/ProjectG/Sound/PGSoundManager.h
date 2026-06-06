@@ -33,6 +33,8 @@ public:
 	UFUNCTION(Server, Reliable)
 	void 	PlaySoundWithNoise(const FName& SoundName, const FVector& SoundLocation, const bool bIntensedSound = false);
 
+	uint8 GetSoundLevel(FName SoundName) const;
+
 private:
 	UFUNCTION(NetMulticast, Reliable)
 	void PlaySoundMulticast(const FName& SoundName, const FVector& SoundLocation);

@@ -8,7 +8,9 @@
 #include "Player/PGPlayerController.h"
 #include "Interface/SoundManagerInterface.h"
 #include "Sound/PGSoundManager.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 #include "Game/PGGameState.h"
+#include "Type/PGPhotoTypes.h"
 
 // Sets default values
 APGExitPointBase::APGExitPointBase()
@@ -53,18 +55,65 @@ bool APGExitPointBase::CanStartInteraction(UAbilitySystemComponent* InteractingA
 	return false;
 }
 
-bool APGExitPointBase::Unlock()
+void APGExitPointBase::NotifyInteractionAttempted(ACharacter* InteractingPlayer)
+{
+	if (!HasAuthority() || !InteractingPlayer || LinkedSpeciesKey == 0)
+	{
+		return;
+	}
+
+	APGPlayerState* PS = InteractingPlayer->GetPlayerState<APGPlayerState>();
+	if (!PS)
+	{
+		return;
+	}
+
+	if (PS->GetCapturedIDs().Contains(LinkedSpeciesKey))
+	{
+		return;
+	}
+
+	FPhotoSubjectInfo SubjectInfo;
+	SubjectInfo.SubjectID = LinkedSpeciesKey;
+	SubjectInfo.ScoreValue = InteractionDiscoveryScore;
+	PS->AddPhotoResult({ SubjectInfo });
+
+	if (APGPlayerController* PC = Cast<APGPlayerController>(InteractingPlayer->GetController()))
+	{
+		PC->Client_NotifyExitInteractionDiscovery(LinkedSpeciesKey);
+	}
+}
+
+bool APGExitPointBase::Unlock(AActor* Investigator)
 {
 	return true;
 }
 
-void APGExitPointBase::PlaySound(const FName& SoundName, const FVector& SoundLocation)
+void APGExitPointBase::PlaySound(const FName& SoundName, const FVector& SoundLocation, AActor* Investigator)
 {
-	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	ISoundManagerInterface* SMI = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode());
+	if (!SMI)
 	{
-		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		return;
+	}
+
+	APGSoundManager* SM = SMI->GetSoundManager();
+	if (!SM)
+	{
+		return;
+	}
+
+	SM->PlaySoundWithNoise(SoundName, SoundLocation, false);
+
+	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(Investigator))
+	{
+		if (UPGSoundManagerComponent* SMComp = Char->GetSoundManagerComponent())
 		{
-			SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, false);
+			const uint8 Level = SM->GetSoundLevel(SoundName);
+			if (Level > 0)
+			{
+				SMComp->Client_ReportSelfNoise(Level);
+			}
 		}
 	}
 }
@@ -135,3 +184,7 @@ void APGExitPointBase::RegisterExitCamera()
 	}
 }
 
+void APGExitPointBase::BroadcastLockStateChanged()
+{
+	OnExitLockStateChanged.Broadcast(this);
+}

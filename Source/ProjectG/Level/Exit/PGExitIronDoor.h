@@ -44,11 +44,12 @@ public:
 	void SelfHighlightOff();
 
 	// IHoldInteractProgressHandler~
-	virtual void UpdateHoldProgress(float Progress) override;
+	virtual void UpdateHoldProgress(float Progress, AActor* Investigator) override;
 	virtual void StopHoldProress() override;
 	// ~IHoldInteractProgressHandler
 
-	virtual bool Unlock() override;
+	virtual bool Unlock(AActor* Investigator) override;
+	virtual TSet<FName> GetUnlockedItemIds() const override;
 
 private:
 	virtual void BeginPlay() override;
@@ -284,4 +285,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
 	FText CrankHandleText = FText::FromString(TEXT("Open"));
+
+	TWeakObjectPtr<AActor> CachedChainUnlockInvestigator;
 };

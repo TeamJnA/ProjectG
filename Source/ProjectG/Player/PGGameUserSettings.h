@@ -6,6 +6,8 @@
 #include "GameFramework/GameUserSettings.h"
 #include "PGGameUserSettings.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPushToTalkModeChanged, bool, bIsPushToTalk);
+
 /**
  * Custom GameUserSettings that persists all user preferences.
  * Saved automatically to GameUserSettings.ini.
@@ -56,6 +58,9 @@ public:
 
 	UPROPERTY(Config)
 	bool bPushToTalk = false;
+
+	UPROPERTY()
+	FOnPushToTalkModeChanged OnPushToTalkModeChanged;
 
 	void SetPushToTalk(bool bEnable);
 	FORCEINLINE bool IsPushToTalk() const { return bPushToTalk; }

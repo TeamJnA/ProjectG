@@ -70,6 +70,12 @@ APGPlayerController::APGPlayerController()
 		PushToTalkAction = PushToTalkActionObj.Object;
 	}
 
+	ConstructorHelpers::FObjectFinder<UInputAction> ToggleHelperActionObj(TEXT("/Game/ProjectG/Character/Input/Actions/IA_ToggleHelper.IA_ToggleHelper"));
+	if (ToggleHelperActionObj.Succeeded())
+	{
+		ToggleHelperAction = ToggleHelperActionObj.Object;
+	}
+
 	//     /Script/Engine.SoundCue'/Game/ProjectG/Sound/BGMSoundCues/Sound_GamePlayBGM.Sound_GamePlayBGM'
 	static ConstructorHelpers::FObjectFinder<USoundBase> GameplayBGMAssetRef(TEXT("/Game/ProjectG/Sound/BGMSoundCues/Sound_GamePlayBGM.Sound_GamePlayBGM"));
 	if (GameplayBGMAssetRef.Succeeded())
@@ -108,6 +114,8 @@ void APGPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SpectatePrevAction, ETriggerEvent::Started, this, &APGPlayerController::OnSpectatePrev);
 		// PushToTalk
 		EnhancedInputComponent->BindAction(PushToTalkAction, ETriggerEvent::Started, this, &APGPlayerController::OnPushToTalkToggled);
+		// HelperWidget
+		EnhancedInputComponent->BindAction(ToggleHelperAction, ETriggerEvent::Started, this, &APGPlayerController::OnToggleHelper);
 	}
 }
 
@@ -933,6 +941,22 @@ void APGPlayerController::PerformSessionEndAction(ECleanupActionType ActionType)
 	}
 }
 
+void APGPlayerController::Client_NotifyExitInteractionDiscovery_Implementation(int32 SubjectID)
+{
+	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(GetPawn()))
+	{
+		if (UPGCameraComponent* Cam = Char->GetCameraComponent())
+		{
+			Cam->AddToLocalCapturedIDs(SubjectID);
+		}
+	}
+
+	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
+	{
+		HUD->NotifyNewlyCapturedSpeciesKeys({ SubjectID });
+	}
+}
+
 void APGPlayerController::Server_RequestSoloLeave_Implementation(ECleanupActionType ActionType)
 {
 	if (APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode()))
@@ -1041,4 +1065,12 @@ float APGPlayerController::GetPushToTalkElapsed() const
 	}
 
 	return GetWorld()->GetTimeSeconds() - PushToTalkStartTime;
+}
+
+void APGPlayerController::OnToggleHelper(const FInputActionValue& Value)
+{
+	if (APGHUD* HUD = GetHUD<APGHUD>())
+	{
+		HUD->ToggleHelperWidget();
+	}
 }

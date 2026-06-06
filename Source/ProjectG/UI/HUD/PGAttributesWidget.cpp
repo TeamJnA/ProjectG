@@ -5,6 +5,18 @@
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Player/PGPlayerState.h"
 
+
+void UPGAttributesWidget::NativeDestruct()
+{
+	if (LastBoundASC.IsValid())
+	{
+		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetMaxSanityAttribute()).Remove(MaxSanityChangedHandle);
+		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetSanityAttribute()).Remove(SanityChangedHandle);
+	}
+
+	Super::NativeDestruct();
+}
+
 /*
 * 플레이어 스태미나 바인드
 */
@@ -27,37 +39,40 @@ void UPGAttributesWidget::BindToAttributes()
 
 	if (LastBoundASC.IsValid())
 	{
-		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetStaminaAttribute()).Remove(StaminaChangedHandle);
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).Remove(SanityChangedHandle);
+		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetMaxSanityAttribute()).Remove(MaxSanityChangedHandle);
 	}
 
-	// Initial Attribute
-	StaminaPercent = AS->GetStaminaAttribute().GetNumericValue(AS) / AS->GetMaxStaminaAttribute().GetNumericValue(AS);
-	SanityPercent = AS->GetSanityAttribute().GetNumericValue(AS) / AS->GetMaxSanityAttribute().GetNumericValue(AS);
+	// Initial Attributes
+	RefreshSanity(AS->GetSanityAttribute().GetNumericValue(AS));
+	RefreshMaxSanity(AS->GetMaxSanityAttribute().GetNumericValue(AS));
 
-	// Attribute Changes
-	StaminaChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(AS->GetStaminaAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
-	{
-		StaminaPercent = Data.NewValue / AS->GetMaxStaminaAttribute().GetNumericValue(AS);
-	});
+	// Sanity Change
+	SanityChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).AddLambda(
+		[this](const FOnAttributeChangeData& Data)
+		{
+			RefreshSanity(Data.NewValue);
+		});
 
-	SanityChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).AddLambda([this, AS](const FOnAttributeChangeData& Data)
-	{
-		SanityPercent = Data.NewValue / AS->GetMaxSanityAttribute().GetNumericValue(AS);
-		MaxSanityValue = AS->GetMaxSanityAttribute().GetNumericValue(AS);
-		SanityValue = AS->GetSanityAttribute().GetNumericValue(AS);
-	});
+	// MaxSanity Change
+	MaxSanityChangedHandle = ASC->GetGameplayAttributeValueChangeDelegate(AS->GetMaxSanityAttribute()).AddLambda(
+		[this](const FOnAttributeChangeData& Data)
+		{
+			RefreshMaxSanity(Data.NewValue);
+		});
 
 	LastBoundASC = ASC;
 }
 
-void UPGAttributesWidget::NativeDestruct()
+void UPGAttributesWidget::RefreshSanity(float InSanity)
 {
-	if (LastBoundASC.IsValid())
-	{
-		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetStaminaAttribute()).Remove(StaminaChangedHandle);
-		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetSanityAttribute()).Remove(SanityChangedHandle);
-	}
+	SanityValue = InSanity;
+	SanityPercent = FMath::Clamp(InSanity / SanityDisplayMax, 0.0f, 1.0f);
+}
 
-	Super::NativeDestruct();
+void UPGAttributesWidget::RefreshMaxSanity(float InMaxSanity)
+{
+	MaxSanityValue = InMaxSanity;
+	const float MaxRatio = FMath::Clamp(InMaxSanity / SanityDisplayMax, 0.0f, 1.0f);
+	LockedPercent = 1.0f - MaxRatio;
 }

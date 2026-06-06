@@ -57,6 +57,8 @@ protected:
 
 	void OnPushToTalkToggled(const FInputActionValue& Value);
 
+	void OnToggleHelper(const FInputActionValue& Value);
+
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	TSubclassOf<ACameraActor> LobbyCameraClass;
 
@@ -69,6 +71,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> PushToTalkAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ToggleHelperAction;
 
 public:
 	void RefreshVoiceChannel();

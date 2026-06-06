@@ -10,22 +10,39 @@
 #include "UI/PlayerEntry/ScoreBoard/PGScoreBoardWidget.h"
 #include "UI/PlayerEntry/ScoreBoard/PGFinalScoreBoardWidget.h"
 
-#include "UI/HUD/PGAttributesWidget.h"
+#include "UI/HUD/PGIndicatorContainerWidget.h"
+#include "UI/HUD/PGAlertContainerWidget.h"
 #include "UI/HUD/PGInventoryWidget.h"
 #include "UI/HUD/PGMessageManagerWidget.h"
 #include "UI/HUD/PGInteractionProgressWidget.h"
-#include "UI/HUD/PGVoiceIndicatorWidget.h"
 #include "UI/HUD/PGCameraWidget.h"
 #include "UI/HUD/PGCrosshairWidget.h"
-#include "UI/HUD/PGPhotoAlertWidget.h"
 #include "UI/HUD/PGBackgroundBlurWidget.h"
 
+#include "Game/PGGameState.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
-#include "Game/PGGameState.h"
+#include "Player/PGPlayerState.h"
+#include "Level/Exit/PGExitPointBase.h"
+#include "Type/PGHelperTypes.h"
+#include "Engine/DataTable.h"
+#include "EngineUtils.h"
+
 
 APGHUD::APGHUD()
 {
+}
+
+void APGHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnbindExits();
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(ExitBindRetryHandle);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 /*
@@ -39,15 +56,25 @@ void APGHUD::Init()
 		return;
 	}
 
-	if (!AttributeWidget)
+	if (!IndicatorContainerWidget)
 	{
-		AttributeWidget = CreateWidget<UPGAttributesWidget>(PC, AttributeWidgetClass);
+		IndicatorContainerWidget = CreateWidget<UPGIndicatorContainerWidget>(PC, IndicatorContainerWidgetClass);
 	}
 
-	if (AttributeWidget && !AttributeWidget->IsInViewport())
+	if (IndicatorContainerWidget && !IndicatorContainerWidget->IsInViewport())
 	{
-		AttributeWidget->BindToAttributes();
-		AttributeWidget->AddToViewport();
+		IndicatorContainerWidget->Init();
+		IndicatorContainerWidget->AddToViewport();
+	}
+
+	if (!AlertContainerWidget)
+	{
+		AlertContainerWidget = CreateWidget<UPGAlertContainerWidget>(PC, AlertContainerWidgetClass);
+	}
+
+	if (AlertContainerWidget && !AlertContainerWidget->IsInViewport())
+	{
+		AlertContainerWidget->AddToViewport(10);
 	}
 
 	if (!InventoryWidget)
@@ -85,16 +112,6 @@ void APGHUD::Init()
 		InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(PC, InteractionProgressWidgetClass);
 	}
 
-	if (!PhotoAlertWidget)
-	{
-		PhotoAlertWidget = CreateWidget<UPGPhotoAlertWidget>(PC, PhotoAlertWidgetClass);
-	}
-
-	if (PhotoAlertWidget && !PhotoAlertWidget->IsInViewport())
-	{
-		PhotoAlertWidget->AddToViewport();
-	}
-
 	if (!CrosshairWidget)
 	{
 		CrosshairWidget = CreateWidget<UPGCrosshairWidget>(PC, CrosshairWidgetClass);
@@ -113,6 +130,96 @@ void APGHUD::Init()
 	if (BackgroundBlurWidget && !BackgroundBlurWidget->IsInViewport())
 	{
 		BackgroundBlurWidget->AddToViewport(-1);
+	}
+
+	TryBindExits();
+}
+
+void APGHUD::TryBindExits()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	int32 BoundCount = 0;
+	for (TActorIterator<APGExitPointBase> It(World); It; ++It)
+	{
+		APGExitPointBase* Exit = *It;
+		if (!Exit)
+		{
+			continue;
+		}
+
+		Exit->OnExitLockStateChanged.AddUniqueDynamic(this, &APGHUD::HandleExitLockStateChanged);
+		HUDSubscribedExits.AddUnique(Exit);
+		++BoundCount;
+	}
+
+	if (BoundCount == 0 && ExitBindRetries < 10)
+	{
+		++ExitBindRetries;
+		World->GetTimerManager().SetTimer(ExitBindRetryHandle, this, &APGHUD::TryBindExits, 0.5f, false);
+	}
+}
+
+void APGHUD::UnbindExits()
+{
+	for (const TWeakObjectPtr<APGExitPointBase>& WeakExit : HUDSubscribedExits)
+	{
+		if (APGExitPointBase* Exit = WeakExit.Get())
+		{
+			Exit->OnExitLockStateChanged.RemoveDynamic(this, &APGHUD::HandleExitLockStateChanged);
+		}
+	}
+	HUDSubscribedExits.Reset();
+}
+
+void APGHUD::HandleExitLockStateChanged(APGExitPointBase* ExitActor)
+{
+	if (!ExitActor || !HelperCatalogTable)
+	{
+		return;
+	}
+
+	const int32 SpeciesKey = ExitActor->GetLinkedSpeciesKey();
+	if (SpeciesKey == 0)
+	{
+		return;
+	}
+
+	static const FString Ctx(TEXT("APGHUD::HandleExitLockStateChanged"));
+	const FName RowName(*FString::FromInt(SpeciesKey));
+	const FPGHelperEntryRow* Row = HelperCatalogTable->FindRow<FPGHelperEntryRow>(RowName, Ctx, false);
+	if (!Row)
+	{
+		return;
+	}
+
+	// 발견 판정: bDefaultVisible 이거나, 로컬 PlayerState가 이 SpeciesKey를 캡처한 적 있음
+	bool bDiscovered = Row->bDefaultVisible;
+	if (!bDiscovered)
+	{
+		if (APlayerController* PC = GetOwningPlayerController())
+		{
+			if (APGPlayerState* PS = PC->GetPlayerState<APGPlayerState>())
+			{
+				for (int32 ID : PS->GetCapturedIDs())
+				{
+					if (PhotoID::GetSpeciesKey(ID) == SpeciesKey)
+					{
+						bDiscovered = true;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	if (bDiscovered)
+	{
+		DisplayExitToast();
 	}
 }
 
@@ -295,6 +402,8 @@ void APGHUD::InitPauseMenuWidget()
 		PC->SetInputMode(FInputModeUIOnly());
 		PC->bShowMouseCursor = true;
 
+		CloseHelperWidgetIfOpen();
+
 		PauseMenuWidget->AddToViewport();
 	}
 }
@@ -367,13 +476,18 @@ void APGHUD::ForceCleanupHUD()
 	}
 
 	// 일반 HUD 제거
-	if (AttributeWidget)
+	if (IndicatorContainerWidget)
 	{
-		AttributeWidget->SetVisibility(ESlateVisibility::Visible);
-		if (AttributeWidget->IsInViewport())
+		IndicatorContainerWidget->SetVisibility(ESlateVisibility::Visible);
+		if (IndicatorContainerWidget->IsInViewport())
 		{
-			AttributeWidget->RemoveFromParent();
+			IndicatorContainerWidget->RemoveFromParent();
 		}
+	}
+
+	if (AlertContainerWidget && AlertContainerWidget->IsInViewport())
+	{
+		AlertContainerWidget->RemoveFromParent();
 	}
 
 	if (InventoryWidget)
@@ -400,15 +514,6 @@ void APGHUD::ForceCleanupHUD()
 		if (InteractionProgressWidget->IsInViewport())
 		{
 			InteractionProgressWidget->RemoveFromParent();
-		}
-	}
-
-	if (PhotoAlertWidget)
-	{
-		PhotoAlertWidget->SetVisibility(ESlateVisibility::Visible);
-		if (PhotoAlertWidget->IsInViewport())
-		{
-			PhotoAlertWidget->RemoveFromParent();
 		}
 	}
 
@@ -442,9 +547,14 @@ void APGHUD::EnterCameraMode()
 	}
 
 	// 기존 HUD 숨기기
-	if (AttributeWidget && AttributeWidget->IsInViewport())
+	if (IndicatorContainerWidget && IndicatorContainerWidget->IsInViewport())
 	{
-		AttributeWidget->SetVisibility(ESlateVisibility::Collapsed);
+		IndicatorContainerWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	if (AlertContainerWidget)
+	{
+		AlertContainerWidget->OnEnterCameraMode();
 	}
 
 	if (InventoryWidget && InventoryWidget->IsInViewport())
@@ -460,11 +570,6 @@ void APGHUD::EnterCameraMode()
 	if (InteractionProgressWidget && InteractionProgressWidget->IsInViewport())
 	{
 		InteractionProgressWidget->SetVisibility(ESlateVisibility::Collapsed);
-	}
-
-	if (PhotoAlertWidget && PhotoAlertWidget->IsInViewport())
-	{
-		PhotoAlertWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	if (CrosshairWidget && CrosshairWidget->IsInViewport())
@@ -508,9 +613,14 @@ void APGHUD::ExitCameraMode()
 	}
 
 	// 기존 HUD 복원
-	if (AttributeWidget)
+	if (IndicatorContainerWidget)
 	{
-		AttributeWidget->SetVisibility(ESlateVisibility::Visible);
+		IndicatorContainerWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	if (AlertContainerWidget)
+	{
+		AlertContainerWidget->OnExitCameraMode();
 	}
 
 	if (InventoryWidget)
@@ -526,11 +636,6 @@ void APGHUD::ExitCameraMode()
 	if (InteractionProgressWidget)
 	{
 		InteractionProgressWidget->SetVisibility(ESlateVisibility::Visible);
-	}
-
-	if (PhotoAlertWidget)
-	{
-		PhotoAlertWidget->SetVisibility(ESlateVisibility::Visible);
 	}
 
 	if (CrosshairWidget)
@@ -555,20 +660,19 @@ void APGHUD::DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 
 	}
 }
 
+void APGHUD::BeginExitCameraTransition()
+{
+	if (AlertContainerWidget)
+	{
+		AlertContainerWidget->OnExitCameraMode_EnemyToast();
+	}
+}
+
 void APGHUD::SetPhotoAlertVisible(bool bVisible)
 {
-	if (!PhotoAlertWidget)
+	if (AlertContainerWidget)
 	{
-		return;
-	}
-
-	if (bVisible)
-	{
-		PhotoAlertWidget->StartBlinking();
-	}
-	else
-	{
-		PhotoAlertWidget->StopBlinking();
+		AlertContainerWidget->SetPhotoAlertActive(bVisible);
 	}
 }
 
@@ -577,5 +681,119 @@ void APGHUD::SetCrosshairVisible(bool bVisible)
 	if (CrosshairWidget)
 	{
 		CrosshairWidget->SetCrosshairVisible(bVisible);
+	}
+}
+
+void APGHUD::ToggleHelperWidget()
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC)
+	{
+		return;
+	}
+
+	if (AlertContainerWidget && AlertContainerWidget->IsHelperOpen())
+	{
+		return;
+	}
+
+	if (!CanOpenHelperWidget())
+	{
+		return;
+	}
+
+	AlertContainerWidget->OpenHelper();
+}
+
+bool APGHUD::CanOpenHelperWidget() const
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC)
+	{
+		return false;
+	}
+
+	if (APGPlayerState* PS = PC->GetPlayerState<APGPlayerState>())
+	{
+		if (!PS->IsInGame() || PS->IsSpectating())
+		{
+			return false;
+		}
+	}
+
+	if (ScoreBoardWidget && ScoreBoardWidget->IsInViewport())
+	{
+		return false;
+	}
+
+	if (FinalScoreBoardWidget && FinalScoreBoardWidget->IsInViewport())
+	{
+		return false;
+	}
+
+	if (PauseMenuWidget && PauseMenuWidget->IsInViewport())
+	{
+		return false;
+	}
+
+	if (CameraWidget && CameraWidget->IsInViewport())
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void APGHUD::CloseHelperWidgetIfOpen()
+{
+	if (AlertContainerWidget)
+	{
+		AlertContainerWidget->CloseHelper();
+	}
+}
+
+void APGHUD::NotifyNewlyCapturedSpeciesKeys(const TArray<int32>& Keys)
+{
+	if (!HelperCatalogTable || !EnemyCatalogTable || Keys.IsEmpty())
+	{
+		return;
+	}
+
+	bool bHasHelperUpdate = false;
+
+	for (int32 Key : Keys)
+	{
+		const FString KeyStr = FString::FromInt(Key);
+		if (HelperCatalogTable->FindRow<FPGHelperEntryRow>(*KeyStr, TEXT(""), false))
+		{
+			bHasHelperUpdate = true;
+			continue;
+		}
+
+		if (FPGEnemyCatalogRow* EnemyRow = EnemyCatalogTable->FindRow<FPGEnemyCatalogRow>(*KeyStr, TEXT(""), false))
+		{
+			DisplayEnemyToast(EnemyRow->TooltipText);
+		}
+	}
+
+	if (bHasHelperUpdate)
+	{
+		DisplayExitToast();
+	}
+}
+
+void APGHUD::DisplayExitToast()
+{
+	if (AlertContainerWidget)
+	{
+		AlertContainerWidget->RequestExitToast();
+	}
+}
+
+void APGHUD::DisplayEnemyToast(const FText& TooltipText)
+{
+	if (AlertContainerWidget)
+	{
+		AlertContainerWidget->PlayEnemyToast(TooltipText);
 	}
 }

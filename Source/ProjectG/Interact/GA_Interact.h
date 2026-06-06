@@ -51,6 +51,9 @@ protected:
 	void OnHoldInputCompleted();
 
 	UFUNCTION()
+	void OnHoldInputStarted();
+
+	UFUNCTION()
 	void OnHoldInputCancelled();
 
 	UFUNCTION()

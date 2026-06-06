@@ -115,6 +115,8 @@ protected:
 
 	void SetDoorState(bool _bIsOpen, AActor* InteractInvestigator);
 
+	void ReportNoiseToInvestigator(AActor* Investigator, const FName& SoundName);
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))

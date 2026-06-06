@@ -2,7 +2,6 @@
 
 
 #include "UI/HUD/PGCameraWidget.h"
-#include "UI/HUD/PGAttributesWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -22,11 +21,6 @@ void UPGCameraWidget::NativeConstruct()
     {
         BatteryFillMID = UMaterialInstanceDynamic::Create(BatteryFillMaterialClass, this);
         BatteryFill->SetBrushFromMaterial(BatteryFillMID);
-    }
-
-    if (AttributesWidget)
-    {
-        AttributesWidget->BindToAttributes();
     }
 
     UpdateBattery(CurrentBatteryPercent);

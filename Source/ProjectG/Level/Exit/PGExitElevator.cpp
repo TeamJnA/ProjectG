@@ -58,6 +58,9 @@ APGExitElevator::APGExitElevator()
 	bInnerDoorClosed = false;
 
 	ExitPointType = EExitPointType::Elevator;
+
+	// PhotoID::Room_Elevator
+	LinkedSpeciesKey = 340;
 }
 
 void APGExitElevator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -175,7 +178,7 @@ void APGExitElevator::InteractionFailed()
 }
 
 // true : remove item from inventory / false : do not remove item
-bool APGExitElevator::Unlock()
+bool APGExitElevator::Unlock(AActor* Investigator)
 {
 	UE_LOG(LogPGExitPoint, Log, TEXT("APGExitElevator::Unlock. Current FuseState : [%d]"), FuseState);
 
@@ -184,11 +187,11 @@ bool APGExitElevator::Unlock()
 
 	if (FuseState == 1 || FuseState == 2)
 	{
-		PlaySound(FuseAttachSound, FusePanel->GetComponentLocation());
+		PlaySound(FuseAttachSound, FusePanel->GetComponentLocation(), Investigator);
 		return true;
 	}
 
-	PlaySound(FuseLeverSound, FusePanel->GetComponentLocation());
+	PlaySound(FuseLeverSound, FusePanel->GetComponentLocation(), Investigator);
 	PlaySoundPlayers(ElevatorDescentSound, ElevatorBody->GetComponentLocation());
 	PlaySoundPlayers(ElevatorDoorCloseSound, InnerFenceDoor->GetComponentLocation());
 
@@ -228,6 +231,27 @@ void APGExitElevator::OnRep_FuseState()
 	}
 
 	APGPlayerCharacter::NotifyLocalPlayerStareRefresh(this);
+
+	BroadcastLockStateChanged();
+}
+
+TSet<FName> APGExitElevator::GetUnlockedItemIds() const
+{
+	TSet<FName> Result;
+	if (FuseState >= 1)
+	{
+		Result.Add(FName("Fuse1"));
+	}
+	if (FuseState >= 2)
+	{
+		Result.Add(FName("Fuse2"));
+	}
+	return Result;
+}
+
+bool APGExitElevator::IsExitDepleted() const
+{
+	return FuseState >= 3;
 }
 
 void APGExitElevator::ExecuteEscapeSequence()

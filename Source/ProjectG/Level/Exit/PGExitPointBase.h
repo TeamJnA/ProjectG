@@ -10,6 +10,9 @@
 #include "Camera/CameraComponent.h"
 #include "PGExitPointBase.generated.h"
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnExitLockStateChanged, class APGExitPointBase*, ExitActor);
+
 UCLASS()
 class PROJECTG_API APGExitPointBase : public AActor, public IInteractableActorInterface
 {
@@ -27,17 +30,23 @@ public:
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
+	virtual void NotifyInteractionAttempted(ACharacter* InteractingPlayer) override;
 	// ~IInteractableActorInterface
 
 	// If true, remove item from inventory
-	virtual bool Unlock();
+	virtual bool Unlock(AActor* Investigator);
+	virtual TSet<FName> GetUnlockedItemIds() const { return TSet<FName>(); }
+	virtual bool IsExitDepleted() const { return false; }
 
 	FORCEINLINE FVector GetCameraLocation() const { return ExitCamera->GetComponentLocation(); }
 	FORCEINLINE FRotator GetCameraRoation() const { return ExitCamera->GetComponentRotation(); }
+	FORCEINLINE int32 GetLinkedSpeciesKey() const { return LinkedSpeciesKey; }
+
+	FOnExitLockStateChanged OnExitLockStateChanged;
 
 protected:
 	UFUNCTION()
-	void PlaySound(const FName& SoundName, const FVector& SoundLocation);
+	void PlaySound(const FName& SoundName, const FVector& SoundLocation, AActor* Investigator = nullptr);
 
 	UFUNCTION()
 	void PlaySoundPlayers(const FName& SoundName, const FVector& SoundLocation);
@@ -46,7 +55,8 @@ protected:
 	void OnEscapeStart(AActor* EscapeStartActor, EExitPointType ExitPointType = EExitPointType::IronDoor);
 
 	void RegisterExitCamera();
-	int32 RegistrationRetries = 0;
+
+	void BroadcastLockStateChanged();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;
@@ -56,6 +66,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
+
+	int32 RegistrationRetries = 0;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Helper")
+	int32 LinkedSpeciesKey = 0;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Helper")
+	int32 InteractionDiscoveryScore = 100;
 
 	EExitPointType ExitPointType;
 };

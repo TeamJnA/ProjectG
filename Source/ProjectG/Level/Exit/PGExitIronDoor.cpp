@@ -89,6 +89,9 @@ APGExitIronDoor::APGExitIronDoor()
     SoundPlayChecker.Init(false, 21);
 
     ExitPointType = EExitPointType::IronDoor;
+
+    // PhotoID::ExitDoor
+    LinkedSpeciesKey = 350;
 }
 
 void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -309,7 +312,7 @@ void APGExitIronDoor::SelfHighlightOff()
     HandWheelLubricantPoint->SetRenderCustomDepth(false);
 }
 
-void APGExitIronDoor::UpdateHoldProgress(float Progress)
+void APGExitIronDoor::UpdateHoldProgress(float Progress, AActor* Investigator)
 {
     if (CurrentLockPhase == E_LockPhase::E_Unlocked)
     {
@@ -343,12 +346,12 @@ void APGExitIronDoor::UpdateHoldProgress(float Progress)
 
             if (NowIndex % 4 == 0 && NowIndex != 20)
             {
-                PlaySound(IronDoorMeshRustySound, IronDoorSoundPlayOffset->GetComponentLocation());
+                PlaySound(IronDoorMeshRustySound, IronDoorSoundPlayOffset->GetComponentLocation(), Investigator);
             }
 
             if (NowIndex % 2 == 0 && NowIndex != 20)
             {
-                PlaySound(WheelRotateRustySound, HandWheelLubricantPoint->GetComponentLocation());
+                PlaySound(WheelRotateRustySound, HandWheelLubricantPoint->GetComponentLocation(), Investigator);
             }
         }
     }
@@ -366,7 +369,7 @@ void APGExitIronDoor::StopHoldProress()
     }
 }
 
-bool APGExitIronDoor::Unlock()
+bool APGExitIronDoor::Unlock(AActor* Investigator)
 {
     switch (CurrentLockPhase)
     {
@@ -376,7 +379,8 @@ bool APGExitIronDoor::Unlock()
 
             Multicast_UnlockChains();
 
-            PlaySound(UnlockChainSound, IronChainMesh->GetComponentLocation());
+            PlaySound(UnlockChainSound, IronChainMesh->GetComponentLocation(), Investigator);
+            CachedChainUnlockInvestigator = Investigator;
 
             // Play drop chain sound
             FTimerDelegate TimerDelegate;
@@ -397,7 +401,7 @@ bool APGExitIronDoor::Unlock()
 
             Multicast_AttachWheel();
 
-            PlaySound(WheelAttachedSound, HandWheelLubricantPoint->GetComponentLocation());
+            PlaySound(WheelAttachedSound, HandWheelLubricantPoint->GetComponentLocation(), Investigator);
 
             return true;
         }
@@ -406,7 +410,7 @@ bool APGExitIronDoor::Unlock()
             CurrentLockPhase = E_LockPhase::E_Unlocked;
             Multicast_SetWheelMaterialOiled();
 
-            PlaySound(OilAppliedSound, HandWheelLubricantPoint->GetComponentLocation());
+            PlaySound(OilAppliedSound, HandWheelLubricantPoint->GetComponentLocation(), Investigator);
 
             UE_LOG(LogPGExitPoint, Log, TEXT("Unlock :: case E_OilApplied"));
 
@@ -437,6 +441,25 @@ bool APGExitIronDoor::Unlock()
     }
 
     return false;
+}
+
+TSet<FName> APGExitIronDoor::GetUnlockedItemIds() const
+{
+    TSet<FName> Result;
+    const uint8 Phase = (uint8)CurrentLockPhase;
+    if (Phase >= 1)
+    {
+        Result.Add(FName("Key"));
+    }
+    if (Phase >= 2)
+    {
+        Result.Add(FName("Wheel"));
+    }
+    if (Phase >= 3)
+    {
+        Result.Add(FName("Oil"));
+    }
+    return Result;
 }
 
 void APGExitIronDoor::BeginPlay()
@@ -690,6 +713,8 @@ void APGExitIronDoor::OnRep_CurrentLockPhase()
     }
 
     APGPlayerCharacter::NotifyLocalPlayerStareRefresh(this);
+
+    BroadcastLockStateChanged();
 }
 
 void APGExitIronDoor::InitMIDs()
@@ -797,7 +822,7 @@ void APGExitIronDoor::CleanSoundChecker()
 
 void APGExitIronDoor::PlayChainDropSound()
 {
-    PlaySound(ChainDropSound, IronChainMesh->GetComponentLocation());
+    PlaySound(ChainDropSound, IronChainMesh->GetComponentLocation(), CachedChainUnlockInvestigator.Get());
 }
 
 void APGExitIronDoor::Multicast_StartCloseCountSound_Implementation()

@@ -59,7 +59,7 @@ void UGA_Unlock_Exit::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
     }
     PGCharacter->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 
-    if (PGExitPoint->Unlock())
+    if (PGExitPoint->Unlock(PGCharacter))
     {
         PGCharacter->RemoveItemFromInventory();
     }

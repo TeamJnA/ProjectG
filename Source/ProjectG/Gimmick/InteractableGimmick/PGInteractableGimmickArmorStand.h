@@ -22,7 +22,7 @@ public:
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
-	void CollapseArmor();
+	void CollapseArmor(AActor* Investigator = nullptr);
 
 	// IInteractableActorInterface~
 	// virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
@@ -33,7 +33,7 @@ public:
 	// virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FText& OutFailureMessage) const override;
 	// ~IInteractableActorInterface
 
-	virtual void GimmickInteract();
+	virtual void GimmickInteract(AActor* Investigator);
 
 protected:
 	virtual void BeginPlay() override;

@@ -176,3 +176,12 @@ void APGSoundManager::InitSoundDateTable()
 		}
 	}
 }
+
+uint8 APGSoundManager::GetSoundLevel(FName SoundName) const
+{
+	if (const FPGSoundPlayData* Data = SoundDataMap.Find(SoundName))
+	{
+		return Data->SoundLevel;
+	}
+	return 0;
+}

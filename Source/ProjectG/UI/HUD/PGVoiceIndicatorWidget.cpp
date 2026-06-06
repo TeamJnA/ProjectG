@@ -2,9 +2,9 @@
 
 
 #include "UI/HUD/PGVoiceIndicatorWidget.h"
-#include "Components/ProgressBar.h"
 #include "Components/Image.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 #include "Player/PGGameUserSettings.h"
 #include "Player/PGPlayerController.h"
 #include "Player/PGLobbyPlayerController.h"
@@ -14,48 +14,51 @@ void UPGVoiceIndicatorWidget::NativeTick(const FGeometry& MyGeometry, float InDe
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	float Amplitude = 0.0f;
+	if (!BarMID)
+	{
+		if (NoiseBar)
+		{
+			BarMID = NoiseBar->GetDynamicMaterial();
+		}
+
+		if (!BarMID)
+		{
+			return;
+		}
+	}
+
+	float VoiceLevel = 0.0f;
+	float ActionLevel = 0.0f;
+
 	if (APGPlayerCharacter* Player = GetOwningPlayerPawn<APGPlayerCharacter>())
 	{
-		Amplitude = Player->GetCurrentVoiceAmplitude();
-	}
+		const float Amp = Player->GetCurrentVoiceAmplitude();
+		VoiceLevel = (VoiceMaxAmplitude > 0.0f) ? FMath::Clamp(Amp / VoiceMaxAmplitude, 0.0f, 1.0f) * VoiceMaxLevel : 0.0f;
 
-	const bool bPushToTalk = IsPushToTalkEnabled();
-	if (!bKeyHintInitialized || bPushToTalk != bCachedPushToTalk)
-	{
-		bCachedPushToTalk = bPushToTalk;
-		ApplyKeyHintVisibility(bPushToTalk);
-		bKeyHintInitialized = true;
-	}
-
-	// 라디오 아이콘 -> Opacity + Color
-	if (RadioIcon)
-	{
-		float TargetOpacity;
-		if (Amplitude >= TalkingThreshold)
+		if (UPGSoundManagerComponent* SM = Player->GetSoundManagerComponent())
 		{
-			TargetOpacity = ActiveOpacity;
+			ActionLevel = SM->GetCurrentActionNoiseLevel();
 		}
-		else
-		{
-			TargetOpacity = IsMicReady() ? ReadyOpacity : InactiveOpacity;
-		}
-
-		CurrentOpacity = FMath::FInterpTo(CurrentOpacity, TargetOpacity, InDeltaTime, FadeSpeed);
-		RadioIcon->SetRenderOpacity(CurrentOpacity);
-
-		const FLinearColor TargetColor = (Amplitude >= DangerThreshold) ? DangerColor : NormalColor;
-		RadioIcon->SetColorAndOpacity(TargetColor);
 	}
 
-	// 디버깅용 ProgressBar
-	if (VoiceAmplitudeBar)
+	const float TargetLevel = FMath::Max(VoiceLevel, ActionLevel);
+	if (TargetLevel >= DisplayLevel)
 	{
-		const float Speed = (Amplitude > DisplayAmplitude) ? 9.0f : 5.0f;
-		DisplayAmplitude = FMath::FInterpTo(DisplayAmplitude, Amplitude, InDeltaTime, Speed);
+		DisplayLevel = TargetLevel;
+	}
+	else
+	{
+		DisplayLevel = FMath::FInterpTo(DisplayLevel, TargetLevel, InDeltaTime, FallInterpSpeed);
+	}
 
-		const float DisplayPercent = FMath::Clamp(DisplayAmplitude / 0.25f, 0.0f, 1.0f);
-		VoiceAmplitudeBar->SetPercent(DisplayPercent);
+	const float FillRatio = (MaxDisplayLevel > 0.0f) ? FMath::Clamp(DisplayLevel / MaxDisplayLevel, 0.0f, 1.0f) : 0.0f;
+	BarMID->SetScalarParameterValue(FillRatioParam, FillRatio);
+
+	if (MicModeIcon)
+	{
+		const float TargetMicOpacity = IsMicReady() ? MicActiveOpaciity : MicInactiveOpacity;
+		CurrentMicOpacity = FMath::FInterpTo(CurrentMicOpacity, TargetMicOpacity, InDeltaTime, MicOpacityInterpSpeed);
+		MicModeIcon->SetRenderOpacity(CurrentMicOpacity);
 	}
 }
 
@@ -65,7 +68,6 @@ bool UPGVoiceIndicatorWidget::IsPushToTalkEnabled() const
 	{
 		return Settings->IsPushToTalk();
 	}
-
 	return false;
 }
 
@@ -85,14 +87,5 @@ bool UPGVoiceIndicatorWidget::IsMicReady() const
 	{
 		return LobbyPC->IsPushToTalkActive();
 	}
-
 	return false;
-}
-
-void UPGVoiceIndicatorWidget::ApplyKeyHintVisibility(bool bPushToTalk)
-{
-	if (KeyHintIcon)
-	{
-		KeyHintIcon->SetVisibility(bPushToTalk ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	}
 }

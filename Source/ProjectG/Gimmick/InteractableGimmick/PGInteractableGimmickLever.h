@@ -31,7 +31,7 @@ public:
 	void ActivateLever();
 
 	// IHoldInteractProgressHandler~
-	virtual void UpdateHoldProgress(float Progress) override;
+	virtual void UpdateHoldProgress(float Progress, AActor* Investigator) override;
 	virtual void StopHoldProress() override;
 	// ~IHoldInteractProgressHandler
 

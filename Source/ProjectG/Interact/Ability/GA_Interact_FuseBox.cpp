@@ -34,7 +34,8 @@ void UGA_Interact_FuseBox::ActivateAbility(const FGameplayAbilitySpecHandle Hand
         return;
     }
 
-    FuseBox->OpenBox();
+    APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(ActorInfo->AvatarActor.Get());
+    FuseBox->OpenBox(Player);
 
     EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }

@@ -22,7 +22,7 @@ public:
 	// Sets default values for this actor's properties
 	APGInteractableGimmickBase();
 
-	virtual void GimmickInteract();
+	virtual void GimmickInteract(AActor* Investigator);
 
 	void InitSoundManager();
 
@@ -42,6 +42,7 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void PlayLocalSound(FName SoundName, FVector SoundLocation);
+	void ReportNoiseToInvestigator(AActor* Investigator, FName SoundName);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> Root;

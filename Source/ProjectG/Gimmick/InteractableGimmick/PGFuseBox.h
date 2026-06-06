@@ -39,11 +39,11 @@ public:
 	// ~IInteractableActorInterface
 
 	// IHoldInteractProgressHandler~
-	virtual void UpdateHoldProgress(float Progress) override;
+	virtual void UpdateHoldProgress(float Progress, AActor* Investigator) override;
 	virtual void StopHoldProress() override;
 	// ~IHoldInteractProgressHandler
 
-	void OpenBox();
+	void OpenBox(AActor* Investigator);
 
 	FORCEINLINE EFuseBoxState GetFuseBoxState() const { return FuseBoxState; }
 	void SetOwnerRoom(AActor* InRoom) { OwnerRoom = InRoom; }
@@ -67,6 +67,7 @@ protected:
 	void OnRep_ShakeStep();
 
 	void DisableShakeEffect();
+	void ReportNoiseToInvestigator(AActor* Investigator, FName SoundName);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Fuse")
 	TSoftObjectPtr<UPGItemData> FuseItemDataPath;

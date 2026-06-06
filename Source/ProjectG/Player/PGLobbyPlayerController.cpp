@@ -129,6 +129,8 @@ void APGLobbyPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(ShowPauseMenuAction, ETriggerEvent::Started, this, &APGLobbyPlayerController::OnShowPauseMenu);
 		// PushToTalk
 		EnhancedInputComponent->BindAction(PushToTalkAction, ETriggerEvent::Started, this, &APGLobbyPlayerController::OnPushToTalkToggled);
+		// HelperWidget
+		EnhancedInputComponent->BindAction(ToggleHelperAction, ETriggerEvent::Started, this, &APGLobbyPlayerController::OnToggleHelper);
 	}
 }
 
@@ -548,4 +550,12 @@ float APGLobbyPlayerController::GetPushToTalkElapsed() const
 	}
 
 	return GetWorld()->GetTimeSeconds() - PushToTalkStartTime;
+}
+
+void APGLobbyPlayerController::OnToggleHelper(const FInputActionValue& Value)
+{
+	if (APGHUD* HUD = GetHUD<APGHUD>())
+	{
+		HUD->ToggleHelperWidget();
+	}
 }

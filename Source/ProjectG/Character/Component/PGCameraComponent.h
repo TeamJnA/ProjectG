@@ -45,6 +45,9 @@ public:
     UFUNCTION(Client, Reliable)
     void Client_PhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 NewTotalScore);
 
+    // 외부에서 LocalCapturedIDs 갱신 (Exit 상호작용을 통한 발견)
+    void AddToLocalCapturedIDs(int32 SubjectID);
+
     // bHandCamera를 관리하기 위한 서버 함수. 손에 카메라 메쉬 드는 것을 관리.
     UFUNCTION(Server, Reliable)
     void Server_SetHandCameraMesh(bool bInHand);

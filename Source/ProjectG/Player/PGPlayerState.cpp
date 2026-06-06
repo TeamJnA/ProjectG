@@ -206,4 +206,11 @@ void APGPlayerState::AddPhotoResult(const TArray<FPhotoSubjectInfo>& Subjects)
 
 		UE_LOG(LogTemp, Log, TEXT("[Photo] Captured ID: %d (Score: %d, Total: %d)"), Subject.SubjectID, Subject.ScoreValue, PhotoScore);
 	}
+
+	OnRep_CapturedSubjects();
+}
+
+void APGPlayerState::OnRep_CapturedSubjects()
+{
+	OnCapturedSubjectsChanged.Broadcast();
 }

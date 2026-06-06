@@ -21,20 +21,27 @@ public:
 
 protected:
 	virtual void NativeDestruct() override;
-	FDelegateHandle StaminaChangedHandle;
+
+	void RefreshSanity(float InSanity);
+	void RefreshMaxSanity(float InMaxSanity);
+
 	FDelegateHandle SanityChangedHandle;
+	FDelegateHandle MaxSanityChangedHandle;
 
 	TWeakObjectPtr<UAbilitySystemComponent> LastBoundASC;
 
-	UPROPERTY(BlueprintReadOnly)
-	float StaminaPercent;
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	float SanityDisplayMax = 100.0f;
 
 	UPROPERTY(BlueprintReadOnly)
 	float SanityPercent;
 
 	UPROPERTY(BlueprintReadOnly)
-	float MaxSanityValue;
+	float LockedPercent = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly)
-	float SanityValue;
+	float MaxSanityValue = 100.0f;
+
+	UPROPERTY(BlueprintReadOnly)
+	float SanityValue = 100.0f;
 };

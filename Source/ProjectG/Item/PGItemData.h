@@ -9,6 +9,22 @@
 #include "Type/CharacterTypes.h"
 #include "PGItemData.generated.h"
 
+USTRUCT(BlueprintType)
+struct FItemActionGuide
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	FText ActionText;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> KeyIcon;
+
+	UPROPERTY(EditDefaultsOnly)
+	FVector2D KeyIconSize = FVector2D(15.0f, 15.0f);
+};
+
+
 /**
  * 
  */
@@ -36,6 +52,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	FTransform ItemSocketOffset;
+
+	UPROPERTY(EditDefaultsOnly)
+	TArray<FItemActionGuide> ActionGuides;
 
 	UPROPERTY(EditDefaultsOnly)
 	EHandPoseType HandPoseType = EHandPoseType::Default;

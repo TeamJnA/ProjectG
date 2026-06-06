@@ -219,6 +219,8 @@ void UPGCameraComponent::ExitCameraMode()
     // 캐릭터가 카메라 내리는 애님
     Owner->SetCameraMeshOnHand(false);
 
+    HUD->BeginExitCameraTransition();
+
     bIsTransitioning = true;
     SetInCameraMode(false);
     bIsTrackingTarget = false;
@@ -676,6 +678,25 @@ void UPGCameraComponent::Server_TakePhoto_Implementation(int32 SubjectID)
 
 void UPGCameraComponent::Client_PhotoResult_Implementation(const TArray<FPhotoSubjectInfo>& Results, int32 NewTotalScore)
 {
+    TArray<int32> NewlyRecordedKeys;
+    {
+        TSet<int32> KnownKeys;
+        for (int32 ID : LocalCapturedIDs)
+        {
+            KnownKeys.Add(PhotoID::GetSpeciesKey(ID));
+        }
+
+        for (const FPhotoSubjectInfo& Subject : Results)
+        {
+            const int32 Key = PhotoID::GetSpeciesKey(Subject.SubjectID);
+            if (!KnownKeys.Contains(Key))
+            {
+                NewlyRecordedKeys.AddUnique(Key);
+                KnownKeys.Add(Key);
+            }
+        }
+    }
+
     // 로컬 중복 캐시 업데이트
     for (const FPhotoSubjectInfo& Result : Results)
     {
@@ -689,6 +710,7 @@ void UPGCameraComponent::Client_PhotoResult_Implementation(const TArray<FPhotoSu
             if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
             {
                 HUD->DisplayPhotoResult(Results, NewTotalScore);
+                HUD->NotifyNewlyCapturedSpeciesKeys(NewlyRecordedKeys);
             }
         }
     }
@@ -701,6 +723,11 @@ void UPGCameraComponent::Client_PhotoResult_Implementation(const TArray<FPhotoSu
     {
         GetWorld()->GetTimerManager().SetTimer(CameraProgressTimerHandle, this, &UPGCameraComponent::UpdateCameraProgress, 0.05f, true);
     }
+}
+
+void UPGCameraComponent::AddToLocalCapturedIDs(int32 SubjectID)
+{
+    LocalCapturedIDs.Add(SubjectID);
 }
 
 void UPGCameraComponent::AdjustZoom(float AxisValue)

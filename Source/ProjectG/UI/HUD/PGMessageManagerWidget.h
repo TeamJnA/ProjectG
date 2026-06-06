@@ -6,7 +6,6 @@
 #include "Blueprint/UserWidget.h"
 #include "PGMessageManagerWidget.generated.h"
 
-class UPGMessageEntryWidget;
 class APGPlayerCharacter;
 class UImage;
 class UTextBlock;

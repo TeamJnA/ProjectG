@@ -25,6 +25,8 @@ void UPGGameUserSettings::SetPushToTalk(bool bEnable)
 	bPushToTalk = bEnable;
 	SaveSettings();
 	SaveConfig();
+
+	OnPushToTalkModeChanged.Broadcast(bEnable);
 }
 
 void UPGGameUserSettings::ApplyMicSettings()

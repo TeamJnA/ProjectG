@@ -7,7 +7,7 @@
 #include "PGPhotoAlertWidget.generated.h"
 
 class UImage;
-class UPGCameraComponent;
+class UWidget;
 
 /**
  * 
@@ -18,30 +18,39 @@ class PROJECTG_API UPGPhotoAlertWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-    void StartBlinking();
-    void StopBlinking();
+    void SetPhotoAlertActive(bool bActive);
+
+    void CollapseForCameraMode();
+    void RestoreFromCameraMode();
 
 protected:
-    virtual void NativeTick(const FGeometry & MyGeometry, float InDeltaTime) override;
+    virtual void NativeOnInitialized() override;
 
-    void RefreshBlinkState();
-    UPGCameraComponent* ResolveCameraComponent();
+    UFUNCTION()
+    void HandleSlideAnimFinished();
+
+    void SnapToHiddenState();
 
     UPROPERTY(EditAnywhere, Category = "UI")
     FLinearColor NormalTint = FLinearColor::White;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Photo")
+    FVector2D HiddenTranslation = FVector2D(0.0f, -90.0f);
+
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UImage> CameraIcon;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UWidget> AlertRoot;
 
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     TObjectPtr<UWidgetAnimation> BlinkAnim;
 
-    TWeakObjectPtr<UPGCameraComponent> CachedCam;
+    UPROPERTY(Transient, meta = (BindWidgetAnim))
+    TObjectPtr<UWidgetAnimation> SlideInAnim;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Photo")
-    float DisabledOpacity = 0.2f;
+    UPROPERTY(Transient, meta = (BindWidgetAnim))
+    TObjectPtr<UWidgetAnimation> SlideOutAnim;
 
-    bool bBlinkRequested = false;
-    bool bCanUseCamera = false;
-    bool bAnimActive = false;
+    bool bShown = false;
 };

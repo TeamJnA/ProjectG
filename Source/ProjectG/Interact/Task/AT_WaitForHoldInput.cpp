@@ -106,6 +106,11 @@ void UAT_WaitForHoldInput::OnInteractInputChanged(const FGameplayTag GameplayTag
 			UE_LOG(LogPGAbilityTask, Log, TEXT("UAT_WaitForHoldInput HoldStartTime is : [%f]"), TimeHeld);
 
 			bInputHeld = true;
+
+			if (ShouldBroadcastAbilityTaskDelegates())
+			{
+				OnHoldInputStarted.Broadcast();
+			}
 		}
 		// if key is released
 		else
