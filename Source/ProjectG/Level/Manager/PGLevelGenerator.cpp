@@ -20,6 +20,7 @@
 #include "Level/Misc/PGWall.h"
 #include "Level/Misc/PGWaiterStand.h"
 #include "Level/Misc/PGHideProp.h"
+#include "Level/Searchable/PGSearchableBase.h"
 
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Enemy/Charger/Character/PGChargerCharacter.h"
@@ -876,6 +877,11 @@ void APGLevelGenerator::SpawnDoors()
 		}
 		DoorAmount--;
 	}
+}
+
+void APGLevelGenerator::SpawnSearchables()
+{
+
 }
 
 /*

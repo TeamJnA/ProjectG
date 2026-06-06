@@ -15,6 +15,7 @@ class APGDoor1;
 class APGFuseBox;
 class APGWaiterStand;
 class APGHideProp;
+class APGSearchableBase;
 
 UCLASS()
 class PROJECTG_API APGLevelGenerator : public AActor
@@ -40,6 +41,7 @@ protected:
 
 	void CloseHoles();
 	void SpawnDoors();
+	void SpawnSearchables();
 	void SpawnItems();
 	void SpawnMannequins();
 	void SpawnArmorStands();
@@ -96,6 +98,9 @@ private:
 	// ~
 
 	UPROPERTY()
+	TArray<TObjectPtr<USceneComponent>> SearchableSpawnPointsList;
+
+	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
 
 	UPROPERTY()
@@ -118,6 +123,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<APGWaiterStand> WaiterStandClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<APGSearchableBase>> SearchableClasses;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<APGHideProp>> HidePropClasses;

@@ -20,7 +20,9 @@ APGSearchableBase::APGSearchableBase()
 
     MainBodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MainBodyMesh"));
     MainBodyMesh->SetupAttachment(Root);
+    MainBodyMesh->SetCollisionObjectType(ECC_WorldStatic);
 }
+
 
 // Called when the game starts or when spawned
 void APGSearchableBase::BeginPlay()
@@ -32,6 +34,27 @@ void APGSearchableBase::BeginPlay()
     {
         InitSlots();
     }
+}
+
+APGSearchableSlotBase* APGSearchableBase::GetRandomSlot() const
+{
+    TArray<APGSearchableSlotBase*> ValidSlots;
+    for (APGSearchableSlotBase* Slot : SpawnedSlots)
+    {
+        if (IsValid(Slot))
+        {
+            ValidSlots.Add(Slot);
+        }
+    }
+
+    if (ValidSlots.IsEmpty())
+    {
+        return nullptr;
+    }
+
+    // 무작위로 하나 선택
+    const int32 RandomIndex = FMath::RandRange(0, ValidSlots.Num() - 1);
+    return ValidSlots[RandomIndex];
 }
 
 void APGSearchableBase::OnConstruction(const FTransform& Transform)
@@ -78,22 +101,21 @@ void APGSearchableBase::InitSlots()
             const FSearchableSlotConfig& Config = SlotConfigs[ConfigIndex];
 
             FTransform FinalSpawnTransform = Config.SlotLocalTransform * Arrow->GetComponentTransform();
-
             APGSearchableSlotBase* SpawnedSlot = GetWorld()->SpawnActor<APGSearchableSlotBase>(
                 SlotClassToSpawn,
                 FinalSpawnTransform,
                 SpawnParams
             );
-
+            
             if (SpawnedSlot)
             {
+                // Slot의 Type 지정, Slot의 Item Spawn Point 지정, Slot을 배열에 저장
                 // SpawnedSlot->AttachToComponent(MainBodyMesh, FAttachmentTransformRules::KeepWorldTransform);
                SpawnedSlot->SetSlotInteractionType(Config.InteractionType);
 
-                if (USceneComponent* SpawnPointComp = SpawnedSlot->GetItemSpawnPoint())
-                {
-                    SpawnPointComp->SetRelativeTransform(Config.ItemSpawnLocalTransform);
-                }
+               SpawnedSlot->SetCurrentSlotMesh(Config.SlotMeshType);
+
+               SpawnedSlot->SetItemSpawnPointTransform(Config.ItemSpawnLocalTransform);
 
                 SpawnedSlots[ConfigIndex] = SpawnedSlot;
             }
