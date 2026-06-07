@@ -40,6 +40,9 @@ void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D*
 	bool bShowStatus = true;
 	bool bShowScore = false;
 
+	const bool bBoldItalic = (Context == EPlayerEntryContext::Lobby || Context == EPlayerEntryContext::Spectator);
+	const FName Typeface = bBoldItalic ? FName("Bold Italic") : FName("Bold");
+
 	if (Context == EPlayerEntryContext::Lobby)
 	{
 		PlayerNameFontSize = 16;
@@ -103,10 +106,12 @@ void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D*
 
 	FSlateFontInfo PlayerNameFontInfo = PlayerNameText->GetFont();
 	PlayerNameFontInfo.Size = PlayerNameFontSize;
+	PlayerNameFontInfo.TypefaceFontName = Typeface;
 	PlayerNameText->SetFont(PlayerNameFontInfo);
 
 	FSlateFontInfo StatusFontInfo = StatusText->GetFont();
 	StatusFontInfo.Size = StatusFontSize;
+	StatusFontInfo.TypefaceFontName = Typeface;
 	StatusText->SetFont(StatusFontInfo);
 	StatusText->SetText(StatusMessage);
 	StatusText->SetColorAndOpacity(StatusColor);
