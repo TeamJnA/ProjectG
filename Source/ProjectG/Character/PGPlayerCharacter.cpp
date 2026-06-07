@@ -2346,6 +2346,14 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 	{
 		return;
 	}
+
+	if (AbilitySystemComponent && 
+		AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.OnAttacked")) ||
+		AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
+	{
+		HUD->SetPhotoAlertVisible(false);
+		return;
+	}
 	
 	if (!CameraComp)
 	{

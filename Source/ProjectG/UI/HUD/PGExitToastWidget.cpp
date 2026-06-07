@@ -5,6 +5,13 @@
 #include "Components/TextBlock.h"
 
 
+void UPGExitToastWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	SetRenderOpacity(0.0f);
+}
+
 void UPGExitToastWidget::NativeDestruct()
 {
 	if (UWorld* World = GetWorld())

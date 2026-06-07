@@ -34,6 +34,32 @@ void UPGAlertContainerWidget::CloseHelper()
 	}
 }
 
+void UPGAlertContainerWidget::ResetForCleanup()
+{
+	if (HelperWidget)
+	{
+		HelperWidget->ForceClose();
+	}
+
+	bExitActive = false;
+	bExitPending = false;
+	if (ExitToastWidget)
+	{
+		ExitToastWidget->HideImmediate();
+	}
+
+	if (EnemyToastWidget)
+	{
+		EnemyToastWidget->ResetToast();
+	}
+
+	if (PhotoAlertWidget)
+	{
+		PhotoAlertWidget->RestoreFromCameraMode();
+	}
+	bInCameraMode = false;
+}
+
 bool UPGAlertContainerWidget::IsHelperOpen() const
 {
 	return HelperWidget && HelperWidget->IsOpen();

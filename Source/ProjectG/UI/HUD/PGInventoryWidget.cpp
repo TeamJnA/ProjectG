@@ -7,6 +7,7 @@
 #include "Components/TextBlock.h"
 #include "Components/Widget.h"
 #include "Components/VerticalBox.h"
+#include "Components/UniformGridSlot.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
 #include "Player/PGGameUserSettings.h"
@@ -40,7 +41,7 @@ void UPGInventoryWidget::NativeConstruct()
 		Settings->OnPushToTalkModeChanged.AddUniqueDynamic(this, &UPGInventoryWidget::HandlePushToTalkModeChanged);
 	}
 
-	RefreshVoiceKeyGuide();
+	RefreshKeyGuides();
 }
 
 void UPGInventoryWidget::NativeDestruct()
@@ -69,23 +70,7 @@ void UPGInventoryWidget::NativeDestruct()
 
 void UPGInventoryWidget::HandlePushToTalkModeChanged(bool bIsPushToTalk)
 {
-	RefreshVoiceKeyGuide();
-}
-
-void UPGInventoryWidget::RefreshVoiceKeyGuide()
-{
-	if (!VoiceKeyGuide)
-	{
-		return;
-	}
-
-	bool bPushToTalk = false;
-	if (const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
-	{
-		bPushToTalk = Settings->IsPushToTalk();
-	}
-
-	VoiceKeyGuide->SetVisibility(bPushToTalk ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	RefreshKeyGuides();
 }
 
 /*
@@ -205,5 +190,69 @@ void UPGInventoryWidget::RebuildItemActionGuide(UPGItemData* CurrentItemData)
 			Entry->Setup(Guide.ActionText, Guide.KeyIcon, Guide.KeyIconSize);
 			ItemActionGuideBox->InsertChildAt(0, Entry);
 		}
+	}
+}
+
+void UPGInventoryWidget::SetHelperGuideAvailable(bool bAvailable)
+{
+	bHelperGuideAvailable = bAvailable;
+	RefreshKeyGuides();
+}
+
+void UPGInventoryWidget::RefreshKeyGuides()
+{
+	bool bPushToTalk = false;
+	if (const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		bPushToTalk = Settings->IsPushToTalk();
+	}
+
+	struct FGuideEntry
+	{
+		UWidget* Widget;
+		bool bVisible;
+	};
+
+	const FGuideEntry Guides[] =
+	{
+		{ VoiceKeyGuide, bPushToTalk },
+		{ CameraKeyGuide, true },
+		{ HelperKeyGuide, bHelperGuideAvailable },
+	};
+
+	int32 Column = 0;
+
+	for (const FGuideEntry& Guide : Guides)
+	{
+		if (!Guide.Widget || Guide.bVisible)
+		{
+			continue;
+		}
+
+		Guide.Widget->SetVisibility(ESlateVisibility::Collapsed);
+
+		if (UUniformGridSlot* GridSlot = Cast<UUniformGridSlot>(Guide.Widget->Slot))
+		{
+			GridSlot->SetColumn(Column);
+		}
+
+		++Column;
+	}
+
+	for (const FGuideEntry& Guide : Guides)
+	{
+		if (!Guide.Widget || !Guide.bVisible)
+		{
+			continue;
+		}
+
+		Guide.Widget->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+		if (UUniformGridSlot* GridSLot = Cast<UUniformGridSlot>(Guide.Widget->Slot))
+		{
+			GridSLot->SetColumn(Column);
+		}
+
+		++Column;
 	}
 }

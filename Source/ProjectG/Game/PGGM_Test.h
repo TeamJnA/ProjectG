@@ -36,6 +36,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SpawnTestItem(FName InName = FName("GlassBottle"), FVector InVector = FVector::ZeroVector);
+	void RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform);
 
 protected:
 	virtual void BeginPlay() override;

@@ -83,6 +83,17 @@ void APGHUD::Init()
 		}
 	}
 
+	// for test
+	//if (!AlertContainerWidget)
+	//{
+	//	AlertContainerWidget = CreateWidget<UPGAlertContainerWidget>(PC, AlertContainerWidgetClass);
+	//}
+
+	//if (AlertContainerWidget && !AlertContainerWidget->IsInViewport())
+	//{
+	//	AlertContainerWidget->AddToViewport(10);
+	//}
+
 	if (!InventoryWidget)
 	{
 		InventoryWidget = CreateWidget<UPGInventoryWidget>(PC, InventoryWidgetClass);
@@ -91,6 +102,7 @@ void APGHUD::Init()
 	if (InventoryWidget && !InventoryWidget->IsInViewport())
 	{
 		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: InventoryWidget created successfully."));
+		InventoryWidget->SetHelperGuideAvailable(AlertContainerWidget != nullptr);
 		InventoryWidget->AddToViewport();
 	}
 	else
@@ -492,9 +504,13 @@ void APGHUD::ForceCleanupHUD()
 		}
 	}
 
-	if (AlertContainerWidget && AlertContainerWidget->IsInViewport())
+	if (AlertContainerWidget)
 	{
-		AlertContainerWidget->RemoveFromParent();
+		AlertContainerWidget->ResetForCleanup();
+		if (AlertContainerWidget->IsInViewport())
+		{
+			AlertContainerWidget->RemoveFromParent();
+		}
 	}
 
 	if (InventoryWidget)

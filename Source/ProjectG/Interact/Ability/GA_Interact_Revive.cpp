@@ -3,6 +3,7 @@
 
 #include "Interact/Ability/GA_Interact_Revive.h"
 #include "Game/PGGameMode.h"
+//#include "Game/PGGM_Test.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerState.h"
 #include "Player/PGPlayerController.h"
@@ -79,15 +80,29 @@ void UGA_Interact_Revive::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 		return;
 	}
 
+	// for test
+	//AController* DeadPlayerController = DeadCharacter->GetController();
+
 	APGGameMode* GM = GetWorld()->GetAuthGameMode<APGGameMode>();
 	if (!GM)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GA_Interact_Revive::ActivateAbility: GameMode is NULL."));
-
+		
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 	UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: GameMode found. Calling RespawnPlayer..."));
+
+	// for test
+	//APGGM_Test* GM = GetWorld()->GetAuthGameMode<APGGM_Test>();
+	//if (!GM)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("GA_Interact_Revive::ActivateAbility: GameMode is NULL."));
+
+	//	EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+	//	return;
+	//}
+	//UE_LOG(LogTemp, Log, TEXT("GA_Interact_Revive::ActivateAbility: GameMode found. Calling RespawnPlayer..."));
 
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	if (!AvatarActor)

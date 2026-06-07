@@ -14,6 +14,7 @@
 
 #include "GameFramework/GameState.h"
 #include "Player/PGPlayerState.h"
+#include "Player/PGPlayerController.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
 
 APGGM_Test::APGGM_Test()
@@ -99,6 +100,38 @@ void APGGM_Test::SpawnTestItem(FName InName, FVector InVector)
 				}
 			}
 		}));
+}
+
+void APGGM_Test::RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform)
+{
+	APGPlayerController* DeadPC = Cast<APGPlayerController>(DeadPlayerController);
+	if (!DeadPC)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GM::RespawnPlayer called with a NULL controller or NULL player state"));
+		return;
+	}
+
+	APawn* OldPawn = DeadPC->GetPawn();
+	if (!OldPawn)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GM::RespawnPlayer: OldPawn was null, proceeding to spawn new character."))
+	}
+	DeadPC->UnPossess();
+	OldPawn->Destroy();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	APGPlayerCharacter* NewCharacter = GetWorld()->SpawnActor<APGPlayerCharacter>(DefaultPawnClass, SpawnTransform, SpawnParams);
+	if (!NewCharacter || !SoundManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GM::RespawnPlayer: No character or sound manager valid"));
+		return;
+	}
+	DeadPC->Client_OnRevive();
+	DeadPC->Possess(NewCharacter);
+	NewCharacter->InitSoundManager(SoundManager);
+	NewCharacter->OnRevive();
 }
 
 void APGGM_Test::BeginPlay()

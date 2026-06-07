@@ -27,7 +27,7 @@ class PROJECTG_API UPGInventoryWidget : public UUserWidget
 	
 public:
 	void BindInventorySlots(APGPlayerCharacter* PlayerCharacter);
-	void RefreshVoiceKeyGuide();
+	void SetHelperGuideAvailable(bool bAvailable);
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -46,6 +46,8 @@ protected:
 	void UpdateCurrentItemName(const TArray<FInventoryItem>& InventoryItems, int32 CurrentIndex);
 
 	void RebuildItemActionGuide(UPGItemData* CurrentItemData);
+
+	void RefreshKeyGuides();
 
 	UPROPERTY()
 	TArray<TObjectPtr<UPGInventorySlotWidget>> InventorySlots;
@@ -72,6 +74,12 @@ protected:
 	TObjectPtr<UWidget> VoiceKeyGuide;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWidget> CameraKeyGuide;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWidget> HelperKeyGuide;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UVerticalBox> ItemActionGuideBox;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ActionGuide")
@@ -82,4 +90,6 @@ protected:
 	TWeakObjectPtr<UPGItemData> LastGuideItemData;
 
 	int32 CurrentSlotIndex = 0;
+
+	bool bHelperGuideAvailable = false;
 };

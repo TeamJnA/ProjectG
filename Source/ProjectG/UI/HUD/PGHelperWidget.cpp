@@ -31,6 +31,17 @@ void UPGHelperWidget::NativeOnInitialized()
 	}
 }
 
+void UPGHelperWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (!bIsOpen)
+	{
+		SnapToClosedState();
+		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+}
+
 void UPGHelperWidget::NativeDestruct()
 {
 	bIsOpen = false;
@@ -155,12 +166,40 @@ void UPGHelperWidget::CloseAndCollapse()
 	SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UPGHelperWidget::SnapToClosedState()
+void UPGHelperWidget::RestoreFromCameraMode()
 {
-	if (HelperListRoot)
+	StopAnimation(SlideInAnim);
+	StopAnimation(SlideOutAnim);
+
+	SnapToClosedState();
+	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+}
+
+void UPGHelperWidget::ForceClose()
+{
+	bIsOpen = false;
+
+	UnsubscribeFromExits();
+	
+	if (UWorld* World = GetWorld())
 	{
-		HelperListRoot->SetRenderTranslation(ListClosedTranslation);
+		World->GetTimerManager().ClearTimer(AutoCloseTimerHandle);
+		World->GetTimerManager().ClearTimer(RowAppearTimerHandle);
 	}
+
+	StopAnimation(SlideInAnim);
+	StopAnimation(SlideOutAnim);
+
+	if (ExitListBox)
+	{
+		ExitListBox->ClearChildren();
+	}
+	ActiveEntries.Reset();
+	PendingRows.Reset();
+	NextPendingIndex = 0;
+
+	SnapToClosedState();
+	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 }
 
 void UPGHelperWidget::HandleSlideAnimFinished()
@@ -172,13 +211,17 @@ void UPGHelperWidget::HandleSlideAnimFinished()
 	}
 }
 
-void UPGHelperWidget::RestoreFromCameraMode()
+void UPGHelperWidget::SnapToClosedState()
 {
-	StopAnimation(SlideInAnim);
-	StopAnimation(SlideOutAnim);
+	if (HelperListRoot)
+	{
+		HelperListRoot->SetRenderTranslation(ListClosedTranslation);
+	}
 
-	SnapToClosedState();
-	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	if (HelperPeek)
+	{
+		HelperPeek->SetRenderOpacity(1.0f);
+	}
 }
 
 void UPGHelperWidget::SubscribeToExits()
@@ -343,7 +386,7 @@ void UPGHelperWidget::Refresh()
 	{
 		if (UWorld* World = GetWorld())
 		{
-			World->GetTimerManager().SetTimer(RowAppearTimerHandle, this, &UPGHelperWidget::AppearNextRow, RowAppearInterval, true, 0.5f);
+			World->GetTimerManager().SetTimer(RowAppearTimerHandle, this, &UPGHelperWidget::AppearNextRow, RowAppearInterval, true);
 		}
 	}
 }

@@ -19,9 +19,11 @@ class PROJECTG_API UPGEnemyToastWidget : public UUserWidget
 public:
 	void PlayToast(const FText& Text);
 	void HideBrieflyForTransition();
+	void ResetToast();
 
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
 	void PlayInternal(const FText& Text);

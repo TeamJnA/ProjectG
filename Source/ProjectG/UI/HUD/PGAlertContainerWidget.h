@@ -22,6 +22,7 @@ class PROJECTG_API UPGAlertContainerWidget : public UUserWidget
 public:
 	void OpenHelper();
 	void CloseHelper();
+	void ResetForCleanup();
 	bool IsHelperOpen() const;
 
 	void SetPhotoAlertActive(bool bActive);

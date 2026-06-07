@@ -18,6 +18,17 @@ void UPGEnemyToastWidget::NativeOnInitialized()
 	}
 }
 
+void UPGEnemyToastWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (!bIsAnimating)
+	{
+		SetRenderOpacity(0.0f);
+		SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+}
+
 void UPGEnemyToastWidget::NativeDestruct()
 {
 	if (UWorld* World = GetWorld())
@@ -134,4 +145,32 @@ void UPGEnemyToastWidget::RestoreAfterTransition()
 	{
 		SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
+}
+
+void UPGEnemyToastWidget::ResetToast()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(TypewriterDelayHandle);
+		World->GetTimerManager().ClearTimer(TypewriterStepHandle);
+		World->GetTimerManager().ClearTimer(TransitionRestoreHandle);
+	}
+
+	if (ToastAnim && IsAnimationPlaying(ToastAnim))
+	{
+		StopAnimation(ToastAnim);
+	}
+
+	PendingTexts.Reset();
+	FullString.Reset();
+	CharIndex = 0;
+	bIsAnimating = false;
+
+	if (EnemyMessageText)
+	{
+		EnemyMessageText->SetText(FText::GetEmpty());
+	}
+
+	SetRenderOpacity(0.0f);
+	SetVisibility(ESlateVisibility::HitTestInvisible);
 }

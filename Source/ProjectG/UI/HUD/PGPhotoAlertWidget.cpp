@@ -24,6 +24,17 @@ void UPGPhotoAlertWidget::NativeOnInitialized()
     }
 }
 
+void UPGPhotoAlertWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    if (!bShown)
+    {
+        SnapToHiddenState();
+        SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+    }
+}
+
 void UPGPhotoAlertWidget::SetPhotoAlertActive(bool bActive)
 {
     if (bActive == bShown)
@@ -67,7 +78,7 @@ void UPGPhotoAlertWidget::SetPhotoAlertActive(bool bActive)
         }
 
         if (SlideOutAnim)
-        {
+        { 
             PlayAnimation(SlideOutAnim);
         }
     }
@@ -98,11 +109,7 @@ void UPGPhotoAlertWidget::RestoreFromCameraMode()
 {
     StopAnimation(SlideInAnim);
     StopAnimation(SlideOutAnim);
-
-    if (BlinkAnim)
-    {
-        StopAnimation(BlinkAnim);
-    }
+    StopAnimation(BlinkAnim);
 
     if (CameraIcon)
     {

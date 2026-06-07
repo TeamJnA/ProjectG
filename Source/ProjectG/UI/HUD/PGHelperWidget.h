@@ -31,17 +31,19 @@ public:
     void CloseIfOpen();
     void CloseAndCollapse();
     void RestoreFromCameraMode();
+    void ForceClose();
 
     FORCEINLINE bool IsOpen() const { return bIsOpen; }
 
 protected:
     virtual void NativeOnInitialized() override;
+    virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
-
-    void SnapToClosedState();
 
     UFUNCTION()
     void HandleSlideAnimFinished();
+
+    void SnapToClosedState();
 
     // HelperWidget 갱신 
     // Refresh->연출까지 재시작
@@ -76,6 +78,9 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UWidget> HelperListRoot;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UWidget> HelperPeek;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UVerticalBox> ExitListBox;

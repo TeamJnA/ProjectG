@@ -22,6 +22,7 @@ public:
 	void HideImmediate();
 
 protected:
+	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
 	void StartTypewriter();
