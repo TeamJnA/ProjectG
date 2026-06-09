@@ -23,6 +23,7 @@ class UPGSpectatorWidget;
 class UPGScoreBoardWidget;
 class UPGFinalScoreBoardWidget;
 class UPGPauseMenuWidget;
+class APGPlayerState;
 
 /**
  * 
@@ -76,11 +77,14 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	void TryBindExits();
+	void UnbindExits();
 	UFUNCTION()
 	void HandleExitLockStateChanged(APGExitPointBase* ExitActor);
 
-	void TryBindExits();
-	void UnbindExits();
+	void TrySubscribeCapturedSubjects();
+	UFUNCTION()
+	void HandleCapturedSubjectsChanged();
 
 	void DisplayExitToast();
 	void DisplayEnemyToast(const FText& TooltipText);
@@ -178,7 +182,11 @@ private:
 
 	TArray<TWeakObjectPtr<APGExitPointBase>> HUDSubscribedExits;
 
+	TWeakObjectPtr<APGPlayerState> SubscribedPS;
+
 	FTimerHandle ExitBindRetryHandle;
+	FTimerHandle CapturedSubBindRetryHandle;
 
 	int32 ExitBindRetries = 0;
+	int32 CapturedSubBindRetries;
 };

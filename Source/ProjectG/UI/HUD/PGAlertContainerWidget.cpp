@@ -60,6 +60,22 @@ void UPGAlertContainerWidget::ResetForCleanup()
 	bInCameraMode = false;
 }
 
+void UPGAlertContainerWidget::NotifyHelperCapturedChanged()
+{
+	if (HelperWidget)
+	{
+		HelperWidget->NotifyCapturedChanged();
+	}
+}
+
+void UPGAlertContainerWidget::NotifyHelperExitLockChanged()
+{
+	if (HelperWidget)
+	{
+		HelperWidget->NotifyExitLockChanged();
+	}
+}
+
 bool UPGAlertContainerWidget::IsHelperOpen() const
 {
 	return HelperWidget && HelperWidget->IsOpen();

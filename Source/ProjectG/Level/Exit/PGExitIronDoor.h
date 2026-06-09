@@ -39,6 +39,7 @@ public:
 	virtual FText GetInteractionText() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	virtual void InteractionFailed() override;
+	virtual void NotifyInteractionAttempted(ACharacter* InteractingPlayer) override {};
 	// ~IInteractableActorInterface
 
 	void SelfHighlightOff();

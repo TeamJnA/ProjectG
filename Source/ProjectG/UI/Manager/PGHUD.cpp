@@ -20,8 +20,6 @@
 #include "UI/HUD/PGBackgroundBlurWidget.h"
 
 #include "Game/PGGameState.h"
-#include "Character/PGPlayerCharacter.h"
-#include "Character/Component/PGInventoryComponent.h"
 #include "Player/PGPlayerState.h"
 #include "Level/Exit/PGExitPointBase.h"
 #include "Type/PGHelperTypes.h"
@@ -35,11 +33,17 @@ APGHUD::APGHUD()
 
 void APGHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	UnbindExits();
-
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ExitBindRetryHandle);
+		World->GetTimerManager().ClearTimer(CapturedSubBindRetryHandle);
+	}
+
+	UnbindExits();
+
+	if (APGPlayerState* PS = SubscribedPS.Get())
+	{
+		PS->OnCapturedSubjectsChanged.RemoveDynamic(this, &APGHUD::HandleCapturedSubjectsChanged);
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -88,7 +92,6 @@ void APGHUD::Init()
 	//{
 	//	AlertContainerWidget = CreateWidget<UPGAlertContainerWidget>(PC, AlertContainerWidgetClass);
 	//}
-
 	//if (AlertContainerWidget && !AlertContainerWidget->IsInViewport())
 	//{
 	//	AlertContainerWidget->AddToViewport(10);
@@ -151,6 +154,7 @@ void APGHUD::Init()
 	}
 
 	TryBindExits();
+	TrySubscribeCapturedSubjects();
 }
 
 void APGHUD::TryBindExits()
@@ -238,6 +242,45 @@ void APGHUD::HandleExitLockStateChanged(APGExitPointBase* ExitActor)
 	if (bDiscovered)
 	{
 		DisplayExitToast();
+
+		if (AlertContainerWidget)
+		{
+			AlertContainerWidget->NotifyHelperExitLockChanged();
+		}
+	}
+}
+
+void APGHUD::TrySubscribeCapturedSubjects()
+{
+	if (SubscribedPS.IsValid())
+	{
+		return;
+	}
+
+	APlayerController* PC = GetOwningPlayerController();
+	APGPlayerState* PS = PC ? PC->GetPlayerState<APGPlayerState>() : nullptr;
+	if (PS)
+	{
+		PS->OnCapturedSubjectsChanged.AddUniqueDynamic(this, &APGHUD::HandleCapturedSubjectsChanged);
+		SubscribedPS = PS;
+		return;
+	}
+
+	if (CapturedSubBindRetries < 10)
+	{
+		++CapturedSubBindRetries;
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimer(CapturedSubBindRetryHandle, this, &APGHUD::TrySubscribeCapturedSubjects, 0.5f, false);
+		}
+	}
+}
+
+void APGHUD::HandleCapturedSubjectsChanged()
+{
+	if (AlertContainerWidget)
+	{
+		AlertContainerWidget->NotifyHelperCapturedChanged();
 	}
 }
 

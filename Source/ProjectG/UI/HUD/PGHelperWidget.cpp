@@ -15,8 +15,6 @@ void UPGHelperWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	ResolveLocalPlayerState();
-
 	FWidgetAnimationDynamicEvent Finished;
 	Finished.BindDynamic(this, &UPGHelperWidget::HandleSlideAnimFinished);
 
@@ -52,46 +50,7 @@ void UPGHelperWidget::NativeDestruct()
 		World->GetTimerManager().ClearTimer(RowAppearTimerHandle);
 	}
 
-	if (APGPlayerState* PS = CachedPS.Get())
-	{
-		PS->OnCapturedSubjectsChanged.RemoveDynamic(this, &UPGHelperWidget::HandleCapturedSubjectsChanged);
-	}
-
-	UnsubscribeFromExits();
-
 	Super::NativeDestruct();
-}
-
-APGPlayerState* UPGHelperWidget::ResolveLocalPlayerState()
-{
-	APGPlayerState* PS = CachedPS.Get();
-	if (!PS)
-	{
-		APlayerController* PC = GetOwningPlayer();
-		if (!PC)
-		{
-			return nullptr;
-		}
-
-		PS = PC->GetPlayerState<APGPlayerState>();
-		if (!PS)
-		{
-			return nullptr;
-		}
-
-		CachedPS = PS;
-	}
-
-	PS->OnCapturedSubjectsChanged.AddUniqueDynamic(this, &UPGHelperWidget::HandleCapturedSubjectsChanged);
-	return PS;
-}
-
-void UPGHelperWidget::HandleCapturedSubjectsChanged()
-{
-	if (bIsOpen)
-	{
-		Refresh();
-	}
 }
 
 void UPGHelperWidget::OpenWithAutoClose()
@@ -100,10 +59,8 @@ void UPGHelperWidget::OpenWithAutoClose()
 	{
 		return;
 	}
-
 	bIsOpen = true;
 
-	SubscribeToExits();
 	Refresh();
 
 	if (SlideOutAnim && IsAnimationPlaying(SlideOutAnim))
@@ -130,8 +87,6 @@ void UPGHelperWidget::CloseIfOpen()
 	}
 	bIsOpen = false;
 
-	UnsubscribeFromExits();
-
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(AutoCloseTimerHandle);
@@ -154,7 +109,6 @@ void UPGHelperWidget::CloseAndCollapse()
 	if (bIsOpen)
 	{
 		bIsOpen = false;
-		UnsubscribeFromExits();
 
 		if (UWorld* World = GetWorld())
 		{
@@ -178,8 +132,6 @@ void UPGHelperWidget::RestoreFromCameraMode()
 void UPGHelperWidget::ForceClose()
 {
 	bIsOpen = false;
-
-	UnsubscribeFromExits();
 	
 	if (UWorld* World = GetWorld())
 	{
@@ -224,42 +176,15 @@ void UPGHelperWidget::SnapToClosedState()
 	}
 }
 
-void UPGHelperWidget::SubscribeToExits()
+void UPGHelperWidget::NotifyCapturedChanged()
 {
-	UnsubscribeFromExits();
-
-	UWorld* World = GetWorld();
-	if (!World)
+	if (bIsOpen)
 	{
-		return;
-	}
-
-	for (TActorIterator<APGExitPointBase> It(World); It; ++It)
-	{
-		APGExitPointBase* Exit = *It;
-		if (!Exit)
-		{
-			continue;
-		}
-
-		Exit->OnExitLockStateChanged.AddUniqueDynamic(this, &UPGHelperWidget::HandleExitLockStateChanged);
-		SubscribedExits.Add(Exit);
+		Refresh();
 	}
 }
 
-void UPGHelperWidget::UnsubscribeFromExits()
-{
-	for (const TWeakObjectPtr<APGExitPointBase>& WeakExit : SubscribedExits)
-	{
-		if (APGExitPointBase* Exit = WeakExit.Get())
-		{
-			Exit->OnExitLockStateChanged.RemoveDynamic(this, &UPGHelperWidget::HandleExitLockStateChanged);
-		}
-	}
-	SubscribedExits.Reset();
-}
-
-void UPGHelperWidget::HandleExitLockStateChanged(APGExitPointBase* ExitActor)
+void UPGHelperWidget::NotifyExitLockChanged()
 {
 	if (!bIsOpen)
 	{
@@ -304,7 +229,13 @@ void UPGHelperWidget::Refresh()
 		return;
 	}
 
-	APGPlayerState* PS = ResolveLocalPlayerState();
+	APlayerController* PC = GetOwningPlayer();
+	if (!PC)
+	{
+		return;
+	}
+
+	APGPlayerState* PS = PC->GetPlayerState<APGPlayerState>();
 	if (!PS)
 	{
 		return;

@@ -941,22 +941,6 @@ void APGPlayerController::PerformSessionEndAction(ECleanupActionType ActionType)
 	}
 }
 
-void APGPlayerController::Client_NotifyExitInteractionDiscovery_Implementation(int32 SubjectID)
-{
-	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(GetPawn()))
-	{
-		if (UPGCameraComponent* Cam = Char->GetCameraComponent())
-		{
-			Cam->AddToLocalCapturedIDs(SubjectID);
-		}
-	}
-
-	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
-	{
-		HUD->NotifyNewlyCapturedSpeciesKeys({ SubjectID });
-	}
-}
-
 void APGPlayerController::Server_RequestSoloLeave_Implementation(ECleanupActionType ActionType)
 {
 	if (APGGameMode* GM = Cast<APGGameMode>(GetWorld()->GetAuthGameMode()))
@@ -1072,5 +1056,21 @@ void APGPlayerController::OnToggleHelper(const FInputActionValue& Value)
 	if (APGHUD* HUD = GetHUD<APGHUD>())
 	{
 		HUD->ToggleHelperWidget();
+	}
+}
+
+void APGPlayerController::Client_NotifyExitInteractionDiscovery_Implementation(int32 SubjectID)
+{
+	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(GetPawn()))
+	{
+		if (UPGCameraComponent* Cam = Char->GetCameraComponent())
+		{
+			Cam->AddToLocalCapturedIDs(SubjectID);
+		}
+	}
+
+	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
+	{
+		HUD->NotifyNewlyCapturedSpeciesKeys({ SubjectID });
 	}
 }

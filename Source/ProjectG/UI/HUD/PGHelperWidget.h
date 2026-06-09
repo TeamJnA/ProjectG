@@ -12,7 +12,6 @@
 class UVerticalBox;
 class UDataTable;
 class UPGHelperExitEntryWidget;
-class APGPlayerState;
 class APGExitPointBase;
 
 /**
@@ -32,6 +31,9 @@ public:
     void CloseAndCollapse();
     void RestoreFromCameraMode();
     void ForceClose();
+
+    void NotifyCapturedChanged();
+    void NotifyExitLockChanged();
 
     FORCEINLINE bool IsOpen() const { return bIsOpen; }
 
@@ -57,21 +59,6 @@ protected:
     // Typewriter, Icon Image 등장 연출
     UFUNCTION()
     void AppearNextRow();
-
-    // 찍은 Exits 갱신에 따른 HelperWidget 갱신
-    UFUNCTION()
-    void HandleCapturedSubjectsChanged();
-
-    // Exits 잠금 상태 갱신에 따른 HelperWidget 갱신 
-    UFUNCTION()
-    void HandleExitLockStateChanged(APGExitPointBase* ExitActor);
-
-    // 레벨의 모든 Exits 잠금 상태 Delegate Binding
-    void SubscribeToExits();
-    void UnsubscribeFromExits();
-
-    // 로컬 PlayerState 캐싱
-    APGPlayerState* ResolveLocalPlayerState();
 
     UPROPERTY(EditDefaultsOnly, Category = "Helper")
     TObjectPtr<UDataTable> CatalogTable;
@@ -101,8 +88,6 @@ protected:
     FTimerHandle AutoCloseTimerHandle;
     FTimerHandle RowAppearTimerHandle;
 
-    TArray<TWeakObjectPtr<APGExitPointBase>> SubscribedExits;
-
     struct FPendingRow
     {
         FPGHelperEntryRow Row;
@@ -111,8 +96,6 @@ protected:
         bool bDepleted = false;
     };
     TArray<FPendingRow> PendingRows;
-
-    TWeakObjectPtr<APGPlayerState> CachedPS;
 
     UPROPERTY(EditDefaultsOnly)
     float AutoCloseDelay = 5.0f;

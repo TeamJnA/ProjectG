@@ -23,6 +23,8 @@ public:
 	void OpenHelper();
 	void CloseHelper();
 	void ResetForCleanup();
+	void NotifyHelperCapturedChanged();
+	void NotifyHelperExitLockChanged();
 	bool IsHelperOpen() const;
 
 	void SetPhotoAlertActive(bool bActive);
