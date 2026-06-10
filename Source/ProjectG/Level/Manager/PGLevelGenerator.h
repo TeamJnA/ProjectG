@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Level/Searchable/PGSearchableSpawnPoint.h"
 #include "PGLevelGenerator.generated.h"
 
 class APGMasterRoom;
@@ -118,14 +119,14 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> HidePropSpawnPointsList;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Searchable", meta = (AllowPrivateAccess = "true"))
+	TMap<ESearchableType, TSubclassOf<APGSearchableBase>> SearchableClassMap;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Environment", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<APGFuseBox> FuseBoxClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<APGWaiterStand> WaiterStandClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
-	TArray<TSubclassOf<APGSearchableBase>> SearchableClasses;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<APGHideProp>> HidePropClasses;

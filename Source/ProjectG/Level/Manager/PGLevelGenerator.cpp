@@ -68,6 +68,21 @@ APGLevelGenerator::APGLevelGenerator()
 	{
 		MannequinClass = MannequinRef.Class;
 	}
+
+	// Set base Searchable Class Map
+	const UEnum* SearchableEnum = StaticEnum<ESearchableType>();
+	if (SearchableEnum)
+	{
+		for (int32 i = 0; i < SearchableEnum->NumEnums() - 1; ++i)
+		{
+			ESearchableType EnumValue = static_cast<ESearchableType>(SearchableEnum->GetValueByIndex(i));
+
+			if (!SearchableClassMap.Contains(EnumValue))
+			{
+				SearchableClassMap.Add(EnumValue, nullptr);
+			}
+		}
+	}
 }
 
 /*
@@ -642,6 +657,14 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 			ExitPointsList.Append(LatestRoomExitPoints);
 		}
 
+		//Searchable Points
+		if (const USceneComponent* SearchableSpawnPointsFolder = RoomToCheck->GetSearchableSpawnPointsFolder())
+		{
+			const TArray<USceneComponent*>& SearchableSpawnPoints = SearchableSpawnPointsFolder->GetAttachChildren();
+			SearchableSpawnPointsList.Reserve(SearchableSpawnPointsList.Num() + SearchableSpawnPoints.Num());
+			SearchableSpawnPointsList.Append(SearchableSpawnPoints);
+		}
+
 		// ItemPoints
 		AddItemSpawnPoint(RoomToCheck);
 
@@ -751,6 +774,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 
 	CloseHoles();
 	SpawnDoors();
+	SpawnSearchables();
 	SpawnItems();
 	//SpawnMannequins();
 	SpawnArmorStands();
@@ -881,7 +905,45 @@ void APGLevelGenerator::SpawnDoors()
 
 void APGLevelGenerator::SpawnSearchables()
 {
+	UWorld* World = GetWorld();
+	if (!World || SearchableSpawnPointsList.IsEmpty())
+	{
+		return;
+	}
 
+	for (TObjectPtr<USceneComponent> Point : SearchableSpawnPointsList)
+	{
+		UPGSearchableSpawnPoint* SearchablePoint = Cast<UPGSearchableSpawnPoint>(Point);
+		if (!SearchablePoint)
+		{
+			continue; 
+		}
+
+		ESearchableType TypeToSpawn = SearchablePoint->GetSearchableType();
+
+		// TMap에서 해당 Enum에 매핑된 클래스 포인터 찾기
+		if (const TSubclassOf<APGSearchableBase>* ClassPtr = SearchableClassMap.Find(TypeToSpawn))
+		{
+			// 클래스가 비어있지 않은지 검증
+			if (*ClassPtr)
+			{
+				const FTransform SpawnTransform = SearchablePoint->GetComponentTransform();
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.Owner = this;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				World->SpawnActor<APGSearchableBase>(*ClassPtr, SpawnTransform, SpawnParams);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("LG::SpawnSearchables: Map contains valid Enum but class is empty!"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("LG::SpawnSearchables: Enum type not found in SearchableClassMap!"));
+		}
+	}
 }
 
 /*
