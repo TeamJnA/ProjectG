@@ -44,7 +44,10 @@ enum class ESlotMeshType : uint8
 	Shelf_Drawer     UMETA(DisplayName = "Shelf Drawer"),
 
 	// TableSmall
-	TableSmall_Drawer     UMETA(DisplayName = "TableSmall Drawer")
+	TableSmall_Drawer     UMETA(DisplayName = "TableSmall Drawer"),
+
+	// OldDrawer
+	OldDrawer_Open		UMETA(DisplayName = "OldDrawer Open")
 };
 
 USTRUCT(BlueprintType)

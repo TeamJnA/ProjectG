@@ -40,13 +40,17 @@ public:
 
     APGSearchableSlotBase* GetRandomSlot() const;
 
+    // Spawn할 위치를 알려주면서, 만약에 이제 스폰할 자리가 없으면 False를 Return.
+    // False일 경우, level generator에서는 더 이상 아이템을 스폰할 공간이 없다고 판단 후 이 Searchable을 스폰 배열에서 제거.
+    bool GetRandomSlot(APGSearchableSlotBase*& OutSlot);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
     virtual void OnConstruction(const FTransform& Transform) override;
 
-    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    // virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     void InitSlots();
 
@@ -67,6 +71,8 @@ protected:
     // 생성된 서랍장들을 관리하는 배열
     UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "Slot")
     TArray<TObjectPtr<APGSearchableSlotBase>> SpawnedSlots;
+
+    int32 CurrentSlotCount;
 };
 
 

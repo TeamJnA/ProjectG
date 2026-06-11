@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Level/Searchable/PGSearchableSpawnPoint.h"
 #include "PGLevelGenerator.generated.h"
 
 class APGMasterRoom;
@@ -49,7 +50,7 @@ protected:
 	void SpawnWaiterStands();
 	void SpawnHideProps();
 	bool SpawnEnemy();
-	void SpawnSingleItem_Async(int32 ItemAmount);
+	void SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex);
 
 	void StartLevelGenerateTimer();
 	void CheckLevelGenerateTimeOut();
@@ -118,6 +119,10 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> HidePropSpawnPointsList;
 
+	// Enum:Class를 통해, Enum으로만 해당 Searchable을 스폰하기 위한 맵
+	UPROPERTY(EditDefaultsOnly, Category = "Searchable", meta = (AllowPrivateAccess = "true"))
+	TMap<ESearchableType, TSubclassOf<APGSearchableBase>> SearchableClassMap;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Environment", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<APGFuseBox> FuseBoxClass;
 
@@ -125,13 +130,13 @@ private:
 	TSubclassOf<APGWaiterStand> WaiterStandClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
-	TArray<TSubclassOf<APGSearchableBase>> SearchableClasses;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<APGHideProp>> HidePropClasses;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ArmorStand", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<APGInteractableGimmickArmorStand> ArmorStandClass;
+
+	UPROPERTY()
+	TArray<TObjectPtr<APGSearchableBase>> SpawnedSearchables;
 
 	UPROPERTY()
 	TSubclassOf<APGBlindCharacter> BlindCharacter;
