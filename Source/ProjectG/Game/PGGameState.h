@@ -146,7 +146,7 @@ protected:
 
 public:
 	void StartMaxSanityDecreaseTimer();
-	FORCEINLINE int32 GetMaxSanityDecreaseCount() const { return MaxSanityDecreaseCount; }
+	FORCEINLINE int32 GetCurrentMaxSanityDecreaseCount() const { return CurrentMaxSanityDecreaseCount; }
 
 private:
 	void OnMaxSanityDecreaseTick();
@@ -167,16 +167,16 @@ private:
 	TObjectPtr<USoundBase> MaxSanityDecreaseEerieBellSound;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
-	float MaxSanityDecreaseInterval = 150.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
-	float MaxSanityDecreasePerTick = 10.0f;
+	float MaxSanityDecreaseInterval = 225.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
 	float BellInterval = 3.0f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	int32 MaxSanityDecreaseCountLimit = 4;
+
 	UPROPERTY(Replicated)
-	int32 MaxSanityDecreaseCount = 0;
+	int32 CurrentMaxSanityDecreaseCount = 0;
 
 	int32 RemainingBells = 0;
 

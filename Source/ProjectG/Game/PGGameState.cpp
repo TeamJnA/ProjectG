@@ -26,7 +26,7 @@ void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGGameState, CurrentGameState);
-	DOREPLIFETIME(APGGameState, MaxSanityDecreaseCount);
+	DOREPLIFETIME(APGGameState, CurrentMaxSanityDecreaseCount);
 }
 
 void APGGameState::BeginPlay()
@@ -346,7 +346,7 @@ void APGGameState::OnRep_CurrentGameState()
 		if (HasAuthority())
 		{
 			GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseTimerHandle);
-			MaxSanityDecreaseCount = 0;
+			CurrentMaxSanityDecreaseCount = 0;
 
 			// 모든 플레이어 InGame 태그 제거
 			const FGameplayTag InGameTag = FGameplayTag::RequestGameplayTag(FName("Player.State.InGame"));
@@ -527,7 +527,7 @@ void APGGameState::OnMaxSanityDecreaseTick()
 		return;
 	}
 
-	MaxSanityDecreaseCount++;
+	CurrentMaxSanityDecreaseCount++;
 
 	for (APlayerState* PS : PlayerArray)
 	{
@@ -559,29 +559,14 @@ void APGGameState::OnMaxSanityDecreaseTick()
 
 		if (APGPlayerCharacter* PlayerChar = Cast<APGPlayerCharacter>(PGPS->GetPawn()))
 		{
-			PlayerChar->Client_TriggerMaxSanityDecreaseGlitch(MaxSanityDecreaseCount);
+			PlayerChar->Client_TriggerMaxSanityDecreaseGlitch(CurrentMaxSanityDecreaseCount);
 		}
 	}
 
-	int32 BellCount = 1;
-	bool bUseEerieSound = false;
+	const bool bFinalTick = (CurrentMaxSanityDecreaseCount >= MaxSanityDecreaseCountLimit);
+	Multicast_PlaySanityBellSequence(CurrentMaxSanityDecreaseCount, bFinalTick);
 
-	if (MaxSanityDecreaseCount <= 4)
-	{
-		// 1~4: 횟수만 증가
-		BellCount = MaxSanityDecreaseCount;
-	}
-	else
-	{
-		// 5+: 4번 + Eerie sound
-		BellCount = 4;
-		bUseEerieSound = true;
-	}
-
-	Multicast_PlaySanityBellSequence(BellCount, bUseEerieSound);
-
-	// 10회 도달 시 타이머 정지
-	if (MaxSanityDecreaseCount >= 10)
+	if (bFinalTick)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(MaxSanityDecreaseTimerHandle);
 	}

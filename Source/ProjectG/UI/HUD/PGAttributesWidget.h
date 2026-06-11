@@ -7,6 +7,7 @@
 #include "PGAttributesWidget.generated.h"
 
 class UAbilitySystemComponent;
+class UProgressBar;
 
 /**
  * 
@@ -30,8 +31,20 @@ protected:
 
 	TWeakObjectPtr<UAbilitySystemComponent> LastBoundASC;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> SanityBar;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	FLinearColor SanityNormalColor = FLinearColor::White;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	FLinearColor SanityLowColor = FLinearColor(0.15f, 0.0f, 0.0f, 1.0f);
+
 	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
 	float SanityDisplayMax = 100.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	float SanityLowColorThreshold = 40.0f;
 
 	UPROPERTY(BlueprintReadOnly)
 	float SanityPercent;

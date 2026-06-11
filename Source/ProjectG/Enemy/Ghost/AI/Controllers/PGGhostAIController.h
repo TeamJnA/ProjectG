@@ -64,7 +64,7 @@ protected:
 	float ChaseStartLimitDistance = 2500.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GhostAI")
-	float SanityChaseThreshold = 50.0f;
+	float SanityChaseThreshold = 40.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GhostAI")
 	float ChaseDistanceCheckInterval = 0.5f;

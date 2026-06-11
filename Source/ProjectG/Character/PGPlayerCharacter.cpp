@@ -961,7 +961,7 @@ void APGPlayerCharacter::SyncMaxSanityFromGameState()
 		return;
 	}
 
-	const int32 DecreaseCount = GS->GetMaxSanityDecreaseCount();
+	const int32 DecreaseCount = GS->GetCurrentMaxSanityDecreaseCount();
 	const float NewMaxSanity = FMath::Max(100.0f - DecreaseCount * 10.0f, 0.0f);
 
 	AbilitySystemComponent->SetNumericAttributeBase(UPGAttributeSet::GetMaxSanityAttribute(), NewMaxSanity);

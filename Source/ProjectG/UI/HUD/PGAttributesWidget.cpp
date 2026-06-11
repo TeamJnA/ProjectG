@@ -2,6 +2,7 @@
 
 
 #include "UI/HUD/PGAttributesWidget.h"
+#include "Components/ProgressBar.h"
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Player/PGPlayerState.h"
 
@@ -68,6 +69,12 @@ void UPGAttributesWidget::RefreshSanity(float InSanity)
 {
 	SanityValue = InSanity;
 	SanityPercent = FMath::Clamp(InSanity / SanityDisplayMax, 0.0f, 1.0f);
+
+	if (SanityBar)
+	{
+		const FLinearColor BarColor = (InSanity <= SanityLowColorThreshold) ? SanityLowColor : SanityNormalColor;
+		SanityBar->SetFillColorAndOpacity(BarColor);
+	}
 }
 
 void UPGAttributesWidget::RefreshMaxSanity(float InMaxSanity)
