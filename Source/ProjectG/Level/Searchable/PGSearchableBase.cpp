@@ -21,6 +21,8 @@ APGSearchableBase::APGSearchableBase()
     MainBodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MainBodyMesh"));
     MainBodyMesh->SetupAttachment(Root);
     MainBodyMesh->SetCollisionObjectType(ECC_WorldStatic);
+
+    CurrentSlotCount = SlotConfigs.Num();
 }
 
 
@@ -57,15 +59,38 @@ APGSearchableSlotBase* APGSearchableBase::GetRandomSlot() const
     return ValidSlots[RandomIndex];
 }
 
+bool APGSearchableBase::GetRandomSlot(APGSearchableSlotBase*& OutSlot)
+{
+    if (SpawnedSlots.IsEmpty())
+    {
+        return false;
+    }
+
+    // 무작위로 하나 선택
+    const int32 RandomIndex = FMath::RandRange(0, SpawnedSlots.Num() - 1);
+    if (!IsValid(SpawnedSlots[RandomIndex]))
+    {
+        return false;
+    }
+
+    OutSlot = SpawnedSlots[RandomIndex];
+    SpawnedSlots.RemoveAtSwap(RandomIndex);
+    CurrentSlotCount--;
+
+    return (CurrentSlotCount != 0);
+}
+
 void APGSearchableBase::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
 
 }
 
+/*
 void APGSearchableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 }
+*/
 
 void APGSearchableBase::InitSlots()
 {

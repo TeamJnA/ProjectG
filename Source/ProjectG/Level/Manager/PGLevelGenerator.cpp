@@ -932,7 +932,11 @@ void APGLevelGenerator::SpawnSearchables()
 				SpawnParams.Owner = this;
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-				World->SpawnActor<APGSearchableBase>(*ClassPtr, SpawnTransform, SpawnParams);
+				APGSearchableBase* NewSearchable = World->SpawnActor<APGSearchableBase>(*ClassPtr, SpawnTransform, SpawnParams);
+				if (NewSearchable)
+				{
+					SpawnedSearchables.Add(NewSearchable);
+				}
 			}
 			else
 			{
@@ -1021,7 +1025,7 @@ void APGLevelGenerator::SpawnItems()
 {
 	// Spawn basic items
 	const int32 ItemAmount = 15;
-	SpawnSingleItem_Async(ItemAmount);
+	SpawnSingleItem_Async(ItemAmount, 0);
 
 	// Spawn glass bottles
 	for (TObjectPtr<USceneComponent> SpawnPoint : GlassBottleSpawnPointsList)
@@ -1062,6 +1066,7 @@ void APGLevelGenerator::SpawnItems()
 	}
 }
 
+/*
 void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 {
 	UWorld* World = GetWorld();
@@ -1147,6 +1152,124 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
 
 		SpawnSingleItem_Async(ItemAmount);
 	}));
+}
+*/
+
+void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
+{
+
+	UWorld* World = GetWorld();
+
+	// 종료 조건: 스폰할 아이템이 없거나, 배치할 Searchable이 남지 않은 경우
+	if (!World || ItemAmount <= 0 || SpawnedSearchables.IsEmpty())
+	{
+		SpawnedSearchables.Empty();
+		UE_LOG(LogTemp, Log, TEXT("PGLevelGenerator : Spawning Finished."));
+		return;
+	}
+
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI) return;
+
+	FName ItemKeyToLoad;
+
+	// 기존의 아이템 종류 결정 로직 유지
+	if (ItemAmount > 14) ItemKeyToLoad = FName("ChainKey");
+	else if (ItemAmount > 13) ItemKeyToLoad = FName("HandWheel");
+	else if (ItemAmount > 12) ItemKeyToLoad = FName("RustOil");
+	else if (ItemAmount > 8) ItemKeyToLoad = FName("ReviveKit");
+	else if (ItemAmount > 4) ItemKeyToLoad = FName("Match");
+	else ItemKeyToLoad = FName("GlassBottle");
+
+	// ---------------------------------------------------------
+	// 순차 탐색 (1단계) vs 랜덤 탐색 (2단계) 인덱스 결정
+	// ---------------------------------------------------------
+	int32 SelectedSearchableIndex = -1;
+	bool bIsSequentialPhase = (SeqIndex < SpawnedSearchables.Num());
+
+	if (bIsSequentialPhase)
+	{
+		// 전체 배열을 1회 순회하기 전이라면 순차적으로 접근
+		SelectedSearchableIndex = SeqIndex;
+	}
+	else
+	{
+		// 전체 배열 순회를 마쳤다면 무작위로 하나 선택
+		SelectedSearchableIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, SpawnedSearchables.Num());
+	}
+
+	APGSearchableBase* SelectedSearchable = SpawnedSearchables[SelectedSearchableIndex];
+	APGSearchableSlotBase* SelectedSlot = nullptr;
+
+	bool bHasMoreSlots = false;
+	if (IsValid(SelectedSearchable))
+	{
+		// 슬롯 하나 꺼내기. 더 이상 남은 슬롯이 없으면 False 반환됨
+		bHasMoreSlots = SelectedSearchable->GetRandomSlot(SelectedSlot);
+	}
+
+	// 예외 처리: 유효한 슬롯을 가져오지 못했다면 해당 가구를 제거하고 다시 시도
+	if (!SelectedSlot)
+	{
+		SpawnedSearchables.RemoveAt(SelectedSearchableIndex);
+		SpawnSingleItem_Async(ItemAmount, SeqIndex); // ItemAmount 차감 없이 재귀 호출
+		return;
+	}
+
+	// 다음 비동기 호출로 넘겨줄 인덱스 계산
+	int32 NextSeqIndex = SeqIndex;
+
+	if (!bHasMoreSlots)
+	{
+		// False가 리턴되었다면 더 이상 남은 자리가 없으므로 배열에서 완전히 제거
+		SpawnedSearchables.RemoveAt(SelectedSearchableIndex);
+
+		// 순차 탐색 중에 요소를 제거했다면 뒤의 배열 요소들이 당겨지므로,
+		// NextSeqIndex를 증가시키지 않아야 다음 요소를 정상적으로 탐색할 수 있음.
+	}
+	else
+	{
+		// 요소를 제거하지 않았고, 순차 탐색 단계였다면 다음 인덱스로 넘어감
+		if (bIsSequentialPhase && SelectedSearchableIndex == SeqIndex)
+		{
+			NextSeqIndex = SeqIndex + 1;
+		}
+	}
+
+	ItemAmount--;
+
+	// 스폰 Transform 세팅
+	USceneComponent* ItemSpawnComp = SelectedSlot->GetItemSpawnPoint();
+	FVector SpawnLocation = ItemSpawnComp ? ItemSpawnComp->GetComponentLocation() : SelectedSlot->GetActorLocation();
+	const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// 비동기 람다 내에서 안전하게 Slot을 참조하기 위해 Weak Pointer 사용
+	TWeakObjectPtr<APGSearchableSlotBase> WeakSlot = SelectedSlot;
+
+	GI->RequestLoadItemData(ItemKeyToLoad, FOnItemDataLoaded::CreateLambda([World, SpawnTransform, SpawnParams, ItemAmount, NextSeqIndex, WeakSlot, this](UPGItemData* LoadedItemData)
+		{
+			if (LoadedItemData)
+			{
+				APGItemActor* NewItem = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
+				if (NewItem)
+				{
+					NewItem->InitWithData(LoadedItemData);
+
+					// 슬롯 구현부에 작성해두신 AttachSpawnedItem 연동
+					if (WeakSlot.IsValid())
+					{
+						WeakSlot->AttachSpawnedItem(NewItem);
+					}
+				}
+			}
+
+			// 재귀 호출 (증가되거나 보정된 인덱스를 넘겨줌)
+			SpawnSingleItem_Async(ItemAmount, NextSeqIndex);
+		}));
 }
 
 TObjectPtr<USceneComponent> APGLevelGenerator::GetRandomPointFromSpecificListAndRemove(TArray<TObjectPtr<USceneComponent>>& TargetList, TArray<TObjectPtr<USceneComponent>>& TargetRemoveList)
