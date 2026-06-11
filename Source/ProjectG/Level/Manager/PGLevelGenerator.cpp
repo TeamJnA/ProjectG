@@ -948,6 +948,7 @@ void APGLevelGenerator::SpawnSearchables()
 			UE_LOG(LogTemp, Warning, TEXT("LG::SpawnSearchables: Enum type not found in SearchableClassMap!"));
 		}
 	}
+	UE_LOG(LogTemp, Log, TEXT("SpawnSearchables Num : %d"), SpawnedSearchables.Num());
 }
 
 /*
