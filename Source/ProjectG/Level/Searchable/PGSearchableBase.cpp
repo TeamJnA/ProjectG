@@ -31,6 +31,8 @@ void APGSearchableBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
+    CurrentSlotCount = SlotConfigs.Num();
+
     // 서버 상에서, Arrow Component 위치에 slot들 생성
     if (HasAuthority())
     {
