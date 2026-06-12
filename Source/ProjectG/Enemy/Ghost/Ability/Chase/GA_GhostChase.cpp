@@ -15,8 +15,8 @@ UGA_GhostChase::UGA_GhostChase()
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 
-	MinChaseDuration = 7.0f;
-	MaxChaseDuration = 9.0f;
+	MinChaseDuration = 4.0f;
+	MaxChaseDuration = 6.0f;
 	ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
 
 	FGameplayTagContainer TagContainer;
