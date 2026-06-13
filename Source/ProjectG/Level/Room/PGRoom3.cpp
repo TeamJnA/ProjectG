@@ -12,27 +12,6 @@ APGRoom3::APGRoom3()
 
 	WallClass = APGWall_Brown::StaticClass();
 
-	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
-	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint0->SetRelativeLocation(FVector(611.0f, 1440.0f, 111.0f));
-	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint0->bHiddenInGame = true;
-
-	ItemSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint1"));
-	ItemSpawnPoint1->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint1->SetRelativeLocation(FVector(721.0f, 1440.0f, 111.0f));
-	ItemSpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint1->bHiddenInGame = true;
-
-	ItemSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint2"));
-	ItemSpawnPoint2->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint2->SetRelativeLocation(FVector(1126.0f, -95.0f, 116.0f));
-	ItemSpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint2->bHiddenInGame = true;
-
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
 	MannequinSpawnPoint0->SetRelativeLocation(FVector(921.0f, 570.0f, 6.0f));

@@ -19,27 +19,6 @@ APGStairRoom1::APGStairRoom1()
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->bHiddenInGame = true;
 
-	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
-	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint0->SetRelativeLocation(FVector(816.0f, 224.0f, 486.0f));
-	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint0->bHiddenInGame = true;
-
-	ItemSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint1"));
-	ItemSpawnPoint1->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint1->SetRelativeLocation(FVector(1191.0f, 59.0f, 519.0f));
-	ItemSpawnPoint1->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint1->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint1->bHiddenInGame = true;
-
-	ItemSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint2"));
-	ItemSpawnPoint2->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint2->SetRelativeLocation(FVector(1341.0f, -656.0f, 526.0f));
-	ItemSpawnPoint2->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint2->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint2->bHiddenInGame = true;
-
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
 	MannequinSpawnPoint0->SetRelativeLocation(FVector(800.0f, 130.0f, 10.0f));

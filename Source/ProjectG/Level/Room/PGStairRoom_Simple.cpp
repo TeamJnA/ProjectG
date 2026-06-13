@@ -27,13 +27,6 @@ APGStairRoom_Simple::APGStairRoom_Simple()
 	ExitDir1->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir1->bHiddenInGame = true;
 
-	ItemSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ItemSpawnPoint0"));
-	ItemSpawnPoint0->SetupAttachment(ItemSpawnPointsFolder);
-	ItemSpawnPoint0->SetRelativeLocation(FVector(709.0f, 830.0f, 76.0f));
-	ItemSpawnPoint0->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	ItemSpawnPoint0->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
-	ItemSpawnPoint0->bHiddenInGame = true;
-
 	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
 	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
 	MannequinSpawnPoint0->SetRelativeLocation(FVector(400.0f, 390.0f, 420.0f));
