@@ -35,7 +35,11 @@ public:
 	void BreakDoorTEST(AActor* InteractInvestigator);
 
 	UFUNCTION(BlueprintCallable)
-	void SpawnTestItem(FName InName = FName("GlassBottle"), FVector InVector = FVector::ZeroVector);
+	void SpawnTestItem(FName InName = FName("GlassBottle"), FVector InVector = FVector::ZeroVector, FRotator InRotator = FRotator::ZeroRotator);
+
+	UFUNCTION(BlueprintCallable)
+	void RotateItem(AActor* Item);
+
 	void RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform);
 
 protected:

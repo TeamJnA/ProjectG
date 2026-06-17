@@ -1114,7 +1114,8 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 	// 스폰 Transform 세팅
 	USceneComponent* ItemSpawnComp = SelectedSlot->GetItemSpawnPoint();
 	FVector SpawnLocation = ItemSpawnComp ? ItemSpawnComp->GetComponentLocation() : SelectedSlot->GetActorLocation();
-	const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
+	FRotator SpawnRoation = ItemSpawnComp ? ItemSpawnComp->GetComponentRotation() : SelectedSlot->GetActorRotation();
+	const FTransform SpawnTransform(SpawnRoation, SpawnLocation);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
