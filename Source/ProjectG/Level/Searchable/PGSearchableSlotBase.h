@@ -14,6 +14,8 @@ class UArrowComponent;
 class UGameplayAbility;
 class UAbilitySystemComponent;
 
+DECLARE_DELEGATE(FOnSlotHighlightOnSignature);
+
 UENUM(BlueprintType)
 enum class ESlotInteractType : uint8
 {
@@ -84,7 +86,7 @@ public:
 
 	// 생성된 아이템을 Slot에 붙인다. 
 	UFUNCTION(BlueprintCallable)
-	void AttachSpawnedItem(AActor* Item);
+	void AttachSpawnedItem(AActor* Item, bool bNeedRotate);
 
 	// IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
@@ -94,6 +96,8 @@ public:
 	virtual FText GetInteractionText() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	// ~IInteractableActorInterface
+
+	FOnSlotHighlightOnSignature OnHighlightOnDelegate;
 
 protected:
 	// Called when the game starts or when spawned

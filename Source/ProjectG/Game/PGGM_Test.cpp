@@ -12,6 +12,8 @@
 
 #include "Level/Misc/PGDoor1.h"
 
+#include "Kismet/GameplayStatics.h"
+
 #include "GameFramework/GameState.h"
 #include "Player/PGPlayerState.h"
 #include "Player/PGPlayerController.h"
@@ -74,7 +76,7 @@ void APGGM_Test::BreakDoorTEST(AActor* InteractInvestigator)
 	}
 }
 
-void APGGM_Test::SpawnTestItem(FName InName, FVector InVector)
+void APGGM_Test::SpawnTestItem(FName InName, FVector InVector, FRotator InRotator)
 {
 	UWorld* World = GetWorld();
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
@@ -83,7 +85,7 @@ void APGGM_Test::SpawnTestItem(FName InName, FVector InVector)
 		return;
 	}
 
-	const FTransform SpawnTransform(FRotator::ZeroRotator, InVector);
+	const FTransform SpawnTransform(InRotator, InVector);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
@@ -100,6 +102,38 @@ void APGGM_Test::SpawnTestItem(FName InName, FVector InVector)
 				}
 			}
 		}));
+}
+
+void APGGM_Test::RotateItem(AActor* Item)
+{
+	if (APGItemActor* PGItem = Cast<APGItemActor>(Item))
+	{
+		if (IsValid(PGItem->GetStaticMeshComponent()))
+		{
+			FTransform CurrentTransform = PGItem->GetActorTransform();
+
+			FVector Min, Max;
+			PGItem->GetStaticMeshComponent()->GetLocalBounds(Min, Max);
+
+			FVector LocalCenter = (Min + Max) * 0.5f;
+			FVector LocalExtents = (Max - Min) * 0.5f;
+
+			// 로컬 기준 '오른쪽' 오프셋 (+Y 방향)
+			FVector LocalRightCenter = FVector(LocalCenter.X, LocalCenter.Y - LocalExtents.Y, LocalCenter.Z);
+
+			FRotator LayDownRotation = FRotator(0.0f, 0.0f, -90.0f);
+			FQuat NewRotation = CurrentTransform.GetRotation() * LayDownRotation.Quaternion();
+			CurrentTransform.SetRotation(NewRotation);
+
+			// 월드 오프셋 변환 및 위치 역산
+			FVector WorldOffset = CurrentTransform.GetRotation().RotateVector(LocalRightCenter);
+			FVector AdjustedLocation = CurrentTransform.GetLocation() - WorldOffset;
+			CurrentTransform.SetLocation(AdjustedLocation);
+
+			// 계산된 최종 위치와 회전을 액터에 덮어씌웁니다.
+			PGItem->SetActorTransform(CurrentTransform);
+		}
+	}
 }
 
 void APGGM_Test::RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform)

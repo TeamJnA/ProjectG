@@ -35,9 +35,6 @@ APGMasterRoom::APGMasterRoom()
 	ExitPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ExitsFolder"));
 	ExitPointsFolder->SetupAttachment(RootComponent);
 
-	ItemSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ItemSpawnPointsFolder"));
-	ItemSpawnPointsFolder->SetupAttachment(RootComponent);
-
 	SearchableSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("SearchableSpawnPointsFolder"));
 	SearchableSpawnPointsFolder->SetupAttachment(RootComponent);
 

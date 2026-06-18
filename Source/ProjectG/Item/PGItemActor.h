@@ -37,6 +37,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	FORCEINLINE UStaticMeshComponent* GetStaticMeshComponent() const { return StaticMesh; }
+
 	// When player drop item, this two functions are used to spawn item.
 	void DropItemSpawned(const FRotator DropRotation);
 

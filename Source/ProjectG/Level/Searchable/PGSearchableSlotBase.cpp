@@ -5,6 +5,7 @@
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemComponent.h"
 #include "Components/ArrowComponent.h"
+#include "Item/PGItemActor.h"
 #include "PGLogChannels.h"
 
 // Sets default values
@@ -109,8 +110,38 @@ void APGSearchableSlotBase::InteractSlot()
 	OnRep_IsDrawn();
 }
 
-void APGSearchableSlotBase::AttachSpawnedItem(AActor* Item)
+void APGSearchableSlotBase::AttachSpawnedItem(AActor* Item, bool bNeedRotate)
 {
+	// Actor를 받고, 서랍의 크기에 맞게 액터를 돌린다.
+	if (APGItemActor* PGItem = Cast<APGItemActor>(Item))
+	{
+		if (bNeedRotate && IsValid(PGItem->GetStaticMeshComponent()))
+		{
+			FTransform CurrentTransform = PGItem->GetActorTransform();
+
+			FVector Min, Max;
+			PGItem->GetStaticMeshComponent()->GetLocalBounds(Min, Max);
+
+			FVector LocalCenter = (Min + Max) * 0.5f;
+			FVector LocalExtents = (Max - Min) * 0.5f;
+
+			// 로컬 기준 '오른쪽' 오프셋 (+Y 방향)
+			FVector LocalRightCenter = FVector(LocalCenter.X, LocalCenter.Y - LocalExtents.Y, LocalCenter.Z);
+
+			FRotator LayDownRotation = FRotator(0.0f, 0.0f, -90.0f);
+			FQuat NewRotation = CurrentTransform.GetRotation() * LayDownRotation.Quaternion();
+			CurrentTransform.SetRotation(NewRotation);
+
+			// 월드 오프셋 변환 및 위치 역산
+			FVector WorldOffset = CurrentTransform.GetRotation().RotateVector(LocalRightCenter);
+			FVector AdjustedLocation = CurrentTransform.GetLocation() - WorldOffset;
+			CurrentTransform.SetLocation(AdjustedLocation);
+
+			// 계산된 최종 위치와 회전을 액터에 덮어씌웁니다.
+			PGItem->SetActorTransform(CurrentTransform);
+		}
+	}
+
 	if (IsValid(Item) && IsValid(ItemSpawnPoint) && SlotInteractionType == ESlotInteractType::Draw)
 	{
 		Item->AttachToComponent(ItemSpawnPoint, FAttachmentTransformRules::KeepWorldTransform);
@@ -132,6 +163,8 @@ void APGSearchableSlotBase::HighlightOn() const
 		SlotMesh1->SetCustomDepthStencilValue(0);
 		SlotMesh1->SetRenderCustomDepth(true);
 	}
+
+	OnHighlightOnDelegate.ExecuteIfBound();
 }
 
 void APGSearchableSlotBase::HighlightOff() const
@@ -182,6 +215,8 @@ void APGSearchableSlotBase::BeginPlay()
 
 	// Slot Mesh 초기화. 
 	OnRep_SlotMesh();
+
+
 }
 
 void APGSearchableSlotBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

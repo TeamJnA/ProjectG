@@ -33,20 +33,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
 	TObjectPtr<UArrowComponent> ExitDir4;
 
-	/*
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
-	TObjectPtr<UArrowComponent> ItemSpawnPoint0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
-	TObjectPtr<UArrowComponent> ItemSpawnPoint1;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
-	TObjectPtr<UArrowComponent> ItemSpawnPoint2;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ItemSpawnPoint")
-	TObjectPtr<UArrowComponent> ItemSpawnPoint3;
-	*/
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PropSpawnPoint")
 	TObjectPtr<UArrowComponent> PropSpawnPoint0;
 

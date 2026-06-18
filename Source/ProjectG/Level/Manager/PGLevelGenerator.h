@@ -64,8 +64,6 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	void AddItemSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck);
-
 	void AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck);
 
 	TObjectPtr<USceneComponent> GetRandomPointFromSpecificListAndRemove(TArray<TObjectPtr<USceneComponent>>& TargetList, TArray<TObjectPtr<USceneComponent>>& TargetRemoveList);
@@ -83,20 +81,6 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> DoorPointsList;
-
-	// Item Spawn ~
-	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> ItemSpawnPointsList;
-
-	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> ExitKeyPointsList;
-
-	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> HandWheelPointsList;
-
-	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> RustOilPointsList;
-	// ~
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> SearchableSpawnPointsList;

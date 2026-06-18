@@ -50,9 +50,14 @@ protected:
 
     virtual void OnConstruction(const FTransform& Transform) override;
 
-    // virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     void InitSlots();
+
+    void HighlightOff();
+
+    UFUNCTION()
+    void OnRep_SpawnedSlots();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<USceneComponent> Root;
@@ -69,8 +74,11 @@ protected:
     TSubclassOf<APGSearchableSlotBase> SlotClassToSpawn;
 
     // 생성된 서랍장들을 관리하는 배열
-    UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "Slot")
+    UPROPERTY(Transient, ReplicatedUsing = OnRep_SpawnedSlots, VisibleAnywhere, BlueprintReadOnly, Category = "Slot")
     TArray<TObjectPtr<APGSearchableSlotBase>> SpawnedSlots;
+
+    FTimerHandle SlotBindRetryTimer;
+    int32 SlotBindRetryCount = 0;
 
     int32 CurrentSlotCount;
 };

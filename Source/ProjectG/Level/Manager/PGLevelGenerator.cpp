@@ -5,6 +5,7 @@
 
 #include "Engine/World.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Algo/RandomShuffle.h"
 
 #include "Components/SceneComponent.h"
 #include "Components/BoxComponent.h"
@@ -608,7 +609,7 @@ int32 APGLevelGenerator::GetRoomDepthFromStart(const APGMasterRoom* Room) const
 * Overlap x -> RoomGraph에 추가 -> 부모 Room의 인접 Room으로 추가, 본인의 인접 Room으로 부모 Room 추가
 * 사용된 ExitPoint를 ExitPointsList에서 제거, DoorPointsList에 추가
 * 생성 확정된 Room의 ExitPoints를 ExitPointsList에 추가,
-* 생성 확정된 Room의 ItemSpawnPoints를 ItemSpawnPointsList에 추가
+* 생성 확정된 Room의 Searchable를 SearchableSpawnPointsList에 추가
 * RoomAmount가 남은 경우 다음 Room 생성
 * RoomAmount를 모두 소모한 경우 Room 생성 종료, 구조물 생성
 */
@@ -664,9 +665,6 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 			SearchableSpawnPointsList.Reserve(SearchableSpawnPointsList.Num() + SearchableSpawnPoints.Num());
 			SearchableSpawnPointsList.Append(SearchableSpawnPoints);
 		}
-
-		// ItemPoints
-		AddItemSpawnPoint(RoomToCheck);
 
 		// MannequinPoints
 		if (const USceneComponent* MannequinSpawnPointFolder = RoomToCheck->GetMannequinSpawnPointsFolder())
@@ -951,41 +949,6 @@ void APGLevelGenerator::SpawnSearchables()
 	UE_LOG(LogTemp, Log, TEXT("SpawnSearchables Num : %d"), SpawnedSearchables.Num());
 }
 
-/*
-태그에 맞게 아이템스폰포인트를 리스트에 추가.
-*/
-void APGLevelGenerator::AddItemSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck)
-{
-	const USceneComponent* ItemSpawnPointFolder = RoomToCheck->GetItemSpawnPointsFolder();
-
-	if (!ItemSpawnPointFolder)
-	{
-		return;
-	}
-
-	const TArray<USceneComponent*>& ItemSpawnPoints = ItemSpawnPointFolder->GetAttachChildren();
-
-	for (USceneComponent* SpawnPoint : ItemSpawnPoints)
-	{
-		ItemSpawnPointsList.Add(SpawnPoint);
-
-		if (SpawnPoint->ComponentHasTag(TEXT("ChainKey")))
-		{
-			ExitKeyPointsList.Add(SpawnPoint);
-		}
-		
-		if (SpawnPoint->ComponentHasTag(TEXT("RustOil")))
-		{
-			RustOilPointsList.Add(SpawnPoint);
-		}
-
-		if (SpawnPoint->ComponentHasTag(TEXT("HandWheel")))
-		{
-			HandWheelPointsList.Add(SpawnPoint);
-		}
-	}
-}
-
 void APGLevelGenerator::AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck)
 {
 	if (const USceneComponent* PropsSpawnPointsFolder = RoomToCheck->GetPropsSpawnPointsFolder())
@@ -1020,12 +983,14 @@ void APGLevelGenerator::AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck
 /*
 * 모든 Room 생성 후 아이템 스폰
 * 재귀를 통한 비동기 아이템 로드/스폰
-* 아이템 스폰 완료 후 ItemSpawnPointsList 초기화
 */
 void APGLevelGenerator::SpawnItems()
 {
 	// Spawn basic items
-	const int32 ItemAmount = 15;
+
+	// 스폰하기 전에 배열을 섞어서, 특정 아이템이 앞이나 뒤에 쏠리는 현상을 방지
+	Algo::RandomShuffle(SpawnedSearchables);
+	const int32 ItemAmount = 19;
 	SpawnSingleItem_Async(ItemAmount, 0);
 
 	// Spawn glass bottles
@@ -1067,95 +1032,6 @@ void APGLevelGenerator::SpawnItems()
 	}
 }
 
-/*
-void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount)
-{
-	UWorld* World = GetWorld();
-	if (!World || ItemAmount <= 0 || ItemSpawnPointsList.IsEmpty())
-	{
-		ItemSpawnPointsList.Empty();
-		ExitKeyPointsList.Empty();
-		RustOilPointsList.Empty();
-
-		UE_LOG(LogTemp, Log, TEXT("PGLevelGenerator : Remain Spawn Points :: %d"), ItemSpawnPointsList.Num());
-
-		ItemSpawnPointsList.Empty();
-		return;
-	}
-
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GI)
-	{
-		return;
-	}
-
-	FName ItemKeyToLoad;
-	TObjectPtr<USceneComponent> SelectedItemSpawnPoint = nullptr;
-
-	if (ItemAmount > 14) // HandWheel 
-	{
-		ItemKeyToLoad = FName("ChainKey");
-		SelectedItemSpawnPoint = GetRandomPointFromSpecificListAndRemove(ExitKeyPointsList, ItemSpawnPointsList);
-
-		HandWheelPointsList.Remove(SelectedItemSpawnPoint);
-		RustOilPointsList.Remove(SelectedItemSpawnPoint);
-	}
-	else if (ItemAmount > 13) // HandWheel 
-	{
-		ItemKeyToLoad = FName("HandWheel");
-		SelectedItemSpawnPoint = GetRandomPointFromSpecificListAndRemove(HandWheelPointsList, ItemSpawnPointsList);
-
-		RustOilPointsList.Remove(SelectedItemSpawnPoint);
-	}
-	else if (ItemAmount > 12) // RustOil
-	{
-		ItemKeyToLoad = FName("RustOil");
-		SelectedItemSpawnPoint = GetRandomPointFromSpecificListAndRemove(RustOilPointsList, ItemSpawnPointsList);
-	}
-	else // 나머지 일반 아이템 (메인 리스트에서 랜덤 선택)
-	{
-		if (ItemAmount > 8)
-		{
-			ItemKeyToLoad = FName("ReviveKit");
-		}
-		else if (ItemAmount > 4)
-		{
-			ItemKeyToLoad = FName("Match");
-		}
-		else
-		{
-			ItemKeyToLoad = FName("GlassBottle");
-		}
-
-		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, ItemSpawnPointsList.Num());
-		SelectedItemSpawnPoint = ItemSpawnPointsList[RandomIndex];
-		ItemSpawnPointsList.RemoveAt(RandomIndex);
-	}
-	
-	ItemAmount--;
-
-	const FTransform SpawnTransform(FRotator::ZeroRotator, SelectedItemSpawnPoint->GetComponentLocation());
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	GI->RequestLoadItemData(ItemKeyToLoad, FOnItemDataLoaded::CreateLambda([World, SpawnTransform, SpawnParams, ItemAmount, this](UPGItemData* LoadedItemData)
-	{
-		if (LoadedItemData)
-		{
-			APGItemActor* NewItem = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
-			if (NewItem)
-			{
-				NewItem->InitWithData(LoadedItemData);
-			}
-		}
-
-		SpawnSingleItem_Async(ItemAmount);
-	}));
-}
-*/
-
 void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 {
 
@@ -1174,17 +1050,17 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 
 	FName ItemKeyToLoad;
 
-	// 기존의 아이템 종류 결정 로직 유지
-	if (ItemAmount > 14) ItemKeyToLoad = FName("ChainKey");
-	else if (ItemAmount > 13) ItemKeyToLoad = FName("HandWheel");
-	else if (ItemAmount > 12) ItemKeyToLoad = FName("RustOil");
-	else if (ItemAmount > 8) ItemKeyToLoad = FName("ReviveKit");
-	else if (ItemAmount > 4) ItemKeyToLoad = FName("Match");
+	// ItemAmount에 맞춰서 아이템 스폰
+	if (ItemAmount > 18) ItemKeyToLoad = FName("ChainKey");
+	else if (ItemAmount > 17) ItemKeyToLoad = FName("HandWheel");
+	else if (ItemAmount > 16) ItemKeyToLoad = FName("RustOil");
+	else if (ItemAmount > 12) ItemKeyToLoad = FName("ReviveKit");
+	else if (ItemAmount > 5) ItemKeyToLoad = FName("Match");
 	else ItemKeyToLoad = FName("GlassBottle");
 
-	// ---------------------------------------------------------
 	// 순차 탐색 (1단계) vs 랜덤 탐색 (2단계) 인덱스 결정
-	// ---------------------------------------------------------
+	// 처음에는 하나씩 아이템을 넣고, 이제 남은 아이템은 랜덤하게 결정
+
 	int32 SelectedSearchableIndex = -1;
 	bool bIsSequentialPhase = (SeqIndex < SpawnedSearchables.Num());
 
@@ -1242,7 +1118,8 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 	// 스폰 Transform 세팅
 	USceneComponent* ItemSpawnComp = SelectedSlot->GetItemSpawnPoint();
 	FVector SpawnLocation = ItemSpawnComp ? ItemSpawnComp->GetComponentLocation() : SelectedSlot->GetActorLocation();
-	const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
+	FRotator SpawnRoation = ItemSpawnComp ? ItemSpawnComp->GetComponentRotation() : SelectedSlot->GetActorRotation();
+	const FTransform SpawnTransform(SpawnRoation, SpawnLocation);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
@@ -1259,11 +1136,18 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 				if (NewItem)
 				{
 					NewItem->InitWithData(LoadedItemData);
-
-					// 슬롯 구현부에 작성해두신 AttachSpawnedItem 연동
+					
+					// 아이템을 슬롯에 장착시킴. 슬롯과 같이 움직이도록.
 					if (WeakSlot.IsValid())
 					{
-						WeakSlot->AttachSpawnedItem(NewItem);
+						// 아이템을 장착할 때, 슬롯에 맞게 회전시키는 경우들 확인
+						FGameplayTagContainer RotateItemTags;
+						RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.RustOil")));
+						RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.GlassBottle")));
+
+						bool bSpawnItemWithRotate = RotateItemTags.HasTagExact(LoadedItemData->ItemTag);
+
+						WeakSlot->AttachSpawnedItem(NewItem, bSpawnItemWithRotate);
 					}
 				}
 			}
