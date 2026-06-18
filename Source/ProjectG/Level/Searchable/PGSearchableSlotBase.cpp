@@ -163,6 +163,8 @@ void APGSearchableSlotBase::HighlightOn() const
 		SlotMesh1->SetCustomDepthStencilValue(0);
 		SlotMesh1->SetRenderCustomDepth(true);
 	}
+
+	OnHighlightOnDelegate.ExecuteIfBound();
 }
 
 void APGSearchableSlotBase::HighlightOff() const
@@ -213,6 +215,8 @@ void APGSearchableSlotBase::BeginPlay()
 
 	// Slot Mesh √ ±‚»≠. 
 	OnRep_SlotMesh();
+
+
 }
 
 void APGSearchableSlotBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

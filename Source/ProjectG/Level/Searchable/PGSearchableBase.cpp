@@ -6,6 +6,7 @@
 #include "Item/PGItemActor.h"
 #include "Level/Searchable/PGSearchableSlotBase.h"
 #include "Components/ArrowComponent.h"
+#include "TimerManager.h"
 
 // Sets default values
 APGSearchableBase::APGSearchableBase()
@@ -32,6 +33,13 @@ void APGSearchableBase::BeginPlay()
 	Super::BeginPlay();
 	
     CurrentSlotCount = SlotConfigs.Num();
+
+    // HighlightOn
+    if (MainBodyMesh)
+    {
+        MainBodyMesh->SetCustomDepthStencilValue(0);
+        MainBodyMesh->SetRenderCustomDepth(true);
+    }
 
     // 서버 상에서, Arrow Component 위치에 slot들 생성
     if (HasAuthority())
@@ -88,11 +96,12 @@ void APGSearchableBase::OnConstruction(const FTransform& Transform)
 
 }
 
-/*
 void APGSearchableBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(APGSearchableBase, SpawnedSlots);
 }
-*/
 
 void APGSearchableBase::InitSlots()
 {
@@ -147,44 +156,56 @@ void APGSearchableBase::InitSlots()
                 SpawnedSlots[ConfigIndex] = SpawnedSlot;
             }
         }
+
+        OnRep_SpawnedSlots();
     }
 }
 
-
-/*
-void ASearchableBase::LinkSpawnedItem(int32 SlotIndex, AActor* NewItem)
+void APGSearchableBase::HighlightOff()
 {
-    // 서버 권한 및 유효성 검증 (안전장치)
-    if (!HasAuthority() || !SlotConfigs.IsValidIndex(SlotIndex) || !IsValid(NewItem)) return;
+    MainBodyMesh->SetRenderCustomDepth(false);
 
-    const FSearchableSlotConfig& Slot = SlotConfigs[SlotIndex];
-
-    // 부착 규칙: 월드에 생성된 현재 위치/회전/스케일을 그대로 유지하면서 부모에게 종속시킴
-    FAttachmentTransformRules AttachRules(
-        EAttachmentRule::KeepWorld,
-        EAttachmentRule::KeepWorld,
-        EAttachmentRule::KeepWorld,
-        false
-    );
-
-    // 타입에 따른 분기 처리
-    if (Slot.InteractionType == ESearchableType::Draw)
+    for (APGSearchableSlotBase* Slot : SpawnedSlots)
     {
-        // [Draw (서랍형)] 서랍이 움직일 때 같이 움직여야 하므로,
-        // 찾아둔 자식 스태틱 메쉬(서랍 메쉬)에 아이템을 직접 붙여버립니다.
-        if (Slot.ChildMeshes.IsValidIndex(0) && Slot.ChildMeshes[0])
+        if (IsValid(Slot) && Slot->OnHighlightOnDelegate.IsBound())
         {
-            NewItem->AttachToComponent(Slot.ChildMeshes[0], AttachRules);
-        }
-    }
-    else if (Slot.InteractionType == ESearchableType::Open)
-    {
-        // [Open (문 개폐형)] 문만 회전하고 아이템은 가만히 있어야 하므로,
-        // 회전하지 않는 슬롯의 고정 스폰 포인트 컴포넌트에 붙여둡니다.
-        if (Slot.ItemSpawnPoint)
-        {
-            NewItem->AttachToComponent(Slot.ItemSpawnPoint, AttachRules);
+            Slot->OnHighlightOnDelegate.Unbind();
         }
     }
 }
-*/
+
+void APGSearchableBase::OnRep_SpawnedSlots()
+{
+    bool bAllSlotsReady = true;
+
+    for (APGSearchableSlotBase* Slot : SpawnedSlots)
+    {
+        // 슬롯 액터가 클라이언트에 완전히 도착했는지 확인
+        if (IsValid(Slot))
+        {
+            // 이미 바인딩 되어 있어도 덮어쓰므로 중복 바인딩 문제 없음
+            Slot->OnHighlightOnDelegate.BindUObject(this, &APGSearchableBase::HighlightOff);
+        }
+        else
+        {
+            // 배열 정보는 왔는데, 슬롯 액터는 아직 오지 않은 경우
+            bAllSlotsReady = false;
+        }
+    }
+
+    // 도착하지 않은 슬롯이 하나라도 있다면, 0.1초 뒤에 이 함수를 다시 실행. 최대 10번 트라이
+    if (!bAllSlotsReady)
+    {
+        SlotBindRetryCount++;
+
+        if (SlotBindRetryCount >= 10)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[APGSearchableBase] Failed to rep slots"));
+
+            SlotBindRetryCount = 0;
+            return;
+        }
+
+        GetWorldTimerManager().SetTimer(SlotBindRetryTimer, this, &APGSearchableBase::OnRep_SpawnedSlots, 0.1f, false);
+    }
+}
