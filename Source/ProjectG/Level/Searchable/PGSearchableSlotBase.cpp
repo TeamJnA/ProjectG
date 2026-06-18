@@ -110,12 +110,12 @@ void APGSearchableSlotBase::InteractSlot()
 	OnRep_IsDrawn();
 }
 
-void APGSearchableSlotBase::AttachSpawnedItem(AActor* Item)
+void APGSearchableSlotBase::AttachSpawnedItem(AActor* Item, bool bNeedRotate)
 {
 	// Actor를 받고, 서랍의 크기에 맞게 액터를 돌린다.
 	if (APGItemActor* PGItem = Cast<APGItemActor>(Item))
 	{
-		if (IsValid(PGItem->GetStaticMeshComponent()))
+		if (bNeedRotate && IsValid(PGItem->GetStaticMeshComponent()))
 		{
 			FTransform CurrentTransform = PGItem->GetActorTransform();
 

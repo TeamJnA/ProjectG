@@ -84,7 +84,7 @@ public:
 
 	// 생성된 아이템을 Slot에 붙인다. 
 	UFUNCTION(BlueprintCallable)
-	void AttachSpawnedItem(AActor* Item);
+	void AttachSpawnedItem(AActor* Item, bool bNeedRotate);
 
 	// IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;

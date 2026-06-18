@@ -5,6 +5,7 @@
 
 #include "Engine/World.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Algo/RandomShuffle.h"
 
 #include "Components/SceneComponent.h"
 #include "Components/BoxComponent.h"
@@ -986,7 +987,10 @@ void APGLevelGenerator::AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck
 void APGLevelGenerator::SpawnItems()
 {
 	// Spawn basic items
-	const int32 ItemAmount = 15;
+
+	// 스폰하기 전에 배열을 섞어서, 특정 아이템이 앞이나 뒤에 쏠리는 현상을 방지
+	Algo::RandomShuffle(SpawnedSearchables);
+	const int32 ItemAmount = 19;
 	SpawnSingleItem_Async(ItemAmount, 0);
 
 	// Spawn glass bottles
@@ -1046,17 +1050,17 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 
 	FName ItemKeyToLoad;
 
-	// 기존의 아이템 종류 결정 로직 유지
-	if (ItemAmount > 14) ItemKeyToLoad = FName("ChainKey");
-	else if (ItemAmount > 13) ItemKeyToLoad = FName("HandWheel");
-	else if (ItemAmount > 12) ItemKeyToLoad = FName("RustOil");
-	else if (ItemAmount > 8) ItemKeyToLoad = FName("ReviveKit");
-	else if (ItemAmount > 4) ItemKeyToLoad = FName("Match");
+	// ItemAmount에 맞춰서 아이템 스폰
+	if (ItemAmount > 18) ItemKeyToLoad = FName("ChainKey");
+	else if (ItemAmount > 17) ItemKeyToLoad = FName("HandWheel");
+	else if (ItemAmount > 16) ItemKeyToLoad = FName("RustOil");
+	else if (ItemAmount > 12) ItemKeyToLoad = FName("ReviveKit");
+	else if (ItemAmount > 5) ItemKeyToLoad = FName("Match");
 	else ItemKeyToLoad = FName("GlassBottle");
 
-	// ---------------------------------------------------------
 	// 순차 탐색 (1단계) vs 랜덤 탐색 (2단계) 인덱스 결정
-	// ---------------------------------------------------------
+	// 처음에는 하나씩 아이템을 넣고, 이제 남은 아이템은 랜덤하게 결정
+
 	int32 SelectedSearchableIndex = -1;
 	bool bIsSequentialPhase = (SeqIndex < SpawnedSearchables.Num());
 
@@ -1132,11 +1136,18 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 				if (NewItem)
 				{
 					NewItem->InitWithData(LoadedItemData);
-
-					// 슬롯 구현부에 작성해두신 AttachSpawnedItem 연동
+					
+					// 아이템을 슬롯에 장착시킴. 슬롯과 같이 움직이도록.
 					if (WeakSlot.IsValid())
 					{
-						WeakSlot->AttachSpawnedItem(NewItem);
+						// 아이템을 장착할 때, 슬롯에 맞게 회전시키는 경우들 확인
+						FGameplayTagContainer RotateItemTags;
+						RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.RustOil")));
+						RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.GlassBottle")));
+
+						bool bSpawnItemWithRotate = RotateItemTags.HasTagExact(LoadedItemData->ItemTag);
+
+						WeakSlot->AttachSpawnedItem(NewItem, bSpawnItemWithRotate);
 					}
 				}
 			}
