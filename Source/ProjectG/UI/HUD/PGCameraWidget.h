@@ -13,6 +13,10 @@ class UVerticalBox;
 class UMediaPlayer;
 class UMediaSource;
 class UImage;
+class UPGCaptureLogEntryWidget;
+class UPanelWidget;
+class UProgressBar;
+class UTextureRenderTarget2D;
 
 DECLARE_DYNAMIC_DELEGATE(FOnCameraTransitionFinished);
 
@@ -35,6 +39,10 @@ public:
     void UpdateFocusFramePosition(const FVector2D& ScreenPosition);
     void ResetFocusFrame();
 
+    void BeginCapture(UTextureRenderTarget2D* PhotoRT);
+    void FeedCaptureLines(const TArray<FCaptureLogLine>& Lines);
+    void StartCaptureCooldown(float Duration);
+
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
@@ -46,6 +54,10 @@ protected:
     void StopGlitchPlayback();
     float SnapToDisplayStep(float Percent) const;
 
+    void ResetCaptureSequence();
+
+    void OnCooldownStep();
+
     FOnCameraTransitionFinished CachedOnFinished;
     FWidgetAnimationDynamicEvent FadeAnimDelegate;
 
@@ -53,11 +65,20 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Battery")
     TArray<float> BatteryDisplaySteps = { 0.0f, 0.11f, 0.36f, 0.61f, 0.86f, 1.0f };
 
+    UPROPERTY(EditDefaultsOnly, Category = "Log")
+    TSubclassOf<UPGCaptureLogEntryWidget> CaptureLogEntryClass;
+
+    UPROPERTY()
+    TObjectPtr<UPGCaptureLogEntryWidget> CurrentLogEntry;
+
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     TObjectPtr<UWidgetAnimation> FadeInTransitionAnim;
 
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     TObjectPtr<UWidgetAnimation> FadeOutTransitionAnim;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UPanelWidget> CaptureLogRoot;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UImage> GlitchOverlayImage;
@@ -98,6 +119,11 @@ protected:
     UPROPERTY(Transient, meta = (BindWidgetAnim))
     TObjectPtr<UWidgetAnimation> WhiteFlashAnim;
 
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UProgressBar> CaptureCooldownBar;
+
+    FTimerHandle CooldownTimerHandle;
+
     UPROPERTY(EditDefaultsOnly, Category = "Camera")
     float FocusFrameMaxScale = 1.5f;  // ¡‹ √÷¥Î πË¿≤
 
@@ -106,4 +132,8 @@ protected:
     float ZoomIndicatorMaxOffset = 196.7f;
 
     float CurrentBatteryPercent = 1.0f;
+
+    float CooldownDuration = 0.0f;
+    float CooldownElapsed = 0.0f;
+    static constexpr float CooldownStep = 0.02f;
 };

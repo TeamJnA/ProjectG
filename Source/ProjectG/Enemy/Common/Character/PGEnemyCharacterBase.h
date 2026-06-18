@@ -7,6 +7,7 @@
 #include "Character/PGCharacterBase.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "GameplayTagAssetInterface.h"
+#include "Interface/PhotographableInterface.h"
 
 #include "PGEnemyCharacterBase.generated.h"
 
@@ -18,7 +19,7 @@ class UBoxComponent;
  * 
  */
 UCLASS()
-class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase, public IGameplayTagAssetInterface
+class PROJECTG_API APGEnemyCharacterBase : public APGCharacterBase, public IGameplayTagAssetInterface, public IPhotographableInterface
 {
 	GENERATED_BODY()
 		
@@ -45,6 +46,11 @@ public:
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	// ~IGenericTeamAgentInterface
 
+	// IPhotographableInterface~
+	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const override;
+	virtual FVector GetPhotoTargetLocation() const override;
+	// ~IPhotographableInterface
+
 	void RecheckOverlappingPlayers();
 
 protected:
@@ -52,6 +58,7 @@ protected:
 	UBehaviorTree* Tree;
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UPGEnemyAttributeSet> EnemyAttributeSet;

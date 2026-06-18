@@ -10,8 +10,9 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/PGAbilitySystemComponent.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Type/PGPhotoTypes.h"
 #include "Kismet/GameplayStatics.h"
+#include "Type/PGPhotoTypes.h"
+#include "Utils/PGPhotoSubjectRegistry.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -78,6 +79,27 @@ void APGMirrorGhostCharacter::BeginPlay()
 			MirrorGhostMID->SetScalarParameterValue(FName("CameraModeOpacity"), 0.0f);
 		}
 	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
+		{
+			Registry->RegisterSubject(this);
+		}
+	}
+}
+
+void APGMirrorGhostCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
+		{
+			Registry->UnregisterSubject(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void APGMirrorGhostCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

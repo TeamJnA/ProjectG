@@ -12,10 +12,12 @@
 #include "InputActionValue.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "EngineUtils.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
 #include "Enemy/MirrorGhost/Character/PGMirrorGhostCharacter.h"
+#include "Utils/PGPhotoSubjectRegistry.h"
 
 
 UPGCameraComponent::UPGCameraComponent()
@@ -171,15 +173,13 @@ void UPGCameraComponent::ApplyCameraSettings()
 void UPGCameraComponent::OnEnterTransitionFinished()
 {
     bIsTransitioning = false;
+    bCaptureLocked = false;
+    bHasFramedSubject = false;
+    FocusIndicatorAlpha = 0.0f;
     SetInCameraMode(true);
-    bPhotoTaken = false;
-    CameraElapsedTime = 0.0f;
-
-    bIsTrackingTarget = false;
-    TrackedTargetActor.Reset();
 
     GetWorld()->GetTimerManager().SetTimer(BatteryDrainTimerHandle, this, &UPGCameraComponent::DrainBattery, 0.1f, true);
-    GetWorld()->GetTimerManager().SetTimer(CameraProgressTimerHandle, this, &UPGCameraComponent::UpdateCameraProgress, 0.05f, true);
+    GetWorld()->GetTimerManager().SetTimer(FocusIndicatorTimerHandle, this, &UPGCameraComponent::UpdateFocusIndicator, 0.05f, true);
 }
 
 void UPGCameraComponent::ExitCameraMode()
@@ -222,14 +222,15 @@ void UPGCameraComponent::ExitCameraMode()
     HUD->BeginExitCameraTransition();
 
     bIsTransitioning = true;
+    bCaptureLocked = false;
+    bHasFramedSubject = false;
+    FocusIndicatorAlpha = 0.0f;
     SetInCameraMode(false);
-    bIsTrackingTarget = false;
-    TrackedTargetActor.Reset();
-    CameraElapsedTime = 0.0f;
 
-    GetWorld()->GetTimerManager().ClearTimer(CameraProgressTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(CaptureLockTimerHandle);
     GetWorld()->GetTimerManager().ClearTimer(BatteryDrainTimerHandle);
-    GetWorld()->GetTimerManager().ClearTimer(TrackingBeepTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(FocusIndicatorTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(BeepTimerHandle);
     GetWorld()->GetTimerManager().SetTimer(SettingsDelayTimerHandle, this, &UPGCameraComponent::DelayedRestoreSettings, 0.15f, false);
 
     if (TurnOffSound)
@@ -322,19 +323,19 @@ void UPGCameraComponent::ForceExitCameraMode()
 
     // 상태 초기화
     bIsTransitioning = false;
+    bCaptureLocked = false;
+    bHasFramedSubject = false;
+    FocusIndicatorAlpha = 0.0f;
     SetInCameraMode(false);
-    bIsTrackingTarget = false;
-    bPhotoTaken = false;
-    TrackedTargetActor.Reset();
-    CameraElapsedTime = 0.0f;
 
     SetLocalGhostVisible(false);
 
     // 타이머 전부 정리
-    GetWorld()->GetTimerManager().ClearTimer(CameraProgressTimerHandle);
-    GetWorld()->GetTimerManager().ClearTimer(BatteryDrainTimerHandle);
-    GetWorld()->GetTimerManager().ClearTimer(TrackingBeepTimerHandle);
     GetWorld()->GetTimerManager().ClearTimer(SettingsDelayTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(CaptureLockTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(BatteryDrainTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(FocusIndicatorTimerHandle);
+    GetWorld()->GetTimerManager().ClearTimer(BeepTimerHandle);
 
     // 카메라 설정 즉시 복원
     RestoreCameraSettings();
@@ -347,154 +348,6 @@ void UPGCameraComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
     DOREPLIFETIME(UPGCameraComponent, bInCameraMode);
     DOREPLIFETIME(UPGCameraComponent, bHandCamera);
     DOREPLIFETIME(UPGCameraComponent, HandCameraRepCounter);
-}
-
-void UPGCameraComponent::ResetProgress()
-{
-    CameraElapsedTime = 0.0f;
-    bIsTrackingTarget = false;
-    TrackedTargetActor.Reset();
-    GetWorld()->GetTimerManager().ClearTimer(TrackingBeepTimerHandle);
-
-    if (APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner()))
-    {
-        if (APlayerController* PC = Cast<APlayerController>(Owner->GetController()))
-        {
-            if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
-            {
-                HUD->UpdateCameraProgress(0.0f);
-
-                if (UPGCameraWidget* Widget = HUD->GetCameraWidget())
-                {
-                    Widget->ResetFocusFrame();
-                }
-            }
-        }
-    }
-}
-
-void UPGCameraComponent::UpdateCameraProgress()
-{
-    if (!bInCameraMode || bPhotoTaken)
-    {
-        return;
-    }
-
-    APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
-    if (!Owner)
-    {
-        return;
-    }
-
-    // 현재 추적 중인 대상이 여전히 유효한지 확인
-    if (bIsTrackingTarget && TrackedTargetActor.IsValid())
-    {
-        if (!IsTargetValid(TrackedTargetActor.Get()))
-        {
-            // 추적 대상이 범위 벗어남 → 추적 해제
-            bIsTrackingTarget = false;
-            TrackedTargetActor.Reset();
-            GetWorld()->GetTimerManager().ClearTimer(TrackingBeepTimerHandle);
-
-            if (CameraElapsedTime > 0.0f)
-            {
-                ResetProgress();
-            }
-            return;
-        }
-    }
-
-    // 추적 중이 아니면 새 대상 탐색
-    if (!bIsTrackingTarget)
-    {
-        AActor* NewTarget = FindClosestSubjectActor();
-        if (!NewTarget)
-        {
-            if (CameraElapsedTime > 0.0f)
-            {
-                ResetProgress();
-            }
-            return;
-        }
-
-        bIsTrackingTarget = true;
-        TrackedTargetActor = NewTarget;
-
-        if (TargetFoundSound)
-        {
-            UGameplayStatics::PlaySound2D(this, TargetFoundSound);
-        }
-
-        GetWorld()->GetTimerManager().SetTimer(TrackingBeepTimerHandle, this, &UPGCameraComponent::PlayTrackingSound, 0.9f, true);
-    }
-
-    // 새로운 피사체가 있으면 Progress 진행
-    CameraElapsedTime += 0.05f;
-    float Progress = FMath::Clamp(CameraElapsedTime / PhotoDuration, 0.0f, 1.0f);
-
-    if (APlayerController* PC = Cast<APlayerController>(Owner->GetController()))
-    {
-        if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
-        {
-            HUD->UpdateCameraProgress(Progress);
-
-            if (UPGCameraWidget* Widget = HUD->GetCameraWidget())
-            {
-                // FocusFrame 스크린 위치 업데이트
-                if (TrackedTargetActor.IsValid())
-                {
-                    IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(TrackedTargetActor.Get());
-                    if (Photographable)
-                    {
-                        FVector2D ScreenPos;
-                        if (PC->ProjectWorldLocationToScreen(Photographable->GetPhotoTargetLocation(), ScreenPos))
-                        {
-                            Widget->UpdateFocusFramePosition(ScreenPos);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // 촬영 완료
-    if (CameraElapsedTime >= PhotoDuration)
-    {
-        GetWorld()->GetTimerManager().ClearTimer(CameraProgressTimerHandle);
-        GetWorld()->GetTimerManager().ClearTimer(TrackingBeepTimerHandle);
-        bIsTrackingTarget = false;
-        bPhotoTaken = true;
-
-        // 추적 대상만 촬영
-        if (TrackedTargetActor.IsValid())
-        {
-            IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(TrackedTargetActor.Get());
-            if (Photographable)
-            {
-                FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
-                Server_TakePhoto(Info.SubjectID);
-            }
-
-            // 셔터 사운드
-            if (ShutterSound)
-            {
-                UGameplayStatics::PlaySound2D(this, ShutterSound);
-            }
-
-            Owner->FireCameraFlash();
-
-            if (APlayerController* PC = Cast<APlayerController>(Owner->GetController()))
-            {
-                if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
-                {
-                    if (UPGCameraWidget* Widget = HUD->GetCameraWidget())
-                    {
-                        Widget->PlayCaptureEffect();
-                    }
-                }
-            }
-        }
-    }
 }
 
 void UPGCameraComponent::OnRep_HandCamera()
@@ -518,133 +371,49 @@ void UPGCameraComponent::Server_SetHandCameraMesh_Implementation(bool bInHand)
     }
 }
 
-AActor* UPGCameraComponent::FindClosestSubjectActor() const
+void UPGCameraComponent::TryCapture()
 {
-    APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
-    if (!Owner || !Owner->GetFirstPersonCamera())
+    if (!bInCameraMode || bIsTransitioning || bCaptureLocked)
     {
-        return nullptr;
-    }
-
-    UCameraComponent* Camera = Owner->GetFirstPersonCamera();
-    const FVector CameraLocation = Camera->GetComponentLocation();
-    const FVector ForwardVector = Camera->GetForwardVector();
-    const float HalfFOVRad = FMath::DegreesToRadians(CurrentZoomFOV * 0.6f * 0.5f);
-    const float CosHalfFOV = FMath::Cos(HalfFOVRad);
-
-    AActor* ClosestActor = nullptr;
-    float ClosestDist = MAX_FLT;
-
-    for (TActorIterator<AActor> It(GetWorld()); It; ++It)
-    {
-        AActor* Actor = *It;
-        if (!Actor || Actor == Owner)
-        {
-            continue;
-        }
-
-        IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(Actor);
-        if (!Photographable || !Photographable->IsPhotographable())
-        {
-            continue;
-        }
-
-        FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
-        if (LocalCapturedIDs.Contains(Info.SubjectID))
-        {
-            continue;
-        }
-
-        FVector TargetLocation = Photographable->GetPhotoTargetLocation();
-        FVector DirectionToActor = TargetLocation - CameraLocation;
-        float Distance = DirectionToActor.Size();
-        float MaxRange = FMath::Min(CurrentCameraRange, Photographable->GetPhotoDetectionRange());
-        if (Distance > MaxRange)
-        {
-            continue;
-        }
-
-        DirectionToActor.Normalize();
-        if (FVector::DotProduct(ForwardVector, DirectionToActor) < CosHalfFOV)
-        {
-            continue;
-        }
-
-        FHitResult HitResult;
-        FCollisionQueryParams Params;
-        Params.AddIgnoredActor(Owner);
-        Params.AddIgnoredActor(Actor);
-
-        bool bBlocked = GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, TargetLocation, ECC_GameTraceChannel7, Params);
-        if (bBlocked)
-        {
-            continue;
-        }
-
-        if (Distance < ClosestDist)
-        {
-            ClosestDist = Distance;
-            ClosestActor = Actor;
-        }
-    }
-
-    return ClosestActor;
-}
-
-bool UPGCameraComponent::IsTargetValid(AActor* Target) const
-{
-    if (!Target)
-    {
-        return false;
+        return;
     }
 
     APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
-    if (!Owner || !Owner->GetFirstPersonCamera())
+    if (!Owner)
     {
-        return false;
+        return;
     }
 
-    IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(Target);
-    if (!Photographable || !Photographable->IsPhotographable())
+    TArray<AActor*> Subjects;
+    GatherFramedSubjects(Subjects);
+
+    bCaptureLocked = true;
+    GetWorld()->GetTimerManager().SetTimer(CaptureLockTimerHandle, [this]() { bCaptureLocked = false; }, CaptureLockDuration, false);
+
+    // 1) 셔터 사운드
+    if (ShutterSound)
     {
-        return false;
+        UGameplayStatics::PlaySound2D(this, ShutterSound);
     }
 
-    FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
-    if (LocalCapturedIDs.Contains(Info.SubjectID))
+    // 2) 플래쉬 전 캡처
+    UTextureRenderTarget2D* RT = Owner->CapturePhoto();
+    if (APlayerController* PC = Cast<APlayerController>(Owner->GetController()))
     {
-        return false;
+        if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
+        {
+            HUD->BeginCaptureSequence(RT);
+            HUD->StartCaptureCooldown(CaptureLockDuration);
+        }
     }
 
-    UCameraComponent* Camera = Owner->GetFirstPersonCamera();
-    const FVector CameraLocation = Camera->GetComponentLocation();
+    // 3) 카메라 플래쉬
+    Owner->FireCameraFlash();
 
-    FVector TargetLocation = Photographable->GetPhotoTargetLocation();
-    FVector DirectionToActor = TargetLocation - CameraLocation;
-    float Distance = DirectionToActor.Size();
-    float MaxRange = FMath::Min(CurrentCameraRange, Photographable->GetPhotoDetectionRange());
-    if (Distance > MaxRange)
-    {
-        return false;
-    }
-
-    DirectionToActor.Normalize();
-    const float HalfFOVRad = FMath::DegreesToRadians(CurrentZoomFOV * 0.6f * 0.5f);
-    if (FVector::DotProduct(Camera->GetForwardVector(), DirectionToActor) < FMath::Cos(HalfFOVRad))
-    {
-        return false;
-    }
-
-    FHitResult HitResult;
-    FCollisionQueryParams Params;
-    Params.AddIgnoredActor(Owner);
-    Params.AddIgnoredActor(Target);
-
-    bool bBlocked = GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, TargetLocation, ECC_GameTraceChannel7, Params);
-    return !bBlocked;
+    Server_TakePhoto(Subjects);
 }
 
-void UPGCameraComponent::Server_TakePhoto_Implementation(int32 SubjectID)
+void UPGCameraComponent::Server_TakePhoto_Implementation(const TArray<AActor*>& Subjects)
 {
     APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
     if (!Owner)
@@ -652,55 +421,41 @@ void UPGCameraComponent::Server_TakePhoto_Implementation(int32 SubjectID)
         return;
     }
 
-    // 추적 대상만 촬영
-    TArray<FPhotoSubjectInfo> Results;
-    for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+    // 촬영 가능 거리 내 모든 subject 촬영처리
+    TArray<FPhotoSubjectInfo> Captured;
+    for (AActor* Actor : Subjects)
     {
-        IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(*It);
-        if (Photographable)
+        if (IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(Actor))
         {
-            FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
-            if (Info.SubjectID == SubjectID)
-            {
-                Results.Add(Info);
-                break;
-            }
+            Captured.Add(Photographable->GetPhotoSubjectInfo());
         }
     }
 
     APGPlayerState* PS = Owner->GetPlayerState<APGPlayerState>();
     if (PS)
     {
-        PS->AddPhotoResult(Results);
-        Client_PhotoResult(Results, PS->GetPhotoScore());
+        const TArray<FPhotoCaptureResult> Entries = PS->AddPhotoResult(Captured);
+        Client_PhotoResult(Entries);
     }
 }
 
-void UPGCameraComponent::Client_PhotoResult_Implementation(const TArray<FPhotoSubjectInfo>& Results, int32 NewTotalScore)
+void UPGCameraComponent::Client_PhotoResult_Implementation(const TArray<FPhotoCaptureResult>& Entries)
 {
+    // 처음 찍는 대상인지(Enemy는 행동 무관하게 종 자체를 처음 찍는지 체크)
     TArray<int32> NewlyRecordedKeys;
+    for (const FPhotoCaptureResult& Entry : Entries)
     {
-        TSet<int32> KnownKeys;
-        for (int32 ID : LocalCapturedIDs)
+        const bool bSpeciesNew = PhotoID::IsMonster(Entry.SubjectID) ? Entry.bNewSpecies : Entry.bNewRecord;
+        if (bSpeciesNew)
         {
-            KnownKeys.Add(PhotoID::GetSpeciesKey(ID));
-        }
-
-        for (const FPhotoSubjectInfo& Subject : Results)
-        {
-            const int32 Key = PhotoID::GetSpeciesKey(Subject.SubjectID);
-            if (!KnownKeys.Contains(Key))
-            {
-                NewlyRecordedKeys.AddUnique(Key);
-                KnownKeys.Add(Key);
-            }
+            NewlyRecordedKeys.AddUnique(PhotoID::GetSpeciesKey(Entry.SubjectID));
         }
     }
 
     // 로컬 중복 캐시 업데이트
-    for (const FPhotoSubjectInfo& Result : Results)
+    for (const FPhotoCaptureResult& Entry : Entries)
     {
-        LocalCapturedIDs.Add(Result.SubjectID);
+        LocalCapturedIDs.Add(Entry.SubjectID);
     }
 
     if (APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner()))
@@ -709,19 +464,10 @@ void UPGCameraComponent::Client_PhotoResult_Implementation(const TArray<FPhotoSu
         {
             if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
             {
-                HUD->DisplayPhotoResult(Results, NewTotalScore);
+                HUD->DisplayCaptureLog(Entries);
                 HUD->NotifyNewlyCapturedSpeciesKeys(NewlyRecordedKeys);
             }
         }
-    }
-
-    // 촬영 완료 후 리셋, 다시 촬영 가능
-    bPhotoTaken = false;
-    ResetProgress();
-
-    if (bInCameraMode)
-    {
-        GetWorld()->GetTimerManager().SetTimer(CameraProgressTimerHandle, this, &UPGCameraComponent::UpdateCameraProgress, 0.05f, true);
     }
 }
 
@@ -830,14 +576,6 @@ void UPGCameraComponent::AddBattery(float Amount)
     }
 }
 
-void UPGCameraComponent::PlayTrackingSound()
-{
-    if (TrackingBeepSound && bIsTrackingTarget)
-    {
-        UGameplayStatics::PlaySound2D(this, TrackingBeepSound);
-    }
-}
-
 void UPGCameraComponent::SetInCameraMode(bool bNewMode)
 {
     // 로컬 클라이언트에서 즉시 변경 (예측)
@@ -888,5 +626,167 @@ void UPGCameraComponent::SetLocalGhostVisible(bool bVisible)
             MirrorGhost->SetCameraModeVisible(bVisible);
             break;
         }
+    }
+}
+
+void UPGCameraComponent::UpdateFocusIndicator()
+{
+    if (!bInCameraMode)
+    {
+        return;
+    }
+
+    const bool bPresent = HasValidUncapturedSubjectInFrame();
+    if (bPresent != bHasFramedSubject)
+    {
+        bHasFramedSubject = bPresent;
+        if (bPresent)
+        {
+            if (TargetFoundSound)
+            {
+                UGameplayStatics::PlaySound2D(this, TargetFoundSound);
+            }
+            GetWorld()->GetTimerManager().SetTimer(BeepTimerHandle, this, &UPGCameraComponent::PlayBeep, FocuseBeepInterval, true);
+        }
+        else
+        {
+            GetWorld()->GetTimerManager().ClearTimer(BeepTimerHandle);
+        }
+    }
+
+    const float Target = bPresent ? 1.0f : 0.0f;
+    FocusIndicatorAlpha = FMath::FInterpTo(FocusIndicatorAlpha, Target, 0.05f, FocusExpandSpeed);
+    if (APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner()))
+    {
+        if (APlayerController* PC = Cast<APlayerController>(Owner->GetController()))
+        {
+            if (APGHUD* HUD = Cast<APGHUD>(PC->GetHUD()))
+            {
+                HUD->UpdateCameraProgress(FocusIndicatorAlpha);
+            }
+        }
+    }
+}
+
+void UPGCameraComponent::PlayBeep()
+{
+    if (TrackingBeepSound)
+    {
+        UGameplayStatics::PlaySound2D(this, TrackingBeepSound);
+    }
+}
+
+bool UPGCameraComponent::IsSubjectFramed(AActor* Actor) const
+{
+    if (!Actor)
+    {
+        return false;
+    }
+
+    APGPlayerCharacter* Owner = Cast<APGPlayerCharacter>(GetOwner());
+    if (!Owner || !Owner->GetFirstPersonCamera())
+    {
+        return false;
+    }
+
+    IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(Actor);
+    if (!Photographable || !Photographable->IsPhotographable())
+    {
+        return false;
+    }
+
+    UCameraComponent* Camera = Owner->GetFirstPersonCamera();
+    const FVector CameraLocation = Camera->GetComponentLocation();
+    const FVector TargetLocation = Photographable->GetPhotoTargetLocation();
+
+    FVector DirectionToActor = TargetLocation - CameraLocation;
+    const float Distance = DirectionToActor.Size();
+    const float MaxRange = FMath::Min(CurrentCameraRange, Photographable->GetPhotoDetectionRange());
+    if (Distance > MaxRange)
+    {
+        return false;
+    }
+
+    DirectionToActor.Normalize();
+    const float HalfFOVRad = FMath::DegreesToRadians(CurrentZoomFOV * 0.6f * 0.5f);
+    if (FVector::DotProduct(Camera->GetForwardVector(), DirectionToActor) < FMath::Cos(HalfFOVRad))
+    {
+        return false;
+    }
+
+    FHitResult HitResult;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(Owner);
+    Params.AddIgnoredActor(Actor);
+    const bool bBlocked = GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, TargetLocation, ECC_GameTraceChannel7, Params);
+
+    return !bBlocked;
+}
+
+bool UPGCameraComponent::HasValidUncapturedSubjectInFrame() const
+{
+    const UPGPhotoSubjectRegistry* Registry = GetWorld() ? GetWorld()->GetSubsystem<UPGPhotoSubjectRegistry>() : nullptr;
+    if (!Registry)
+    {
+        return false;
+    }
+
+    for (const TWeakObjectPtr<AActor>& Weak : Registry->GetSubjects())
+    {
+        AActor* Actor = Weak.Get();
+        if (!Actor || Actor == GetOwner())
+        {
+            continue;
+        }
+
+        if (!IsSubjectFramed(Actor))
+        {
+            continue;
+        }
+
+        IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(Actor);
+        if (LocalCapturedIDs.Contains(Photographable->GetPhotoSubjectInfo().SubjectID))
+        {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+void UPGCameraComponent::GatherFramedSubjects(TArray<AActor*>& Out) const
+{
+    Out.Reset();
+    const UPGPhotoSubjectRegistry* Registry = GetWorld() ? GetWorld()->GetSubsystem<UPGPhotoSubjectRegistry>() : nullptr;
+    if (!Registry)
+    {
+        return;
+    }
+
+    TSet<int32> SeenIDs;
+    for (const TWeakObjectPtr<AActor>& Weak : Registry->GetSubjects())
+    {
+        AActor* Actor = Weak.Get();
+        if (!Actor || Actor == GetOwner())
+        {
+            continue;
+        }
+
+        if (!IsSubjectFramed(Actor))
+        {
+            continue;
+        }
+
+        IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(Actor);
+        const int32 ID = Photographable->GetPhotoSubjectInfo().SubjectID;
+        if (SeenIDs.Contains(ID))
+        {
+            continue;
+        }
+
+        SeenIDs.Add(ID);
+        Out.Add(Actor);
     }
 }

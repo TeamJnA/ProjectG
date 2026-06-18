@@ -38,7 +38,7 @@ enum class EBlindSoundState : uint8
 };
 
 UCLASS()
-class PROJECTG_API APGBlindCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface, public IPhotographableInterface
+class PROJECTG_API APGBlindCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface
 {
 	GENERATED_BODY()
 
@@ -89,7 +89,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UPGBlindAttributeSet> BlindAttributeSet;
 
-	virtual void BeginPlay() override;
 	virtual void OnPlayerOverlapped(AActor* OverlapPlayer) override;
 
 	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;

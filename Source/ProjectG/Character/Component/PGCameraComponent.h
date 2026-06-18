@@ -29,6 +29,7 @@ public:
     FORCEINLINE TObjectPtr<UStaticMesh> GetCameraMesh() const { return CameraMesh; }
     // Return camera's inhand transform
     FORCEINLINE FTransform GetCameraTransform() const { return CameraTransform; }
+    FORCEINLINE float GetCurrentZoomFOV() const { return CurrentZoomFOV; }
 
     FORCEINLINE bool IsInCameraMode() const { return bInCameraMode; }
     FORCEINLINE bool IsTransitioning() const { return bIsTransitioning; }
@@ -39,11 +40,13 @@ public:
         
     void AddBattery(float Amount);
 
+    void TryCapture();
+
     UFUNCTION(Server, Reliable)
-    void Server_TakePhoto(int32 SubjectID);
+    void Server_TakePhoto(const TArray<AActor*>& Subjects);
 
     UFUNCTION(Client, Reliable)
-    void Client_PhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 NewTotalScore);
+    void Client_PhotoResult(const TArray<FPhotoCaptureResult>& Entries);
 
     // 외부에서 LocalCapturedIDs 갱신 (Exit 상호작용을 통한 발견)
     void AddToLocalCapturedIDs(int32 SubjectID);
@@ -59,9 +62,6 @@ public:
 
 protected:
     virtual void BeginPlay() override;
-
-    void UpdateCameraProgress();
-    void ResetProgress();
 
     UFUNCTION()
     void OnEnterTransitionFinished();
@@ -79,10 +79,11 @@ protected:
 
     void RestoreCameraSettings();
 
+    void GatherFramedSubjects(TArray<AActor*>& Out) const;
+    bool IsSubjectFramed(AActor* Actor) const;
+
     void DrainBattery();
-
-    void PlayTrackingSound();
-
+    
     // 내부적으로 camera mode 변경 시 사용
     void SetInCameraMode(bool bNewMode);
 
@@ -93,10 +94,11 @@ protected:
     UFUNCTION()
     void OnRep_HandCamera();
 
-    AActor* FindClosestSubjectActor() const;
-    bool IsTargetValid(AActor* Target) const;
-
     void SetLocalGhostVisible(bool bVisible);
+
+    void UpdateFocusIndicator();
+    bool HasValidUncapturedSubjectInFrame() const;
+    void PlayBeep();
 
     // Camera Mesh and Inhand transform
     UPROPERTY(EditDefaultsOnly, Category = "Mesh")
@@ -137,18 +139,14 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Sound")
     TObjectPtr<USoundBase> ShutterSound;
 
-    UPROPERTY()
-    TWeakObjectPtr<AActor> TrackedTargetActor;
-
-    FTimerHandle CameraProgressTimerHandle;
     FTimerHandle SettingsDelayTimerHandle;
     FTimerHandle BatteryDrainTimerHandle;
-    FTimerHandle TrackingBeepTimerHandle;
-
-    float CameraElapsedTime = 0.0f;
+    FTimerHandle CaptureLockTimerHandle;
+    FTimerHandle FocusIndicatorTimerHandle;
+    FTimerHandle BeepTimerHandle;
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera")
-    float PhotoDuration = 3.0f;
+    float CaptureLockDuration = 2.5f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera")
     float MaxCameraRange = 4000.0f;
@@ -175,6 +173,14 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Camera")
     float ZoomStep = 5.0f;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Camera")
+    float FocuseBeepInterval = 0.6f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Camera")
+    float FocusExpandSpeed = 8.0f;
+
+    float FocusIndicatorAlpha = 0.0f;
+
     UPROPERTY(EditDefaultsOnly, Category = "Battery")
     float MaxBattery = 1.0f;
 
@@ -186,9 +192,6 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Battery")
     float MinBatteryToEnter = 0.03f;
 
-    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-    bool bInCameraMode = false;
-
     /**
     * bHandCamera가 같은 변수로 들어와도, 손에 든 메쉬의 상태는 변화시켜야함.
     * 그래서 Counter를 써서 OnRep을 항상 호출하도록.
@@ -197,11 +200,12 @@ protected:
     uint8 HandCameraRepCounter = 0;
 
     UPROPERTY(Replicated, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+    bool bInCameraMode = false;
+
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
     bool bHandCamera = false;
 
-    bool bPhotoTaken = false;
-
-    // 타겟 추적 상태
-    bool bIsTrackingTarget = false;
     bool bIsTransitioning = false;
+    bool bCaptureLocked = false;
+    bool bHasFramedSubject = false;
 };

@@ -2,14 +2,17 @@
 
 
 #include "UI/HUD/PGCameraWidget.h"
+#include "UI/HUD/PGCaptureLogEntryWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/Image.h"
+#include "Components/ProgressBar.h"
 #include "MediaPlayer.h"
 #include "MediaSource.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 
 
@@ -28,11 +31,29 @@ void UPGCameraWidget::NativeConstruct()
     UpdateZoomIndicator(0.5f);
     SetProgress(0.0f);
     ResetFocusFrame();
+
+    ResetCaptureSequence();
+
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(CooldownTimerHandle);
+    }
+
+    if (CaptureCooldownBar)
+    {
+        CaptureCooldownBar->SetPercent(1.0f);
+    }
 }
 
 void UPGCameraWidget::NativeDestruct()
 {
     StopGlitchPlayback();
+    ResetCaptureSequence();
+
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(CooldownTimerHandle);
+    }
 
     Super::NativeDestruct();
 }
@@ -226,5 +247,90 @@ void UPGCameraWidget::ResetFocusFrame()
     {
         FocusFrame->SetRenderTranslation(FVector2D::ZeroVector);
         FocusFrame->SetRenderScale(FVector2D(1.0f, 1.0f));
+    }
+}
+
+void UPGCameraWidget::BeginCapture(UTextureRenderTarget2D* PhotoRT)
+{
+    if (!CaptureLogEntryClass || !CaptureLogRoot)
+    {
+        return;
+    }
+
+    ResetCaptureSequence();
+
+    CurrentLogEntry = CreateWidget<UPGCaptureLogEntryWidget>(this, CaptureLogEntryClass);
+    if (CurrentLogEntry)
+    {
+        CaptureLogRoot->AddChild(CurrentLogEntry);
+        CurrentLogEntry->SetThumbnail(PhotoRT);
+    }
+
+    PlayCaptureEffect();
+}
+
+void UPGCameraWidget::FeedCaptureLines(const TArray<FCaptureLogLine>& Lines)
+{
+    if (!CurrentLogEntry)
+    {
+        return;
+    }
+    CurrentLogEntry->BeginLog(Lines);
+}
+
+void UPGCameraWidget::ResetCaptureSequence()
+{
+    if (CurrentLogEntry)
+    {
+        CurrentLogEntry->ForceRemove();
+        CurrentLogEntry = nullptr;
+    }
+
+    if (CaptureLogRoot)
+    {
+        CaptureLogRoot->ClearChildren();
+    }
+}
+
+void UPGCameraWidget::StartCaptureCooldown(float Duration)
+{
+    CooldownDuration = Duration;
+    CooldownElapsed = 0.0f;
+
+    if (CaptureCooldownBar)
+    {
+        CaptureCooldownBar->SetPercent(0.0f);
+    }
+
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(CooldownTimerHandle);
+        if (Duration > 0.0f)
+        {
+            World->GetTimerManager().SetTimer(CooldownTimerHandle, this, &UPGCameraWidget::OnCooldownStep, CooldownStep, true);
+        }
+        else if (CaptureCooldownBar)
+        {
+            CaptureCooldownBar->SetPercent(1.0f);
+        }
+    }
+}
+
+void UPGCameraWidget::OnCooldownStep()
+{
+    CooldownElapsed += CooldownStep;
+    const float Percent = FMath::Clamp(CooldownElapsed / CooldownDuration, 0.0f, 1.0f);
+
+    if (CaptureCooldownBar)
+    {
+        CaptureCooldownBar->SetPercent(Percent);
+    }
+
+    if (Percent >= 1.0f)
+    {
+        if (UWorld* World = GetWorld())
+        {
+            World->GetTimerManager().ClearTimer(CooldownTimerHandle);
+        }
     }
 }

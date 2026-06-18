@@ -11,7 +11,7 @@
  * 
  */
 UCLASS()
-class PROJECTG_API APGTriggerGimmickWindowBlood : public APGTriggerGimmickBase, public IPhotographableInterface
+class PROJECTG_API APGTriggerGimmickWindowBlood : public APGTriggerGimmickBase
 {
 	GENERATED_BODY()
 	

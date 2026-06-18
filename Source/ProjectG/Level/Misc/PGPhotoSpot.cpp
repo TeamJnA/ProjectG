@@ -3,6 +3,7 @@
 
 #include "Level/Misc/PGPhotoSpot.h"
 #include "Components/BoxComponent.h"
+#include "Utils/PGPhotoSubjectRegistry.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -24,6 +25,32 @@ APGPhotoSpot::APGPhotoSpot()
     PhotoTargetBox->SetCollisionResponseToChannel(ECC_GameTraceChannel8, ECR_Overlap);
     PhotoTargetBox->SetGenerateOverlapEvents(true);
     PhotoTargetBox->SetHiddenInGame(true);
+}
+
+void APGPhotoSpot::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (UWorld* World = GetWorld())
+    {
+        if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
+        {
+            Registry->RegisterSubject(this);
+        }
+    }
+}
+
+void APGPhotoSpot::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (UWorld* World = GetWorld())
+    {
+        if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
+        {
+            Registry->UnregisterSubject(this);
+        }
+    }
+
+    Super::EndPlay(EndPlayReason);
 }
 
 void APGPhotoSpot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -176,38 +176,42 @@ void APGPlayerState::UpdateVoiceSettings()
 	}
 }
 
-void APGPlayerState::AddPhotoResult(const TArray<FPhotoSubjectInfo>& Subjects)
+TArray<FPhotoCaptureResult> APGPlayerState::AddPhotoResult(const TArray<FPhotoSubjectInfo>& Captured)
 {
-	for (const FPhotoSubjectInfo& Subject : Subjects)
+	TArray<FPhotoCaptureResult> Entries;
+	for (const FPhotoSubjectInfo& Subject : Captured)
 	{
-		if (CapturedSubjectIDs.Contains(Subject.SubjectID))
+		FPhotoCaptureResult Entry;
+		Entry.SubjectID = Subject.SubjectID;
+		Entry.bNewRecord = !CapturedSubjectIDs.Contains(Subject.SubjectID);
+
+		if (Entry.bNewRecord)
 		{
-			continue;
+			CapturedSubjectIDs.Add(Subject.SubjectID);
+			CapturedSubjectIDArray.Add(Subject.SubjectID);
+
+			Entry.AwardedScore = Subject.ScoreValue;
+			PhotoScore += Subject.ScoreValue;
 		}
 
-		CapturedSubjectIDs.Add(Subject.SubjectID);
-		CapturedSubjectIDArray.Add(Subject.SubjectID);
-
-		// 같은 카테고리 Room을 이미 찍은 적 있는지 확인
-		int32 FinalScore = Subject.ScoreValue;
-		if (PhotoID::IsRoom(Subject.SubjectID))
+		if (PhotoID::IsMonster(Subject.SubjectID))
 		{
-			for (int32 CapturedID : CapturedSubjectIDs)
+			const int32 SpeciesKey = PhotoID::GetSpeciesKey(Subject.SubjectID);
+			Entry.bNewSpecies = !CapturedSpeciesKeys.Contains(SpeciesKey);
+			if (Entry.bNewSpecies)
 			{
-				if (CapturedID != Subject.SubjectID && PhotoID::IsSameRoomCategory(CapturedID, Subject.SubjectID))
-				{
-					FinalScore = 10;  // 감소된 점수
-					break;
-				}
+				CapturedSpeciesKeys.Add(SpeciesKey);
 			}
 		}
 
-		PhotoScore += FinalScore;
-
-		UE_LOG(LogTemp, Log, TEXT("[Photo] Captured ID: %d (Score: %d, Total: %d)"), Subject.SubjectID, Subject.ScoreValue, PhotoScore);
+		Entries.Add(Entry);
+		UE_LOG(LogTemp, Log, TEXT("[Photo] ID:%d New:%d NewSpecies:%d Award:%d Total:%d"),
+			Subject.SubjectID, Entry.bNewRecord, Entry.bNewSpecies, Entry.AwardedScore, PhotoScore);
 	}
 
 	OnRep_CapturedSubjects();
+
+	return Entries;
 }
 
 void APGPlayerState::OnRep_CapturedSubjects()

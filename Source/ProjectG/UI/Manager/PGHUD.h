@@ -24,6 +24,7 @@ class UPGScoreBoardWidget;
 class UPGFinalScoreBoardWidget;
 class UPGPauseMenuWidget;
 class APGPlayerState;
+class UTextureRenderTarget2D;
 
 /**
  * 
@@ -62,7 +63,9 @@ public:
 	void EnterCameraMode();
 	void ExitCameraMode();
 	void UpdateCameraProgress(float Progress);
-	void DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 TotalScore);
+	void DisplayCaptureLog(const TArray<FPhotoCaptureResult>& Entries);
+	void BeginCaptureSequence(UTextureRenderTarget2D* PhotoRT);
+	void StartCaptureCooldown(float Duration);
 
 	// -------- AlertWidget(PhotoAlert, Toast, Helper) --------
 	void BeginExitCameraTransition();

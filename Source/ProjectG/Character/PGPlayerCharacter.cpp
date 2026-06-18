@@ -34,6 +34,7 @@
 #include "Components/SpotLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/AudioComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "Character/Component/PGVOIPTalker.h"
 #include "Character/Component/PGCameraComponent.h"
 
@@ -44,11 +45,14 @@
 #include "Interact/Ability/GA_Interact_Revive.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetRenderingLibrary.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Net/UnrealNetwork.h"
 
 // Game Setting
 #include "Player/PGGameUserSettings.h"
 #include "Utils/PGVoiceUtils.h"
+#include "Utils/PGPhotoSubjectRegistry.h"
 #include "Perception/AISense_Hearing.h"
 
 #include "PGLogChannels.h"
@@ -105,17 +109,6 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
 	HitCapsule->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
 
-	PhotoDetectionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("PhotoDetectionBox"));
-	PhotoDetectionBox->SetupAttachment(RootComponent);
-	PhotoDetectionBox->SetCollisionObjectType(ECC_GameTraceChannel8);
-	PhotoDetectionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	PhotoDetectionBox->SetCollisionResponseToAllChannels(ECR_Ignore);
-	PhotoDetectionBox->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
-	PhotoDetectionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
-	PhotoDetectionBox->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
-	PhotoDetectionBox->SetGenerateOverlapEvents(false);
-	PhotoDetectionBox->SetHiddenInGame(true);
-
 	//Attach ItemSocket on character
 	//middle_metacarpal_r
 	EquippedItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EquippedItemMesh"));
@@ -153,6 +146,12 @@ APGPlayerCharacter::APGPlayerCharacter()
 	HeartBeatAudioComponent->bAutoActivate = false;
 
 	CameraComp = CreateDefaultSubobject<UPGCameraComponent>(TEXT("CameraComponent"));
+
+	PhotoCaptureComp = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("PhotoCaptureComp"));
+	PhotoCaptureComp->SetupAttachment(FirstPersonCamera);
+	PhotoCaptureComp->bCaptureEveryFrame = false;
+	PhotoCaptureComp->bCaptureOnMovement = false;
+	PhotoCaptureComp->CaptureSource = SCS_FinalColorLDR;
 }
 
 void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -223,7 +222,8 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(DropItemAction, ETriggerEvent::Started, this, &APGPlayerCharacter::DropItem);
 
 		//Mouse Clicks
-		EnhancedInputComponent->BindAction(MouseLeftAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, MouseLeftTag);
+		//EnhancedInputComponent->BindAction(MouseLeftAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, MouseLeftTag);
+		EnhancedInputComponent->BindAction(MouseLeftAction, ETriggerEvent::Started, this, &APGPlayerCharacter::OnMouseLeftPressed);
 		EnhancedInputComponent->BindAction(MouseLeftAction, ETriggerEvent::Completed, this, &APGPlayerCharacter::RemoveTagFromCharacter, MouseLeftTag);
 		
 		EnhancedInputComponent->BindAction(MouseRightAction, ETriggerEvent::Started, this, &APGPlayerCharacter::AddTagToCharacter, MouseRightTag);
@@ -1389,6 +1389,17 @@ void APGPlayerCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void APGPlayerCharacter::OnMouseLeftPressed(const FInputActionValue& Value)
+{
+	if (CameraComp && CameraComp->IsInCameraMode())
+	{
+		CameraComp->TryCapture();
+		return;
+	}
+
+	AddTagToCharacter(Value, MouseLeftTag);
+}
+
 void APGPlayerCharacter::Server_SendCameraRotation_Implementation(FRotator NewRotation)
 {
 	FirstPersonCamera->SetWorldRotation(NewRotation);
@@ -2090,18 +2101,6 @@ void APGPlayerCharacter::CheckVoiceAndReportNoise()
 		}
 	}
 
-	const float RawAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
-	// 스파이크 필터: 이전 값에서 너무 급격히 상승하면 서서히 따라감
-	const float MaxRiseRate = 0.1f;  // 0.2초당 최대 상승폭
-	if (RawAmplitude > CurrentVoiceAmplitude + MaxRiseRate)
-	{
-		CurrentVoiceAmplitude += MaxRiseRate;
-	}
-	else
-	{
-		CurrentVoiceAmplitude = RawAmplitude;
-	}
-
 	CurrentVoiceAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
 	if (CurrentVoiceAmplitude < 0.06f)
 	{
@@ -2281,6 +2280,42 @@ void APGPlayerCharacter::StopCameraFlash()
 	}
 }
 
+UTextureRenderTarget2D* APGPlayerCharacter::CapturePhoto()
+{
+	if (!PhotoCaptureComp || !FirstPersonCamera)
+	{
+		return nullptr;
+	}
+
+	if (!PhotoRenderTarget)
+	{
+		PhotoRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, PhotoCaptureResolution, PhotoCaptureResolution, RTF_RGBA8);
+		PhotoCaptureComp->TextureTarget = PhotoRenderTarget;
+	}
+
+	PhotoCaptureComp->SetWorldLocationAndRotation(FirstPersonCamera->GetComponentLocation(), FirstPersonCamera->GetComponentRotation());
+	if (CameraComp)
+	{
+		PhotoCaptureComp->FOVAngle = CameraComp->GetCurrentZoomFOV();
+	}
+
+	FPostProcessSettings& PPSettings = PhotoCaptureComp->PostProcessSettings;
+
+	PPSettings.bOverride_ColorGain = true;
+	PPSettings.ColorGain = FVector4(PhotoBrightnessGain, PhotoBrightnessGain, PhotoBrightnessGain, 1.0f);
+
+	PPSettings.bOverride_ColorSaturation = true;
+	PPSettings.ColorSaturation = FVector4(PhotoSaturation, PhotoSaturation, PhotoSaturation, 1.0f);
+
+	PPSettings.bOverride_ColorContrast = true;
+	PPSettings.ColorContrast = FVector4(PhotoContrast, PhotoContrast, PhotoContrast, 1.0f);
+
+	PhotoCaptureComp->PostProcessBlendWeight = 1.0f;
+
+	PhotoCaptureComp->CaptureScene();
+	return PhotoRenderTarget;
+}
+
 void APGPlayerCharacter::InitPhotoDetection()
 {
 	if (bPhotoDetectionInitialized)
@@ -2289,43 +2324,7 @@ void APGPlayerCharacter::InitPhotoDetection()
 	}
 	bPhotoDetectionInitialized = true;
 
-	PhotoDetectionBox->OnComponentBeginOverlap.AddDynamic(this, &APGPlayerCharacter::OnPhotoDetectionBeginOverlap);
-	PhotoDetectionBox->OnComponentEndOverlap.AddDynamic(this, &APGPlayerCharacter::OnPhotoDetectionEndOverlap);
-	GetWorldTimerManager().SetTimer(EnablePhotoDetectionTimerHandle, this, &APGPlayerCharacter::EnablePhotoDetection, 2.0f, false);
-	GetWorldTimerManager().SetTimer(ValidatePhotoDetectionTimerHandle, this, &APGPlayerCharacter::ValidateNearbyPhotographables, 1.0f, true);
-}
-
-void APGPlayerCharacter::EnablePhotoDetection()
-{
-	if (PhotoDetectionBox)
-	{
-		PhotoDetectionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		PhotoDetectionBox->SetGenerateOverlapEvents(true);
-		PhotoDetectionBox->UpdateOverlaps();
-	}
-}
-
-void APGPlayerCharacter::OnPhotoDetectionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (!OtherActor || OtherActor == this)
-	{
-		return;
-	}
-
-	IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(OtherActor);
-	if (!Photographable)
-	{
-		return;
-	}
-
-	NearbyPhotographables.AddUnique(OtherActor);
-	ValidateNearbyPhotographables();
-}
-
-void APGPlayerCharacter::OnPhotoDetectionEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	NearbyPhotographables.Remove(OtherActor);
-	ValidateNearbyPhotographables();
+	GetWorldTimerManager().SetTimer(ValidatePhotoDetectionTimerHandle, this, &APGPlayerCharacter::ValidateNearbyPhotographables, 0.5f, true, 2.0f);
 }
 
 void APGPlayerCharacter::ValidateNearbyPhotographables()
@@ -2348,8 +2347,8 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 	}
 
 	if (AbilitySystemComponent && 
-		AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.OnAttacked")) ||
-		AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead")))
+		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.OnAttacked")) ||
+		AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"))))
 	{
 		HUD->SetPhotoAlertVisible(false);
 		return;
@@ -2372,20 +2371,24 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 		return;
 	}
 
-	bool bHasPhotographable = false;
+	const UPGPhotoSubjectRegistry* Registry = GetWorld() ? GetWorld()->GetSubsystem<UPGPhotoSubjectRegistry>() : nullptr;
+	if (!Registry)
+	{
+		HUD->SetPhotoAlertVisible(false);
+		return;
+	}
 
 	const FVector CameraLocation = FirstPersonCamera->GetComponentLocation();
 	const FVector ForwardVector = FirstPersonCamera->GetForwardVector();
-
-	for (int32 i = NearbyPhotographables.Num() - 1; i >= 0; i--)
+	bool bHasPhotographable = false;
+	for (const TWeakObjectPtr<AActor>& Weak : Registry->GetSubjects())
 	{
-		if (!NearbyPhotographables[i].IsValid())
+		AActor* Actor = Weak.Get();
+		if (!Actor || Actor == this)
 		{
-			NearbyPhotographables.RemoveAt(i);
 			continue;
 		}
 
-		AActor* Actor = NearbyPhotographables[i].Get();
 		IPhotographableInterface* Photographable = Cast<IPhotographableInterface>(Actor);
 		if (!Photographable || !Photographable->IsPhotographable())
 		{
@@ -2393,24 +2396,22 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 		}
 
 		// 이미 찍은 대상 스킵
-		FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
+		const FPhotoSubjectInfo Info = Photographable->GetPhotoSubjectInfo();
 		if (CameraComp->IsAlreadyCaptured(Info.SubjectID))
 		{
 			continue;
 		}
 
-		// 거리 체크 (촬영 알림용)
-		FVector TargetLocation = Photographable->GetPhotoTargetLocation();
-		float Distance = FVector::Dist(CameraLocation, TargetLocation);
-		if (Distance > Photographable->GetPhotoDetectionRange())
+		// 거리 체크
+		const FVector TargetLocation = Photographable->GetPhotoTargetLocation();
+		if (FVector::Dist(CameraLocation, TargetLocation) > Photographable->GetPhotoDetectionRange())
 		{
 			continue;
 		}
 
 		// 시야 내에 있는지
-		FVector DirectionToActor = (TargetLocation - CameraLocation).GetSafeNormal();
-		float DotResult = FVector::DotProduct(ForwardVector, DirectionToActor);
-		if (DotResult < 0.8f)
+		const FVector DirectionToActor = (TargetLocation - CameraLocation).GetSafeNormal();
+		if (FVector::DotProduct(ForwardVector, DirectionToActor) < 0.8f)
 		{
 			continue;
 		}
@@ -2419,9 +2420,7 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 		FCollisionQueryParams Params;
 		Params.AddIgnoredActor(this);
 		Params.AddIgnoredActor(Actor);
-
-		bool bBlocked = GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, TargetLocation, ECC_GameTraceChannel7, Params);
-		if (bBlocked)
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, TargetLocation, ECC_GameTraceChannel7, Params))
 		{
 			continue;
 		}

@@ -27,6 +27,8 @@ public:
     void SetPhotoInfo(int32 InPhotoID, int32 InPhotoScore, const FRotator& InBoxRotation = FRotator::ZeroRotator, const FVector& InBoxExtent = FVector(32.0f));
 
 protected:
+    virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     UFUNCTION()

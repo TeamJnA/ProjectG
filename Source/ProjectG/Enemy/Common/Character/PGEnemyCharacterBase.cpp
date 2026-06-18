@@ -17,6 +17,8 @@
 #include "Interface/AttackableTarget.h"
 #include "Level/Misc/PGDoor1.h"
 #include "Type/CharacterTypes.h"
+#include "Utils/PGPhotoSubjectRegistry.h"
+
 
 DEFINE_LOG_CATEGORY(LogEnemyCharacter);
 
@@ -79,14 +81,22 @@ ETeamAttitude::Type APGEnemyCharacterBase::GetTeamAttitudeTowards(const AActor& 
 	return ETeamAttitude::Neutral;
 }
 
+FPhotoSubjectInfo APGEnemyCharacterBase::GetPhotoSubjectInfo() const
+{
+	return FPhotoSubjectInfo(0, 0);
+}
+
+FVector APGEnemyCharacterBase::GetPhotoTargetLocation() const
+{
+	return GetActorLocation();
+}
+
 void APGEnemyCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 	//ability component 초기화, owner actor, avatar actor. enemy 캐릭터는 둘다 자기자신
 
-
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
-
 	//기본스킬 부여
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
@@ -96,6 +106,27 @@ void APGEnemyCharacterBase::BeginPlay()
 	{
 		TouchCollider->OnComponentBeginOverlap.AddDynamic(this, &APGEnemyCharacterBase::OnTouchColliderOverlapBegin);
 	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
+		{
+			Registry->RegisterSubject(this);
+		}
+	}
+}
+
+void APGEnemyCharacterBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
+		{
+			Registry->UnregisterSubject(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void APGEnemyCharacterBase::OnTouchColliderOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

@@ -39,9 +39,7 @@ namespace PhotoID
     constexpr int32 WindowBlood = 220;
     
     // Room
-    constexpr int32 Room_Charger_1 = 310;
-    constexpr int32 Room_Charger_2 = 311;
-    constexpr int32 Room_Charger_3 = 312;
+    constexpr int32 Room_Charger = 310;
     constexpr int32 Room_Blind = 320;
     constexpr int32 Room_Ghost = 330;
     constexpr int32 Room_Elevator = 340;
@@ -51,9 +49,8 @@ namespace PhotoID
     FORCEINLINE bool IsMonster(int32 ID) { return ID / 100 == 1; }
     FORCEINLINE bool IsAnomaly(int32 ID) { return ID / 100 == 2; }
     FORCEINLINE bool IsRoom(int32 ID) { return ID / 100 == 3; }
-    FORCEINLINE int32 GetRoomCategory(int32 ID) { return ID / 10; }
-    FORCEINLINE bool IsSameRoomCategory(int32 A, int32 B) { return GetRoomCategory(A) == GetRoomCategory(B); }
     FORCEINLINE int32 GetSpeciesKey(int32 ID) { return IsRoom(ID) ? ID : (ID / 10); }
+    FORCEINLINE int32 GetCategory(int32 ID) { return ID / 100; }
 }
 
 namespace PhotoGrade
@@ -103,6 +100,36 @@ struct FPhotoSubjectInfo
     FPhotoSubjectInfo() {}
     FPhotoSubjectInfo(int32 InID, int32 InScore)
         : SubjectID(InID), ScoreValue(InScore) {}
+};
+
+USTRUCT()
+struct FPhotoCaptureResult
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    int32 SubjectID = 0;
+
+    UPROPERTY()
+    int32 AwardedScore = 0;
+
+    UPROPERTY()
+    bool bNewRecord = false;
+
+    UPROPERTY()
+    bool bNewSpecies = false;
+};
+
+USTRUCT()
+struct FCaptureLogLine
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    FText Text;
+
+    UPROPERTY()
+    bool bValid = false;
 };
 
 USTRUCT()

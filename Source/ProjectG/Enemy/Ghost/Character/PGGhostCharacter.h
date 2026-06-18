@@ -18,7 +18,7 @@ class USphereComponent;
  * 
  */
 UCLASS()
-class PROJECTG_API APGGhostCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface, public IPhotographableInterface
+class PROJECTG_API APGGhostCharacter : public APGEnemyCharacterBase, public IPGAIExplorationInterface
 {
 	GENERATED_BODY()
 

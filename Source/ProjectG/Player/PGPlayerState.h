@@ -58,7 +58,7 @@ public:
 	FORCEINLINE AActor* GetPlayerCharacter() const { return PlayerCharacter.Get(); }
 
 	FORCEINLINE int32 GetPhotoScore() const { return PhotoScore; }
-	void AddPhotoResult(const TArray<FPhotoSubjectInfo>& Subjects);
+	TArray<FPhotoCaptureResult> AddPhotoResult(const TArray<FPhotoSubjectInfo>& Captured);
 
 	FORCEINLINE float GetCameraBattery() const { return CameraBattery; }
 	void SetCameraBattery(float NewBattery) { CameraBattery = NewBattery; }
@@ -74,6 +74,9 @@ protected:
 
 	UPROPERTY()
 	TSet<int32> CapturedSubjectIDs;
+
+	UPROPERTY()
+	TSet<int32> CapturedSpeciesKeys;
 
 	// 리플리케이션용
 	UPROPERTY(ReplicatedUsing = OnRep_CapturedSubjects)

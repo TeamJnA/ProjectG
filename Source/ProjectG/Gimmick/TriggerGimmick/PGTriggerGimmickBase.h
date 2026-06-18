@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interface/PhotographableInterface.h"
 #include "PGTriggerGimmickBase.generated.h"
 
 class UBoxComponent;
@@ -13,7 +14,7 @@ class UGameplayEffect;
 class APGSoundManager;
 
 UCLASS(Abstract)
-class PROJECTG_API APGTriggerGimmickBase : public AActor
+class PROJECTG_API APGTriggerGimmickBase : public AActor, public IPhotographableInterface
 {
 	GENERATED_BODY()
 	
@@ -21,11 +22,20 @@ public:
 	// Sets default values for this actor's properties
 	APGTriggerGimmickBase();
 
+	// IPhotographableInterface~
+	virtual bool IsPhotographable() const override;
+	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const override;
+	virtual FVector GetPhotoTargetLocation() const override;
+	// ~IPhotographableInterface
+
 	void InitSoundManager();
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	void RefreshPhotoRegistration();
 
 	UFUNCTION()
 	virtual void OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent,

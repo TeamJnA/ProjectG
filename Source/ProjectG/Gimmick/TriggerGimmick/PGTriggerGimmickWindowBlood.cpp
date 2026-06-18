@@ -42,6 +42,7 @@ void APGTriggerGimmickWindowBlood::OnTriggerOverlap(UPrimitiveComponent* Overlap
 void APGTriggerGimmickWindowBlood::LocalEffect(AActor* OtherActor, UPrimitiveComponent* OtherComp)
 {
     bIsActivated = true;
+    RefreshPhotoRegistration();
 
     float TargetSanity = 100.0f;
     IGimmickTargetInterface* GimmickTarget = Cast<IGimmickTargetInterface>(OtherActor);

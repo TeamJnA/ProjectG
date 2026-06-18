@@ -13,6 +13,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerState.h"
+#include "Utils/PGPhotoSubjectRegistry.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -37,6 +38,21 @@ APGTriggerGimmickBase::APGTriggerGimmickBase()
 	TriggerVolume->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 }
 
+bool APGTriggerGimmickBase::IsPhotographable() const
+{
+	return false;
+}
+
+FPhotoSubjectInfo APGTriggerGimmickBase::GetPhotoSubjectInfo() const
+{
+	return FPhotoSubjectInfo(0, 0);
+}
+
+FVector APGTriggerGimmickBase::GetPhotoTargetLocation() const
+{
+	return GetActorLocation();
+}
+
 // Called when the game starts or when spawned
 void APGTriggerGimmickBase::BeginPlay()
 {
@@ -48,6 +64,21 @@ void APGTriggerGimmickBase::BeginPlay()
 
 		InitSoundManager();
 	}
+
+	RefreshPhotoRegistration();
+}
+
+void APGTriggerGimmickBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
+		{
+			Registry->UnregisterSubject(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void APGTriggerGimmickBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -55,6 +86,30 @@ void APGTriggerGimmickBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APGTriggerGimmickBase, SoundManager);
+}
+
+void APGTriggerGimmickBase::RefreshPhotoRegistration()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>();
+	if (!Registry)
+	{
+		return;
+	}
+
+	if (IsPhotographable())
+	{
+		Registry->RegisterSubject(this);
+	}
+	else
+	{
+		Registry->UnregisterSubject(this);
+	}
 }
 
 void APGTriggerGimmickBase::OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

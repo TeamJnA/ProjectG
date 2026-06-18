@@ -32,6 +32,7 @@ class UBoxComponent;
 class UPGVOIPTalker;
 
 class UPGCameraComponent;
+class USceneCaptureComponent2D;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
@@ -129,6 +130,8 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	void OnMouseLeftPressed(const FInputActionValue& Value);
 
 	// Update server camera pitch rotation. It sends client camera to server.
 	UFUNCTION(Server, Reliable)
@@ -586,6 +589,8 @@ public:
 
 	void StopCameraFlash();
 
+	UTextureRenderTarget2D* CapturePhoto();
+
 protected:
 	void InitLensDistortionMaterial();
 	void CameraZoom(const FInputActionValue& Value);
@@ -598,6 +603,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGCameraComponent> CameraComp;
+
+	UPROPERTY(VisibleAnywhere, Category = "Camera|Photo")
+	TObjectPtr<USceneCaptureComponent2D> PhotoCaptureComp;
+
+	UPROPERTY()
+	TObjectPtr<UTextureRenderTarget2D> PhotoRenderTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> CameraModeAction;
@@ -614,34 +625,22 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpotLightComponent> CameraFlashLight;
 
-	// 카메라 알림용
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
-	TObjectPtr<UBoxComponent> PhotoDetectionBox;
-
 	void InitPhotoDetection();
-	void EnablePhotoDetection();
-
-	UFUNCTION()
-	void OnPhotoDetectionBeginOverlap(UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep, 
-		const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnPhotoDetectionEndOverlap(UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex);
-
 	void ValidateNearbyPhotographables();
 
-	UPROPERTY()
-	TArray<TWeakObjectPtr<AActor>> NearbyPhotographables;
-
 	FTimerHandle ValidatePhotoDetectionTimerHandle;
-	FTimerHandle EnablePhotoDetectionTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Photo")
+	float PhotoBrightnessGain = 12.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Photo")
+	float PhotoSaturation = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Photo")
+	float PhotoContrast = 0.8f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Photo")
+	int32 PhotoCaptureResolution = 512;
 
 	bool bPhotoDetectionInitialized = false;
 

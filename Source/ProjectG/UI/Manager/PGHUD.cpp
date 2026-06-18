@@ -718,11 +718,86 @@ void APGHUD::UpdateCameraProgress(float Progress)
 	}
 }
 
-void APGHUD::DisplayPhotoResult(const TArray<FPhotoSubjectInfo>& Results, int32 TotalScore)
+void APGHUD::DisplayCaptureLog(const TArray<FPhotoCaptureResult>& Entries)
+{
+	if (!CameraWidget)
+	{
+		return;
+	}
+
+	TArray<FPhotoCaptureResult> NewOnes;
+	for (const FPhotoCaptureResult& Entry : Entries)
+	{
+		if (Entry.bNewRecord)
+		{
+			NewOnes.Add(Entry);
+		}
+	}
+
+	NewOnes.StableSort([](const FPhotoCaptureResult& A, const FPhotoCaptureResult& B)
+	{
+		return PhotoID::GetCategory(A.SubjectID) < PhotoID::GetCategory(B.SubjectID);
+	});
+
+	TArray<FCaptureLogLine> Lines;
+	if (NewOnes.Num() > 0)
+	{
+		for (const FPhotoCaptureResult& Entry : NewOnes)
+		{
+			if (PhotoID::IsMonster(Entry.SubjectID))
+			{
+				if (Entry.bNewSpecies)
+				{
+					FCaptureLogLine SpeciesLine;
+					SpeciesLine.bValid = true;
+					SpeciesLine.Text = FText::FromString(TEXT("+ New enemy record"));
+					Lines.Add(SpeciesLine);
+				}
+
+				FCaptureLogLine BehaviorLine;
+				BehaviorLine.bValid = true;
+				BehaviorLine.Text = FText::FromString(TEXT("+ New enemy behavior record"));
+				Lines.Add(BehaviorLine);
+			}
+			else
+			{
+				const TCHAR* Cat =
+					PhotoID::IsAnomaly(Entry.SubjectID) ? TEXT("anomaly") :
+					PhotoID::IsRoom(Entry.SubjectID)	? TEXT("room") : TEXT("");
+
+				FCaptureLogLine Line;
+				Line.bValid = true;
+				Line.Text = FText::FromString(FString::Printf(TEXT("+ New %s record"), Cat));
+				Lines.Add(Line);
+			}
+		}
+	}
+	else
+	{
+		FCaptureLogLine Line;
+		Line.bValid = false;
+		Line.Text = (Entries.Num() == 0)
+			? FText::FromString(TEXT("X Nothing recorded"))
+			: FText::FromString(TEXT("X Not valid record"));
+		Lines.Add(Line);
+	}
+
+	CameraWidget->FeedCaptureLines(Lines);
+}
+
+void APGHUD::BeginCaptureSequence(UTextureRenderTarget2D* PhotoRT)
 {
 	if (CameraWidget)
 	{
-		CameraWidget->DisplayPhotoResult(Results, TotalScore);
+		CameraWidget->BeginCapture(PhotoRT);
+	}
+}
+
+void APGHUD::StartCaptureCooldown(float Duration)
+{
+	if (CameraWidget)
+	{
+		CameraWidget->StartCaptureCooldown(Duration);
 	}
 }
 
