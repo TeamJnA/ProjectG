@@ -42,8 +42,8 @@ APGStartRoomLoop34::APGStartRoomLoop34()
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(-50.0f, -1160.0f, 240.0f));
 
-	OverlapBox->SetRelativeLocation(FVector(600.0f, -950.0f, 505.0f));
-	OverlapBox->SetRelativeScale3D(FVector(18.35f, 39.0f, 15.5f));
+	OverlapBox->SetRelativeLocation(FVector(600.0f, -1200.0f, 505.0f));
+	OverlapBox->SetRelativeScale3D(FVector(18.35f, 47.0f, 15.5f));
 
 	OverlapBox1 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox1"));
 	OverlapBox1->SetupAttachment(OverlapBoxFolder);

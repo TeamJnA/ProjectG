@@ -22,7 +22,6 @@ APGPhotoSpot::APGPhotoSpot()
     PhotoTargetBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     PhotoTargetBox->SetCollisionResponseToAllChannels(ECR_Ignore);
     PhotoTargetBox->SetCollisionResponseToChannel(ECC_GameTraceChannel7, ECR_Block);
-    PhotoTargetBox->SetCollisionResponseToChannel(ECC_GameTraceChannel8, ECR_Overlap);
     PhotoTargetBox->SetGenerateOverlapEvents(true);
     PhotoTargetBox->SetHiddenInGame(true);
 }
