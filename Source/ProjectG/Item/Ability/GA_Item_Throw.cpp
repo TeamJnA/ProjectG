@@ -96,7 +96,9 @@ void UGA_Item_Throw::MouseRight()
 		UE_LOG(LogPGAbility, Warning, TEXT("AbilitySystemComponent cannot found in %s ::RightInputCanceled"), *GetName());
 		return;
 	}
-	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionTag))
+	FGameplayTag CameraOnTag = FGameplayTag::RequestGameplayTag(FName("Gameplay.State.CameraOn"));
+	if (AbilitySystemComponent->HasMatchingGameplayTag(HandActionTag) ||
+		AbilitySystemComponent->HasMatchingGameplayTag(CameraOnTag))
 	{
 		UE_LOG(LogPGAbility, Log, TEXT("Cannot do %s ::RightInputCanceled during hand action."), *GetName());
 		return;

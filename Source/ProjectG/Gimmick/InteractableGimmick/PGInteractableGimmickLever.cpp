@@ -9,6 +9,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Sound/PGSoundManager.h"
 #include "Interface/SoundManagerInterface.h"
+#include "NiagaraComponent.h"
 
 APGInteractableGimmickLever::APGInteractableGimmickLever()
 {
@@ -23,6 +24,12 @@ APGInteractableGimmickLever::APGInteractableGimmickLever()
 	GlassPlane = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GlassPlane"));
 	GlassPlane->SetupAttachment(StaticMesh);
 	GlassPlane->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	GlassBreakFX = CreateDefaultSubobject<UNiagaraComponent>(TEXT("GlassBreakFX"));
+	GlassBreakFX->SetupAttachment(StaticMesh);
+
+	GlassBreakFXVector = CreateDefaultSubobject<UArrowComponent>(TEXT("GlassBreakFXVector"));
+	GlassBreakFXVector->SetupAttachment(StaticMesh);
 }
 
 void APGInteractableGimmickLever::BeginPlay()
@@ -179,6 +186,13 @@ void APGInteractableGimmickLever::Multicast_OnInteractionComplete_Implementation
 	{
 		CrackMID->SetScalarParameterValue(ShakeParameterName, ShakeIntensity);
 		CrackMID->SetScalarParameterValue(HoleAmountParamName, 1.0f);
+	}
+
+	if (GlassBreakFX)
+	{
+		GlassBreakFX->SetWorldRotation(GlassBreakFXVector->GetComponentRotation());
+		GlassBreakFX->SetWorldLocation(GlassBreakFXVector->GetComponentLocation());
+		GlassBreakFX->Activate(true);
 	}
 
 	FTimerHandle ShakeEffectTimerHandle;

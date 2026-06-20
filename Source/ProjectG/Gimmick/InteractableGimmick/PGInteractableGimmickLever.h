@@ -8,6 +8,8 @@
 #include "PGInteractableGimmickLever.generated.h"
 
 class APGMirrorRoom;
+class UNiagaraComponent;
+class UArrowComponent;
 
 /**
  * 
@@ -73,6 +75,12 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Crack")
 	TArray<float> CrackStageValues = { 0.8f, 1.6f, 2.4f };
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UNiagaraComponent> GlassBreakFX;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FX", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UArrowComponent> GlassBreakFXVector;
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> CrackMID;
