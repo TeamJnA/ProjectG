@@ -54,6 +54,8 @@ protected:
 	UFUNCTION()
 	void OnEscapeStart(AActor* EscapeStartActor, EExitPointType ExitPointType = EExitPointType::IronDoor);
 
+	void DropEscaperItems(AActor* EscapeStartActor);
+
 	void RegisterExitCamera();
 
 	void BroadcastLockStateChanged();
@@ -66,6 +68,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDrop")
+	TObjectPtr<USceneComponent> ItemDropPointOnExit;
 
 	int32 RegistrationRetries = 0;
 
