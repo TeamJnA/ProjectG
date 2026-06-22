@@ -18,6 +18,7 @@ class UPGConfirmWidget;
 class UPGSessionStatusWidget;
 class UPGSettingMenuWidget;
 class UWidgetSwitcher;
+class UPGMainMenuProfileWidget;
 
 class FOnlineSessionSearchResult;
 class UPGAdvancedFriendsGameInstance;
@@ -83,6 +84,9 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UPGMainMenuProfileWidget> PlayerProfileWidget;
 
 protected:
 	virtual void NativeOnInitialized() override;

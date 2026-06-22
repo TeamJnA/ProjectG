@@ -13,6 +13,8 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "Game/PGGameState.h"
+#include "Player/PGSaveGame.h"
+#include "Type/PGRankTypes.h"
 #include "AudioMixerBlueprintLibrary.h"
 
 #include "PGAdvancedFriendsGameInstance.generated.h"
@@ -22,6 +24,7 @@ class FUniqueNetId;
 class FOnlineSessionSearchResult;
 class UUserWidget;
 class USoundMix;
+class UDataTable;
 
 static const FName SESSION_KEY_CURRENT_PLAYERS = FName(TEXT("CURRENT_PLAYERS"));
 
@@ -252,4 +255,32 @@ private:
 
 	UFUNCTION()
 	void OnStartupDeviceSwapComplete(const FSwapAudioOutputResult& SwapResult);
+
+// Score & Rank
+public:
+	void AddMatchResult(int32 GainedXP);
+	FORCEINLINE int64 GetTotalXP() const { return Profile ? Profile->TotalXP : 0; }
+	FORCEINLINE int32 GetRankIndex() const { return Profile ? Profile->RankIndex : 0; }
+	FORCEINLINE int32 GetGamesCompleted() const { return Profile ? Profile->GamesCompleted : 0; }
+
+	FPGRankProgress GetRankProgressForXP(int64 InXP);
+	FORCEINLINE int64 GetPreMatchTotalXP() const { return PreMatchTotalXP; }
+	FORCEINLINE int32 GetLastGainedXP() const { return LastGainedXP; }
+
+	FText GetRankTitleByIndex(int32 RankIndex);
+
+protected:
+	void LoadProfile();
+	void SaveProfile();
+	int32 ComputeRankIndex(int64 InTotalXP);
+	UDataTable* GetRankTable();
+
+	UPROPERTY()
+	TObjectPtr<UPGSaveGame> Profile;
+
+	UPROPERTY()
+	TObjectPtr<UDataTable> CachedRankTable;
+
+	int64 PreMatchTotalXP = 0;
+	int32 LastGainedXP = 0;
 };

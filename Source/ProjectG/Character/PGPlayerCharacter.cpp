@@ -567,6 +567,8 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 		{
 			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] PossessedBy: Camera Comp is not valid"));
 		}
+
+		TryReportRank();
 	}
 
 	// Turn on headlight
@@ -654,6 +656,8 @@ void APGPlayerCharacter::OnRep_PlayerState()
 		{
 			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] OnRep_PlayerState: Camera Comp is not valid"));
 		}
+
+		TryReportRank();
 	}
 
 	TryInitVoiceSettings();
@@ -2479,5 +2483,29 @@ void APGPlayerCharacter::UpdateBonfireVignetteFade()
 			BonfireVignetteMID->SetScalarParameterValue(FName("VignetteIntensity"), CurrentBonfireVignetteIntensity);
 		}
 		GetWorldTimerManager().ClearTimer(BonfireVignetteFadeTimerHandle);
+	}
+}
+
+void APGPlayerCharacter::TryReportRank()
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		return;
+	}
+	
+	Server_ReportRank(GI->GetRankIndex());
+}
+
+void APGPlayerCharacter::Server_ReportRank_Implementation(int32 RankIndex)
+{
+	if (APGPlayerState* PS = GetPlayerState<APGPlayerState>())
+	{
+		PS->SetDisplayRankIndex(RankIndex);
 	}
 }

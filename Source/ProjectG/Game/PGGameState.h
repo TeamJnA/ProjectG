@@ -181,4 +181,6 @@ private:
 	int32 RemainingBells = 0;
 
 	bool bCurrentUseEerie = false;
+
+	bool bLocalXPAwarded = false;
 };

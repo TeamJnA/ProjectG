@@ -71,7 +71,7 @@ APGElevatorRoom::APGElevatorRoom()
 	ExitElevator->SetRelativeLocation(FVector(906.0f, -1185.0f, 135.0f));
 	ExitElevator->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 
-	PhotoSpotConfig = { PhotoID::Room_Elevator, 100, FVector(910.0f, -1180.0f, 170.0f) };
+	PhotoSpotConfig = { PhotoID::Room_Elevator, 10, FVector(910.0f, -1180.0f, 170.0f) };
 }
 
 void APGElevatorRoom::SpawnPhotoSpots()

@@ -24,10 +24,18 @@
 #include "Player/PGGameUserSettings.h"
 #include "AudioMixerBlueprintLibrary.h"
 
+#include "Game/PGProgressionSetting.h"
+#include "Engine/DataTable.h"
+
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 #include "steam/steam_api.h" 
 #endif
 
+
+namespace
+{
+	const FString ProfileSlotName = TEXT("PGPlayerProfile");
+}
 
 void UPGAdvancedFriendsGameInstance::Init()
 {
@@ -64,6 +72,8 @@ void UPGAdvancedFriendsGameInstance::Init()
 	{
 		Settings->ApplyMicSettings();
 	}
+
+	LoadProfile();
 
 	// Consumable
 	ItemDataMap.Add("Brick", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick")));
@@ -831,4 +841,175 @@ void UPGAdvancedFriendsGameInstance::InviteFriend(const FUniqueNetId& FriendToIn
 			SessionInterfaceRef->SendSessionInviteToFriend(0, NAME_GameSession, FriendToInvite);
 		}
 	}
+}
+
+void UPGAdvancedFriendsGameInstance::LoadProfile()
+{
+	if (UGameplayStatics::DoesSaveGameExist(ProfileSlotName, 0))
+	{
+		Profile = Cast<UPGSaveGame>(UGameplayStatics::LoadGameFromSlot(ProfileSlotName, 0));
+		if (Profile && !Profile->VerifySignature())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GI::LoadProfile: signature invalid, resetting."));
+			Profile = nullptr;
+		}
+	}
+
+	if (!Profile)
+	{
+		Profile = Cast<UPGSaveGame>(UGameplayStatics::CreateSaveGameObject(UPGSaveGame::StaticClass()));
+	}
+}
+
+void UPGAdvancedFriendsGameInstance::SaveProfile()
+{
+	if (!Profile)
+	{
+		return;
+	}
+
+	Profile->Signature = Profile->ComputeSignature();
+	UGameplayStatics::SaveGameToSlot(Profile, ProfileSlotName, 0);
+}
+
+void UPGAdvancedFriendsGameInstance::AddMatchResult(int32 GainedXP)
+{
+	if (!Profile)
+	{
+		return;
+	}
+
+	PreMatchTotalXP = Profile->TotalXP;
+	LastGainedXP = GainedXP;
+
+	Profile->TotalXP += GainedXP;
+	Profile->GamesCompleted++;
+	Profile->RankIndex = ComputeRankIndex(Profile->TotalXP);
+	SaveProfile();
+
+	UE_LOG(LogTemp, Log, TEXT("[Progression] +%d XP, Total:%lld Rank:%d Games:%d"),
+		GainedXP, Profile->TotalXP, Profile->RankIndex, Profile->GamesCompleted);
+}
+
+UDataTable* UPGAdvancedFriendsGameInstance::GetRankTable()
+{
+	if (CachedRankTable)
+	{
+		return CachedRankTable;
+	}
+
+	const UPGProgressionSetting* Settings = GetDefault<UPGProgressionSetting>();
+	if (!Settings)
+	{
+		return nullptr;
+	}
+
+	CachedRankTable = Settings->RankTable.LoadSynchronous();
+	return CachedRankTable;
+}
+
+int32 UPGAdvancedFriendsGameInstance::ComputeRankIndex(int64 InTotalXP)
+{
+	UDataTable* Table = GetRankTable();
+	if (!Table)
+	{
+		return 0;
+	}
+
+	TArray<FPGRankRow*> Rows;
+	Table->GetAllRows<FPGRankRow>(TEXT("ComputeRankIndex"), Rows);
+	Rows.Sort([](const FPGRankRow& A, const FPGRankRow& B)
+	{
+		return A.RequiredTotalXP < B.RequiredTotalXP;
+	});
+
+	int32 Index = 0;
+	for (int32 i = 0; i < Rows.Num(); ++i)
+	{
+		if (InTotalXP >= Rows[i]->RequiredTotalXP)
+		{
+			Index = i;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return Index;
+}
+
+FPGRankProgress UPGAdvancedFriendsGameInstance::GetRankProgressForXP(int64 InXP)
+{
+	FPGRankProgress Out;
+	UDataTable* Table = GetRankTable();
+	if (!Table)
+	{
+		return Out;
+	}
+
+	TArray<FPGRankRow*> Rows;
+	Table->GetAllRows<FPGRankRow>(TEXT("GetRankProgressForXP"), Rows);
+	if (Rows.Num() == 0)
+	{
+		return Out;
+	}
+
+	Rows.Sort([](const FPGRankRow& A, const FPGRankRow& B)
+	{
+		return A.RequiredTotalXP < B.RequiredTotalXP;
+	});
+
+	int32 Index = 0;
+	for (int32 i = 0; i < Rows.Num(); ++i)
+	{
+		if (InXP >= Rows[i]->RequiredTotalXP)
+		{
+			Index = i;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	Out.RankIndex = Index;
+	Out.RankTitle = Rows[Index]->RankTitle;
+	Out.CurrentRankFloorXP = Rows[Index]->RequiredTotalXP;
+
+	if (Index + 1 < Rows.Num())
+	{
+		Out.NextRankXP = Rows[Index + 1]->RequiredTotalXP;
+		Out.bIsMaxRank = false;
+	}
+	else
+	{
+		Out.NextRankXP = Out.CurrentRankFloorXP;
+		Out.bIsMaxRank = true;
+	}
+
+	return Out;
+}
+
+FText UPGAdvancedFriendsGameInstance::GetRankTitleByIndex(int32 RankIndex)
+{
+	UDataTable* Table = GetRankTable();
+	if (!Table)
+	{
+		return FText::GetEmpty();
+	}
+
+	TArray<FPGRankRow*> Rows;
+	Table->GetAllRows<FPGRankRow>(TEXT("GetRankTitleByIndex"), Rows);
+	Rows.Sort([](const FPGRankRow&A , const FPGRankRow& B)
+	{
+		return A.RequiredTotalXP < B.RequiredTotalXP;
+	});
+
+	if (Rows.IsValidIndex(RankIndex))
+	{
+		return Rows[RankIndex]->RankTitle;
+	}
+
+	return FText::GetEmpty();
 }

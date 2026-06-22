@@ -49,10 +49,10 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> StatusText;
 	
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> ScoreText;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UBorder> HighlightBorder;
 
 	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))

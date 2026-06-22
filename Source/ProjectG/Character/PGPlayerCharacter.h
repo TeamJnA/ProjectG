@@ -665,4 +665,15 @@ private:
 	FTimerHandle BonfireVignetteFadeTimerHandle;
 	float CurrentBonfireVignetteIntensity = 0.0f;
 	float TargetBonfireVignetteIntensity = 0.0f;
+
+///
+///********* Rank Badge ******************
+///
+	
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_ReportRank(int32 RankIndex);
+
+protected:
+	void TryReportRank();
 };

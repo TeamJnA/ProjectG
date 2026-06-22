@@ -15,6 +15,7 @@ class UHorizontalBox;
 class UButton;
 class UImage;
 class UPGConfirmWidget;
+class UPGFinalScoreProfileWidget;
 class UPGAdvancedFriendsGameInstance;
 class APGGameState;
 
@@ -46,6 +47,8 @@ protected:
 	void PlaySequentialStampEffects();
 	void StampNextEntry();
 
+	void PlayLocalProfileXP();
+
 	UFUNCTION()
 	void OnReturnToMainMenuButtonClicked();
 
@@ -73,6 +76,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UHorizontalBox> ReadyCheckboxContainer;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UPGFinalScoreProfileWidget> PlayerProfileWidget;
+
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TObjectPtr<UMaterialInterface> CheckboxEmptyImage;
 
@@ -95,4 +101,5 @@ private:
 	FTimerHandle StampTimerHandle;
 	int32 CurrentStampIndex = 0;
 	bool bStampCompleted = false;
+	bool bXPAnimPlayed = false;
 };

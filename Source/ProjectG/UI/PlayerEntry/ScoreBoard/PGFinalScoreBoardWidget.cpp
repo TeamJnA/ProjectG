@@ -3,6 +3,7 @@
 
 #include "UI/PlayerEntry/ScoreBoard/PGFinalScoreBoardWidget.h"
 #include "UI/PlayerEntry/PGPlayerEntryWidget.h"
+#include "UI/PlayerEntry/PGFinalScoreProfileWidget.h"
 #include "UI/Menu/PGConfirmWidget.h"
 #include "Components/VerticalBox.h"
 #include "Components/HorizontalBox.h"
@@ -159,6 +160,11 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 			ReturnToMainMenuButton->SetVisibility(ESlateVisibility::Visible);
 		}
 
+		if (PlayerProfileWidget)
+		{
+			PlayerProfileWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+
 		RebuildReadyCheckboxes();
 	}
 	else
@@ -171,6 +177,11 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 		if (ReturnToMainMenuButton)
 		{
 			ReturnToMainMenuButton->SetVisibility(ESlateVisibility::Hidden);
+		}
+
+		if (PlayerProfileWidget)
+		{
+			PlayerProfileWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 
 		PlaySequentialStampEffects();
@@ -298,7 +309,13 @@ void UPGFinalScoreBoardWidget::StampNextEntry()
 			ReturnToMainMenuButton->SetVisibility(ESlateVisibility::Visible);
 		}
 
+		if (PlayerProfileWidget)
+		{
+			PlayerProfileWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+
 		RebuildReadyCheckboxes();
+		PlayLocalProfileXP();
 
 		return;
 	}
@@ -309,6 +326,22 @@ void UPGFinalScoreBoardWidget::StampNextEntry()
 	}
 
 	CurrentStampIndex++;
+}
+
+void UPGFinalScoreBoardWidget::PlayLocalProfileXP()
+{
+	if (bXPAnimPlayed || !PlayerProfileWidget)
+	{
+		return;
+	}
+	bXPAnimPlayed = true;
+
+	APGPlayerState* PS = nullptr;
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		PS = PC->GetPlayerState<APGPlayerState>();
+	}
+	PlayerProfileWidget->PlayResult(PS);
 }
 
 /*

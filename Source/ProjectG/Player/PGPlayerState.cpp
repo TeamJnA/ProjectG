@@ -56,6 +56,7 @@ void APGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(APGPlayerState, PhotoScore);
 	DOREPLIFETIME(APGPlayerState, CameraBattery);
 	DOREPLIFETIME(APGPlayerState, CapturedSubjectIDArray);
+	DOREPLIFETIME(APGPlayerState, DisplayRankIndex);
 }
 
 void APGPlayerState::OnRep_PlayerStateUpdated()
@@ -217,4 +218,9 @@ TArray<FPhotoCaptureResult> APGPlayerState::AddPhotoResult(const TArray<FPhotoSu
 void APGPlayerState::OnRep_CapturedSubjects()
 {
 	OnCapturedSubjectsChanged.Broadcast();
+}
+
+void APGPlayerState::OnRep_DisplayRank()
+{
+	OnDisplayRankChanged.Broadcast();
 }

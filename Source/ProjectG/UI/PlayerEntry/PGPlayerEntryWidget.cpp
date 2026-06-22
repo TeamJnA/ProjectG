@@ -18,7 +18,7 @@
 */
 void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D* InAvatarTexture, EPlayerEntryContext Context)
 {	
-	if (!InPlayerState || !PlayerNameText || !PlayerAvatar || !StatusText || !ScoreText)
+	if (!InPlayerState || !PlayerNameText || !PlayerAvatar || !StatusText)
 	{
 		return;
 	}
@@ -117,9 +117,19 @@ void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D*
 	StatusText->SetColorAndOpacity(StatusColor);
 	StatusText->SetVisibility(bShowStatus ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 
-	int32 Score = InPlayerState->GetPhotoScore();
-	ScoreText->SetText(FText::FromString(FString::Printf(TEXT("%s"), *PhotoGrade::GetGrade(Score))));
-	ScoreText->SetVisibility(bShowScore ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	if (ScoreText)
+	{
+		if (InPlayerState->IsEscaping())
+		{
+			int32 Score = InPlayerState->GetPhotoScore();
+			ScoreText->SetText(FText::FromString(PhotoGrade::GetGrade(Score)));
+		}
+		else
+		{
+			ScoreText->SetText(FText::FromString(TEXT("X")));
+		}
+		ScoreText->SetVisibility(bShowScore ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 
 	UnhighlightEntry();
 }

@@ -114,7 +114,7 @@ APGMirrorRoom::APGMirrorRoom()
 	DoorCloseSound = FName(TEXT("LEVEL_MirrorRoom_DoorClose"));
 	DoorOpenSound = FName(TEXT("LEVEL_MirrorRoom_DoorOpen"));
 
-	PhotoSpotConfig = { PhotoID::Room_Ghost, 100, FVector(1720.0f, 0.0f, 100.0f) };
+	PhotoSpotConfig = { PhotoID::Room_Ghost, 10, FVector(1720.0f, 0.0f, 100.0f) };
 }
 
 void APGMirrorRoom::SpawnPhotoSpots()

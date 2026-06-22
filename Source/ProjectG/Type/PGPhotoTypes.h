@@ -21,11 +21,13 @@ namespace PhotoID
     // Blind
     constexpr int32 Blind_Exploring = 111;
     constexpr int32 Blind_Chasing = 112;
+    constexpr int32 Blind_Attacking = 113;
 
     // Charger
     constexpr int32 Charger_Exploring = 121;
     constexpr int32 Charger_Staring = 122;
     constexpr int32 Charger_Attacking = 123;
+    constexpr int32 Charger_Killing = 124;
 
     // Ghost
     constexpr int32 Ghost_Exploring = 131;
@@ -55,35 +57,112 @@ namespace PhotoID
 
 namespace PhotoGrade
 {
-    FORCEINLINE FString GetGrade(int32 Score)
+    enum class EGrade : uint8 { F, D, C, B, A, S };
+
+    FORCEINLINE EGrade GetGradeEnum(int32 Score)
     {
-        if (Score >= 1000)
+        if (Score >= 120)
         {
-            return TEXT("S");
-        }
-
-        if (Score >= 700)
-        {
-            return TEXT("A");
-        }
-
-        if (Score >= 500)
-        {
-            return TEXT("B");
-        }
-
-        if (Score >= 300)
-        {
-            return TEXT("C");
+            return EGrade::S;
         }
 
         if (Score >= 100)
         {
-            return TEXT("D");
+            return EGrade::A;
         }
 
-        return TEXT("F");
+        if (Score >= 60)
+        {
+            return EGrade::B;
+        }
+
+        if (Score >= 40)
+        {
+            return EGrade::C;
+        }
+
+        if (Score >= 20)
+        {
+            return EGrade::D;
+        }
+
+        return EGrade::F;
     }
+
+    FORCEINLINE FString GetGradeText(EGrade Grade)
+    {
+        switch (Grade)
+        {
+            case EGrade::S:
+            {
+                return TEXT("S");
+            }
+
+            case EGrade::A:
+            {
+                return TEXT("A");
+            }
+
+            case EGrade::B:
+            {
+                return TEXT("B");
+            }
+
+            case EGrade::C:
+            {
+                return TEXT("C");
+            }
+
+            case EGrade::D:
+            {
+                return TEXT("D");
+            }
+
+            default:
+            {
+                return TEXT("F");
+            }
+        }
+    }
+
+    FORCEINLINE int32 GetGradeXP(EGrade Grade)
+    {
+        switch (Grade)
+        {
+            case EGrade::S:
+            {
+                return 800;
+            }
+
+            case EGrade::A:
+            {
+                return 500;
+            }
+
+            case EGrade::B:
+            {
+                return 300;
+            }
+
+            case EGrade::C:
+            {
+                return 200;
+            }
+
+            case EGrade::D:
+            {
+                return 150;
+            }
+
+            default:
+            {
+                return 100;   // F
+            }
+        }
+    }
+
+    FORCEINLINE FString GetGrade(int32 Score) { return GetGradeText(GetGradeEnum(Score)); }
+    FORCEINLINE int32 GetGradeXPFromScore(int32 Score) { return GetGradeXP(GetGradeEnum(Score)); }
 }
 
 USTRUCT(BlueprintType)
@@ -141,7 +220,7 @@ struct FPhotoSpotConfig
     int32 PhotoID = 0;
 
     UPROPERTY(EditDefaultsOnly)
-    int32 PhotoScore = 100;
+    int32 PhotoScore = 10;
 
     UPROPERTY(EditDefaultsOnly)
     FVector Offset = FVector::ZeroVector;

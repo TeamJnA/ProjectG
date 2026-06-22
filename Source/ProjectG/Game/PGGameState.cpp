@@ -20,6 +20,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/PGAttributeSet.h"
+#include "Type/PGPhotoTypes.h"
 
 
 void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -205,13 +206,29 @@ void APGGameState::Multicast_InitFinalScoreBoardWidget_Implementation()
 	UE_LOG(LogTemp, Warning, TEXT("GS::Multicast_InitFinalScoreBoardWidget_Implementation: HasAuthority = %d"), HasAuthority());
 
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (PC)
+	if (!PC)
 	{
-		APGPlayerController* PGPC = Cast<APGPlayerController>(PC);
-		if (PGPC)
+		return;
+	}
+
+	if (!bLocalXPAwarded)
+	{
+		bLocalXPAwarded = true;
+		if (APGPlayerState* PS = PC->GetPlayerState<APGPlayerState>())
 		{
-			PGPC->InitFinalScoreBoardWidget();
+			if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+			{
+				const int32 GainedXP = PS->IsEscaping()
+					? PhotoGrade::GetGradeXPFromScore(PS->GetPhotoScore())
+					: 0;
+				GI->AddMatchResult(GainedXP);
+			}
 		}
+	}
+
+	if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+	{
+		PGPC->InitFinalScoreBoardWidget();
 	}
 }
 

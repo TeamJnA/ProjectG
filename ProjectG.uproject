@@ -14,7 +14,8 @@
 				"UMG",
 				"AdvancedSessions",
 				"AIModule",
-				"ChaosCaching"
+				"ChaosCaching",
+				"DeveloperSettings"
 			]
 		}
 	],

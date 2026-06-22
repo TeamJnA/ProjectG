@@ -12,12 +12,14 @@
 #include "UI/Menu/PGConfirmWidget.h"
 #include "UI/Menu/PGSessionStatusWidget.h"
 #include "UI/Menu/PGSettingMenuWidget.h"
+#include "UI/PlayerEntry/PGMainMenuProfileWidget.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "Online/OnlineSessionNames.h"
 #include "Player/PGLobbyPlayerController.h"
+#include "Player/PGPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 
 void UPGMainMenuWidget::NativeOnInitialized()
@@ -101,6 +103,16 @@ void UPGMainMenuWidget::NativeConstruct()
 		0.5f,
 		false
 	);
+
+	if (PlayerProfileWidget)
+	{
+		APGPlayerState* PS = nullptr;
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			PS = PC->GetPlayerState<APGPlayerState>();
+		}
+		PlayerProfileWidget->SetupStatic(PS);
+	}
 }
 
 void UPGMainMenuWidget::NativeDestruct()

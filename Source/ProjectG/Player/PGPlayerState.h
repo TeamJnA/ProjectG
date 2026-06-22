@@ -65,8 +65,13 @@ public:
 
 	FORCEINLINE const TArray<int32>& GetCapturedIDs() const { return CapturedSubjectIDArray; }
 
+	FORCEINLINE int32 GetDisplayRankIndex() const { return DisplayRankIndex; }
+	FORCEINLINE void SetDisplayRankIndex(int32 InIndex) { DisplayRankIndex = InIndex; OnRep_DisplayRank(); }
+
 	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
 	FOnCapturedSubjectsChangedDelegate OnCapturedSubjectsChanged;
+
+	FOnPlayerStateUpdatedDelegate OnDisplayRankChanged;
 
 protected:
 	virtual void BeginPlay() override;
@@ -96,6 +101,12 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_PhotoScoreUpdated)
 	int32 PhotoScore = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRep_DisplayRank)
+	int32 DisplayRankIndex = 0;
+
+	UFUNCTION()
+	void OnRep_DisplayRank();
 
 	UPROPERTY(Replicated)
 	EExitPointType ExitPoint = EExitPointType::None;

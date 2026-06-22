@@ -41,7 +41,7 @@ bool APGMirrorGhostCharacter::IsPhotographable() const
 
 FPhotoSubjectInfo APGMirrorGhostCharacter::GetPhotoSubjectInfo() const
 {
-	return FPhotoSubjectInfo(PhotoID::MirrorGhost, 150);
+	return FPhotoSubjectInfo(PhotoID::MirrorGhost, 10);
 }
 
 FVector APGMirrorGhostCharacter::GetPhotoTargetLocation() const

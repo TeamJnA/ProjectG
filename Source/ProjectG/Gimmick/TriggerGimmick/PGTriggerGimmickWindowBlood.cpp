@@ -26,7 +26,7 @@ bool APGTriggerGimmickWindowBlood::IsPhotographable() const
 
 FPhotoSubjectInfo APGTriggerGimmickWindowBlood::GetPhotoSubjectInfo() const
 {
-    return FPhotoSubjectInfo(PhotoID::WindowBlood, 50);
+    return FPhotoSubjectInfo(PhotoID::WindowBlood, 10);
 }
 
 FVector APGTriggerGimmickWindowBlood::GetPhotoTargetLocation() const

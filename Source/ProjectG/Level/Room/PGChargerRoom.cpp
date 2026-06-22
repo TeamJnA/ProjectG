@@ -39,9 +39,9 @@ APGChargerRoom::APGChargerRoom()
 	RoomMesh->SetRelativeLocation(FVector(946.5f, -300.1f, -25.1f));
 
 	PhotoSpotConfigs = {
-		{ PhotoID::Room_Charger, 100, FVector(730.0f, 400.0f, 480.0f) },
-		{ PhotoID::Room_Charger, 100, FVector(820.0f, 10.0f, 590.0f) },
-		{ PhotoID::Room_Charger, 100, FVector(1430.0f, -1290.0f, 620.0f) }
+		{ PhotoID::Room_Charger, 10, FVector(730.0f, 400.0f, 480.0f) },
+		{ PhotoID::Room_Charger, 10, FVector(820.0f, 10.0f, 590.0f) },
+		{ PhotoID::Room_Charger, 10, FVector(1430.0f, -1290.0f, 620.0f) }
 	};
 }
 

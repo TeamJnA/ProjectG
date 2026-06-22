@@ -136,15 +136,21 @@ FPhotoSubjectInfo APGChargerCharacter::GetPhotoSubjectInfo() const
 		case E_PGChargerState::Adjusting:
 		{
 			ID = PhotoID::Charger_Staring;
-			Score = 50;
+			Score = 10;
 			break;
 		}
 
 		case E_PGChargerState::Attacking:
-		case E_PGChargerState::Killing:
 		{
 			ID = PhotoID::Charger_Attacking;
-			Score = 70;
+			Score = 5;
+			break;
+		}
+
+		case E_PGChargerState::Killing:
+		{
+			ID = PhotoID::Charger_Killing;
+			Score = 5;
 			break;
 		}
 	}

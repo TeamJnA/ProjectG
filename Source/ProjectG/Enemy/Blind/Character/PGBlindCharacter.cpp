@@ -53,21 +53,29 @@ FPhotoSubjectInfo APGBlindCharacter::GetPhotoSubjectInfo() const
     int32 ID = 0;
     int32 Score = 0;
 
-    switch (HuntLevel)
+    if (SoundState == EBlindSoundState::Attacking)
     {
-        case EBlindHuntLevel::Exploration:
+        ID = PhotoID::Blind_Attacking;
+        Score = 5;
+    }
+    else
+    {
+        switch (HuntLevel)
         {
-            ID = PhotoID::Blind_Exploring;
-            Score = 10;
-            break;
-        }
+            case EBlindHuntLevel::Exploration:
+            {
+                ID = PhotoID::Blind_Exploring;
+                Score = 10;
+                break;
+            }
 
-        case EBlindHuntLevel::Investigation:
-        case EBlindHuntLevel::Chase:
-        {
-            ID = PhotoID::Blind_Chasing;
-            Score = 50;
-            break;
+            case EBlindHuntLevel::Investigation:
+            case EBlindHuntLevel::Chase:
+            {
+                ID = PhotoID::Blind_Chasing;
+                Score = 10;
+                break;
+            }
         }
     }
 

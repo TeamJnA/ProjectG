@@ -142,7 +142,7 @@ FPhotoSubjectInfo APGGhostCharacter::GetPhotoSubjectInfo() const
         case E_PGGhostState::Attacking:
         {
             ID = PhotoID::Ghost_Chasing;
-            Score = 70;
+            Score = 10;
             break;
         }
     }
