@@ -3,6 +3,7 @@
 
 #include "Level/Exit/PGExitPointBase.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGInventoryComponent.h"
 #include "Player/PGPlayerState.h"
 #include "Game/PGGameMode.h"
 #include "Player/PGPlayerController.h"
@@ -21,6 +22,9 @@ APGExitPointBase::APGExitPointBase()
 	ExitCamera->SetupAttachment(Root);
 
 	ExitPointType = EExitPointType::None;
+
+	ItemDropPointOnExit = CreateDefaultSubobject<USceneComponent>(TEXT("ItemDropPointOnExit"));
+	ItemDropPointOnExit->SetupAttachment(RootComponent);
 }
 
 void APGExitPointBase::BeginPlay()
@@ -112,6 +116,8 @@ void APGExitPointBase::PlaySoundPlayers(const FName& SoundName, const FVector& S
 
 void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType InExitPoint)
 {
+	DropEscaperItems(EscapeStartActor);
+
 	if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(EscapeStartActor))
 	{
 		// 컷신 -> 종료처리 -> 종료 카메라 뷰 변환 -> 스코어보드
@@ -126,6 +132,17 @@ void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType In
 			{
 				PC->Client_StartEscapeSequence(InExitPoint);
 			}
+		}
+	}
+}
+
+void APGExitPointBase::DropEscaperItems(AActor* EscapeStartActor)
+{
+	if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(EscapeStartActor))
+	{
+		if (UPGInventoryComponent* Inventory = PlayerCharacter->GetInventoryComponent())
+		{
+			Inventory->DropAllItems(ItemDropPointOnExit->GetComponentLocation());
 		}
 	}
 }
