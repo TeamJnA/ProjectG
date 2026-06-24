@@ -2153,10 +2153,12 @@ void APGPlayerCharacter::Server_ReportVoiceNoise_Implementation(float Amplitude)
 	);
 
 	bIsTalking = true;
+	OnRep_IsTalking();
 	GetWorldTimerManager().ClearTimer(VoiceMonitoringTimerHandle);
 	GetWorldTimerManager().SetTimer(VoiceMonitoringTimerHandle, [this]()
 	{
 		bIsTalking = false;
+		OnRep_IsTalking();
 	}, 0.5f, false);
 }
 
@@ -2164,6 +2166,24 @@ void APGPlayerCharacter::StopVoiceCheck()
 {
 	GetWorldTimerManager().ClearTimer(VoiceCheckTimerHandle);
 	bIsTalking = false;
+}
+
+void APGPlayerCharacter::OnRep_IsTalking()
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	if (!CharacterMesh)
+	{
+		return;
+	}
+
+	UMaterialInstanceDynamic* DynamicMaterial = CharacterMesh->CreateAndSetMaterialInstanceDynamic(4);
+
+	if (DynamicMaterial)
+	{
+		float TargetEmissive = bIsTalking ? 10.0f : 1.0f;
+
+		DynamicMaterial->SetScalarParameterValue(FName("RadioEmissive"), TargetEmissive);
+	}
 }
 
 float APGPlayerCharacter::GetCurrentVoiceAmplitude() const

@@ -570,8 +570,11 @@ private:
 
 	float CurrentVoiceAmplitude = 0.0f;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_IsTalking)
 	bool bIsTalking = false;
+
+	UFUNCTION()
+	void OnRep_IsTalking();
 
 public:
 	FORCEINLINE bool IsTalking() const { return bIsTalking; }
