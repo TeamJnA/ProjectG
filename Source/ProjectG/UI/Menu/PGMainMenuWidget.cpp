@@ -10,6 +10,7 @@
 
 #include "UI/Menu/PGSessionSlotWidget.h"
 #include "UI/Menu/PGConfirmWidget.h"
+#include "UI/Menu/PGDifficultySelectWidget.h"
 #include "UI/Menu/PGSessionStatusWidget.h"
 #include "UI/Menu/PGSettingMenuWidget.h"
 #include "UI/PlayerEntry/PGMainMenuProfileWidget.h"
@@ -133,6 +134,11 @@ void UPGMainMenuWidget::NativeDestruct()
 		GI->OnJoinSessionAttemptFinished.RemoveAll(this);
 	}
 
+	if (DifficultySelectWidgetInstance)
+	{
+		DifficultySelectWidgetInstance->OnDifficultySelected.RemoveAll(this);
+	}
+
 	Super::NativeDestruct();
 }
 
@@ -192,12 +198,41 @@ void UPGMainMenuWidget::ClearSessionList()
 
 void UPGMainMenuWidget::OnHostButtonClicked()
 {
-	if (!ConfirmWidgetClass)
+	if (!DifficultySelectWidgetClass)
 	{
 		return;
 	}
 
 	if (SessionStatusWidgetInstance && SessionStatusWidgetInstance->IsInViewport())
+	{
+		return;
+	}
+
+	if (!DifficultySelectWidgetInstance)
+	{
+		DifficultySelectWidgetInstance = CreateWidget<UPGDifficultySelectWidget>(this, DifficultySelectWidgetClass);
+	}
+
+	if (DifficultySelectWidgetInstance)
+	{
+		DifficultySelectWidgetInstance->SetReturnFocusWidget(this);
+		DifficultySelectWidgetInstance->OnDifficultySelected.RemoveAll(this);
+		DifficultySelectWidgetInstance->OnDifficultySelected.AddDynamic(this, &UPGMainMenuWidget::OnDifficultySelected);
+		if (!DifficultySelectWidgetInstance->IsInViewport())
+		{
+			DifficultySelectWidgetInstance->AddToViewport();
+		}
+	}
+}
+
+void UPGMainMenuWidget::OnDifficultySelected(EPGDifficulty SelectedDifficulty)
+{
+	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
+	{
+		GI->SetSelectedDifficulty(SelectedDifficulty);
+	}
+
+	if (!ConfirmWidgetClass)
 	{
 		return;
 	}

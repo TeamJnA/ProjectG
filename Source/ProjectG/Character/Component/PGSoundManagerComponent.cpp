@@ -18,6 +18,11 @@ UPGSoundManagerComponent::UPGSoundManagerComponent()
 
 void UPGSoundManagerComponent::SetSoundManager(APGSoundManager* InSoundManager)
 {
+	if (!InSoundManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetSoundManager: InSoundManager is null"));
+		return;
+	}
 	SoundManager = InSoundManager;
 	UE_LOG(LogTemp, Log, TEXT("SetSoundManager Completely"));
 }

@@ -38,6 +38,7 @@ public:
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
+	void ApplyDifficultyToSight();
 
 	virtual void SetupPerceptionSystem() override;
 
@@ -47,4 +48,7 @@ protected:
 private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
+
+	static constexpr float BaseSightRadius = 2000.0f;
+	static constexpr float BaseLoseSightRadius = 2400.0f;
 };

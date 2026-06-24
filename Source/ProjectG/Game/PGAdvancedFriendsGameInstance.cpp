@@ -138,6 +138,7 @@ void UPGAdvancedFriendsGameInstance::CreateNewSession(FName SessionName, int32 M
 
 	SessionSettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_CURRENT_PLAYERS, 1, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_DIFFICULTY, (int32)SelectedDifficulty, EOnlineDataAdvertisementType::ViaOnlineService);
 
 	SessionInterface->CreateSession(0, SessionName, SessionSettings);
 }

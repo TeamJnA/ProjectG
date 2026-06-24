@@ -8,6 +8,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Type/CharacterTypes.h"
 #include "Type/PGGameTypes.h"
+#include "Type/PGDifficultyTypes.h"
 
 #include "PGGameState.generated.h"
 
@@ -183,4 +184,17 @@ private:
 	bool bCurrentUseEerie = false;
 
 	bool bLocalXPAwarded = false;
+
+public:
+	void InitDifficulty(EPGDifficulty InLevel);
+
+	FORCEINLINE const FPGDifficultySettings& GetDifficulty() const { return CurrentDifficulty; }
+	FORCEINLINE EPGDifficulty GetDifficultyLevel() const { return DifficultyLevel; }
+
+protected:
+	UPROPERTY(Replicated)
+	FPGDifficultySettings CurrentDifficulty;
+
+	UPROPERTY(Replicated)
+	EPGDifficulty DifficultyLevel = EPGDifficulty::Normal;
 };

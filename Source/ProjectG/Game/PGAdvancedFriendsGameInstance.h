@@ -15,6 +15,7 @@
 #include "Game/PGGameState.h"
 #include "Player/PGSaveGame.h"
 #include "Type/PGRankTypes.h"
+#include "Type/PGDifficultyTypes.h"
 #include "AudioMixerBlueprintLibrary.h"
 
 #include "PGAdvancedFriendsGameInstance.generated.h"
@@ -27,6 +28,7 @@ class USoundMix;
 class UDataTable;
 
 static const FName SESSION_KEY_CURRENT_PLAYERS = FName(TEXT("CURRENT_PLAYERS"));
+static const FName SESSION_KEY_DIFFICULTY = FName(TEXT("DIFFICULTY"));
 
 USTRUCT(BlueprintType)
 struct FSteamFriendInfo
@@ -283,4 +285,12 @@ protected:
 
 	int64 PreMatchTotalXP = 0;
 	int32 LastGainedXP = 0;
+
+// Difficulty
+public:
+	FORCEINLINE void SetSelectedDifficulty(EPGDifficulty InDiff) { SelectedDifficulty = InDiff; }
+	FORCEINLINE EPGDifficulty GetSelectedDifficulty() const { return SelectedDifficulty; }
+
+private:
+	EPGDifficulty SelectedDifficulty = EPGDifficulty::Normal;
 };

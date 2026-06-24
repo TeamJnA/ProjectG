@@ -33,6 +33,7 @@ protected:
 	void SetSeed();
 	void SpawnStartRoom();
 	void SpawnLoopCorridor();
+	void SpawnSingleLoopCorridor(TSubclassOf<APGMasterRoom> LoopClass);
 	void SpawnNextRoom();
 	int32 GetRoomDepthFromStart(const APGMasterRoom* Room) const;
 	int32 SelectExitPointWithBalancing();

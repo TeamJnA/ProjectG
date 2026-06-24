@@ -13,6 +13,7 @@ APGStartRoomLoop12::APGStartRoomLoop12()
 
 	LoopStartExit = EStartRoomExit::ExitDir1;
 	LoopEndExit = EStartRoomExit::ExitDir2;
+	bIsSecondFloorLoop = true;
 
 	ExitDir0 = CreateDefaultSubobject<UArrowComponent>(TEXT("ExitDirection0"));
 	ExitDir0->SetupAttachment(ExitPointsFolder);

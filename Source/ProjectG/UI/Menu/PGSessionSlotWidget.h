@@ -34,6 +34,9 @@ protected:
 	TObjectPtr<UTextBlock> SessionNameText;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> DifficultyText;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> PlayerCountText;
 
 	UPROPERTY(meta = (BindWidget))

@@ -5,6 +5,7 @@
 #include "Enemy/Charger/AI/Controller/PGChargerAIController.h"
 #include "Enemy/Charger/AI/E_PGChargerState.h"
 #include "Enemy/Charger/Character/PGChargerCharacter.h"
+#include "Game/PGGameState.h"
 #include "Interface/AttackableTarget.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -111,7 +112,14 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 				float AccTime = BB->GetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime);
 				AccTime += DeltaSeconds;
 				BB->SetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime, AccTime);
-				if (AccTime >= 5.0f)
+
+				float StareThreshold = 5.0f;
+				if (APGGameState* GS = AIC->GetWorld()->GetGameState<APGGameState>())
+				{
+					StareThreshold *= GS->GetDifficulty().ChargerStareTimeMultiplier;
+				}
+
+				if (AccTime >= StareThreshold)
 				{
 					BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Attacking);
 					Charger->SetCurrentState(E_PGChargerState::Attacking);

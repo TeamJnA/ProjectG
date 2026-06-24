@@ -6,6 +6,8 @@
 #include "Components/Button.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "OnlineSessionSettings.h"
+#include "Type/PGDifficultyTypes.h"
+
 
 void UPGSessionSlotWidget::NativeOnInitialized()
 {
@@ -46,6 +48,20 @@ void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult,
 
 		FText PlayerCount = FText::FromString(FString::Printf(TEXT("%d / %d"), CurrentPlayers, MaxPlayers));
 		PlayerCountText->SetText(PlayerCount);
+	}
+
+	if (DifficultyText)
+	{
+		const FOnlineSessionSettings& SessionSettings = SearchResult.Session.SessionSettings;
+		int32 DiffValue = 0; // default: Normal
+		if (SessionSettings.Settings.Contains(SESSION_KEY_DIFFICULTY))
+		{
+			SessionSettings.Settings[SESSION_KEY_DIFFICULTY].Data.GetValue(DiffValue);
+		}
+
+		const EPGDifficulty Diff = (EPGDifficulty)DiffValue;
+		const FString DiffStr = (Diff == EPGDifficulty::Hard) ? TEXT("HARD") : TEXT("NORMAL");
+		DifficultyText->SetText(FText::FromString(DiffStr));
 	}
 
 	if (PingText)

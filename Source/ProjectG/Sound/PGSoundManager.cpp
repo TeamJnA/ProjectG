@@ -4,6 +4,8 @@
 #include "Sound/PGSoundManager.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGSoundManagerComponent.h"
+#include "Game/PGGameState.h"
+#include "Type/PGDifficultyTypes.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DataTable.h"
@@ -84,13 +86,10 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 		return;
 	}
 	
-	const float BaseLoudness = SoundData->SoundLevel;
+	const float BaseLoudness = ApplyDifficultyToNoise(SoundName, (float)SoundData->SoundLevel);
 	const float BaseMaxRange = 200.0f * BaseLoudness;
-
 	const float TargetTotalRange = BaseLoudness * BaseMaxRange;
-
 	const float FinalLoudness = bIntensedSound ? (BaseLoudness + 1.0f) : BaseLoudness;
-
 	// 실제 Sound Range = 200 * SoundPowerLevel * SoundPowerLevel. 
 	// When report Noise, Range will be Loudness * Range.
 	// 따라서 bIntensedSound일 때, 강도(+1)를 높이는 대신, 범위를 역으로 줄여 총합(L*R) 유지
@@ -107,7 +106,7 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 		SoundName
     );
 
-	ReportSelfNoise(Investigator, SoundName);
+	ReportSelfNoise(Investigator, (int32)BaseLoudness);
 
 #if WITH_EDITOR
 	// Draw debug sphere of makenoise range
@@ -127,17 +126,35 @@ void APGSoundManager::PlaySoundWithNoise_Implementation(const FName& SoundName, 
 #endif
 }
 
-void APGSoundManager::ReportSelfNoise(AActor* Investigator, FName SoundName) const
+float APGSoundManager::ApplyDifficultyToNoise(const FName& SoundName, float BaseLevel) const
 {
+	APGGameState* GS = GetWorld() ? GetWorld()->GetGameState<APGGameState>() : nullptr;
+	if (!GS)
+	{
+		return BaseLevel;
+	}
+
+	// 나중에 사운드 구분이 늘면 SoundDataTable에 Normal/Hard SoundLevel 추가하고, row 조회로 교체
+	if (SoundName == FName(TEXT("PLAYER_FootStep_Walk")))
+	{
+		return (float)GS->GetDifficulty().WalkFootstepNoiseLevel;
+	}
+
+	return BaseLevel;
+}
+
+void APGSoundManager::ReportSelfNoise(AActor* Investigator, int32 NoiseLevel) const
+{
+	if (NoiseLevel <= 0)
+	{
+		return;
+	}
+
 	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(Investigator))
 	{
 		if (UPGSoundManagerComponent* SMComp = Char->GetSoundManagerComponent())
 		{
-			const uint8 Level = GetSoundLevel(SoundName);
-			if (Level > 0)
-			{
-				SMComp->Client_ReportSelfNoise(Level);
-			}
+			SMComp->Client_ReportSelfNoise((uint8)NoiseLevel);
 		}
 	}
 }

@@ -35,6 +35,7 @@ public:
 
 	FORCEINLINE EStartRoomExit GetLoopStartExit() const { return LoopStartExit; }
 	FORCEINLINE EStartRoomExit GetLoopEndExit() const { return LoopEndExit; }
+	FORCEINLINE bool IsSecondFloorLoop() const { return bIsSecondFloorLoop; }
 
 	virtual void SpawnPhotoSpots() {}
 
@@ -87,4 +88,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Loop Corridor")
 	EStartRoomExit LoopEndExit = EStartRoomExit::None;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Loop Corridor")
+	bool bIsSecondFloorLoop = false;
 };

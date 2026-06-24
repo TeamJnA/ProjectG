@@ -41,7 +41,8 @@ private:
 
 	void PGPlaySound(const FName& SoundName, const FVector& SoundLocation);
 
-	void ReportSelfNoise(AActor* Investigator, FName SoundName) const;
+	float ApplyDifficultyToNoise(const FName& SoundName, float BaseLevel) const;
+	void ReportSelfNoise(AActor* Investigator, int32 NoiseLevel) const;
 
 	UPROPERTY()
 	TMap<FName, FPGSoundPlayData> SoundDataMap;

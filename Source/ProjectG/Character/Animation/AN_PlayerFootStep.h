@@ -21,8 +21,8 @@ public:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
-	uint8 bIsPlayer : 1;
+	FName FootStepName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
-	FName FootStepName;
+	uint8 bIsPlayer : 1;
 };

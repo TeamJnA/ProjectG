@@ -95,6 +95,11 @@ void APGCharacterBase::ClearPassiveEffects()
 
 void APGCharacterBase::InitSoundManager(APGSoundManager* SoundManagerRef)
 {
+	if (!SoundManagerComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("InitSoundManager: SoundManagerComponent is null"));
+		return;
+	}
 	SoundManagerComponent->SetSoundManager(SoundManagerRef);
 	UE_LOG(LogTemp, Log, TEXT("InitSoundManager"));
 }

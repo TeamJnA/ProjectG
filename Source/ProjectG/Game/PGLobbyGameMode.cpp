@@ -10,6 +10,7 @@
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerState.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 
 #include "Sound/PGSoundManager.h"
 
@@ -25,9 +26,20 @@ void APGLobbyGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UE_LOG(LogTemp, Warning, TEXT("LobbyGM::Beginplay"));
+
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance()))
 	{
 		GI->OpenSession();
+
+		if (GI->LoadGameStateOnTravel() == EGameState::Lobby)
+		{
+			if (APGGameState* GS = GetGameState<APGGameState>())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("LobbyGM::Beginplay: InitDifficulty"));
+				GS->InitDifficulty(GI->GetSelectedDifficulty());
+			}
+		}
 	}
 
 	SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
@@ -303,6 +315,8 @@ void APGLobbyGameMode::SpawnAndPossessPlayer(APlayerController* NewPlayer)
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	UE_LOG(LogTemp, Warning, TEXT("LobbyGM::SpawnAndPossessPlayer: Called for %s"), *GetNameSafe(NewPlayer));
 
 	APGPlayerCharacter* LobbyCharacter = World->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, SpawnTransform, SpawnParams);
 	if (LobbyCharacter)

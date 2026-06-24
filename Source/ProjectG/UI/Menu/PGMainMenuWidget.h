@@ -7,6 +7,7 @@
 
 #include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Type/PGDifficultyTypes.h"
 
 #include "PGMainMenuWidget.generated.h"
 
@@ -19,6 +20,7 @@ class UPGSessionStatusWidget;
 class UPGSettingMenuWidget;
 class UWidgetSwitcher;
 class UPGMainMenuProfileWidget;
+class UPGDifficultySelectWidget;
 
 class FOnlineSessionSearchResult;
 class UPGAdvancedFriendsGameInstance;
@@ -56,10 +58,16 @@ public:
 	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UPGDifficultySelectWidget> DifficultySelectWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGSessionStatusWidget> SessionStatusWidgetClass;
 
 	UPROPERTY()
 	TObjectPtr<UPGConfirmWidget> ConfirmWidgetInstance;
+
+	UPROPERTY()
+	TObjectPtr<UPGDifficultySelectWidget> DifficultySelectWidgetInstance;
 
 	UPROPERTY()
 	TObjectPtr<UPGSessionStatusWidget> SessionStatusWidgetInstance;
@@ -96,6 +104,9 @@ protected:
 
 	UFUNCTION()
 	void OnHostButtonClicked();
+
+	UFUNCTION()
+	void OnDifficultySelected(EPGDifficulty SelectedDifficulty);
 
 	UFUNCTION()
 	void StartHostSession();

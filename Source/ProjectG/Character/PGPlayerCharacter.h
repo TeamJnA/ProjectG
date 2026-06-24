@@ -7,6 +7,7 @@
 
 #include "GameplayTagContainer.h"
 #include "Type/CharacterTypes.h"
+#include "Type/PGDifficultyTypes.h"
 #include "Interface/AttackableTarget.h"
 #include "Interface/InteractableActorInterface.h"
 #include "Interface/HandItemInterface.h"
@@ -676,4 +677,14 @@ public:
 
 protected:
 	void TryReportRank();
+
+///
+///********* Sanity Decrease ******************
+///
+
+protected:
+	void ApplySanityDecreaseByDifficulty();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	TMap<EPGDifficulty, TSubclassOf<UGameplayEffect>> SanityDecreaseEffectsByDifficulty;
 };

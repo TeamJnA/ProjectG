@@ -9,10 +9,11 @@
 
 #include "PGLogChannels.h"
 
+
 UAN_PlayerFootStep::UAN_PlayerFootStep()
 {
-	bIsPlayer = false;
 	FootStepName = NAME_None;
+	bIsPlayer = false;
 }
 
 void UAN_PlayerFootStep::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)

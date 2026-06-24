@@ -500,6 +500,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 	GiveDefaultAbilities();
 	InitDefaultAttributes();
 	GiveAndActivatePassiveEffects();
+	ApplySanityDecreaseByDifficulty();
 
 	// Server controller
 	if (IsLocallyControlled()) 
@@ -2507,5 +2508,35 @@ void APGPlayerCharacter::Server_ReportRank_Implementation(int32 RankIndex)
 	if (APGPlayerState* PS = GetPlayerState<APGPlayerState>())
 	{
 		PS->SetDisplayRankIndex(RankIndex);
+	}
+}
+
+void APGPlayerCharacter::ApplySanityDecreaseByDifficulty()
+{
+	if (!HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+	if (!GS)
+	{
+		return;
+	}
+
+	const TSubclassOf<UGameplayEffect>* GEPtr = SanityDecreaseEffectsByDifficulty.Find(GS->GetDifficultyLevel());
+	if (!GEPtr || !*GEPtr)
+	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("ApplySanityDecreaseByDifficulty: No GE for difficulty"));
+		return;
+	}
+
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	Context.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(*GEPtr, 1.0f, Context);
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 	}
 }

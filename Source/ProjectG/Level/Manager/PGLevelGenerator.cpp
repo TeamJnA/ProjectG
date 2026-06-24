@@ -32,6 +32,7 @@
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameMode.h"
 #include "Game/PGGameState.h"
+#include "Type/PGDifficultyTypes.h"
 
 
 // Sets default values
@@ -276,19 +277,71 @@ void APGLevelGenerator::SpawnStartRoom()
 void APGLevelGenerator::SpawnLoopCorridor()
 {
 	UWorld* World = GetWorld();
-	if (!World || !StartRoom)
+	if (!World || !StartRoom || LoopCorridorClassArray.IsEmpty())
 	{
 		return;
 	}
 
-	if (LoopCorridorClassArray.IsEmpty())
+	EPGDifficulty Diff = EPGDifficulty::Normal;
+	if (APGGameState* GS = World->GetGameState<APGGameState>())
 	{
-		return;
+		Diff = GS->GetDifficultyLevel();
 	}
 
-	const int32 Index = UKismetMathLibrary::RandomIntegerFromStream(Seed, LoopCorridorClassArray.Num());
-	TSubclassOf<APGMasterRoom> LoopClass = LoopCorridorClassArray[Index];
-	if (!LoopClass)
+	// 1Ãþ/2Ãþ ·çÇÁ Å¬·¡½º ºÐ·ù
+	TArray<TSubclassOf<APGMasterRoom>> Floor1Loops;
+	TSubclassOf<APGMasterRoom> Floor2Loop = nullptr;
+	for (const TSubclassOf<APGMasterRoom>& LoopClass : LoopCorridorClassArray)
+	{
+		if (!LoopClass)
+		{
+			continue;
+		}
+
+		const APGMasterRoom* DefaultLoop = LoopClass->GetDefaultObject<APGMasterRoom>();
+		if (!DefaultLoop)
+		{
+			continue;
+		}
+
+		if (DefaultLoop->IsSecondFloorLoop())
+		{
+			Floor2Loop = LoopClass;
+		}
+		else
+		{
+			Floor1Loops.Add(LoopClass);
+		}
+	}
+
+	if (Diff == EPGDifficulty::Hard)
+	{
+		// 2Ãþ È®Á¤ + 1Ãþ 3°³ Áß ·£´ý 1°³
+		if (Floor2Loop)
+		{
+			SpawnSingleLoopCorridor(Floor2Loop);
+		}
+		if (Floor1Loops.Num() > 0)
+		{
+			const int32 Idx = UKismetMathLibrary::RandomIntegerFromStream(Seed, Floor1Loops.Num());
+			SpawnSingleLoopCorridor(Floor1Loops[Idx]);
+		}
+	}
+	else // Normal: ·£´ý 1°³
+	{
+		const int32 Total = LoopCorridorClassArray.Num();
+		if (Total > 0)
+		{
+			const int32 Idx = UKismetMathLibrary::RandomIntegerFromStream(Seed, Total);
+			SpawnSingleLoopCorridor(LoopCorridorClassArray[Idx]);
+		}
+	}
+}
+
+void APGLevelGenerator::SpawnSingleLoopCorridor(TSubclassOf<APGMasterRoom> LoopClass)
+{
+	UWorld* World = GetWorld();
+	if (!World || !StartRoom || !LoopClass)
 	{
 		return;
 	}
@@ -301,7 +354,6 @@ void APGLevelGenerator::SpawnLoopCorridor()
 
 	const EStartRoomExit StartExitEnum = DefaultLoop->GetLoopStartExit();
 	const EStartRoomExit EndExitEnum = DefaultLoop->GetLoopEndExit();
-
 	if (StartExitEnum == EStartRoomExit::None || EndExitEnum == EStartRoomExit::None)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnLoopCorridor: Loop class has no exit points configured"));

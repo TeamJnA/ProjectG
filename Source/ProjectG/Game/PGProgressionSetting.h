@@ -20,6 +20,9 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "Rank")
 	TSoftObjectPtr<UDataTable> RankTable;
 
+	UPROPERTY(config, EditAnywhere, Category = "Difficulty")
+	TSoftObjectPtr<UDataTable> DifficultyTable;
+
 	virtual FName GetContainerName() const override { return TEXT("Project"); }
 	virtual FName GetCategoryName() const override { return TEXT("Game"); }
 };

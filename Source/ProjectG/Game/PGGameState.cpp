@@ -5,6 +5,7 @@
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGLobbyGameMode.h"
+#include "Game/PGProgressionSetting.h"
 #include "Player/PGPlayerController.h"
 #include "Player/PGPlayerState.h"
 #include "Character/PGPlayerCharacter.h"
@@ -28,6 +29,8 @@ void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGGameState, CurrentGameState);
 	DOREPLIFETIME(APGGameState, CurrentMaxSanityDecreaseCount);
+	DOREPLIFETIME(APGGameState, DifficultyLevel);
+	DOREPLIFETIME(APGGameState, CurrentDifficulty);
 }
 
 void APGGameState::BeginPlay()
@@ -218,9 +221,11 @@ void APGGameState::Multicast_InitFinalScoreBoardWidget_Implementation()
 		{
 			if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 			{
-				const int32 GainedXP = PS->IsEscaping()
+				int32 GainedXP = PS->IsEscaping()
 					? PhotoGrade::GetGradeXPFromScore(PS->GetPhotoScore())
 					: 0;
+
+				GainedXP = FMath::RoundToInt(GainedXP * GetDifficulty().XPMultiplier);
 				GI->AddMatchResult(GainedXP);
 			}
 		}
@@ -522,13 +527,15 @@ void APGGameState::StartMaxSanityDecreaseTimer()
 		return;
 	}
 
+	const float DiffInterval = GetDifficulty().MaxSanityDecreaseInterval;
+	const float Interval = (DiffInterval > 0.0f) ? DiffInterval : MaxSanityDecreaseInterval;
 	GetWorld()->GetTimerManager().SetTimer(
 		MaxSanityDecreaseTimerHandle,
 		this,
 		&APGGameState::OnMaxSanityDecreaseTick,
-		MaxSanityDecreaseInterval,
+		Interval,
 		true,
-		MaxSanityDecreaseInterval
+		Interval
 	);
 }
 
@@ -637,5 +644,25 @@ void APGGameState::Multicast_PlaySanityBellSequence_Implementation(int32 BellCou
 			BellInterval,
 			true
 		);
+	}
+}
+
+void APGGameState::InitDifficulty(EPGDifficulty InLevel)
+{
+	DifficultyLevel = InLevel;
+
+	const UPGProgressionSetting* Settings = GetDefault<UPGProgressionSetting>();
+	UDataTable* Table = Settings ? Settings->DifficultyTable.LoadSynchronous() : nullptr;
+	if (!Table)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GS::InitDifficulty: DifficultyTable not set"));
+		return;
+	}
+
+	static const TCHAR* RowNames[] = { TEXT("Normal"), TEXT("Hard") };
+	const TCHAR* RowName = RowNames[(uint8)InLevel];
+	if (FPGDifficultySettings* Row = Table->FindRow<FPGDifficultySettings>(FName(RowName), TEXT("InitDifficulty")))
+	{
+		CurrentDifficulty = *Row;
 	}
 }

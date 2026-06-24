@@ -2,6 +2,7 @@
 
 
 #include "Enemy/Charger/AI/Controller/PGChargerAIController.h"
+#include "Game/PGGameState.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -31,6 +32,29 @@ void APGChargerAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	Blackboard->SetValueAsEnum(BlackboardKey_AIState, (uint8)E_PGChargerState::Exploring);
+	ApplyDifficultyToSight();
+}
+
+void APGChargerAIController::ApplyDifficultyToSight()
+{
+	if (!SightConfig)
+	{
+		return;
+	}
+
+	float SightMult = 1.0f;
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		SightMult = GS->GetDifficulty().ChargerSightRangeMultiplier;
+	}
+
+	SightConfig->SightRadius = BaseSightRadius * SightMult;
+	SightConfig->LoseSightRadius = BaseLoseSightRadius * SightMult;
+
+	if (UAIPerceptionComponent* Perception = GetPerceptionComponent())
+	{
+		Perception->ConfigureSense(*SightConfig);   // 런타임 변경 반영 필수
+	}
 }
 
 void APGChargerAIController::SetupPerceptionSystem()
@@ -39,8 +63,8 @@ void APGChargerAIController::SetupPerceptionSystem()
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 	if (SightConfig)
 	{
-		SightConfig->SightRadius = 2000.0f;
-		SightConfig->LoseSightRadius = 2400.0f;
+		SightConfig->SightRadius = BaseSightRadius;
+		SightConfig->LoseSightRadius = BaseLoseSightRadius;
 		SightConfig->PeripheralVisionAngleDegrees = 80.0f;
 
 		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
