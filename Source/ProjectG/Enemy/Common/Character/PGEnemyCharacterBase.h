@@ -38,7 +38,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")
 	TObjectPtr<UBoxComponent> TouchCollider;
 
-	// Notify target actor that attack is finished
+	// Notify target actor that attack is Start/finished
+	void NotifyAttackStart();
 	void NotifyAttackEnded();
 
 	// IGenericTeamAgentInterface~
@@ -83,6 +84,9 @@ protected:
 	FORCEINLINE void SetDoorBreak(bool NewDoorOpen) { bDoorBreakOpen = NewDoorOpen; }
 
 	bool bDoorBreakOpen;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FName AttackFinishSound = FName("");
 
 public:
 	void ForceOpenDoorsAroundCharacter();

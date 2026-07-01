@@ -13,19 +13,16 @@ void UANS_BlindBite::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 	float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
-	
 
-	/*
-	AActor* OwnerActor = MeshComp->GetOwner();
-	
-	if (APGBlindCharacter* Blind = Cast<APGBlindCharacter>(OwnerActor))
+	if (MeshComp)
 	{
-		if (Blind->BiteCollider)
+		AActor* OwnerActor = MeshComp->GetOwner();
+		if (APGBlindCharacter* Blind = Cast<APGBlindCharacter>(OwnerActor))
 		{
-			Blind->BiteCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			UE_LOG(LogEnemyANS, Log, TEXT("BlineBite Notify Ended"));
+			Blind->NotifyAttackStart();
 		}
 	}
-	*/
 }
 
 

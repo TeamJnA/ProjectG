@@ -313,6 +313,9 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 
 	SetActorLocation(NewCharacterLocation);
 
+	// TODO : Play attacked anim
+
+	
 	// Notify client to replicate server-side attack handling
 	Client_OnAttacked(GetActorLocation(), GetActorRotation());
 
@@ -354,8 +357,11 @@ void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, F
 	// Make the character hidden to itself when attacked
 	GetMesh()->SetOwnerNoSee(true);
 
-	// TODO : Play attacked anim
-
+	// Play JumpScare Sound
+	if (SoundManagerComponent)
+	{
+		SoundManagerComponent->TriggerSoundForSelf(AttackedJumpScareSound);
+	}
 
 	// Stop Audio
 	if (HeartBeatAudioComponent)

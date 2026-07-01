@@ -82,7 +82,7 @@ public:
 
 	void SetCurrentSlotMesh(ESlotMeshType _InSlotMesh);
 
-	void InteractSlot();
+	void InteractSlot(AActor* Investigator);
 
 	// 생성된 아이템을 Slot에 붙인다. 
 	UFUNCTION(BlueprintCallable)
@@ -145,8 +145,22 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_SlotMeshTransform)
 	FTransform SlotMeshTransform;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DrawSlotOpenSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName DrawSlotCloseSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName OpenSlotOpenSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName OpenSlotCloseSound;
+
 	UFUNCTION()
 	void OnRep_SlotMeshTransform();
+
+	void PlaySound(const FName& SoundName, const FVector& SoundLocation, AActor* Investigator = nullptr);
 
 	// Item Spawn Point를 Spawn 할 때  외부에서 접근하여 위치를 조절해 준다.
 	UPROPERTY(ReplicatedUsing = OnRep_ItemSpawnTransform)

@@ -47,6 +47,17 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
 }
 
+void APGEnemyCharacterBase::NotifyAttackStart()
+{
+	if (HasAuthority())
+	{
+		if (SoundManagerComponent)
+		{
+			SoundManagerComponent->TriggerSoundForAllPlayers(AttackFinishSound, GetActorLocation());
+		}
+	}
+}
+
 void APGEnemyCharacterBase::NotifyAttackEnded()
 {
 	if (HasAuthority())
@@ -56,6 +67,8 @@ void APGEnemyCharacterBase::NotifyAttackEnded()
 		{
 			AttackableInterface->OnAttackFinished();
 		}
+
+
 
 		CachedAttackedTarget = nullptr;
 	}

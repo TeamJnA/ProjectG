@@ -34,7 +34,7 @@ void UGA_Interact_SearchableSlot::ActivateAbility(const FGameplayAbilitySpecHand
 			Player->Server_PlayHandActionAnimMontage(EHandActionMontageType::Pick);
 		}
 
-		SSBase->InteractSlot();
+		SSBase->InteractSlot(GetAvatarActorFromActorInfo());
 	}
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
