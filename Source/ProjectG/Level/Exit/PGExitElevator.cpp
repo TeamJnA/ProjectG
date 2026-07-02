@@ -189,6 +189,7 @@ bool APGExitElevator::Unlock(AActor* Investigator)
 	if (FuseState == 1 || FuseState == 2)
 	{
 		PlaySound(FuseAttachSound, FusePanel->GetComponentLocation(), Investigator);
+		PlaySound(FuseSparkSound, FusePanel->GetComponentLocation(), Investigator);
 		return true;
 	}
 

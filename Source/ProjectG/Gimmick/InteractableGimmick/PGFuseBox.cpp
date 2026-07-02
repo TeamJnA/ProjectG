@@ -146,6 +146,7 @@ void APGFuseBox::OnFuseItemDestroyed(AActor* DestroyedActor)
         if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
         {
             SoundManager->PlaySoundForAllPlayers(FuseTakeSound, GetActorLocation());
+            SoundManager->PlaySoundForAllPlayers(FuseTakeSparkSound, GetActorLocation());
         }
     }
 

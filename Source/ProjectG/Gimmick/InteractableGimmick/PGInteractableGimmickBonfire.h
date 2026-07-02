@@ -33,6 +33,7 @@ public:
 	// IInteractableActorInterface~
 	virtual FText GetInteractionText() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
+	virtual void InteractionFailed() override;
 	// ~IInteractableActorInterface
 
 	void StartBonfire();
@@ -94,6 +95,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
 	FName BoneFireEndSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	FName BoneFireFailedSound;
 
 	FTimerHandle SanityHealTimerHandle;
 	FTimerHandle BoneFireDurationTimerHandle;

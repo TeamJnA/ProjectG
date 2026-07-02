@@ -8,6 +8,17 @@
 void UANS_ChargerKill::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
+
+	if (MeshComp)
+	{
+		AActor* OwnerActor = MeshComp->GetOwner();
+		if (APGChargerCharacter* Charger = Cast<APGChargerCharacter>(OwnerActor))
+		{
+			UE_LOG(LogPGAnimNotify, Log, TEXT("ANS_ChargerKill::NotifyEnd: Notify Ended"));
+
+			Charger->NotifyAttackStart();
+		}
+	}
 }
 
 void UANS_ChargerKill::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)

@@ -42,6 +42,8 @@ private:
 	void PGPlaySound(const FName& SoundName, const FVector& SoundLocation);
 
 	float ApplyDifficultyToNoise(const FName& SoundName, float BaseLevel) const;
+
+	// UI의 Sound 게이지를 올리라는 신호를 보냄
 	void ReportSelfNoise(AActor* Investigator, int32 NoiseLevel) const;
 
 	UPROPERTY()

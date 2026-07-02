@@ -115,12 +115,18 @@ bool APGInteractableGimmickBonfire::CanStartInteraction(UAbilitySystemComponent*
 
 		OutFailurePrompt.Icon = MatchIcon;
 		OutFailurePrompt.IconSize = MatchIconSize;
+
 		return false;
 	}
 	else
 	{
 		return false;
 	}
+}
+
+void APGInteractableGimmickBonfire::InteractionFailed()
+{
+	PlayLocalSound(BoneFireFailedSound, GetActorLocation());
 }
 
 void APGInteractableGimmickBonfire::StartBonfire()

@@ -81,6 +81,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	FName FuseTakeSound;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName FuseTakeSparkSound;
+
 	// Cover Shake
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ShakeEffect", meta = (AllowPrivateAccess = "true"))
 	FName ShakeParameterName = TEXT("WPOPower");

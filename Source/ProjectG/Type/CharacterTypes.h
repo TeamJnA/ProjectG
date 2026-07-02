@@ -35,3 +35,12 @@ enum class EHandPoseType : uint8
 	Pinch,
 	Count UMETA(Hidden)
 };
+
+UENUM(BlueprintType)
+enum class EEnemyType : uint8
+{
+	Blind,
+	Charger,
+	Ghost,
+	Count UMETA(Hidden)
+};

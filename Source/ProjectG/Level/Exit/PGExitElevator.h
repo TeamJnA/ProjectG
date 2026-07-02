@@ -140,7 +140,7 @@ private:
 	FName FuseLeverSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
-	FName FuseElectricSound;
+	FName FuseSparkSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	FName ElevatorDescentSound;

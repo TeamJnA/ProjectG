@@ -164,9 +164,8 @@ public:
 
 
 ///
-///*********	Player State (Dead or Alive) ******************
+///*********	Player State (Dead or Alive, Escape) ******************
 /// 	
-	
 
 	// IAttackableTarget~
 	// If player is not dead(check by Gamplay Tag), is valid target is true.
@@ -215,9 +214,29 @@ protected:
 	UPROPERTY(Replicated)
 	TObjectPtr<APlayerState> DeadPlayerState;
 	FTimerHandle DeathTimerHandle;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FName AttackedJumpScareSound = FName("");
 
 	UFUNCTION()
 	void OnRep_IsRagdoll();
+
+// --------------Escape--------------------
+public:
+	UPROPERTY()
+	FOnAutomatedMovementCompleted OnAutomatedMovementCompleted;
+
+	void StartAutomatedMovement(const FVector& TargetLocation);
+
+	void OnEscapeFinished();
+
+private:
+	// 자동 이동 관련 변수들
+	bool bIsMovingAutomated = false;
+	FVector AutomatedMoveTarget;
+	FTimerHandle AutomatedMoveTimer;
+
+	void UpdateAutomatedMovement();
 
 ///
 ///*********	Gameplay Ability System ******************
@@ -358,6 +377,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item)
 	TObjectPtr<UStaticMeshComponent> EquippedItemMesh;
+
 ///
 ///********* UI and Components ******************
 ///
@@ -370,7 +390,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGInventoryComponent> InventoryComponent;
 
-// UI
+// --------------UI parts------------------
 public:
 	void InitHUD();
 
@@ -413,178 +433,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
 	FText ReviveText = FText::FromString(TEXT("Revive"));
 
-public:
-	UPROPERTY()
-	FOnAutomatedMovementCompleted OnAutomatedMovementCompleted;
-
-	void StartAutomatedMovement(const FVector& TargetLocation);
-
-	void OnEscapeFinished();
-
-private:
-	// 자동 이동 관련 변수들
-	bool bIsMovingAutomated = false;
-	FVector AutomatedMoveTarget;
-	FTimerHandle AutomatedMoveTimer;
-
-	void UpdateAutomatedMovement();
-
-// Gimmick
-public:
-	// IGimmickTargetInterface~
-	virtual void RequestApplyGimmickEffect(TSubclassOf<UGameplayEffect> EffectClass) override;
-	virtual float GetSanityValue() const override;
-	// ~IGimmickTargetInterface
-
-	UFUNCTION(Server, Unreliable)
-	void Server_ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectClass);
-
-// Glitch
-public:
-	void SetCameraFilmGrain(float Intensity);
-
-	UFUNCTION(Client, Reliable)
-	void Client_TriggerGhostGlitch();
-
-	UFUNCTION(Client, Reliable)
-	void Client_TriggerMaxSanityDecreaseGlitch(int32 CurrentDecreaseCount);
-
-protected:
-	void SyncMaxSanityFromGameState();
-
-	void InitPostProcessMaterial();
-
-	void OnSanityChanged(const FOnAttributeChangeData& Data);
-	void UpdateSanityPostProcessEffect(float CurrentSanity);
-
-	void ScheduleNextGlitch();
-	void StartGlitch();
-	void StopGlitch();
-
-	void StartGhostGlitchFadeOut();
-	void UpdateGhostGlitchFadeOut();
-
-	void StartMaxSanityDecreaseGlitchFadeOut();
-	void UpdateMaxSanityDecreaseGlitchFadeOut();
-
-	void ApplyFilmGrain();
-
-	UPROPERTY(EditDefaultsOnly, Category = "PostProcess")
-	TObjectPtr<UMaterialInterface> SanityNoiseMaterialClass;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> SanityNoiseMID;
-
-	FDelegateHandle SanityChangedDelegateHandle;
-
-	FTimerHandle GlitchIntervalTimerHandle;
-	FTimerHandle GlitchDurationTimerHandle;
-	FTimerHandle GhostGlitchTimerHandle;
-	FTimerHandle MaxSanityDecreaseGlitchTimerHandle;
-
-	float GlitchThresholdSanity = 60.0f;
-	float BaseNoiseIntensity = 0.0f;
-
-	float CurrentGhostGlitchIntensity = 1.5f;
-
-	float CurrentMaxSanityDecreaseGlitchIntensity = 1.5f;
-
-	float CameraModeFilmGrainIntensity = 0.2f;
-
-	bool bIsGlitching = false;
-	bool bIsGhostGlitching = false;
-	bool bIsMaxSanityDecreaseGlitching = false;
-
-// Ghost Overlap
-public:
-	void EnterGhostZone(AActor* Ghost);
-	void ExitGhostZone();
-	FORCEINLINE bool IsHeadlightLocked() const { return FlickerLevel > 0; }
-
-private:
-	UFUNCTION(Server, Unreliable)
-	void Server_UpdateGhostZoneEffect(uint8 NewLevel, float DistanceToGhost);
-
-	UFUNCTION(NetMulticast, Unreliable)
-	void Multicast_SetHeadlightConeAngle(float NewConeAngle);
-
-	void UpdateFlickerLevel();
-	void FlickerOff();
-	void FlickerOn();
-	float GetFlickerInterval() const;
-	void ApplyFlickerEffect(uint8 NewLevel);
-
-	UPROPERTY()
-	TWeakObjectPtr<AActor> CachedGhost;
-
-	FTimerHandle GhostDistanceCheckTimerHandle;
-	FTimerHandle FlickerOffTimerHandle;
-	FTimerHandle FlickerOnTimerHandle;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
-	float GhostZoneNear = 600.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
-	float GhostZoneMedium = 1000.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
-	float DefaultHeadlightConeAngle = 35.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
-	float MinHeadlightConeAngle = 10.0f;
-
-	UPROPERTY(Replicated)
-	uint8 FlickerLevel = 0;  // 0=없음, 1=멀리, 2=중간, 3=가까이
-		
-///
-///********* Voice Chat ******************
-/// 
-
-protected:
-	UPROPERTY()
-	TObjectPtr<UPGVOIPTalker> VoipTalker;
-
-	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
-	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;
-
-	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
-	TObjectPtr<USoundEffectSourcePresetChain> VoiceEffectAsset;
-
-public:
-	void TryInitVoiceSettings();
-	void UpdateVoipSettings();
-
-protected:
-	void TrySetDeadCharacter();
-
-private:
-	// Voice -> Noise
-	FTimerHandle VoiceCheckTimerHandle;
-	void CheckVoiceAndReportNoise();
-
-	UFUNCTION(Server, Unreliable)
-	void Server_ReportVoiceNoise(float Amplitude);
-
-	void StopVoiceCheck();
-
-	FTimerHandle VoiceMonitoringTimerHandle;
-
-	float CurrentVoiceAmplitude = 0.0f;
-
-	UPROPERTY(ReplicatedUsing = OnRep_IsTalking)
-	bool bIsTalking = false;
-
-	UFUNCTION()
-	void OnRep_IsTalking();
-
-public:
-	FORCEINLINE bool IsTalking() const { return bIsTalking; }
-	float GetCurrentVoiceAmplitude() const;
-
-///
-///********* Camera Component ******************
-/// 
-	
+	// --------------Camera Component parts --------------
 public:
 	FORCEINLINE UPGCameraComponent* GetCameraComponent() const { return CameraComp; }
 	void ToggleCameraMode();
@@ -648,9 +497,183 @@ protected:
 
 	bool bPhotoDetectionInitialized = false;
 
+
+		
 ///
-///********* Bonfire Vignette ******************
+///********* Voice Chat ******************
+/// 
+
+protected:
+	UPROPERTY()
+	TObjectPtr<UPGVOIPTalker> VoipTalker;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
+	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
+	TObjectPtr<USoundEffectSourcePresetChain> VoiceEffectAsset;
+
+public:
+	void TryInitVoiceSettings();
+	void UpdateVoipSettings();
+
+protected:
+	// 사망 시 연결을 끊으므로, PS에 본인의 캐릭터를 등록시킴
+	void TrySetDeadCharacter();
+
+private:
+	// Voice -> Noise
+	FTimerHandle VoiceCheckTimerHandle;
+	void CheckVoiceAndReportNoise();
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ReportVoiceNoise(float Amplitude);
+
+	void StopVoiceCheck();
+
+	FTimerHandle VoiceMonitoringTimerHandle;
+
+	float CurrentVoiceAmplitude = 0.0f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsTalking)
+	bool bIsTalking = false;
+
+	UFUNCTION()
+	void OnRep_IsTalking();
+
+public:
+	FORCEINLINE bool IsTalking() const { return bIsTalking; }
+	float GetCurrentVoiceAmplitude() const;
+
 ///
+///********* Rank Badge ******************
+///
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_ReportRank(int32 RankIndex);
+
+protected:
+	void TryReportRank();
+
+///
+///********* Gimmick, Sanity, UI(camera visual effects), ETC ******************
+///
+
+protected:
+	void ApplySanityDecreaseByDifficulty();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	TMap<EPGDifficulty, TSubclassOf<UGameplayEffect>> SanityDecreaseEffectsByDifficulty;
+
+	// Gimmick
+public:
+	// IGimmickTargetInterface~
+	virtual void RequestApplyGimmickEffect(TSubclassOf<UGameplayEffect> EffectClass) override;
+	virtual float GetSanityValue() const override;
+	// ~IGimmickTargetInterface
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectClass);
+
+	// --------------Glitch--------------
+public:
+	void SetCameraFilmGrain(float Intensity);
+
+	UFUNCTION(Client, Reliable)
+	void Client_TriggerGhostGlitch();
+
+	UFUNCTION(Client, Reliable)
+	void Client_TriggerMaxSanityDecreaseGlitch(int32 CurrentDecreaseCount);
+
+protected:
+	void SyncMaxSanityFromGameState();
+
+	void InitPostProcessMaterial();
+
+	void OnSanityChanged(const FOnAttributeChangeData& Data);
+	void UpdateSanityPostProcessEffect(float CurrentSanity);
+
+	void ScheduleNextGlitch();
+	void StartGlitch();
+	void StopGlitch();
+
+	void StartGhostGlitchFadeOut();
+	void UpdateGhostGlitchFadeOut();
+
+	void StartMaxSanityDecreaseGlitchFadeOut();
+	void UpdateMaxSanityDecreaseGlitchFadeOut();
+
+	void ApplyFilmGrain();
+
+	UPROPERTY(EditDefaultsOnly, Category = "PostProcess")
+	TObjectPtr<UMaterialInterface> SanityNoiseMaterialClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> SanityNoiseMID;
+
+	FDelegateHandle SanityChangedDelegateHandle;
+
+	FTimerHandle GlitchIntervalTimerHandle;
+	FTimerHandle GlitchDurationTimerHandle;
+	FTimerHandle GhostGlitchTimerHandle;
+	FTimerHandle MaxSanityDecreaseGlitchTimerHandle;
+
+	float GlitchThresholdSanity = 60.0f;
+	float BaseNoiseIntensity = 0.0f;
+
+	float CurrentGhostGlitchIntensity = 1.5f;
+
+	float CurrentMaxSanityDecreaseGlitchIntensity = 1.5f;
+
+	float CameraModeFilmGrainIntensity = 0.2f;
+
+	bool bIsGlitching = false;
+	bool bIsGhostGlitching = false;
+	bool bIsMaxSanityDecreaseGlitching = false;
+
+	// --------------Ghost Overlap---------------------
+public:
+	void EnterGhostZone(AActor* Ghost);
+	void ExitGhostZone();
+	FORCEINLINE bool IsHeadlightLocked() const { return FlickerLevel > 0; }
+
+private:
+	UFUNCTION(Server, Unreliable)
+	void Server_UpdateGhostZoneEffect(uint8 NewLevel, float DistanceToGhost);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_SetHeadlightConeAngle(float NewConeAngle);
+
+	void UpdateFlickerLevel();
+	void FlickerOff();
+	void FlickerOn();
+	float GetFlickerInterval() const;
+	void ApplyFlickerEffect(uint8 NewLevel);
+
+	UPROPERTY()
+	TWeakObjectPtr<AActor> CachedGhost;
+
+	FTimerHandle GhostDistanceCheckTimerHandle;
+	FTimerHandle FlickerOffTimerHandle;
+	FTimerHandle FlickerOnTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
+	float GhostZoneNear = 600.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
+	float GhostZoneMedium = 1000.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
+	float DefaultHeadlightConeAngle = 35.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ghost|LightEffect")
+	float MinHeadlightConeAngle = 10.0f;
+
+	UPROPERTY(Replicated)
+	uint8 FlickerLevel = 0;  // 0=없음, 1=멀리, 2=중간, 3=가까이
+
+
+// --------------Bonfire Vignette --------------
 
 public:
 	UFUNCTION(Client, Reliable)
@@ -669,25 +692,4 @@ private:
 	FTimerHandle BonfireVignetteFadeTimerHandle;
 	float CurrentBonfireVignetteIntensity = 0.0f;
 	float TargetBonfireVignetteIntensity = 0.0f;
-
-///
-///********* Rank Badge ******************
-///
-	
-public:
-	UFUNCTION(Server, Reliable)
-	void Server_ReportRank(int32 RankIndex);
-
-protected:
-	void TryReportRank();
-
-///
-///********* Sanity Decrease ******************
-///
-
-protected:
-	void ApplySanityDecreaseByDifficulty();
-
-	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
-	TMap<EPGDifficulty, TSubclassOf<UGameplayEffect>> SanityDecreaseEffectsByDifficulty;
 };

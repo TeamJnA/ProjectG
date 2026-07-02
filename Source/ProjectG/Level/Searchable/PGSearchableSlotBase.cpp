@@ -4,8 +4,11 @@
 #include "Level/Searchable/PGSearchableSlotBase.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemComponent.h"
+#include "Game/PGGameMode.h"
 #include "Components/ArrowComponent.h"
 #include "Item/PGItemActor.h"
+#include "Interface/SoundManagerInterface.h"
+#include "Sound/PGSoundManager.h"
 #include "PGLogChannels.h"
 
 // Sets default values
@@ -71,6 +74,18 @@ void APGSearchableSlotBase::OnRep_SlotMeshTransform()
 	}
 }
 
+void APGSearchableSlotBase::PlaySound(const FName& SoundName, const FVector& SoundLocation, AActor* Investigator)
+{
+	check(HasAuthority());
+	if (ISoundManagerInterface* GameModeSoundManagerInterface = Cast<ISoundManagerInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		if (APGSoundManager* SoundManager = GameModeSoundManagerInterface->GetSoundManager())
+		{
+			SoundManager->PlaySoundWithNoise(SoundName, SoundLocation, false, Investigator);
+		}
+	}
+}
+
 void APGSearchableSlotBase::SetItemSpawnPointTransform(const FTransform& NewTransform)
 {
 	ItemSpawnTransform = NewTransform;
@@ -97,13 +112,28 @@ void APGSearchableSlotBase::SetCurrentSlotMesh(ESlotMeshType _InSlotMesh)
 	OnRep_SlotMesh();
 }
 
-void APGSearchableSlotBase::InteractSlot()
+void APGSearchableSlotBase::InteractSlot(AActor* Investigator)
 {
 	check(HasAuthority());
 
 	if (MovementTimeline && MovementTimeline->IsPlaying())
 	{
 		return;
+	}
+
+	// Play sound
+	FName SoundToPlay = NAME_None;
+	if (SlotInteractionType == ESlotInteractType::Draw)
+	{
+		SoundToPlay = bIsDrawn ? DrawSlotCloseSound : DrawSlotOpenSound;
+	}
+	else if (SlotInteractionType == ESlotInteractType::Open)
+	{
+		SoundToPlay = bIsDrawn ? OpenSlotCloseSound : OpenSlotOpenSound;
+	}
+	if (SoundToPlay != NAME_None)
+	{
+		PlaySound(SoundToPlay, GetActorLocation(), Investigator);
 	}
 
 	bIsDrawn = !bIsDrawn;
