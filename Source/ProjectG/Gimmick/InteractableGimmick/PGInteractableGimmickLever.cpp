@@ -160,6 +160,7 @@ void APGInteractableGimmickLever::Multicast_SetCrackStage_Implementation(int32 S
 	if (Stage >= 0 && Stage < CrackStageValues.Num())
 	{
 		CrackValue = CrackStageValues[Stage];
+		PlayLocalSound(FrameCrackSound, GetActorLocation());
 	}
 
 	CrackMID->SetScalarParameterValue(CrackScale, CrackValue);

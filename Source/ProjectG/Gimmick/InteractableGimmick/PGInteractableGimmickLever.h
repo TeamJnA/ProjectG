@@ -55,6 +55,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
 	FName FrameFallSound = FName("LEVEL_MirrorRoom_FrameFall");
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (AllowPrivateAccess = "true"))
+	FName FrameCrackSound = FName("");
+
 	UPROPERTY(EditDefaultsOnly, Category = "Crack")
 	FName CrackScale = FName("CrackScale");
 
