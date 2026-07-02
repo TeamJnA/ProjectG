@@ -21,6 +21,6 @@ void UAN_BlindFootPrint::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 
     FVector FootLocation = MeshComp->GetSocketLocation(FootBoneName);
     FootLocation.Z = Blind->GetActorLocation().Z - Blind->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-    Blind->SpawnFootprint(FootLocation);
+    Blind->SpawnFootprint(FootLocation, bIsLeftFoot);
 }
 

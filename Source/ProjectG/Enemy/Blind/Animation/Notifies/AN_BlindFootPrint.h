@@ -20,4 +20,7 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, Category = "Footstep")
 	FName FootBoneName;	
+
+	UPROPERTY(EditAnywhere, Category= "Footstep")
+	bool bIsLeftFoot = false;
 };

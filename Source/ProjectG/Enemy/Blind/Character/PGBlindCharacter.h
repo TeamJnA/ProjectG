@@ -63,7 +63,7 @@ public:
 	void SetSoundState(EBlindSoundState NewState);
 	FORCEINLINE EBlindSoundState GetSoundState() const { return SoundState; }
 	void TriggerFootstepShake();
-	void SpawnFootprint(const FVector& Location);
+	void SpawnFootprint(const FVector& Location, bool bIsLeftFoot);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -112,7 +112,10 @@ protected:
 	TSubclassOf<UCameraShakeBase> RunShakeClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Footprint")
-	TObjectPtr<UMaterialInterface> FootprintDecalMaterial;
+	TObjectPtr<UMaterialInterface> LeftFootprintDecalMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Footprint")
+	TObjectPtr<UMaterialInterface> RightFootprintDecalMaterial;
 
 private:
 	FTimerHandle SoundLoopTimerHandle;

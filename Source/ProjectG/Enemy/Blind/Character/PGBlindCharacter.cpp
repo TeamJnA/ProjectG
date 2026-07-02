@@ -295,18 +295,18 @@ void APGBlindCharacter::TriggerFootstepShake()
     }
 }
 
-void APGBlindCharacter::SpawnFootprint(const FVector& Location)
+void APGBlindCharacter::SpawnFootprint(const FVector& Location, bool bIsLeftFoot)
 {
+    UMaterialInterface* FootprintDecalMaterial = bIsLeftFoot ? LeftFootprintDecalMaterial : RightFootprintDecalMaterial;
     if (!FootprintDecalMaterial)
     {
         UE_LOG(LogTemp, Warning, TEXT("BlindFootprint: No DecalMaterial assigned"));
-
         return;
     }
 
     FRotator DecalRotation = GetActorRotation();
     DecalRotation.Pitch = -90.0f;
-    DecalRotation.Roll = -50.0f;
+    DecalRotation.Roll = bIsLeftFoot ? 70.0f : 110.0f;
 
     UDecalComponent* Decal = UGameplayStatics::SpawnDecalAtLocation(
         GetWorld(),
