@@ -78,7 +78,7 @@ protected:
 	int32 LinkedSpeciesKey = 0;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Helper")
-	int32 InteractionDiscoveryScore = 100;
+	int32 InteractionDiscoveryScore = 10;
 
 	EExitPointType ExitPointType;
 };

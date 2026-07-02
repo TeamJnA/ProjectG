@@ -17,6 +17,7 @@ class APGFuseBox;
 class APGWaiterStand;
 class APGHideProp;
 class APGSearchableBase;
+class UPGBloodstainSpawnPoint;
 
 UCLASS()
 class PROJECTG_API APGLevelGenerator : public AActor
@@ -50,6 +51,7 @@ protected:
 	void SpawnFuseBoxes();
 	void SpawnWaiterStands();
 	void SpawnHideProps();
+	void SpawnBloodStains();
 	bool SpawnEnemy();
 	void SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex);
 
@@ -103,6 +105,9 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> HidePropSpawnPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UPGBloodstainSpawnPoint>> BloodstainSpawnPointsList;
 
 	// Enum:Class를 통해, Enum으로만 해당 Searchable을 스폰하기 위한 맵
 	UPROPERTY(EditDefaultsOnly, Category = "Searchable", meta = (AllowPrivateAccess = "true"))

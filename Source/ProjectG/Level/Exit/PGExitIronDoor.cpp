@@ -92,6 +92,7 @@ APGExitIronDoor::APGExitIronDoor()
 
     // PhotoID::ExitDoor
     LinkedSpeciesKey = 350;
+    InteractionDiscoveryScore = 0;
 }
 
 void APGExitIronDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

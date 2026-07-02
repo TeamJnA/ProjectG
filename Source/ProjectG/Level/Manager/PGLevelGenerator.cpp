@@ -5,10 +5,12 @@
 
 #include "Engine/World.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Algo/RandomShuffle.h"
 
 #include "Components/SceneComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/DecalComponent.h"
 
 #include "Item/PGItemActor.h"
 #include "Item/PGItemData.h"
@@ -22,6 +24,8 @@
 #include "Level/Misc/PGWaiterStand.h"
 #include "Level/Misc/PGHideProp.h"
 #include "Level/Searchable/PGSearchableBase.h"
+#include "Level/Bloodstain/PGBloodstainSpawnPoint.h"
+#include "Level/Bloodstain/PGBloodstainDecal.h"
 
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Enemy/Charger/Character/PGChargerCharacter.h"
@@ -175,6 +179,19 @@ void APGLevelGenerator::SpawnStartRoom()
 		ExitPointsList.Append(ExitPoints);
 	}
 
+	// Deco spawn
+	if (const USceneComponent* BloodstainSpawnPointFolder = NewRoom->GetBloodstainSpawnPointsFolder())
+	{
+		const TArray<USceneComponent*>& BloodSpawnPoints = BloodstainSpawnPointFolder->GetAttachChildren();
+		BloodstainSpawnPointsList.Reserve(BloodstainSpawnPointsList.Num() + BloodSpawnPoints.Num());
+		for (USceneComponent* SpawnPoint : BloodSpawnPoints)
+		{
+			if (UPGBloodstainSpawnPoint* Point = Cast<UPGBloodstainSpawnPoint>(SpawnPoint))
+			{
+				BloodstainSpawnPointsList.Add(Point);
+			}
+		}
+	}
 
 	// TODO : for test ~ need to remove
 	if (const USceneComponent* ArmorStandSpawnPointFolder = NewRoom->GetArmorStandSpawnPointsFolder())
@@ -398,6 +415,20 @@ void APGLevelGenerator::SpawnSingleLoopCorridor(TSubclassOf<APGMasterRoom> LoopC
 		const TArray<USceneComponent*>& LoopExits = LoopExitFolder->GetAttachChildren();
 		ExitPointsList.Reserve(ExitPointsList.Num() + LoopExits.Num());
 		ExitPointsList.Append(LoopExits);
+	}
+
+	// Deco spawn
+	if (const USceneComponent* BloodstainSpawnPointFolder = LoopRoom->GetBloodstainSpawnPointsFolder())
+	{
+		const TArray<USceneComponent*>& BloodSpawnPoints = BloodstainSpawnPointFolder->GetAttachChildren();
+		BloodstainSpawnPointsList.Reserve(BloodstainSpawnPointsList.Num() + BloodSpawnPoints.Num());
+		for (USceneComponent* SpawnPoint : BloodSpawnPoints)
+		{
+			if (UPGBloodstainSpawnPoint* Point = Cast<UPGBloodstainSpawnPoint>(SpawnPoint))
+			{
+				BloodstainSpawnPointsList.Add(Point);
+			}
+		}
 	}
 }
 
@@ -754,6 +785,20 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 			GlassBottleSpawnPointsList.Append(GlassBottleSpawnPoints);
 		}
 
+		// Deco spawn
+		if (const USceneComponent* BloodstainSpawnPointFolder = RoomToCheck->GetBloodstainSpawnPointsFolder())
+		{
+			const TArray<USceneComponent*>& BloodSpawnPoints = BloodstainSpawnPointFolder->GetAttachChildren();
+			BloodstainSpawnPointsList.Reserve(BloodstainSpawnPointsList.Num() + BloodSpawnPoints.Num());
+			for (USceneComponent* SpawnPoint : BloodSpawnPoints)
+			{
+				if (UPGBloodstainSpawnPoint* Point = Cast<UPGBloodstainSpawnPoint>(SpawnPoint))
+				{
+					BloodstainSpawnPointsList.Add(Point);
+				}
+			}
+		}
+
 		if (RoomAmount > 0)
 		{
 			SpawnNextRoom();
@@ -831,6 +876,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	SpawnFuseBoxes();
 	SpawnWaiterStands();
 	SpawnHideProps();
+	SpawnBloodStains();
 	if (!SpawnEnemy())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Enemy spawn failed. Restarting Level..."));
@@ -858,6 +904,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	DoorPointsList.Empty();
 	MannequinSpawnPointsList.Empty();
 	FuseBoxSpawnPointsList.Empty();
+	BloodstainSpawnPointsList.Empty();
 	RoomGraph.Empty();
 }
 
@@ -1439,6 +1486,44 @@ void APGLevelGenerator::SpawnHideProps()
 				CurProp += RandPropChoose;
 				CurProp %= PropsNum;
 			}
+		}
+	}
+}
+
+void APGLevelGenerator::SpawnBloodStains()
+{
+	UWorld* World = GetWorld();
+	if (!World || BloodstainSpawnPointsList.IsEmpty())
+	{
+		return;
+	}
+
+	float Intensity = 0.5f;
+	if (APGGameState* GS = World->GetGameState<APGGameState>())
+	{
+		Intensity = GS->GetDifficulty().HorrorDecorIntensity;
+	}
+
+	for (UPGBloodstainSpawnPoint* Point : BloodstainSpawnPointsList)
+	{
+		if (!Point || !Point->DecalClass)
+		{
+			continue;
+		}
+
+		if (UKismetMathLibrary::RandomFloatFromStream(Seed) > Intensity)
+		{
+			continue;
+		}
+
+		const FTransform SpawnTransform = Point->GetComponentTransform();
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		APGBloodstainDecal* SpawnedDecal = World->SpawnActor<APGBloodstainDecal>(Point->DecalClass, SpawnTransform, SpawnParams);
+		if (SpawnedDecal)
+		{
+			SpawnedDecal->InitializeDecal(Point->DecalSize, Point->DecalMaterial);
 		}
 	}
 }

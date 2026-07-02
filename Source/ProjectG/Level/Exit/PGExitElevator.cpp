@@ -61,6 +61,7 @@ APGExitElevator::APGExitElevator()
 
 	// PhotoID::Room_Elevator
 	LinkedSpeciesKey = 340;
+	InteractionDiscoveryScore = 10;
 }
 
 void APGExitElevator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

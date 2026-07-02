@@ -29,6 +29,7 @@ public:
 	FORCEINLINE const USceneComponent* GetFuseBoxSpawnPointsFolder() const { return FuseBoxSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetPropsSpawnPointsFolder() const { return PropsSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetGlassBottleSpawnPointsFolder() const { return GlassBottleSpawnPointsFolder; }
+	FORCEINLINE const USceneComponent* GetBloodstainSpawnPointsFolder() const { return BloodstainSpawnPointsFolder; }
 
 	FORCEINLINE FVector GetEnemySpawnLocation() const { return EnemySpawnPoint->GetComponentLocation(); }
 	FORCEINLINE TSubclassOf<AActor> GetWallClass() const { return WallClass; }
@@ -75,6 +76,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> GlassBottleSpawnPointsFolder;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
+	TObjectPtr<USceneComponent> BloodstainSpawnPointsFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "EnemySpawnPoint")
 	TObjectPtr<UArrowComponent> EnemySpawnPoint;
