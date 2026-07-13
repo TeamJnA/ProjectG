@@ -44,6 +44,9 @@ void UGA_GhostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 
 	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
+		// [Sound] TODO: Chase 시작 사운드
+		Ghost->PlaySoundToTargetPlayer(FName("ENEMY_Blind_Roar"));
+
 		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
 		{
 			AIC->StopChaseDistanceCheck();

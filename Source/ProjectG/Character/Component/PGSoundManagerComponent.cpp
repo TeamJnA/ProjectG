@@ -47,6 +47,16 @@ void UPGSoundManagerComponent::TriggerSoundLocally(FName InSoundName, FVector So
 	SoundManager->PlaySoundLocally(InSoundName, SoundLocation);
 }
 
+void UPGSoundManagerComponent::Client_PlaySoundLocally_Implementation(FName InSoundName, FVector SoundLocation)
+{
+	if (!SoundManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager in SoundManagerComponent. Called by [%s]"), *InSoundName.ToString());
+		return;
+	}
+	SoundManager->PlaySoundLocally(InSoundName, SoundLocation);
+}
+
 void UPGSoundManagerComponent::TriggerSoundForAllPlayers_Implementation(FName SoundName, FVector SoundLocation)
 {
 	if (!SoundManager)

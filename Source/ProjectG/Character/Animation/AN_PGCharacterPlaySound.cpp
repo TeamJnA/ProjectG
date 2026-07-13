@@ -48,6 +48,11 @@ void UAN_PGCharacterPlaySound::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 		}
 		else if (SoundType == EPGANSoundType::AllPlayers)
 		{
+			if (!PGCB->ShouldPlayLocalSound())
+			{
+				return;
+			}
+
 			PGSMComp->TriggerSoundLocally(SoundName, OwnerActor->GetActorLocation());
 		}
 	}

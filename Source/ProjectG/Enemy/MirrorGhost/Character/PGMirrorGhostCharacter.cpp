@@ -5,7 +5,9 @@
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerController.h"
 #include "Character/Component/PGCameraComponent.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/PGAbilitySystemComponent.h"
@@ -21,9 +23,13 @@ APGMirrorGhostCharacter::APGMirrorGhostCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	SetReplicateMovement(true);
+
+	LoopAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("LoopAudioComponent"));
+	LoopAudioComponent->SetupAttachment(RootComponent);
+	LoopAudioComponent->bAutoActivate = false;
 }
 
-bool APGMirrorGhostCharacter::IsPhotographable() const
+bool APGMirrorGhostCharacter::IsLocalPlayerTarget() const
 {
 	if (!TargetPlayer)
 	{
@@ -37,6 +43,11 @@ bool APGMirrorGhostCharacter::IsPhotographable() const
 	}
 
 	return LocalPC == TargetPlayer->GetController();
+}
+
+bool APGMirrorGhostCharacter::IsPhotographable() const
+{
+	return IsLocalPlayerTarget();
 }
 
 FPhotoSubjectInfo APGMirrorGhostCharacter::GetPhotoSubjectInfo() const
@@ -76,7 +87,7 @@ void APGMirrorGhostCharacter::BeginPlay()
 		MirrorGhostMID = GetMesh()->CreateDynamicMaterialInstance(0);
 		if (MirrorGhostMID)
 		{
-			MirrorGhostMID->SetScalarParameterValue(FName("CameraModeOpacity"), 0.0f);
+			MirrorGhostMID->SetScalarParameterValue(FName("bCameraModeVisible"), 0.0f);
 		}
 	}
 
@@ -220,6 +231,8 @@ void APGMirrorGhostCharacter::OnRep_IsFrozen()
 
 	MeshComp->bPauseAnims = bIsFrozen;
 	MeshComp->GlobalAnimRateScale = bIsFrozen ? 0.0f : CurrentSpeedMultiplier;
+
+	UpdateLoopSound();
 }
 
 void APGMirrorGhostCharacter::OnReachPlayer()
@@ -228,6 +241,12 @@ void APGMirrorGhostCharacter::OnReachPlayer()
 	{
 		Destroy();
 		return;
+	}
+
+	// [Sound] TODO: MirrorGhost Overlap->Destroy »ç¿îµå
+	if (UPGSoundManagerComponent* SMComp = TargetPlayer->GetSoundManagerComponent())
+	{
+		SMComp->Client_PlaySoundLocally(DisappearSoundName, GetActorLocation());
 	}
 
 	TargetPlayer->Client_TriggerGhostGlitch();
@@ -275,6 +294,7 @@ void APGMirrorGhostCharacter::OnRep_TargetPlayer()
 	}
 
 	UpdateVisibility();
+	StartLoopSound();
 }
 
 void APGMirrorGhostCharacter::UpdateVisibility()
@@ -297,6 +317,28 @@ void APGMirrorGhostCharacter::SetCameraModeVisible(bool bVisible)
 {
 	if (MirrorGhostMID)
 	{
-		MirrorGhostMID->SetScalarParameterValue(FName("CameraModeOpacity"), bVisible ? CameraModeOpacity : 0.0f);
+		MirrorGhostMID->SetScalarParameterValue(FName("bCameraModeVisible"), bVisible ? 1.0f : 0.0f);
 	}
+}
+
+void APGMirrorGhostCharacter::StartLoopSound()
+{
+	if (!IsLocalPlayerTarget() || !LoopAudioComponent || !LoopSound)
+	{
+		return;
+	}
+
+	LoopAudioComponent->SetSound(LoopSound);
+	LoopAudioComponent->Play();
+	LoopAudioComponent->SetPaused(bIsFrozen);
+}
+
+void APGMirrorGhostCharacter::UpdateLoopSound()
+{
+	if (!IsLocalPlayerTarget() || !LoopAudioComponent)
+	{
+		return;
+	}
+
+	LoopAudioComponent->SetPaused(bIsFrozen);
 }

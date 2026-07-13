@@ -140,7 +140,7 @@ void APGGhostAIController::OnTargetSanityChanged(const FOnAttributeChangeData& D
 	if (NewSanity >= SanityChaseThreshold)
 	{
 		// Attacking, Exploring 상태는 제외
-		if (CurrentState != E_PGGhostState::Attacking && CurrentState != E_PGGhostState::Exploring)
+		if (CurrentState != E_PGGhostState::Attacking && CurrentState != E_PGGhostState::Exploring && CurrentState != E_PGGhostState::Waiting)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[PGGhostAIController] Sanity recovered (%.1f). Stopping hunt."), NewSanity);
 			GhostASC->TryActivateAbilityByClass(UGA_GhostStopChase::StaticClass(), true);

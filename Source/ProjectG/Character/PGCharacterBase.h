@@ -38,6 +38,8 @@ public:
 	virtual FGenericTeamId GetGenericTeamId() const override;
 	// ~IGenericTeamAgentInterface
 
+	virtual bool ShouldPlayLocalSound() const { return true; }
+
 protected:
 	void GiveDefaultAbilities();
 	void InitDefaultAttributes() const;

@@ -9,6 +9,8 @@
 
 class APGPlayerCharacter;
 class UGameplayEffect;
+class UAudioComponent;
+class USoundBase;
 
 /**
  * 
@@ -40,6 +42,8 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	bool IsLocalPlayerTarget() const;
+
 	void UpdateVisibility();
 
 	void UpdateMovement(float DeltaTime);
@@ -58,6 +62,12 @@ protected:
 	UFUNCTION()
 	void OnRep_TargetPlayer();
 
+	void StartLoopSound();
+	void UpdateLoopSound();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	FName DisappearSoundName = FName("ENEMY_MirrorGhost_Disappear");
+
 	UPROPERTY(ReplicatedUsing = OnRep_TargetPlayer)
 	TObjectPtr<APGPlayerCharacter> TargetPlayer;
 
@@ -66,6 +76,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ability")
 	TSubclassOf<UGameplayEffect> AttackEffectClass;
+
+	UPROPERTY(VisibleAnywhere, Category = "Sound")
+	TObjectPtr<UAudioComponent> LoopAudioComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<USoundBase> LoopSound;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	float AttackDistance = 80.0f;
@@ -90,11 +106,6 @@ protected:
 
 	float ActiveTime = 0.0f;  // 속도 증가 누적 시간
 
-	UPROPERTY(EditDefaultsOnly, Category = "Config")
-	float CameraModeOpacity = 0.4f;
-
 	UPROPERTY(ReplicatedUsing = OnRep_IsFrozen)
 	bool bIsFrozen = false;
-
-	bool bCameraModeVisible = false;
 };

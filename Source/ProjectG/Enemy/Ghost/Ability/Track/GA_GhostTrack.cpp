@@ -35,6 +35,9 @@ void UGA_GhostTrack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 
 	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
+		// [Sound] TODO: Track 시작 사운드
+		Ghost->PlaySoundToTargetPlayer(FName("ENEMY_Blind_Roar"));
+
 		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
 		{
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())

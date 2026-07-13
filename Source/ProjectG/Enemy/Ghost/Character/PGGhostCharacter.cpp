@@ -13,6 +13,7 @@
 #include "Interface/LightEffectInterface.h"
 
 #include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 #include "Player/PGPlayerState.h"
 #include "Player/PGPlayerController.h"
 
@@ -155,6 +156,42 @@ FVector APGGhostCharacter::GetPhotoTargetLocation() const
     return GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
 }
 
+bool APGGhostCharacter::ShouldPlayLocalSound() const
+{
+    if (!TargetPlayerState)
+    {
+        return false;
+    }
+
+    const APlayerController* LocalPC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    if (!LocalPC)
+    {
+        return false;
+    }
+
+    return LocalPC->PlayerState == TargetPlayerState;
+
+}
+
+void APGGhostCharacter::PlaySoundToTargetPlayer(FName SoundName)
+{
+    if (!HasAuthority() || !TargetPlayerState)
+    {
+        return;
+    }
+
+    APGPlayerCharacter* TargetChar = Cast<APGPlayerCharacter>(TargetPlayerState->GetPawn());
+    if (!TargetChar)
+    {
+        return;
+    }
+
+    if (UPGSoundManagerComponent* SMComp = TargetChar->GetSoundManagerComponent())
+    {
+        SMComp->Client_PlaySoundLocally(SoundName, GetActorLocation());
+    }
+}
+
 void APGGhostCharacter::SetCameraModeVisible(bool bVisible)
 {
     bCameraModeVisible = bVisible;
@@ -179,18 +216,19 @@ void APGGhostCharacter::OnRep_GhostState()
 void APGGhostCharacter::UpdateGhostVisibility()
 {
     bool bShouldBeVisible = false;
-    float Opacity = 0.0f;
-
-    if (CurrentGhostState == E_PGGhostState::Chasing || CurrentGhostState == E_PGGhostState::Attacking)
-    {
-        bShouldBeVisible = true;
-        Opacity = 1.0f;
-    }
+    float UseDither = 1.0f;
 
     if (bCameraModeVisible)
     {
         bShouldBeVisible = true;
-        Opacity = CameraModeOpacity;
+        UseDither = 1.0f;
+    }
+
+    // 추격 상태가 카메라 모드보다 우선
+    if (CurrentGhostState == E_PGGhostState::Chasing || CurrentGhostState == E_PGGhostState::Attacking)
+    {
+        bShouldBeVisible = true;
+        UseDither = 0.0f;
     }
 
     if (HasAuthority())
@@ -206,7 +244,7 @@ void APGGhostCharacter::UpdateGhostVisibility()
 
     if (GhostMID)
     {
-        GhostMID->SetScalarParameterValue(FName("CameraModeOpacity"), Opacity);
+        GhostMID->SetScalarParameterValue(FName("bUseDither"), UseDither);
     }
 }
 
@@ -259,6 +297,8 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
 
     LastJumpscareTime = CurrentTime;
     TouchedPlayer->Client_TriggerGhostGlitch();
+    // [Sound] TODO: 스쳤을 때 사운드
+    PlaySoundToTargetPlayer(FName("ENEMY_Blind_Roar"));
 
     UAbilitySystemComponent* TargetASC = TouchedPlayer->GetAbilitySystemComponent();
     if (TargetASC && SanityDecreaseEffectClass)

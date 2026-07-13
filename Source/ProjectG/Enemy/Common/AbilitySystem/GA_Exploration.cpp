@@ -4,10 +4,8 @@
 #include "Enemy/Common/AbilitySystem/GA_Exploration.h"
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
-#include "Enemy/Ghost/Character/PGGhostCharacter.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Enemy/Ghost/AI/E_PGGhostState.h"
 
 
 UGA_Exploration::UGA_Exploration()
@@ -26,11 +24,6 @@ UGA_Exploration::UGA_Exploration()
 
 	CancelAbilitiesWithTag.AddTag(FGameplayTag::RequestGameplayTag(FName("AI.Ability.Behavior")));
 
-	
-	
-
-
-
 	static ConstructorHelpers::FObjectFinder<UClass> PickGERef(TEXT("/Game/ProjectG/Enemy/Common/Abilities/GE_Exploration.GE_Exploration_C"));
 	if (PickGERef.Object) 
 	{ ExplorationEffectClass = PickGERef.Object; }
@@ -42,19 +35,6 @@ void UGA_Exploration::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// Ghost
-	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
-	{
-		if (AAIController* AIC = Cast<AAIController>(Ghost->GetController()))
-		{
-			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
-			{
-				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Exploring);
-				Ghost->SetGhostState(E_PGGhostState::Exploring);
-			}
-		}
-	}
-
 	if (ExplorationEffectClass)
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(ExplorationEffectClass);
@@ -63,9 +43,6 @@ void UGA_Exploration::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 
 	GetAbilitySystemComponentFromActorInfo()->
 		AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsExploring")));
-
-
-
 }
 
 void UGA_Exploration::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 

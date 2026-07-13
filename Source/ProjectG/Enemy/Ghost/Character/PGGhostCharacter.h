@@ -39,6 +39,10 @@ public:
 	virtual FPhotoSubjectInfo GetPhotoSubjectInfo() const override;
 	virtual FVector GetPhotoTargetLocation() const override;
 	// ~IPhotographableInterface
+
+	virtual bool ShouldPlayLocalSound() const override;
+	void PlaySoundToTargetPlayer(FName SoundName);
+
 	void SetCameraModeVisible(bool bVisible);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ghost|Animation")
@@ -124,9 +128,6 @@ protected:
 	float JumpscareCooldown = 5.0f;
 
 	float LastJumpscareTime = -1.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ghost|Visibility")
-	float CameraModeOpacity = 0.2f;
 
 	UPROPERTY(ReplicatedUsing = OnRep_GhostState)
 	E_PGGhostState CurrentGhostState = E_PGGhostState::Exploring;

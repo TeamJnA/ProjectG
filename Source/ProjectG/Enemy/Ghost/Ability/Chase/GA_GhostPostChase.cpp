@@ -2,9 +2,11 @@
 
 
 #include "Enemy/Ghost/Ability/Chase/GA_GhostPostChase.h"
+#include "Enemy/Ghost/Ability/Explore/GA_GhostExploration.h"
+#include "Enemy/Ghost/Character/PGGhostCharacter.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
-#include "Enemy/Common/AbilitySystem/GA_Exploration.h"
+
 
 UGA_GhostPostChase::UGA_GhostPostChase()
 {
@@ -25,6 +27,12 @@ UGA_GhostPostChase::UGA_GhostPostChase()
 void UGA_GhostPostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
+	{
+		// [Sound] TODO: Track, Chase 완료, 취소 등등 종료사운드
+		Ghost->PlaySoundToTargetPlayer(FName("ENEMY_Blind_Roar"));
+	}
 
 	UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, WaitDuration);
 	if (WaitDelayTask)
@@ -49,7 +57,7 @@ void UGA_GhostPostChase::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 	{
 		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 		{
-			ASC->TryActivateAbilityByClass(UGA_Exploration::StaticClass(), true);
+			ASC->TryActivateAbilityByClass(UGA_GhostExploration::StaticClass(), true);
 		}
 	}
 

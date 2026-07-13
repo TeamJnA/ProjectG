@@ -25,6 +25,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TriggerSoundLocally(FName InSoundName, FVector SoundLocation);
 
+	UFUNCTION(Client, Reliable)
+	void Client_PlaySoundLocally(FName InSoundName, FVector SoundLocation);
+
 	UFUNCTION(BlueprintCallable, Server, Reliable)
 	void TriggerSoundForAllPlayers(FName InSoundName, FVector SoundLocation);
 
