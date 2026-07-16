@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Item/PGItemActor.h"
+#include "Level/Searchable/PGSearchableBase.h"
 
 #include "Level/Misc/PGDoor1.h"
 
@@ -25,6 +26,20 @@ APGGM_Test::APGGM_Test()
 	if (GhostPawnBPClass.Class != nullptr)
 	{
 		GhostCharacterClass = GhostPawnBPClass.Class;
+	}
+
+	const UEnum* SearchableEnum = StaticEnum<ESearchableType>();
+	if (SearchableEnum)
+	{
+		for (int32 i = 0; i < SearchableEnum->NumEnums() - 1; ++i)
+		{
+			ESearchableType EnumValue = static_cast<ESearchableType>(SearchableEnum->GetValueByIndex(i));
+
+			if (!SearchableClassMap.Contains(EnumValue))
+			{
+				SearchableClassMap.Add(EnumValue, nullptr);
+			}
+		}
 	}
 }
 
@@ -166,6 +181,27 @@ void APGGM_Test::RespawnPlayer(AController* DeadPlayerController, const FTransfo
 	DeadPC->Possess(NewCharacter);
 	NewCharacter->InitSoundManager(SoundManager);
 	NewCharacter->OnRevive();
+}
+
+void APGGM_Test::SpawnTestSearchable(ESearchableType SpawnType, FVector InVector, FRotator InRotator)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	if (const TSubclassOf<APGSearchableBase>* ClassPtr = SearchableClassMap.Find(SpawnType))
+	{
+		// 클래스가 비어있지 않은지 검증
+		if (*ClassPtr)
+		{
+			const FTransform SpawnTransform(InRotator, InVector);
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			APGSearchableBase* NewSearchable = World->SpawnActor<APGSearchableBase>(*ClassPtr, SpawnTransform, SpawnParams);
+		}
+	}
 }
 
 void APGGM_Test::BeginPlay()
