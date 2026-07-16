@@ -29,14 +29,22 @@ public:
 		bool bWasCancelled) override;
 
 protected:
+	void PlayChaseSoundAndScheduleNext();
+
 	UFUNCTION()
 	void OnChaseTimerFinished();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ghost")
-	float MinChaseDuration;
+	float MinChaseDuration = 6.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ghost")
-	float MaxChaseDuration;
+	float MaxChaseDuration = 8.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	float ChaseSoundMinInterval = 0.4f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	float ChaseSoundMaxInterval = 0.6f;
 
 	FGameplayTag ChasingTag;
 
@@ -44,4 +52,5 @@ protected:
 	TSubclassOf<UGameplayEffect> ChaseSpeedEffectClass;
 
 	FActiveGameplayEffectHandle ActiveSpeedEffectHandle;
+	FTimerHandle ChaseSoundTimerHandle;
 };

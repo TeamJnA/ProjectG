@@ -266,6 +266,14 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
         return;
     }
 
+    if (APGPlayerState* TargetPS = Cast<APGPlayerState>(TargetPlayerState))
+    {
+        if (TargetPS->IsDead())
+        {
+            return;
+        }
+    }
+
     // Chasing 상태에서만 공격
     if (CurrentGhostState == E_PGGhostState::Chasing)
     {
@@ -297,8 +305,8 @@ void APGGhostCharacter::OnTouchColliderOverlapBegin(UPrimitiveComponent* Overlap
 
     LastJumpscareTime = CurrentTime;
     TouchedPlayer->Client_TriggerGhostGlitch();
-    // [Sound] TODO: 스쳤을 때 사운드
-    PlaySoundToTargetPlayer(FName("ENEMY_Blind_Roar"));
+
+    PlaySoundToTargetPlayer(FName("ENEMY_Ghost_Overlap"));
 
     UAbilitySystemComponent* TargetASC = TouchedPlayer->GetAbilitySystemComponent();
     if (TargetASC && SanityDecreaseEffectClass)

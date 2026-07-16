@@ -30,6 +30,10 @@ struct FPGDifficultySettings : public FTableRowBase
 	UPROPERTY(EditAnywhere)
 	float ChargerStareTimeMultiplier = 1.0f;
 
+	// Ghost Chase 기간
+	UPROPERTY(EditAnywhere)
+	float GhostChaseDurationMultiplier = 1.0f;
+
 	// MaxSanityDecreaseInterval = Sanity가 15 감소하는 시간 (= GE Period × 15)
 	// Normal: 15×15=225 / Hard: 10×15=150.
 	// Sanity GE Period 바꾸면 여기도 동기화 필요.
@@ -43,8 +47,4 @@ struct FPGDifficultySettings : public FTableRowBase
 	// XP 배율
 	UPROPERTY(EditAnywhere)
 	float XPMultiplier = 1.0f;
-
-	// 고려 요소 (플래그만, 로직 나중)
-	UPROPERTY(EditAnywhere)
-	bool bEnableLanternControl = false;
 };

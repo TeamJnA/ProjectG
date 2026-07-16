@@ -9,14 +9,14 @@
 #include "Enemy/Ghost/AI/Controllers/PGGhostAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/Ghost/AI/E_PGGhostState.h"
+#include "Game/PGGameState.h"
+
 
 UGA_GhostChase::UGA_GhostChase()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 
-	MinChaseDuration = 4.0f;
-	MaxChaseDuration = 6.0f;
 	ChasingTag = FGameplayTag::RequestGameplayTag(FName("AI.State.IsChasing"));
 
 	FGameplayTagContainer TagContainer;
@@ -39,23 +39,21 @@ void UGA_GhostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	UE_LOG(LogTemp, Log, TEXT("[GA_GhostChase] AI (%s) ACTIVATED. Applying 'AI.State.IsChasing' tag for %.1f-%.1f sec."),
-		*GetNameSafe(GetAvatarActorFromActorInfo()), MinChaseDuration, MaxChaseDuration);
-
-	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
+	APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo());
+	if (!Ghost)
 	{
-		// [Sound] TODO: Chase 시작 사운드
-		Ghost->PlaySoundToTargetPlayer(FName("ENEMY_Blind_Roar"));
+		return;
+	}
 
-		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
+	PlayChaseSoundAndScheduleNext();
+	if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
+	{
+		AIC->StopChaseDistanceCheck();
+
+		if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 		{
-			AIC->StopChaseDistanceCheck();
-
-			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
-			{
-				BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Chasing);
-				Ghost->SetGhostState(E_PGGhostState::Chasing);
-			}
+			BB->SetValueAsEnum(TEXT("AIState"), (uint8)E_PGGhostState::Chasing);
+			Ghost->SetGhostState(E_PGGhostState::Chasing);
 		}
 	}
 
@@ -65,9 +63,16 @@ void UGA_GhostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 		ActiveSpeedEffectHandle = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 
-	const float Duration = FMath::RandRange(MinChaseDuration, MaxChaseDuration);
+	float ChaseDuration = FMath::FRandRange(MinChaseDuration, MaxChaseDuration);
+	if (APGGameState* GS = Ghost->GetWorld()->GetGameState<APGGameState>())
+	{
+		ChaseDuration *= GS->GetDifficulty().GhostChaseDurationMultiplier;
+	}
 
-	UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, Duration);
+	UE_LOG(LogTemp, Log, TEXT("[GA_GhostChase] AI (%s) ACTIVATED. Applying 'AI.State.IsChasing' tag for %.1f sec."),
+		*GetNameSafe(GetAvatarActorFromActorInfo()), ChaseDuration);
+
+	UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, ChaseDuration);
 	if (WaitDelayTask)
 	{
 		WaitDelayTask->OnFinish.AddDynamic(this, &UGA_GhostChase::OnChaseTimerFinished);
@@ -77,6 +82,20 @@ void UGA_GhostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
+}
+
+void UGA_GhostChase::PlayChaseSoundAndScheduleNext()
+{
+	APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo());
+	if (!Ghost || !Ghost->GetWorld())
+	{
+		return;
+	}
+
+	Ghost->PlaySoundToTargetPlayer(FName("ENEMY_Ghost_Chase"));
+
+	const float NextInterval = FMath::FRandRange(ChaseSoundMinInterval, ChaseSoundMaxInterval);
+	Ghost->GetWorld()->GetTimerManager().SetTimer(ChaseSoundTimerHandle, this, &UGA_GhostChase::PlayChaseSoundAndScheduleNext, NextInterval, false);
 }
 
 void UGA_GhostChase::OnChaseTimerFinished()
@@ -91,6 +110,11 @@ void UGA_GhostChase::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 
 	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
+		if (UWorld* World = Ghost->GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(ChaseSoundTimerHandle);
+		}
+
 		if (APGGhostAIController* AIC = Cast<APGGhostAIController>(Ghost->GetController()))
 		{
 			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())

@@ -17,7 +17,6 @@
 
 #include "Level/Room/PGMasterRoom.h"
 #include "Level/Room/PGStartRoom.h"
-#include "Level/Room/PGMirrorRoom.h"
 
 #include "Level/Misc/PGDoor1.h"
 #include "Level/Misc/PGWall.h"
@@ -52,7 +51,7 @@ APGLevelGenerator::APGLevelGenerator()
 	RootComponent = Root;
 
 	// max room spawn amount
-	RoomAmount = 23;
+	RoomAmount = 22;
 
 	// reload level if (elpased time > max generation time)
 	MaxGenerateTime = 10.0f;
@@ -469,104 +468,99 @@ void APGLevelGenerator::SpawnNextRoom()
 
 	APGMasterRoom* NewRoom = nullptr;
 	// Corridor 3
-	if (RoomAmount > 20)
+	if (RoomAmount > 19)
 {
 		TargetRoomName = TEXT("Room1");
 	}
 	// Corridor_Dark 2
-	else if (RoomAmount > 18)
+	else if (RoomAmount > 17)
 	{
 		TargetRoomName = TEXT("Corridor_Dark");
 	}
 	// Corridor_Simple 1
-	else if (RoomAmount > 17)
+	else if (RoomAmount > 16)
 	{
 		TargetRoomName = TEXT("Corridor_Simple");
 	}
 	// StairRoom_Simple 1
-	else if (RoomAmount > 16)
+	else if (RoomAmount > 15)
 	{
 		TargetRoomName = TEXT("StairRoom_Simple");
 	}
 	// SmallCorridor_Dark 1
-	else if (RoomAmount > 15)
+	else if (RoomAmount > 14)
 	{
 		TargetRoomName = TEXT("SmallCorridor_Dark");
 	}
 	// Library 1
-	else if (RoomAmount > 14)
+	else if (RoomAmount > 13)
 	{
 		TargetRoomName = TEXT("LibraryRoom");
 	}
 	// SmallCorridor 1
-	else if (RoomAmount > 13)
+	else if (RoomAmount > 12)
 	{
 		TargetRoomName = TEXT("Room2");
 	}
 	// DiningRoom 1
-	else if (RoomAmount > 12)
+	else if (RoomAmount > 11)
 	{
 		TargetRoomName = TEXT("DiningRoom");
 	}
 	// Corridor 1
-	else if (RoomAmount > 11)
+	else if (RoomAmount > 10)
 	{
 		TargetRoomName = TEXT("Room1");
 	}
 	// SmallCorridor_Mannequin 1
-	else if (RoomAmount > 10)
+	else if (RoomAmount > 9)
 	{
 		TargetRoomName = TEXT("SmallCorridor_Mannequin");
 	}
 	// Corridor_Dark 1
-	else if (RoomAmount > 9)
+	else if (RoomAmount > 8)
 	{
 		TargetRoomName = TEXT("Corridor_Dark");
 	}
 	// BedRoom 1
-	else if (RoomAmount > 8)
+	else if (RoomAmount > 7)
 	{
 		TargetRoomName = TEXT("Room3");
 	}
 	// Storage 1
-	else if (RoomAmount > 7)
+	else if (RoomAmount > 6)
 	{
 		TargetRoomName = TEXT("Storage");
 	}
 	// Corridor_Simple 1
-	else if (RoomAmount > 6)
+	else if (RoomAmount > 5)
 	{
 		TargetRoomName = TEXT("Corridor_Simple");
 	}
 	// StairRoom 1
-	else if (RoomAmount > 5)
+	else if (RoomAmount > 4)
 	{
 		TargetRoomName = TEXT("StairRoom1");
 	}
 	// SmallCorridor_Bonfire 1
-	else if (RoomAmount > 4)
+	else if (RoomAmount > 3)
 	{
 		TargetRoomName = TEXT("SmallCorridor_Bonfire");
 	}
 	// BarrelRoom 1
-	else if (RoomAmount > 3)
+	else if (RoomAmount > 2)
 	{
 		TargetRoomName = TEXT("BarrelRoom");
 	}
 	// ChargerRoom 1
-	else if (RoomAmount > 2)
+	else if (RoomAmount > 1)
 	{
 		TargetRoomName = TEXT("ChargerRoom");
 	}
 	// ElevatorRoom 1
-	else if (RoomAmount > 1)
-	{
-		TargetRoomName = TEXT("ElevatorRoom");
-	}
-	// MirrorRoom 1
 	else
 	{
-		TargetRoomName = TEXT("MirrorRoom");
+		TargetRoomName = TEXT("ElevatorRoom");
 	}
 	TSubclassOf<APGMasterRoom> NewRoomClass = RoomClassMap[TargetRoomName];
 	NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, spawnParams);
@@ -715,18 +709,14 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 	}
 	else
 	{
-		// MirrorRoom인 경우 RoomGraph, DoorPointsList 추가 x
-		if (RoomAmount > 1)
+		// add to room graph
+		APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(InSelectedExitPoint->GetOwner());
+		if (ParentRoom)
 		{
-			// add to room graph
-			APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(InSelectedExitPoint->GetOwner());
-			if (ParentRoom)
-			{
-				RoomGraph.FindOrAdd(ParentRoom).Add(RoomToCheck);
-				RoomGraph.FindOrAdd(RoomToCheck).Add(ParentRoom);
-			}
-			DoorPointsList.Add(InSelectedExitPoint);
+			RoomGraph.FindOrAdd(ParentRoom).Add(RoomToCheck);
+			RoomGraph.FindOrAdd(RoomToCheck).Add(ParentRoom);
 		}
+		DoorPointsList.Add(InSelectedExitPoint);
 		ExitPointsList.Remove(InSelectedExitPoint);
 
 		RoomAmount--;

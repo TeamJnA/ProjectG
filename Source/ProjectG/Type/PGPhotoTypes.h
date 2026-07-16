@@ -33,9 +33,6 @@ namespace PhotoID
     constexpr int32 Ghost_Exploring = 131;
     constexpr int32 Ghost_Chasing = 132;
 
-    // MirrorGhost
-    constexpr int32 MirrorGhost = 140;
-
     // Anomaly
     constexpr int32 Mannequin = 210;
     constexpr int32 WindowBlood = 220;
@@ -61,22 +58,22 @@ namespace PhotoGrade
 
     FORCEINLINE EGrade GetGradeEnum(int32 Score)
     {
-        if (Score >= 120)
+        if (Score >= 110)
         {
             return EGrade::S;
         }
 
-        if (Score >= 100)
+        if (Score >= 80)
         {
             return EGrade::A;
         }
 
-        if (Score >= 60)
+        if (Score >= 50)
         {
             return EGrade::B;
         }
 
-        if (Score >= 40)
+        if (Score >= 30)
         {
             return EGrade::C;
         }

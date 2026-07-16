@@ -30,8 +30,7 @@ void UGA_GhostPostChase::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 
 	if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(GetAvatarActorFromActorInfo()))
 	{
-		// [Sound] TODO: Track, Chase 완료, 취소 등등 종료사운드
-		Ghost->PlaySoundToTargetPlayer(FName("ENEMY_Blind_Roar"));
+		Ghost->PlaySoundToTargetPlayer(FName("ENEMY_Ghost_PostChase"));
 	}
 
 	UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, WaitDuration);

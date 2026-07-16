@@ -16,7 +16,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
-#include "Enemy/MirrorGhost/Character/PGMirrorGhostCharacter.h"
 #include "Utils/PGPhotoSubjectRegistry.h"
 
 
@@ -614,16 +613,6 @@ void UPGCameraComponent::SetLocalGhostVisible(bool bVisible)
         if (Ghost && Ghost->GetTargetPlayerState() == PC->PlayerState)
         {
             Ghost->SetCameraModeVisible(bVisible);
-            break;
-        }
-    }
-
-    for (TActorIterator<APGMirrorGhostCharacter> It(GetWorld()); It; ++It)
-    {
-        APGMirrorGhostCharacter* MirrorGhost = *It;
-        if (MirrorGhost && MirrorGhost->GetTargetPlayer() == Owner)
-        {
-            MirrorGhost->SetCameraModeVisible(bVisible);
             break;
         }
     }
