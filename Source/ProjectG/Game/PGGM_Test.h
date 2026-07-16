@@ -7,11 +7,14 @@
 
 #include "Interface/SoundManagerInterface.h"
 
+#include "Level/Searchable/PGSearchableSpawnPoint.h"
+
 #include "PGGM_Test.generated.h"
 
 class APGSoundManager;
 class APGGhostCharacter;
 class APGDoor1;
+class APGSearchableBase;
 
 /**
  * 
@@ -42,6 +45,10 @@ public:
 
 	void RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform);
 
+	UFUNCTION(BlueprintCallable)
+	void SpawnTestSearchable(ESearchableType SpawnType, FVector InVector = FVector::ZeroVector, FRotator InRotator = FRotator::ZeroRotator);
+
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -60,4 +67,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
 	TSubclassOf<APGDoor1> PGDoor;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Searchable", meta = (AllowPrivateAccess = "true"))
+	TMap<ESearchableType, TSubclassOf<APGSearchableBase>> SearchableClassMap;
 };

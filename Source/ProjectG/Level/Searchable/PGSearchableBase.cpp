@@ -186,7 +186,7 @@ void APGSearchableBase::OnRep_SpawnedSlots()
             // 이미 바인딩 되어 있어도 덮어쓰므로 중복 바인딩 문제 없음
             Slot->OnHighlightOnDelegate.BindUObject(this, &APGSearchableBase::HighlightOff);
 
-            UE_LOG(LogTemp, Log, TEXT("APGSearchableBase Delegate Bound! Slot Name: %s, This Name: %s"), *Slot->GetName(), *this->GetName());
+            // UE_LOG(LogTemp, Log, TEXT("APGSearchableBase Delegate Bound! Slot Name: %s, This Name: %s"), *Slot->GetName(), *this->GetName());
         }
         else
         {
