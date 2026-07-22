@@ -51,7 +51,7 @@ APGLevelGenerator::APGLevelGenerator()
 	RootComponent = Root;
 
 	// max room spawn amount
-	RoomAmount = 22;
+	RoomAmount = 23;
 
 	// reload level if (elpased time > max generation time)
 	MaxGenerateTime = 10.0f;
@@ -467,95 +467,105 @@ void APGLevelGenerator::SpawnNextRoom()
 	FName TargetRoomName = TEXT("");
 
 	APGMasterRoom* NewRoom = nullptr;
-	// Corridor 3
-	if (RoomAmount > 19)
+	// Corridor 2
+	if (RoomAmount > 21)
 {
 		TargetRoomName = TEXT("Room1");
 	}
 	// Corridor_Dark 2
-	else if (RoomAmount > 17)
+	else if (RoomAmount > 19)
 	{
 		TargetRoomName = TEXT("Corridor_Dark");
 	}
-	// Corridor_Simple 1
-	else if (RoomAmount > 16)
-	{
-		TargetRoomName = TEXT("Corridor_Simple");
-	}
 	// StairRoom_Simple 1
-	else if (RoomAmount > 15)
+	else if (RoomAmount > 18)
 	{
 		TargetRoomName = TEXT("StairRoom_Simple");
 	}
+	// Corridor_Simple 1
+	else if (RoomAmount > 17)
+	{
+		TargetRoomName = TEXT("Corridor_Simple");
+	}
 	// SmallCorridor_Dark 1
-	else if (RoomAmount > 14)
+	else if (RoomAmount > 16)
 	{
 		TargetRoomName = TEXT("SmallCorridor_Dark");
 	}
 	// Library 1
-	else if (RoomAmount > 13)
+	else if (RoomAmount > 15)
 	{
 		TargetRoomName = TEXT("LibraryRoom");
 	}
 	// SmallCorridor 1
-	else if (RoomAmount > 12)
+	else if (RoomAmount > 14)
 	{
 		TargetRoomName = TEXT("Room2");
 	}
 	// DiningRoom 1
-	else if (RoomAmount > 11)
+	else if (RoomAmount > 13)
 	{
 		TargetRoomName = TEXT("DiningRoom");
 	}
 	// Corridor 1
-	else if (RoomAmount > 10)
+	else if (RoomAmount > 12)
 	{
 		TargetRoomName = TEXT("Room1");
 	}
 	// SmallCorridor_Mannequin 1
-	else if (RoomAmount > 9)
+	else if (RoomAmount > 11)
 	{
 		TargetRoomName = TEXT("SmallCorridor_Mannequin");
 	}
 	// Corridor_Dark 1
-	else if (RoomAmount > 8)
+	else if (RoomAmount > 10)
 	{
 		TargetRoomName = TEXT("Corridor_Dark");
 	}
 	// BedRoom 1
-	else if (RoomAmount > 7)
+	else if (RoomAmount > 9)
 	{
 		TargetRoomName = TEXT("Room3");
 	}
 	// Storage 1
-	else if (RoomAmount > 6)
+	else if (RoomAmount > 8)
 	{
 		TargetRoomName = TEXT("Storage");
 	}
 	// Corridor_Simple 1
-	else if (RoomAmount > 5)
+	else if (RoomAmount > 7)
 	{
 		TargetRoomName = TEXT("Corridor_Simple");
 	}
 	// StairRoom 1
-	else if (RoomAmount > 4)
+	else if (RoomAmount > 6)
 	{
 		TargetRoomName = TEXT("StairRoom1");
 	}
 	// SmallCorridor_Bonfire 1
-	else if (RoomAmount > 3)
+	else if (RoomAmount > 5)
 	{
 		TargetRoomName = TEXT("SmallCorridor_Bonfire");
 	}
 	// BarrelRoom 1
-	else if (RoomAmount > 2)
+	else if (RoomAmount > 4)
 	{
 		TargetRoomName = TEXT("BarrelRoom");
 	}
 	// ChargerRoom 1
-	else if (RoomAmount > 1)
+	else if (RoomAmount > 3)
 	{
 		TargetRoomName = TEXT("ChargerRoom");
+	}
+	// GhostRoom 1
+	else if (RoomAmount > 2)
+	{
+		TargetRoomName = TEXT("GhostRoom");
+	}
+	// BlindRoom 1
+	else if (RoomAmount > 1)
+	{
+		TargetRoomName = TEXT("BlindRoom");
 	}
 	// ElevatorRoom 1
 	else
@@ -722,6 +732,7 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		RoomAmount--;
 
 		RoomToCheck->SpawnPhotoSpots();
+		RoomToCheck->SpawnSwingProps(Seed);
 
 		// ExitPoints
 		if (const USceneComponent* LatestRoomExitPointsFolder = RoomToCheck->GetExitPointsFolder())

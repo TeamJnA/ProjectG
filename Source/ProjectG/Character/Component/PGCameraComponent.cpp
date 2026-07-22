@@ -16,6 +16,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
+#include "Utils/PGCameraVisibleRegistry.h"
 #include "Utils/PGPhotoSubjectRegistry.h"
 
 
@@ -614,6 +615,14 @@ void UPGCameraComponent::SetLocalGhostVisible(bool bVisible)
         {
             Ghost->SetCameraModeVisible(bVisible);
             break;
+        }
+    }
+
+    if (UWorld* World = GetWorld())
+    {
+        if (UPGCameraVisibleRegistry* Registry = World->GetSubsystem<UPGCameraVisibleRegistry>())
+        {
+            Registry->SetCameraModeVisible(bVisible);
         }
     }
 }

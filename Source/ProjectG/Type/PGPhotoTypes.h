@@ -58,7 +58,7 @@ namespace PhotoGrade
 
     FORCEINLINE EGrade GetGradeEnum(int32 Score)
     {
-        if (Score >= 110)
+        if (Score >= 115)
         {
             return EGrade::S;
         }

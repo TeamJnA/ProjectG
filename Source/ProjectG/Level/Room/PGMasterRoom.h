@@ -39,6 +39,7 @@ public:
 	FORCEINLINE bool IsSecondFloorLoop() const { return bIsSecondFloorLoop; }
 
 	virtual void SpawnPhotoSpots() {}
+	virtual void SpawnSwingProps(const FRandomStream& InStream) {}
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
