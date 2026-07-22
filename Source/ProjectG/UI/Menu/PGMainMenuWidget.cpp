@@ -32,6 +32,11 @@ void UPGMainMenuWidget::NativeOnInitialized()
 		GIRef = GI;
 	}
 
+	if (SinglePlayButton)
+	{
+		SinglePlayButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnSinglePlayButtonClicked);
+	}
+
 	if (HostButton)
 	{
 		HostButton->OnClicked.AddUniqueDynamic(this, &UPGMainMenuWidget::OnHostButtonClicked);
@@ -161,6 +166,10 @@ FReply UPGMainMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKe
 	}
 
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+void UPGMainMenuWidget::OnSinglePlayButtonClicked()
+{
 }
 
 /*
@@ -448,6 +457,11 @@ void UPGMainMenuWidget::HandleNetworkFailure(const FText& ErrorMessage)
 
 void UPGMainMenuWidget::SetMainMenuButtonEnabled(bool bEnabled)
 {
+	if (SinglePlayButton)
+	{
+		SinglePlayButton->SetIsEnabled(bEnabled);
+	}
+
 	if (HostButton)
 	{
 		HostButton->SetIsEnabled(bEnabled);
