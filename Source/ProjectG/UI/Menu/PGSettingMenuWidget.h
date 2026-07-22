@@ -51,8 +51,8 @@ protected:
     TObjectPtr<UPGOptionSwitcherWidget> PushToTalkOption;
 
     // -------- Audio --------
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<USlider> MusicVolumeSlider;
+    // UPROPERTY(meta = (BindWidget))
+    // TObjectPtr<USlider> MusicVolumeSlider;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<USlider> SFXVolumeSlider;

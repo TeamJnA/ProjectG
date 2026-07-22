@@ -46,6 +46,9 @@ public:
 	TObjectPtr<UButton> RefreshButton;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> SinglePlayButton;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> HostButton;
 
 	UPROPERTY(meta = (BindWidget))
@@ -101,6 +104,9 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
+	UFUNCTION()
+	void OnSinglePlayButtonClicked();
 
 	UFUNCTION()
 	void OnHostButtonClicked();

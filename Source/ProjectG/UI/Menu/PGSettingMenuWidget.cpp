@@ -57,10 +57,10 @@ void UPGSettingMenuWidget::NativeOnInitialized()
     }
 
     // -------- Bind Audio Option Callbacks --------
-    if (MusicVolumeSlider)
-    {
-        MusicVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnMusicVolumeChanged);
-    }
+    //if (MusicVolumeSlider)
+    //{
+     //   MusicVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnMusicVolumeChanged);
+    //}
 
     if (SFXVolumeSlider)
     {
@@ -243,10 +243,10 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
     }
 
     // Audio - set sliders and apply SoundMix overrides
-    if (MusicVolumeSlider)
-    {
-        MusicVolumeSlider->SetValue(Settings->MusicVolume);
-    }
+    //if (MusicVolumeSlider)
+    //{
+    //   MusicVolumeSlider->SetValue(Settings->MusicVolume);
+    //}
 
     if (SFXVolumeSlider)
     {
