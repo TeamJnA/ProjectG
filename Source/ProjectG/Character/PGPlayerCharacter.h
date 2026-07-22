@@ -513,6 +513,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
 	TObjectPtr<USoundEffectSourcePresetChain> VoiceEffectAsset;
 
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> RadioMID;
+
 public:
 	void TryInitVoiceSettings();
 	void UpdateVoipSettings();
@@ -528,6 +531,11 @@ private:
 
 	UFUNCTION(Server, Unreliable)
 	void Server_ReportVoiceNoise(float Amplitude);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ReportTalking(bool bInIsTalking);
+
+	void SetTalkingState(bool bInIsTalking);
 
 	void StopVoiceCheck();
 

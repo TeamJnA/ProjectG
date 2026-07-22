@@ -180,6 +180,18 @@ void APGPlayerCharacter::BeginPlay()
 		PC->PlayerCameraManager->ViewPitchMax = 75.0f;
 		PC->PlayerCameraManager->ViewPitchMin = -75.0f;
 	}
+
+	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+	{
+		if (CharacterMesh->GetMaterials().IsValidIndex(4))
+		{
+			RadioMID = CharacterMesh->CreateAndSetMaterialInstanceDynamic(4);
+			if (RadioMID)
+			{
+				RadioMID->SetScalarParameterValue(FName("RadioEmissive"), 0.0f);
+			}
+		}
+	}
 }
 
 void APGPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -2113,14 +2125,20 @@ void APGPlayerCharacter::CheckVoiceAndReportNoise()
 	}
 
 	CurrentVoiceAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
-	if (CurrentVoiceAmplitude < 0.06f)
-	{
-		//UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Character]: Too low Amplitude: %.2f"), CurrentVoiceAmplitude);
-		return;
-	}
-
 	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Character]: Amplitude: %.2f"), CurrentVoiceAmplitude);
-	Server_ReportVoiceNoise(CurrentVoiceAmplitude);
+	// Effect
+	const bool bIsTalkingNow = CurrentVoiceAmplitude >= 0.01f;
+	// Noise Report
+	const bool bIsLoudEnoughForAI = CurrentVoiceAmplitude >= 0.06f;
+
+	if (bIsLoudEnoughForAI)
+	{
+		Server_ReportVoiceNoise(CurrentVoiceAmplitude);
+	}
+	else if (bIsTalkingNow)
+	{
+		Server_ReportTalking(true);
+	}
 }
 
 void APGPlayerCharacter::Server_ReportVoiceNoise_Implementation(float Amplitude)
@@ -2159,37 +2177,44 @@ void APGPlayerCharacter::Server_ReportVoiceNoise_Implementation(float Amplitude)
 		FName("VoiceNoise")
 	);
 
-	bIsTalking = true;
-	OnRep_IsTalking();
-	GetWorldTimerManager().ClearTimer(VoiceMonitoringTimerHandle);
-	GetWorldTimerManager().SetTimer(VoiceMonitoringTimerHandle, [this]()
+	SetTalkingState(true);
+}
+
+void APGPlayerCharacter::Server_ReportTalking_Implementation(bool bInIsTalking)
+{
+	SetTalkingState(bInIsTalking);
+}
+
+void APGPlayerCharacter::SetTalkingState(bool bInIsTalking)
+{
+	if (bInIsTalking)
 	{
-		bIsTalking = false;
+		bIsTalking = true;
 		OnRep_IsTalking();
-	}, 0.5f, false);
+
+		GetWorldTimerManager().ClearTimer(VoiceMonitoringTimerHandle);
+		GetWorldTimerManager().SetTimer(VoiceMonitoringTimerHandle, [this]()
+		{
+			bIsTalking = false;
+			OnRep_IsTalking();
+		}, 0.5f, false);
+	}
+}
+
+void APGPlayerCharacter::OnRep_IsTalking()
+{
+	if (RadioMID)
+	{
+		RadioMID->SetScalarParameterValue(FName("RadioEmissive"), bIsTalking ? 10.0f : 0.0f);
+	}
 }
 
 void APGPlayerCharacter::StopVoiceCheck()
 {
 	GetWorldTimerManager().ClearTimer(VoiceCheckTimerHandle);
-	bIsTalking = false;
-}
-
-void APGPlayerCharacter::OnRep_IsTalking()
-{
-	USkeletalMeshComponent* CharacterMesh = GetMesh();
-	if (!CharacterMesh)
+	if (RadioMID)
 	{
-		return;
-	}
-
-	UMaterialInstanceDynamic* DynamicMaterial = CharacterMesh->CreateAndSetMaterialInstanceDynamic(4);
-
-	if (DynamicMaterial)
-	{
-		float TargetEmissive = bIsTalking ? 10.0f : 1.0f;
-
-		DynamicMaterial->SetScalarParameterValue(FName("RadioEmissive"), TargetEmissive);
+		RadioMID->SetScalarParameterValue(FName("RadioEmissive"), 0.0f);
 	}
 }
 
