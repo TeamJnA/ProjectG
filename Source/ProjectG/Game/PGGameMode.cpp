@@ -13,6 +13,7 @@
 #include "Player/PGPlayerState.h"
 
 #include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGInventoryComponent.h"
 #include "Character/PGSpectatorPawn.h"
 
 #include "Game/PGGameState.h"
@@ -584,6 +585,7 @@ void APGGameMode::CleanupGeometryCollections()
 
 void APGGameMode::Logout(AController* Exiting)
 {
+	UE_LOG(LogTemp, Log, TEXT("[GM::Logout] Logout [%s]"), *GetNameSafe(Exiting));
 	if (APGPlayerState* PS = Exiting->GetPlayerState<APGPlayerState>())
 	{
 		// 시체(PlayerCharacter) 정리

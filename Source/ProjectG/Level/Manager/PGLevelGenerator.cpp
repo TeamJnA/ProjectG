@@ -202,92 +202,76 @@ void APGLevelGenerator::SpawnStartRoom()
 
 	/*
 	// for test ~
-	APGItemActor* DefaultKey1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData1 = GI->GetItemDataByKey("Key"))
+	APGItemActor* TestReviveKit0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ReviveKitItemData0 = GI->GetItemDataByKey("ReviveKit"))
 	{
-		DefaultKey1->InitWithData(ItemData1);
+		TestReviveKit0->InitWithData(ReviveKitItemData0);
 	}
-	DefaultKey1->SetActorRelativeLocation(FVector(538.0f, 271.0f, 90.0f));
-
-	APGItemActor* DeafultKey2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData2 = GI->GetItemDataByKey("Key"))
-	{
-		DeafultKey2->InitWithData(ItemData2);
-	}
-	DeafultKey2->SetActorRelativeLocation(FVector(538.0f, 356.0f, 90.0f));
-
-	APGItemActor* TestChainKey = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData3 = GI->GetItemDataByKey("ChainKey"))
-	{
-		TestChainKey->InitWithData(ItemData3);
-	}
-	TestChainKey->SetActorRelativeLocation(FVector(700.0f, 270.0f, 30.0f));
-
-	APGItemActor* TestHandWheel = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData4 = GI->GetItemDataByKey("HandWheel"))
-	{
-		TestHandWheel->InitWithData(ItemData4);
-	}
-	TestHandWheel->SetActorRelativeLocation(FVector(700.0f, 350.0f, 30.0f));
-
-	APGItemActor* TestRustOil = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData5 = GI->GetItemDataByKey("RustOil"))
-	{
-		TestRustOil->InitWithData(ItemData5);
-	}
-	TestRustOil->SetActorRelativeLocation(FVector(700.0f, 430.0f, 30.0f));
+	TestReviveKit0->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
 	APGItemActor* TestReviveKit1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData6 = GI->GetItemDataByKey("ReviveKit"))
+	if (UPGItemData* ReviveKitItemData1 = GI->GetItemDataByKey("ReviveKit"))
 	{
-		TestReviveKit1->InitWithData(ItemData6);
+		TestReviveKit1->InitWithData(ReviveKitItemData1);
 	}
-	TestReviveKit1->SetActorRelativeLocation(FVector(900.0f, 270.0f, 10.0f));
+	TestReviveKit1->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
 	APGItemActor* TestReviveKit2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData7 = GI->GetItemDataByKey("ReviveKit"))
+	if (UPGItemData* ReviveKitItemData2 = GI->GetItemDataByKey("ReviveKit"))
 	{
-		TestReviveKit2->InitWithData(ItemData7);
+		TestReviveKit2->InitWithData(ReviveKitItemData2);
 	}
-	TestReviveKit2->SetActorRelativeLocation(FVector(900.0f, 350.0f, 10.0f));
+	TestReviveKit2->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
 	APGItemActor* TestReviveKit3 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData8 = GI->GetItemDataByKey("ReviveKit"))
+	if (UPGItemData* ReviveKitItemData3 = GI->GetItemDataByKey("ReviveKit"))
 	{
-		TestReviveKit3->InitWithData(ItemData8);
+		TestReviveKit3->InitWithData(ReviveKitItemData3);
 	}
-	TestReviveKit3->SetActorRelativeLocation(FVector(900.0f, 430.0f, 10.0f));
+	TestReviveKit3->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
-	APGItemActor* TestFuse0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData9 = GI->GetItemDataByKey("Fuse"))
+	APGItemActor* TestReviveKit4 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ReviveKitItemData4 = GI->GetItemDataByKey("ReviveKit"))
 	{
-		TestFuse0->InitWithData(ItemData9);
+		TestReviveKit4->InitWithData(ReviveKitItemData4);
 	}
-	TestFuse0->SetActorRelativeLocation(FVector(1200.0f, 270.0f, 10.0f));
-
-	APGItemActor* TestFuse1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData10 = GI->GetItemDataByKey("Fuse"))
-	{
-		TestFuse1->InitWithData(ItemData10);
-	}
-	TestFuse1->SetActorRelativeLocation(FVector(1200.0f, 350.0f, 10.0f));
+	TestReviveKit4->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
 	APGItemActor* TestMatch0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData11 = GI->GetItemDataByKey("Match"))
+	if (UPGItemData* MatchItemData0 = GI->GetItemDataByKey("Match"))
 	{
-		TestMatch0->InitWithData(ItemData11);
+		TestMatch0->InitWithData(MatchItemData0);
 	}
-	TestMatch0->SetActorRelativeLocation(FVector(1400.0f, 270.0f, 10.0f));
+	TestMatch0->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
 	APGItemActor* TestMatch1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* ItemData12 = GI->GetItemDataByKey("Match"))
+	if (UPGItemData* MatchItemData1 = GI->GetItemDataByKey("Match"))
 	{
-		TestMatch1->InitWithData(ItemData12);
+		TestMatch1->InitWithData(MatchItemData1);
 	}
-	TestMatch1->SetActorRelativeLocation(FVector(1400.0f, 350.0f, 10.0f));
-	// ~ for test
-	*/
+	TestMatch1->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
+	APGItemActor* TestMatch2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* MatchItemData2 = GI->GetItemDataByKey("Match"))
+	{
+		TestMatch2->InitWithData(MatchItemData2);
+	}
+	TestMatch2->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestMatch3 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* MatchItemData3 = GI->GetItemDataByKey("Match"))
+	{
+		TestMatch3->InitWithData(MatchItemData3);
+	}
+	TestMatch3->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestMatch4 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* MatchItemData4 = GI->GetItemDataByKey("Match"))
+	{
+		TestMatch4->InitWithData(MatchItemData4);
+	}
+	TestMatch4->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+	*/
 }
 
 void APGLevelGenerator::SpawnLoopCorridor()

@@ -213,6 +213,14 @@ public:
 protected:
 	UPROPERTY(Replicated)
 	TObjectPtr<APlayerState> DeadPlayerState;
+
+	void TryCachePlayerState();
+
+	UPROPERTY()
+	TWeakObjectPtr<APlayerState> CachedPlayerState;
+
+	int32 CachePSRetryCount;
+
 	FTimerHandle DeathTimerHandle;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")

@@ -326,6 +326,42 @@ void UPGInventoryComponent::DropAllItems(const FVector DropLocation)
 	}
 }
 
+void UPGInventoryComponent::DropAllItemsOnDestroy(const FVector DropLocation)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	for (int32 i = 0; i < MaxInventorySize; i++)
+	{
+		if (InventoryItems[i].ItemData == nullptr)
+		{
+			continue;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = GetOwner();
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		FRotator DropRotation(0.0f, 72.0f * i, 0.0f);
+		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, FRotator::ZeroRotator, SpawnParams);
+		if (DropItem)
+		{
+			DropItem->InitWithData(InventoryItems[i].ItemData);
+			DropItem->DropItemSpawned(DropRotation);
+		}
+
+		InventoryItems[i].ItemData = nullptr;
+	}
+}
+
 void UPGInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

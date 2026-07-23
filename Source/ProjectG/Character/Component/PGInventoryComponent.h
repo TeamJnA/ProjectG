@@ -70,6 +70,7 @@ public:
 	void DropCurrentItem(const FVector DropLocation, const FRotator DropRotation);
 
 	void DropAllItems(const FVector DropLocation);
+	void DropAllItemsOnDestroy(const FVector DropLocation);
 
 	FORCEINLINE bool IsInventoryFull() const { return bInventoryFull; }
 	FORCEINLINE bool HasCurrentItem() const

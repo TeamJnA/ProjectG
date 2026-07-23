@@ -196,6 +196,18 @@ void APGPlayerCharacter::BeginPlay()
 
 void APGPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	UE_LOG(LogTemp, Log, TEXT("[PlayerCharacter::EndPlay] EndPlayReason [%d]"), EndPlayReason);
+	if (HasAuthority() && EndPlayReason == EEndPlayReason::Destroyed)
+	{
+		APGPlayerState* PS = Cast<APGPlayerState>(CachedPlayerState.Get());
+		UE_LOG(LogTemp, Log, TEXT("[PlayerCharacter::EndPlay] PS [%s]"), *PS->GetPlayerName());
+		if (PS && !PS->IsDead() && InventoryComponent)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[PlayerCharacter::EndPlay] PS [%s] Inv [%s]"), *PS->GetPlayerName(), *GetNameSafe(InventoryComponent));
+			InventoryComponent->DropAllItemsOnDestroy(GetActorLocation());
+		}
+	}
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearAllTimersForObject(this);
@@ -595,6 +607,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 
 	TryInitVoiceSettings();
 	TrySetDeadCharacter();
+	TryCachePlayerState();
 }
 
 //This function is called on the [CLIENT] When the server updates PlayerState.
@@ -2078,6 +2091,35 @@ void APGPlayerCharacter::TrySetDeadCharacter()
 	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[TrySetDeadCharacter] SUCCESS: Set Dead Character to %s for PS(%s)"), *GetName(), *PS->GetPlayerName());
 }
 
+void APGPlayerCharacter::TryCachePlayerState()
+{
+	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
+	if (PS && PS->IsInactive())
+	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[TryCachePlayerState] PS is Inactive (Player Left). Aborting."));
+		return;
+	}
+
+	if (!PS || !PS->GetUniqueId().IsValid())
+	{
+		if (CachePSRetryCount >= 10)
+		{
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[TryCachePlayerState] Max retry."));
+			return;
+		}
+		CachePSRetryCount++;
+
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[TryCachePlayerState] PS not found! Retrying in 0.1s..."));
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryCachePlayerState, 0.1f, false);
+		return;
+	}
+
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[TryCachePlayerState] Success [%s]"), *PS->GetPlayerName());
+	CachedPlayerState = PS;
+	CachePSRetryCount = 0;
+}
+
 void APGPlayerCharacter::CheckVoiceAndReportNoise()
 {
 	// PTT 모드에서 키 안 누르면 노이즈 x
@@ -2125,7 +2167,7 @@ void APGPlayerCharacter::CheckVoiceAndReportNoise()
 	}
 
 	CurrentVoiceAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
-	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Character]: Amplitude: %.2f"), CurrentVoiceAmplitude);
+	//UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Character]: Amplitude: %.2f"), CurrentVoiceAmplitude);
 	// Effect
 	const bool bIsTalkingNow = CurrentVoiceAmplitude >= 0.01f;
 	// Noise Report
