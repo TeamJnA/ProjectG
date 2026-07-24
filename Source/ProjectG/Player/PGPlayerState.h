@@ -68,6 +68,12 @@ public:
 	FORCEINLINE int32 GetDisplayRankIndex() const { return DisplayRankIndex; }
 	FORCEINLINE void SetDisplayRankIndex(int32 InIndex) { DisplayRankIndex = InIndex; OnRep_DisplayRank(); }
 
+	FORCEINLINE int32 GetPlayerSlotNumber() const { return PlayerSlotNumber; }
+	void SetPlayerSlotNumber(int32 InNumber) { PlayerSlotNumber = InNumber; }
+
+	void AddDeathCount();
+	FORCEINLINE int32 GetDeathCount() const { return DeathCount; }
+
 	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
 	FOnCapturedSubjectsChangedDelegate OnCapturedSubjectsChanged;
 
@@ -105,8 +111,11 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_DisplayRank)
 	int32 DisplayRankIndex = 0;
 
-	UFUNCTION()
-	void OnRep_DisplayRank();
+	UPROPERTY(Replicated)
+	int32 PlayerSlotNumber = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRep_DeathCount)
+	int32 DeathCount = 0;
 
 	UPROPERTY(Replicated)
 	EExitPointType ExitPoint = EExitPointType::None;
@@ -140,4 +149,10 @@ protected:
 
 	UFUNCTION()
 	void OnRep_CapturedSubjects();
+
+	UFUNCTION()
+	void OnRep_DisplayRank();
+
+	UFUNCTION()
+	void OnRep_DeathCount();
 };

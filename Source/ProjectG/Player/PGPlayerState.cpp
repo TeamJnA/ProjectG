@@ -57,6 +57,8 @@ void APGPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(APGPlayerState, CameraBattery);
 	DOREPLIFETIME(APGPlayerState, CapturedSubjectIDArray);
 	DOREPLIFETIME(APGPlayerState, DisplayRankIndex);
+	DOREPLIFETIME(APGPlayerState, PlayerSlotNumber);
+	DOREPLIFETIME(APGPlayerState, DeathCount);
 }
 
 void APGPlayerState::OnRep_PlayerStateUpdated()
@@ -223,4 +225,23 @@ void APGPlayerState::OnRep_CapturedSubjects()
 void APGPlayerState::OnRep_DisplayRank()
 {
 	OnDisplayRankChanged.Broadcast();
+}
+
+void APGPlayerState::AddDeathCount()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	DeathCount = FMath::Min(DeathCount + 1, 2);
+	OnRep_DeathCount();
+}
+
+void APGPlayerState::OnRep_DeathCount()
+{
+	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(GetPawn()))
+	{
+		Char->UpdateBloodMaterial(DeathCount);
+	}
 }

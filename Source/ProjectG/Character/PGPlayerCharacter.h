@@ -219,7 +219,7 @@ protected:
 	UPROPERTY()
 	TWeakObjectPtr<APlayerState> CachedPlayerState;
 
-	int32 CachePSRetryCount;
+	int32 CachePSRetryCount = 0;
 
 	FTimerHandle DeathTimerHandle;
 	
@@ -708,4 +708,19 @@ private:
 	FTimerHandle BonfireVignetteFadeTimerHandle;
 	float CurrentBonfireVignetteIntensity = 0.0f;
 	float TargetBonfireVignetteIntensity = 0.0f;
+
+// --------------Bonfire Vignette --------------
+public:
+	void UpdateBloodMaterial(int32 InDeathCount);
+
+protected:
+	void TryInitBloodMaterial();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Blood")
+	TArray<FBloodTextureSet> BloodStages;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> BodyMID;
+
+	int32 BloodInitRetryCount = 0;
 };

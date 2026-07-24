@@ -256,6 +256,11 @@ void APGGameMode::SpawnAllPlayers()
 			break;
 		}
 
+		if (APGPlayerState* PS = PC->GetPlayerState<APGPlayerState>())
+		{
+			PS->SetPlayerSlotNumber(PlayerIndex);
+		}
+
 		APGPlayerCharacter* NewPawn = GetWorld()->SpawnActor<APGPlayerCharacter>(PlayerPawnClass, PlayerSpawnTransforms[PlayerIndex]);
 		if (NewPawn)
 		{

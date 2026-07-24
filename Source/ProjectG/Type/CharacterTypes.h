@@ -44,3 +44,24 @@ enum class EEnemyType : uint8
 	Ghost,
 	Count UMETA(Hidden)
 };
+
+USTRUCT()
+struct FBloodTextureEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> Texture;
+
+	UPROPERTY(EditDefaultsOnly)
+	float UVTiling = 3.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FBloodTextureSet
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	TArray<FBloodTextureEntry> BloodTextures;
+};

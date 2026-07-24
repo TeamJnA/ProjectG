@@ -191,19 +191,30 @@ void APGPlayerCharacter::BeginPlay()
 				RadioMID->SetScalarParameterValue(FName("RadioEmissive"), 0.0f);
 			}
 		}
+
+		if (CharacterMesh->GetMaterials().IsValidIndex(0))
+		{
+			BodyMID = CharacterMesh->CreateAndSetMaterialInstanceDynamic(0);
+			if (BodyMID)
+			{
+				BodyMID->SetScalarParameterValue(FName("BloodAmount"), 0.0f);
+			}
+		}
 	}
+
+	TryInitBloodMaterial();
 }
 
 void APGPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	UE_LOG(LogTemp, Log, TEXT("[PlayerCharacter::EndPlay] EndPlayReason [%d]"), EndPlayReason);
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[PlayerCharacter::EndPlay] EndPlayReason [%d]"), EndPlayReason);
 	if (HasAuthority() && EndPlayReason == EEndPlayReason::Destroyed)
 	{
 		APGPlayerState* PS = Cast<APGPlayerState>(CachedPlayerState.Get());
-		UE_LOG(LogTemp, Log, TEXT("[PlayerCharacter::EndPlay] PS [%s]"), *PS->GetPlayerName());
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("[PlayerCharacter::EndPlay] PS [%s]"), *PS->GetPlayerName());
 		if (PS && !PS->IsDead() && InventoryComponent)
 		{
-			UE_LOG(LogTemp, Log, TEXT("[PlayerCharacter::EndPlay] PS [%s] Inv [%s]"), *PS->GetPlayerName(), *GetNameSafe(InventoryComponent));
+			UE_LOG(LogPGPlayerCharacter, Log, TEXT("[PlayerCharacter::EndPlay] PS [%s] Inv [%s]"), *PS->GetPlayerName(), *GetNameSafe(InventoryComponent));
 			InventoryComponent->DropAllItemsOnDestroy(GetActorLocation());
 		}
 	}
@@ -446,12 +457,16 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
 	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
-	if (GS && PS)
+	if (!IsValid(PS))
+	{
+		return;
+	}
+
+	if (GS)
 	{
 		DeadPlayerState = PS;
 		PS->SetHasFinishedGame(true);
 		PS->SetIsDead(true);
-
 		if (GS->IsGameFinished())
 		{
 			GS->SetCurrentGameState(EGameState::EndGame);
@@ -470,18 +485,26 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 		Movement->StopMovementImmediately();
 		Movement->DisableMovement();
 	}
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
-		AnimInstance->StopAllMontages(0.1f);
+		if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+		{
+			AnimInstance->StopAllMontages(0.1f);
+		}
 	}
 
 	//플레이어 아이템들 드랍 [ Server ]
-	InventoryComponent->DropAllItems(GetActorLocation());
+	if (InventoryComponent)
+	{
+		InventoryComponent->DropAllItems(GetActorLocation());
+	}
 
 	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
 	bIsRagdoll = true;
 	OnRep_IsRagdoll();
+
+	PS->AddDeathCount();
 }
 
 // This function is called on Client when [Player.State.Dead] tag was added.
@@ -2631,5 +2654,75 @@ void APGPlayerCharacter::ApplySanityDecreaseByDifficulty()
 	if (SpecHandle.IsValid())
 	{
 		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
+}
+
+void APGPlayerCharacter::UpdateBloodMaterial(int32 InDeathCount)
+{
+	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[UpdateBloodMaterial]"));
+	if (!BodyMID)
+	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[UpdateBloodMaterial] BodyMID not valid"));
+		return;
+	}
+
+	if (InDeathCount <= 0)
+	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[UpdateBloodMaterial] InDeathCount is zero"));
+		BodyMID->SetScalarParameterValue(FName("BloodAmount"), 0.0f);
+		return;
+	}
+
+	const int32 StageIdx = FMath::Min(InDeathCount - 1, BloodStages.Num() - 1);
+	if (!BloodStages.IsValidIndex(StageIdx) || BloodStages[StageIdx].BloodTextures.Num() == 0)
+	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[UpdateBloodMaterial] BloodStageIdx is not valid"));
+		return;
+	}
+
+	int32 TextureIdx = 0;
+	if (APGPlayerState* PS = GetPlayerState<APGPlayerState>())
+	{
+		TextureIdx = PS->GetPlayerSlotNumber() % BloodStages[StageIdx].BloodTextures.Num();
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[UpdateBloodMaterial] TextureIdx [%d]"), TextureIdx);
+	}
+
+	if (BloodStages[StageIdx].BloodTextures.IsValidIndex(TextureIdx))
+	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[UpdateBloodMaterial] BloodStageIdx [%d] BloodTextureIdx [%d]"), StageIdx, TextureIdx);
+		const FBloodTextureEntry& TextureEntry = BloodStages[StageIdx].BloodTextures[TextureIdx];
+		BodyMID->SetTextureParameterValue(FName("BloodAlpha"), TextureEntry.Texture);
+		BodyMID->SetScalarParameterValue(FName("BloodUVTiling"), TextureEntry.UVTiling);
+		BodyMID->SetScalarParameterValue(FName("BloodAmount"), 1.0f);
+	}
+}
+
+void APGPlayerCharacter::TryInitBloodMaterial()
+{
+	if (!BodyMID)
+	{
+		return;
+	}
+
+	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
+	if (PS && PS->IsInactive())
+	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[TryInitBloodMaterial] PS is Inactive (Player Left). Aborting."));
+		return;
+	}
+
+	if (PS && PS->GetUniqueId().IsValid())
+	{
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("[TryInitBloodMaterial] Success [%s]"), *PS->GetPlayerName());
+		UpdateBloodMaterial(PS->GetDeathCount());
+		return;
+	}
+
+	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[TryInitBloodMaterial] PS not found! Retrying in 0.1s..."));
+	if (BloodInitRetryCount < 10)
+	{
+		BloodInitRetryCount++;
+		FTimerHandle RetryHandle;
+		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitBloodMaterial, 0.1f, false);
 	}
 }
