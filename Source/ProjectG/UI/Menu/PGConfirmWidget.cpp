@@ -59,6 +59,14 @@ FReply UPGConfirmWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKey
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
+void UPGConfirmWidget::SetConfirmTitle(const FText& Message)
+{
+	if (ConfirmTitle)
+	{
+		ConfirmTitle->SetText(Message);
+	}
+}
+
 void UPGConfirmWidget::SetConfirmText(const FText& Message)
 {
 	if (ConfirmText)

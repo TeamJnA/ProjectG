@@ -162,7 +162,8 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return To MainMenu?")));
+		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Main Menu")));
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return to the main menu?")));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToMainMenu);
@@ -222,7 +223,8 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Exit Game?")));
+		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Quit Game")));
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Are you sure you want to quit?")));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToDesktop);

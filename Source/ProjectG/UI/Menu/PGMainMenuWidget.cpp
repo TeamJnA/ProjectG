@@ -253,7 +253,8 @@ void UPGMainMenuWidget::OnDifficultySelected(EPGDifficulty SelectedDifficulty)
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Create Session?")));
+		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Create Session")));
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Create a new session?")));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::StartHostSession);
@@ -306,7 +307,8 @@ void UPGMainMenuWidget::OnExitButtonClicked()
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Exit Game?")));
+		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Quit Game")));
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Are you sure you want to quit?")));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::QuitGame);
