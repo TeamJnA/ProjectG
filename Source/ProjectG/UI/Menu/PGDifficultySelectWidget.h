@@ -28,14 +28,19 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UButton> NormalButton;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UButton> HardButton;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> CancelButton;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> HostGameButton;
+
+	bool bIsDifNormal;
 
 	UFUNCTION()
 	void OnNormalClicked();
@@ -45,6 +50,9 @@ protected:
 
 	UFUNCTION()
 	void OnCancelClicked();
+
+	UFUNCTION()
+	void OnHostGameClicked();
 
 private:
 	TWeakObjectPtr<UUserWidget> ReturnFocusWidget;

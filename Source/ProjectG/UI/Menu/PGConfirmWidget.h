@@ -20,6 +20,7 @@ class PROJECTG_API UPGConfirmWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	void SetConfirmTitle(const FText& Message);
 	void SetConfirmText(const FText& Message);
 	void SetReturnFocusWidget(UUserWidget* InWidget) { ReturnFocusWidget = InWidget; }
 
@@ -38,6 +39,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ConfirmText;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* ConfirmTitle;
 
 	UFUNCTION()
 	void OnYesButtonClicked();

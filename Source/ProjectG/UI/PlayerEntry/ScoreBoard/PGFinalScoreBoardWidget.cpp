@@ -363,7 +363,8 @@ void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return To MainMenu?")));
+		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Main Menu")));
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return to the main menu?")));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::ReturnToMainMenu);

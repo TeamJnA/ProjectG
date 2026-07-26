@@ -23,6 +23,13 @@ void UPGDifficultySelectWidget::NativeOnInitialized()
 	{
 		CancelButton->OnClicked.AddUniqueDynamic(this, &UPGDifficultySelectWidget::OnCancelClicked);
 	}
+
+	if (HostGameButton)
+	{
+		HostGameButton->OnClicked.AddUniqueDynamic(this, &UPGDifficultySelectWidget::OnHostGameClicked);
+	}
+
+	bIsDifNormal = true;
 }
 
 void UPGDifficultySelectWidget::NativeConstruct()
@@ -45,14 +52,14 @@ FReply UPGDifficultySelectWidget::NativeOnKeyDown(const FGeometry& InGeometry, c
 
 void UPGDifficultySelectWidget::OnNormalClicked()
 {
-	OnDifficultySelected.Broadcast(EPGDifficulty::Normal);
-	RemoveFromParent();
+	bIsDifNormal = true;
+	// RemoveFromParent();
 }
 
 void UPGDifficultySelectWidget::OnHardClicked()
 {
-	OnDifficultySelected.Broadcast(EPGDifficulty::Hard);
-	RemoveFromParent();
+	bIsDifNormal = false;
+	// RemoveFromParent();
 }
 
 void UPGDifficultySelectWidget::OnCancelClicked()
@@ -61,5 +68,19 @@ void UPGDifficultySelectWidget::OnCancelClicked()
 	{
 		Parent->SetKeyboardFocus();
 	}
+	RemoveFromParent();
+}
+
+void UPGDifficultySelectWidget::OnHostGameClicked()
+{
+	if (bIsDifNormal)
+	{
+		OnDifficultySelected.Broadcast(EPGDifficulty::Normal);
+	}
+	else
+	{
+		OnDifficultySelected.Broadcast(EPGDifficulty::Hard);
+	}
+
 	RemoveFromParent();
 }
