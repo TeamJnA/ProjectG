@@ -4,6 +4,7 @@
 #include "UI/Menu/PGPauseMenuWidget.h"
 
 #include "UI/Menu/PGConfirmWidget.h"
+#include "UI/Menu/PGSettingMenuWidget.h"
 #include "UI/PlayerEntry/Friend/PGFriendListWidget.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
@@ -14,6 +15,7 @@
 #include "Player/PGLobbyPlayerController.h"
 
 #include "Kismet/GameplayStatics.h"
+
 
 void UPGPauseMenuWidget::NativeOnInitialized()
 {
@@ -114,11 +116,16 @@ FReply UPGPauseMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FK
 */
 void UPGPauseMenuWidget::OnResumeButtonClicked()
 {
+	if (SettingMenuWidgetInstance)
+	{
+		SettingMenuWidgetInstance->DeactivateMicCapture();
+	}
+
 	if (GetOwningPlayer())
 	{
 		GetOwningPlayer()->bShowMouseCursor = false;
 		GetOwningPlayer()->SetInputMode(FInputModeGameOnly());
-		
+
 		RemoveFromParent();
 	}
 }
@@ -140,6 +147,11 @@ void UPGPauseMenuWidget::OnOptionButtonClicked()
 	if (WidgetSwitcher)
 	{
 		WidgetSwitcher->SetActiveWidgetIndex(1);
+	}
+
+	if (SettingMenuWidgetInstance)
+	{
+		SettingMenuWidgetInstance->ActivateMicCapture();
 	}
 }
 
@@ -175,8 +187,12 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 
 void UPGPauseMenuWidget::ReturnToMainMenu()
 {
-	APlayerController* OwningPC = GetOwningPlayer();
+	if (SettingMenuWidgetInstance)
+	{
+		SettingMenuWidgetInstance->DeactivateMicCapture();
+	}
 
+	APlayerController* OwningPC = GetOwningPlayer();
 	if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(OwningPC))
 	{
 		if (LobbyPC->HasAuthority())
@@ -235,8 +251,12 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 
 void UPGPauseMenuWidget::ReturnToDesktop()
 {
-	APlayerController* OwningPC = GetOwningPlayer();
+	if (SettingMenuWidgetInstance)
+	{
+		SettingMenuWidgetInstance->DeactivateMicCapture();
+	}
 
+	APlayerController* OwningPC = GetOwningPlayer();
 	if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(OwningPC))
 	{
 		if (LobbyPC->HasAuthority())
@@ -269,6 +289,11 @@ void UPGPauseMenuWidget::ReturnToDesktop()
 */
 void UPGPauseMenuWidget::OnBackButtonClicked()
 {
+	if (SettingMenuWidgetInstance)
+	{
+		SettingMenuWidgetInstance->DeactivateMicCapture();
+	}
+
 	if (WidgetSwitcher)
 	{
 		WidgetSwitcher->SetActiveWidgetIndex(0);

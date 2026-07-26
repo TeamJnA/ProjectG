@@ -13,15 +13,18 @@
 #include "UI/Menu/PGDifficultySelectWidget.h"
 #include "UI/Menu/PGSessionStatusWidget.h"
 #include "UI/Menu/PGSettingMenuWidget.h"
+#include "UI/Menu/PGMicSettingWidget.h"
 #include "UI/PlayerEntry/PGMainMenuProfileWidget.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
+#include "Player//PGGameUserSettings.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "Online/OnlineSessionNames.h"
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerState.h"
 #include "Kismet/GameplayStatics.h"
+
 
 void UPGMainMenuWidget::NativeOnInitialized()
 {
@@ -110,6 +113,18 @@ void UPGMainMenuWidget::NativeConstruct()
 		false
 	);
 
+	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		if (!Settings->bHasCompletedInitialVoiceSetup && MicSettingWidgetClass)
+		{
+			if (UPGMicSettingWidget* MicSettingWidget = CreateWidget<UPGMicSettingWidget>(this, MicSettingWidgetClass))
+			{
+				MicSettingWidget->SetReturnToFocusWidget(this);
+				MicSettingWidget->AddToViewport(100);
+			}
+		}
+	}
+
 	if (PlayerProfileWidget)
 	{
 		APGPlayerState* PS = nullptr;
@@ -160,6 +175,19 @@ FReply UPGMainMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKe
 		else
 		{
 			OnBackButtonClicked();
+		}
+
+		return FReply::Handled();
+	}
+	
+	if (InKeyEvent.GetKey() == EKeys::V)
+	{
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+			{
+				LobbyPC->HandlePushToTalkToggle();
+			}
 		}
 
 		return FReply::Handled();
@@ -332,6 +360,11 @@ void UPGMainMenuWidget::OnOptionButtonClicked()
 	{
 		WidgetSwitcher->SetActiveWidgetIndex(1);
 	}
+	
+	if (SettingMenuWidgetInstance)
+	{
+		SettingMenuWidgetInstance->ActivateMicCapture();
+	}
 }
 
 void UPGMainMenuWidget::OnRefreshButtonClicked()
@@ -346,6 +379,11 @@ void UPGMainMenuWidget::OnRefreshButtonClicked()
 
 void UPGMainMenuWidget::OnBackButtonClicked()
 {
+	if (SettingMenuWidgetInstance)
+	{
+		SettingMenuWidgetInstance->DeactivateMicCapture();
+	}
+
 	if (WidgetSwitcher)
 	{
 		WidgetSwitcher->SetActiveWidgetIndex(0);

@@ -537,6 +537,17 @@ bool APGLobbyPlayerController::IsPushToTalkReady() const
 		return false;
 	}
 
+	if (UWorld* World = GetWorld())
+	{
+		if (APGGameState* GS = World->GetGameState<APGGameState>())
+		{
+			if (GS->GetCurrentGameState() == EGameState::MainMenu)
+			{
+				return true;
+			}
+		}
+	}
+
 	return bPushToTalkPrimed;
 }
 

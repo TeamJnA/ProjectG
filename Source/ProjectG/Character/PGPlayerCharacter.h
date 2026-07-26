@@ -31,6 +31,7 @@ class APGTriggerGimmickMannequin;
 class UBoxComponent;
 
 class UPGVOIPTalker;
+class UAudioCaptureComponent;
 
 class UPGCameraComponent;
 class USceneCaptureComponent2D;
@@ -514,6 +515,9 @@ protected:
 protected:
 	UPROPERTY()
 	TObjectPtr<UPGVOIPTalker> VoipTalker;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VoiceChat")
+	TObjectPtr<UAudioCaptureComponent> LocalVoiceLoopback;
 
 	UPROPERTY(EditDefaultsOnly, Category = "VoiceChat")
 	TObjectPtr<USoundAttenuation> VoiceAttenuationAsset;
@@ -531,6 +535,8 @@ public:
 protected:
 	// 사망 시 연결을 끊으므로, PS에 본인의 캐릭터를 등록시킴
 	void TrySetDeadCharacter();
+
+	bool IsVoiceLoopbackAllowed() const;
 
 private:
 	// Voice -> Noise

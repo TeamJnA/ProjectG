@@ -413,6 +413,7 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 
 	if (EnterSequencePlayer)
 	{
+		bEnterSequencePlaying = true;
 		EnterSequencePlayer->OnFinished.AddDynamic(this, &APGGameState::OnEnterSequenceFinished);
 		EnterSequencePlayer->Play();
 	}
@@ -456,9 +457,10 @@ void APGGameState::PlayEnterLevelSeqeunce(int32 NumPlayers)
 	}
 }
 
-
 void APGGameState::OnEnterSequenceFinished()
 {
+	bEnterSequencePlaying = false;
+
 	APGPlayerController* PC = Cast<APGPlayerController>(GetWorld()->GetFirstPlayerController());
 	if (PC && PC->IsLocalController())
 	{

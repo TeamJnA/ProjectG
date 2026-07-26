@@ -65,6 +65,10 @@ public:
 	void SetPushToTalk(bool bEnable);
 	FORCEINLINE bool IsPushToTalk() const { return bPushToTalk; }
 
+	// -------- Voice Setup --------
+	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|VoiceSetup")
+	bool bHasCompletedInitialVoiceSetup = false;
+
 	// -------- Helper --------
 	/** Apply mic CVar settings only */
 	void ApplyMicSettings();	

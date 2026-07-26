@@ -23,6 +23,7 @@
 #include "AudioMixerBlueprintLibrary.h"
 #include "AudioCapture.h"
 #include "Utils/PGVoiceUtils.h"
+#include "VoiceModule.h"
 
 
 void UPGSettingMenuWidget::NativeOnInitialized()
@@ -146,26 +147,107 @@ void UPGSettingMenuWidget::NativeConstruct()
     UpdatePlayerVoiceList();
 }
 
+void UPGSettingMenuWidget::ActivateMicCapture()
+{
+    LoadAndApplySettings();
+
+    if (SettingsVoiceCapture.IsValid())
+    {
+        SettingsVoiceCapture->Stop();
+    }
+
+    FString DeviceName = InputDeviceComboBox ? InputDeviceComboBox->GetSelectedOption() : TEXT("");
+    SettingsVoiceCapture = FVoiceModule::Get().CreateVoiceCapture(DeviceName);
+    if (SettingsVoiceCapture.IsValid())
+    {
+        SettingsVoiceCapture->Start();
+    }
+    DisplayMicAmplitude = 0.0f;
+}
+
+void UPGSettingMenuWidget::DeactivateMicCapture()
+{
+    if (SettingsVoiceCapture.IsValid())
+    {
+        SettingsVoiceCapture->Stop();
+        SettingsVoiceCapture.Reset();
+    }
+    DisplayMicAmplitude = 0.0f;
+}
+
 void UPGSettingMenuWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
     Super::NativeTick(MyGeometry, InDeltaTime);
 
-    if (!MicAmplitudeBar)
+    if (!SettingsVoiceCapture.IsValid() || !MicAmplitudeBar)
     {
         return;
     }
 
-    const float RawAmplitude = PGVoiceUtils::GetCurrentAmplitude(GetWorld());
+    AmplitudeUpdateAccumulator += InDeltaTime;
+    if (AmplitudeUpdateAccumulator < 0.033f)
+    {
+        return;
+    }
+    const float EffectiveDelta = AmplitudeUpdateAccumulator;
+    AmplitudeUpdateAccumulator = 0.0f;
+
+    uint32 AvailableData = 0;
+    if (SettingsVoiceCapture->GetCaptureState(AvailableData) == EVoiceCaptureState::Ok && AvailableData > 0)
+    {
+        uint32 ReadData = 0;
+        SettingsVoiceCapture->GetVoiceData(VoiceDrainBuffer, VoiceDrainBufferSize, ReadData);
+    }
+
+    float RawAmplitude = SettingsVoiceCapture->GetCurrentAmplitude();
+    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+    {
+        if (Settings->IsPushToTalk())
+        {
+            bool bIsPTTReady = false;
+            if (APlayerController* PC = GetOwningPlayer())
+            {
+                if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+                {
+                    bIsPTTReady = PGPC->IsPushToTalkReady();
+                }
+                else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+                {
+                    bIsPTTReady = LobbyPC->IsPushToTalkReady();
+                }
+            }
+
+            if (!bIsPTTReady)
+            {
+                RawAmplitude = 0.0f;
+            }
+        }
+
+        if (RawAmplitude < Settings->MicSensitivity)
+        {
+            RawAmplitude = 0.0f;
+            DisplayMicAmplitude = 0.0f;
+        }
+        else
+        {
+            RawAmplitude *= (Settings->MicInputGain / 3.0f);
+        }
+    }
+
+    const float MaxAmplitude = 0.3f;
+    RawAmplitude = FMath::Min(RawAmplitude, MaxAmplitude);
 
     const float Speed = (RawAmplitude > DisplayMicAmplitude) ? 9.0f : 5.0f;
-    DisplayMicAmplitude = FMath::FInterpTo(DisplayMicAmplitude, RawAmplitude, InDeltaTime, Speed);
+    DisplayMicAmplitude = FMath::FInterpTo(DisplayMicAmplitude, RawAmplitude, EffectiveDelta, Speed);
 
-    const float DisplayPercent = FMath::Clamp(DisplayMicAmplitude / 0.3f, 0.0f, 1.0f);
-    MicAmplitudeBar->SetPercent(DisplayPercent);
+    MicAmplitudeBar->SetPercent(FMath::Clamp(DisplayMicAmplitude / MaxAmplitude, 0.0f, 1.0f));
 }
 
 void UPGSettingMenuWidget::NativeDestruct()
 {
+    UE_LOG(LogTemp, Log, TEXT("UPGSettingMenuWidget::NativeDestruct"));
+    DeactivateMicCapture();
+
     if (APGGameState* GS = GSRef.Get())
     {
         GS->OnPlayerArrayChanged.RemoveAll(this);
@@ -703,6 +785,16 @@ void UPGSettingMenuWidget::OnInputDeviceSelectionChanged(FString SelectedItem, E
 
     // 마이크 디바이스 전환
     PGVoiceUtils::ChangeInputDevice(GetWorld(), SelectedItem);
+
+    if (SettingsVoiceCapture.IsValid())
+    {
+        SettingsVoiceCapture->Stop();
+        SettingsVoiceCapture = FVoiceModule::Get().CreateVoiceCapture(SelectedItem);
+        if (SettingsVoiceCapture.IsValid())
+        {
+            SettingsVoiceCapture->Start();
+        }
+    }
 
     if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
     {

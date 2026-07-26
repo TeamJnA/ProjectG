@@ -58,6 +58,9 @@ protected:
 	TObjectPtr<UPGConfirmWidget> ConfirmWidgetInstance;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UPGSettingMenuWidget> SettingMenuWidgetInstance;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
 
 	UPROPERTY(meta = (BindWidget))

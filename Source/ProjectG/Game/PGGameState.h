@@ -117,6 +117,8 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayerEnterLevelSequence(int32 NumPlayers);
 
+	FORCEINLINE bool IsEnterSequencePlaying() const { return bEnterSequencePlaying; }
+
 protected:
 	void PlayEnterLevelSeqeunce(int32 NumPlayers);
 
@@ -131,6 +133,8 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<ULevelSequencePlayer> EnterSequencePlayer;
+
+	bool bEnterSequencePlaying = false;
 
 // Enemy AI Exploration Waypoint
 public: 

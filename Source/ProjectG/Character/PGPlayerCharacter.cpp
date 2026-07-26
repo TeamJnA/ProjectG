@@ -37,6 +37,7 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Character/Component/PGVOIPTalker.h"
 #include "Character/Component/PGCameraComponent.h"
+#include "AudioCaptureComponent.h"
 
 // Interface
 #include "Interface/InteractableActorInterface.h"
@@ -152,6 +153,11 @@ APGPlayerCharacter::APGPlayerCharacter()
 	PhotoCaptureComp->bCaptureEveryFrame = false;
 	PhotoCaptureComp->bCaptureOnMovement = false;
 	PhotoCaptureComp->CaptureSource = SCS_FinalColorLDR;
+
+	// 보이스 로컬 피드백
+	LocalVoiceLoopback = CreateDefaultSubobject<UAudioCaptureComponent>(TEXT("LocalVoiceLoopback"));
+	LocalVoiceLoopback->SetupAttachment(GetMesh(), TEXT("head"));
+	LocalVoiceLoopback->bAutoActivate = false;
 }
 
 void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -2050,6 +2056,14 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 			UpdateVoipSettings();
 		}
 	}
+	else
+	{
+		if (LocalVoiceLoopback && !LocalVoiceLoopback->IsActive())
+		{
+			LocalVoiceLoopback->SetVolumeMultiplier(0.0f);
+			LocalVoiceLoopback->Start();
+		}
+	}
 
 	if (InGamePC)
 	{
@@ -2143,6 +2157,34 @@ void APGPlayerCharacter::TryCachePlayerState()
 	CachePSRetryCount = 0;
 }
 
+bool APGPlayerCharacter::IsVoiceLoopbackAllowed() const
+{
+	if (!IsLocallyControlled())
+	{
+		return false;
+	}
+
+	// 컷신 -> 차단
+	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		if (GS->IsEnterSequencePlaying())
+		{
+			return false;
+		}
+	}
+
+	// 인게임 x -> 차단
+	if (APGPlayerState* PS = GetPlayerState<APGPlayerState>())
+	{
+		if (!PS->IsInGame())
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void APGPlayerCharacter::CheckVoiceAndReportNoise()
 {
 	// PTT 모드에서 키 안 누르면 노이즈 x
@@ -2185,6 +2227,10 @@ void APGPlayerCharacter::CheckVoiceAndReportNoise()
 			}
 
 			CurrentVoiceAmplitude = 0.0f;
+			if (LocalVoiceLoopback)
+			{
+				LocalVoiceLoopback->SetVolumeMultiplier(0.0f);
+			}
 			return;
 		}
 	}
@@ -2195,6 +2241,12 @@ void APGPlayerCharacter::CheckVoiceAndReportNoise()
 	const bool bIsTalkingNow = CurrentVoiceAmplitude >= 0.01f;
 	// Noise Report
 	const bool bIsLoudEnoughForAI = CurrentVoiceAmplitude >= 0.06f;
+
+	if (LocalVoiceLoopback)
+	{
+		const bool bLoopbackAllowed = bIsTalkingNow && IsVoiceLoopbackAllowed();
+		LocalVoiceLoopback->SetVolumeMultiplier(bLoopbackAllowed ? 1.0f : 0.0f);
+	}
 
 	if (bIsLoudEnoughForAI)
 	{
@@ -2258,10 +2310,14 @@ void APGPlayerCharacter::SetTalkingState(bool bInIsTalking)
 		OnRep_IsTalking();
 
 		GetWorldTimerManager().ClearTimer(VoiceMonitoringTimerHandle);
-		GetWorldTimerManager().SetTimer(VoiceMonitoringTimerHandle, [this]()
+		TWeakObjectPtr<APGPlayerCharacter> WeakThis(this);
+		GetWorldTimerManager().SetTimer(VoiceMonitoringTimerHandle, [WeakThis]()
 		{
-			bIsTalking = false;
-			OnRep_IsTalking();
+			if (WeakThis.IsValid())
+			{
+				WeakThis->bIsTalking = false;
+				WeakThis->OnRep_IsTalking();
+			}
 		}, 0.5f, false);
 	}
 }
@@ -2277,9 +2333,16 @@ void APGPlayerCharacter::OnRep_IsTalking()
 void APGPlayerCharacter::StopVoiceCheck()
 {
 	GetWorldTimerManager().ClearTimer(VoiceCheckTimerHandle);
+
 	if (RadioMID)
 	{
 		RadioMID->SetScalarParameterValue(FName("RadioEmissive"), 0.0f);
+	}
+
+	if (LocalVoiceLoopback)
+	{
+		LocalVoiceLoopback->SetVolumeMultiplier(0.0f);
+		LocalVoiceLoopback->Stop();
 	}
 }
 

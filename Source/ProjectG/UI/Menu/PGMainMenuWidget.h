@@ -21,6 +21,7 @@ class UPGSettingMenuWidget;
 class UWidgetSwitcher;
 class UPGMainMenuProfileWidget;
 class UPGDifficultySelectWidget;
+class UPGMicSettingWidget;
 
 class FOnlineSessionSearchResult;
 class UPGAdvancedFriendsGameInstance;
@@ -66,6 +67,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGSessionStatusWidget> SessionStatusWidgetClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UPGMicSettingWidget> MicSettingWidgetClass;
+
 	UPROPERTY()
 	TObjectPtr<UPGConfirmWidget> ConfirmWidgetInstance;
 
@@ -75,10 +79,7 @@ public:
 	UPROPERTY()
 	TObjectPtr<UPGSessionStatusWidget> SessionStatusWidgetInstance;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UPGSettingMenuWidget> SettingMenuWidgetClass;
-
-	UPROPERTY()
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UPGSettingMenuWidget> SettingMenuWidgetInstance;
 
 	UPROPERTY(meta = (BindWidget))

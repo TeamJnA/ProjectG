@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/VoiceCapture.h"
+
 #include "PGSettingMenuWidget.generated.h"
 
 class UVerticalBox;
@@ -16,6 +18,8 @@ class UPGPlayerVoiceEntry;
 class UPGOptionSwitcherWidget;
 class UPGAdvancedFriendsGameInstance;
 class APGGameState;
+class APGPlayerController;
+class APGLobbyPlayerController;
 class UPGGameUserSettings;
 
 /**
@@ -25,6 +29,10 @@ UCLASS()
 class PROJECTG_API UPGSettingMenuWidget : public UUserWidget
 {
 	GENERATED_BODY()
+
+public:
+    void ActivateMicCapture();
+    void DeactivateMicCapture();
 
 protected:
     virtual void NativeOnInitialized() override;
@@ -205,10 +213,16 @@ private:
     TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
     TWeakObjectPtr<APGGameState> GSRef;
 
+    TSharedPtr<IVoiceCapture> SettingsVoiceCapture;
+
     static constexpr float MicSensitivityMin = 0.001f;
     static constexpr float MicSensitivityMax = 0.02f;
     static constexpr float MicGainMax = 6.0f;
     float DisplayMicAmplitude = 0.0f;
+    float AmplitudeUpdateAccumulator = 0.0f;
+    
+    static constexpr int32 VoiceDrainBufferSize = 8192;
+    uint8 VoiceDrainBuffer[VoiceDrainBufferSize];
 
-    bool bIsLoadingSettings = false;
+    bool bIsLoadingSettings = false;    
 };

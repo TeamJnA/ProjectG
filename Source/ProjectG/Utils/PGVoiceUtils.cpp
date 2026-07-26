@@ -1,6 +1,8 @@
 #include "PGVoiceUtils.h"
 
 #include "Player/PGGameUserSettings.h"
+#include "Player/PGPlayerController.h"
+#include "Player/PGLobbyPlayerController.h"
 #include "AudioCapture.h"
 #include "Net/VoiceConfig.h"
 #include "VoiceInterfaceImpl.h"
@@ -8,6 +10,7 @@
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/VoiceCapture.h"
 #include "VoiceCaptureWindows.h"
+
 
 struct FOnlineVoiceImplEx : public FOnlineVoiceImpl
 {
@@ -113,9 +116,26 @@ bool PGVoiceUtils::ChangeInputDevice(UWorld* World, const FString& DeviceName)
 
     if (VoiceInterface.IsValid())
     {
-        // PTT 모드면 다시 시작하지 않음
+        // PTT 모드 + PTT Off 상태인 경우 다시 시작하지 않음
+        bool bShouldStartVoice = true;
         UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
-        if (!Settings || !Settings->IsPushToTalk())
+        if (Settings && Settings->IsPushToTalk())
+        {
+            bShouldStartVoice = false;
+            if (APlayerController* PC = World->GetFirstPlayerController())
+            {
+                if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+                {
+                    bShouldStartVoice = PGPC->IsPushToTalkActive();
+                }
+                else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+                {
+                    bShouldStartVoice = LobbyPC->IsPushToTalkActive();
+                }
+            }
+        }
+
+        if (bShouldStartVoice)
         {
             VoiceInterface->StartNetworkedVoice(0);
         }
