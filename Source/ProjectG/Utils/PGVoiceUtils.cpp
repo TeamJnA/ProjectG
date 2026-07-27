@@ -116,22 +116,33 @@ bool PGVoiceUtils::ChangeInputDevice(UWorld* World, const FString& DeviceName)
 
     if (VoiceInterface.IsValid())
     {
-        // PTT 모드 + PTT Off 상태인 경우 다시 시작하지 않음
-        bool bShouldStartVoice = true;
-        UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
-        if (Settings && Settings->IsPushToTalk())
+        // PTT 모드 + PTT Off / Off 모드 -> 마이크 인풋 재시작 x
+        bool bShouldStartVoice = false;
+        if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
         {
-            bShouldStartVoice = false;
-            if (APlayerController* PC = World->GetFirstPlayerController())
+            switch (Settings->GetMicMode())
             {
-                if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+            case EMicMode::OpenMic:
+                bShouldStartVoice = true;
+                break;
+
+            case EMicMode::PushToTalk:
+                if (APlayerController* PC = World->GetFirstPlayerController())
                 {
-                    bShouldStartVoice = PGPC->IsPushToTalkActive();
+                    if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+                    {
+                        bShouldStartVoice = PGPC->IsPushToTalkActive();
+                    }
+                    else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+                    {
+                        bShouldStartVoice = LobbyPC->IsPushToTalkActive();
+                    }
                 }
-                else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
-                {
-                    bShouldStartVoice = LobbyPC->IsPushToTalkActive();
-                }
+                break;
+
+            case EMicMode::Off:
+                bShouldStartVoice = false;
+                break;
             }
         }
 

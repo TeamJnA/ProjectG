@@ -86,6 +86,11 @@ void UPGMicSettingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 	float RawAmplitude = SettingsVoiceCapture->GetCurrentAmplitude();
 	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
 	{
+		if (Settings->IsMicOff())
+		{
+			RawAmplitude = 0.0f;
+		}
+
 		if (RawAmplitude < Settings->MicSensitivity)
 		{
 			RawAmplitude = 0.0f;
@@ -168,7 +173,7 @@ void UPGMicSettingWidget::LoadInitialSettings()
 
 	if (PushToTalkOption)
 	{
-		PushToTalkOption->SetSelectedIndex(Settings->IsPushToTalk() ? 1 : 0, false);
+		PushToTalkOption->SetSelectedIndex(UPGGameUserSettings::MicModeToIndex(Settings->GetMicMode()), false);
 	}
 
 	if (MicSensitivitySlider)
@@ -225,7 +230,7 @@ void UPGMicSettingWidget::OnPushToTalkChanged(int32 OptionIndex)
 
 	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
 	{
-		Settings->SetPushToTalk(OptionIndex == 1);
+		Settings->SetMicMode(UPGGameUserSettings::IndexToMicMode(OptionIndex));
 		ApplyAndSaveSettings();
 	}
 }

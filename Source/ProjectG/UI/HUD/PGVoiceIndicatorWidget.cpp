@@ -62,30 +62,36 @@ void UPGVoiceIndicatorWidget::NativeTick(const FGeometry& MyGeometry, float InDe
 	}
 }
 
-bool UPGVoiceIndicatorWidget::IsPushToTalkEnabled() const
-{
-	if (const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
-	{
-		return Settings->IsPushToTalk();
-	}
-	return false;
-}
-
 bool UPGVoiceIndicatorWidget::IsMicReady() const
 {
-	if (!IsPushToTalkEnabled())
+	const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	if (!Settings)
 	{
-		return true;
+		return false;
 	}
 
-	APlayerController* PC = GetOwningPlayer();
-	if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+	switch (Settings->GetMicMode())
 	{
-		return PGPC->IsPushToTalkActive();
+	case EMicMode::OpenMic:
+		return true;
+
+	case EMicMode::Off:
+		return false;
+
+	case EMicMode::PushToTalk:
+		{
+			APlayerController* PC = GetOwningPlayer();
+			if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
+			{
+				return PGPC->IsPushToTalkActive();
+			}
+			else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
+			{
+				return LobbyPC->IsPushToTalkActive();
+			}
+		}
+		break;
 	}
-	else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
-	{
-		return LobbyPC->IsPushToTalkActive();
-	}
+
 	return false;
 }

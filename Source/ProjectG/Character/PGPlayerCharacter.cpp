@@ -2058,11 +2058,7 @@ void APGPlayerCharacter::TryInitVoiceSettings()
 	}
 	else
 	{
-		if (LocalVoiceLoopback && !LocalVoiceLoopback->IsActive())
-		{
-			LocalVoiceLoopback->SetVolumeMultiplier(0.0f);
-			LocalVoiceLoopback->Start();
-		}
+		ApplyMicModeToLocalCapture();
 	}
 
 	if (InGamePC)
@@ -2157,6 +2153,27 @@ void APGPlayerCharacter::TryCachePlayerState()
 	CachePSRetryCount = 0;
 }
 
+void APGPlayerCharacter::ApplyMicModeToLocalCapture()
+{
+	if (!IsLocallyControlled() || !LocalVoiceLoopback)
+	{
+		return;
+	}
+
+	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	const bool bOff = Settings && Settings->IsMicOff();
+	if (bOff && LocalVoiceLoopback->IsActive())
+	{
+		LocalVoiceLoopback->SetVolumeMultiplier(0.0f);
+		LocalVoiceLoopback->Stop();
+	}
+	else if (!bOff && !LocalVoiceLoopback->IsActive())
+	{
+		LocalVoiceLoopback->SetVolumeMultiplier(0.0f);
+		LocalVoiceLoopback->Start();
+	}
+}
+
 bool APGPlayerCharacter::IsVoiceLoopbackAllowed() const
 {
 	if (!IsLocallyControlled())
@@ -2187,8 +2204,19 @@ bool APGPlayerCharacter::IsVoiceLoopbackAllowed() const
 
 void APGPlayerCharacter::CheckVoiceAndReportNoise()
 {
-	// PTT 모드에서 키 안 누르면 노이즈 x
+	// Mic Off인 경우 early return
 	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	if (Settings && Settings->IsMicOff())
+	{
+		CurrentVoiceAmplitude = 0.0f;
+		if (LocalVoiceLoopback)
+		{
+			LocalVoiceLoopback->SetVolumeMultiplier(0.0f);
+			return;
+		}
+	}
+
+	// PTT Off -> 노이즈 x, Amplitude 0
 	if (Settings && Settings->IsPushToTalk())
 	{
 		APGPlayerController* PGPC = Cast<APGPlayerController>(GetController());
@@ -2349,7 +2377,12 @@ void APGPlayerCharacter::StopVoiceCheck()
 float APGPlayerCharacter::GetCurrentVoiceAmplitude() const
 {
 	UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
-	if (Settings && Settings->IsPushToTalk())
+	if (!Settings || Settings->IsMicOff())
+	{
+		return 0.0f;
+	}
+
+	if (Settings->IsPushToTalk())
 	{
 		bool bActive = false;
 		if (APGPlayerController* PGPC = Cast<APGPlayerController>(GetController()))

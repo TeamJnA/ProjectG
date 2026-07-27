@@ -3,6 +3,7 @@
 
 #include "Player/PGGameUserSettings.h"
 
+
 UPGGameUserSettings::UPGGameUserSettings()
 	: CameraSensitivity(0.5f)
 	, OutputDeviceId(FString())
@@ -12,6 +13,7 @@ UPGGameUserSettings::UPGGameUserSettings()
 	, VoiceVolume(0.5f)
 	, MicSensitivity(0.01f)
 	, MicInputGain(3.0f)
+	, MicMode(EMicMode::OpenMic)
 {
 }
 
@@ -20,13 +22,48 @@ UPGGameUserSettings* UPGGameUserSettings::GetPGGameUserSettings()
 	return Cast<UPGGameUserSettings>(UGameUserSettings::GetGameUserSettings());
 }
 
-void UPGGameUserSettings::SetPushToTalk(bool bEnable)
+void UPGGameUserSettings::SetMicMode(EMicMode NewMode)
 {
-	bPushToTalk = bEnable;
+	if (MicMode == NewMode)
+	{
+		return;
+	}
+
+	MicMode = NewMode;
 	SaveSettings();
 	SaveConfig();
 
-	OnPushToTalkModeChanged.Broadcast(bEnable);
+	OnMicModeChanged.Broadcast(NewMode);
+}
+
+EMicMode UPGGameUserSettings::IndexToMicMode(int32 Index)
+{
+	switch (Index)
+	{
+	case 1: 
+		return EMicMode::PushToTalk;
+
+	case 2: 
+		return EMicMode::Off;
+
+	default:
+		return EMicMode::OpenMic;
+	}
+}
+
+int32 UPGGameUserSettings::MicModeToIndex(EMicMode Mode)
+{
+	switch (Mode)
+	{
+	case EMicMode::PushToTalk:
+		return 1;
+
+	case EMicMode::Off:
+		return 2;
+
+	default:
+		return 0;
+	}
 }
 
 void UPGGameUserSettings::ApplyMicSettings()

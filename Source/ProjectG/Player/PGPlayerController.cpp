@@ -970,17 +970,32 @@ void APGPlayerController::ApplyVoiceMode()
 		return;
 	}
 
-	if (Settings->IsPushToTalk())
+	bPushToTalkActive = false;
+	bPushToTalkActive = false;
+
+	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
+	switch (Settings->GetMicMode())
 	{
-		bPushToTalkActive = false;
-		bPushToTalkPrimed = false;
-		StopTalking();  // PTT 모드 -> 기본 Off
+	// PTT/Off -> 기본 Off
+	case EMicMode::Off:
+	case EMicMode::PushToTalk:
+		StopTalking();
+		if (VoiceInterface.IsValid())
+		{
+			VoiceInterface->StopNetworkedVoice(0);
+			VoiceInterface->ClearVoicePackets();
+		}
+		break;
+
+	// Open -> 기본 On
+	case EMicMode::OpenMic:
+		StartTalking();
+		break;
 	}
-	else
+
+	if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(GetPawn()))
 	{
-		bPushToTalkActive = false;
-		bPushToTalkPrimed = false;
-		StartTalking();  // 오픈 마이크 -> 기본 On
+		Char->ApplyMicModeToLocalCapture();
 	}
 }
 

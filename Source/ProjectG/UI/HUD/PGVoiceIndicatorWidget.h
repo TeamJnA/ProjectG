@@ -19,7 +19,6 @@ class PROJECTG_API UPGVoiceIndicatorWidget : public UUserWidget
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
-	bool IsPushToTalkEnabled() const;
 	bool IsMicReady() const;
 
 	UPROPERTY(meta = (BindWidget))

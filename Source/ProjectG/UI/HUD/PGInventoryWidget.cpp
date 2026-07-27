@@ -10,7 +10,6 @@
 #include "Components/UniformGridSlot.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGInventoryComponent.h"
-#include "Player/PGGameUserSettings.h"
 #include "Item/PGItemData.h"
 
 
@@ -38,7 +37,7 @@ void UPGInventoryWidget::NativeConstruct()
 	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
 	{
 		CachedSettings = Settings;
-		Settings->OnPushToTalkModeChanged.AddUniqueDynamic(this, &UPGInventoryWidget::HandlePushToTalkModeChanged);
+		Settings->OnMicModeChanged.AddUniqueDynamic(this, &UPGInventoryWidget::HandleMicModeChanged);
 	}
 
 	RefreshKeyGuides();
@@ -54,7 +53,7 @@ void UPGInventoryWidget::NativeDestruct()
 
 	if (UPGGameUserSettings* Settings = CachedSettings.Get())
 	{
-		Settings->OnPushToTalkModeChanged.RemoveAll(this);
+		Settings->OnMicModeChanged.RemoveAll(this);
 	}
 
 	for (auto& InventorySlot : InventorySlots)
@@ -68,7 +67,7 @@ void UPGInventoryWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-void UPGInventoryWidget::HandlePushToTalkModeChanged(bool bIsPushToTalk)
+void UPGInventoryWidget::HandleMicModeChanged(EMicMode NewMode)
 {
 	RefreshKeyGuides();
 }

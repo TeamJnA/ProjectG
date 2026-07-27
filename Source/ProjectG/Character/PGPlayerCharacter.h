@@ -531,11 +531,11 @@ protected:
 public:
 	void TryInitVoiceSettings();
 	void UpdateVoipSettings();
+	void ApplyMicModeToLocalCapture();
 
 protected:
 	// 사망 시 연결을 끊으므로, PS에 본인의 캐릭터를 등록시킴
 	void TrySetDeadCharacter();
-
 	bool IsVoiceLoopbackAllowed() const;
 
 private:

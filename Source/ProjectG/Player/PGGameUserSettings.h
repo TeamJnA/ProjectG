@@ -6,7 +6,16 @@
 #include "GameFramework/GameUserSettings.h"
 #include "PGGameUserSettings.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPushToTalkModeChanged, bool, bIsPushToTalk);
+
+UENUM(BlueprintType)
+enum class EMicMode : uint8
+{
+	OpenMic		UMETA(DisplayName = "OpenMic"),
+	PushToTalk	UMETA(DisplayName = "PushToTalk"),
+	Off			UMETA(DisplayName = "Off"),
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMicModeChanged, EMicMode, NewMicMode);
 
 /**
  * Custom GameUserSettings that persists all user preferences.
@@ -57,13 +66,18 @@ public:
 	float MicInputGain;
 
 	UPROPERTY(Config)
-	bool bPushToTalk = false;
+	EMicMode MicMode;
 
 	UPROPERTY()
-	FOnPushToTalkModeChanged OnPushToTalkModeChanged;
+	FOnMicModeChanged OnMicModeChanged;
 
-	void SetPushToTalk(bool bEnable);
-	FORCEINLINE bool IsPushToTalk() const { return bPushToTalk; }
+	void SetMicMode(EMicMode NewMode);
+	FORCEINLINE EMicMode GetMicMode() const { return MicMode; }
+	FORCEINLINE bool IsPushToTalk() const { return MicMode == EMicMode::PushToTalk; }
+	FORCEINLINE bool IsMicOff() const { return MicMode == EMicMode::Off; }
+
+	static EMicMode IndexToMicMode(int32 Index);
+	static int32 MicModeToIndex(EMicMode Mode);
 
 	// -------- Voice Setup --------
 	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|VoiceSetup")
@@ -71,5 +85,5 @@ public:
 
 	// -------- Helper --------
 	/** Apply mic CVar settings only */
-	void ApplyMicSettings();	
+	void ApplyMicSettings();
 };

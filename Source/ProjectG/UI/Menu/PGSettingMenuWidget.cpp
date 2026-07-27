@@ -202,7 +202,11 @@ void UPGSettingMenuWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
     float RawAmplitude = SettingsVoiceCapture->GetCurrentAmplitude();
     if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
     {
-        if (Settings->IsPushToTalk())
+        if (Settings->IsMicOff())
+        {
+            RawAmplitude = 0.0f;
+        }
+        else if (Settings->IsPushToTalk())
         {
             bool bIsPTTReady = false;
             if (APlayerController* PC = GetOwningPlayer())
@@ -385,7 +389,7 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
 
     if (PushToTalkOption)
     {
-        PushToTalkOption->SetSelectedIndex(Settings->IsPushToTalk() ? 1 : 0, false);
+        PushToTalkOption->SetSelectedIndex(UPGGameUserSettings::MicModeToIndex(Settings->GetMicMode()), false);
     }
 }
 
@@ -816,8 +820,7 @@ void UPGSettingMenuWidget::OnPushToTalkChanged(int32 OptionIndex)
         return;
     }
 
-    const bool bEnable = (OptionIndex == 1);
-    Settings->SetPushToTalk(bEnable);
+    Settings->SetMicMode(UPGGameUserSettings::IndexToMicMode(OptionIndex));
 
     if (APlayerController* PC = GetOwningPlayer())
     {

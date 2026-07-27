@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Player/PGGameUserSettings.h"
 #include "PGInventoryWidget.generated.h"
 
 class APGPlayerCharacter;
@@ -14,7 +15,6 @@ class UWidget;
 class UPGItemActionGuideWidget;
 class UPGItemData;
 class UTextBlock;
-class UPGGameUserSettings;
 struct FInventoryItem;
 
 /**
@@ -35,7 +35,7 @@ protected:
 	virtual void NativeDestruct() override;
 
 	UFUNCTION()
-	void HandlePushToTalkModeChanged(bool bIsPushToTalk);
+	void HandleMicModeChanged(EMicMode NewMode);
 
 	UFUNCTION()
 	void HandleOnInventoryUpdate(const TArray<FInventoryItem>& InventoryItems);
