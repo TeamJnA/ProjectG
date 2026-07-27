@@ -8,6 +8,7 @@
 #include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Type/PGDifficultyTypes.h"
+#include "Type/PGSessionTypes.h"
 
 #include "PGMainMenuWidget.generated.h"
 
@@ -113,7 +114,7 @@ protected:
 	void OnHostButtonClicked();
 
 	UFUNCTION()
-	void OnDifficultySelected(EPGDifficulty SelectedDifficulty);
+	void OnHostSessionConfirmed(const FPGHostSessionOptions& Options);
 
 	UFUNCTION()
 	void StartHostSession();
@@ -171,4 +172,5 @@ protected:
 
 private:
 	TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
+	FPGHostSessionOptions PendingHostOptions;
 };

@@ -46,5 +46,5 @@ protected:
 	void OnJoinClicked();
 
 private:
-	int32 Index;
+	int32 Index = INDEX_NONE;
 };

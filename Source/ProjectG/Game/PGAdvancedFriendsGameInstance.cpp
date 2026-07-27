@@ -94,7 +94,7 @@ void UPGAdvancedFriendsGameInstance::Init()
 * 技记 积己
 * 捞傈 技记 沥焊啊 巢酒乐绰 版快 DestroySession阑 烹秦 技记 辆丰 饶 积己
 */
-void UPGAdvancedFriendsGameInstance::HostSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate)
+void UPGAdvancedFriendsGameInstance::HostSession(const FPGHostSessionOptions& Options)
 {
 	if (!SessionInterface.IsValid())
 	{
@@ -102,45 +102,49 @@ void UPGAdvancedFriendsGameInstance::HostSession(FName SessionName, int32 MaxPla
 		return;
 	}
 
+	SelectedDifficulty = Options.Difficulty;
 	OnHostSessionAttemptStarted.Broadcast();
 
-	const FNamedOnlineSession* ExistingSession = SessionInterface->GetNamedSession(SessionName);
+	const FNamedOnlineSession* ExistingSession = SessionInterface->GetNamedSession(NAME_GameSession);
 	if (ExistingSession != nullptr)
 	{
 		bIsHostingAfterDestroy = true;
-		PendingSessionName = SessionName;
-		PendingMaxPlayers = MaxPlayers;
-		bIsPendingSessionPrivate = bIsPrivate;
+		PendingHostOptions = Options;
 
-		SessionInterface->DestroySession(SessionName);
+		SessionInterface->DestroySession(NAME_GameSession);
 	}
 	else
 	{
-		CreateNewSession(SessionName, MaxPlayers, bIsPrivate);
+		CreateNewSession(Options);
 	}
 }
 
 /*
 * 技记 积己 备泅何
 */
-void UPGAdvancedFriendsGameInstance::CreateNewSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate)
+void UPGAdvancedFriendsGameInstance::CreateNewSession(const FPGHostSessionOptions& Options)
 {
+	CurrentHostOptions = Options;
+
 	FOnlineSessionSettings SessionSettings;
-	SessionSettings.NumPublicConnections = MaxPlayers;
-	SessionSettings.NumPrivateConnections = bIsPrivate ? 1 : 0;
+	SessionSettings.NumPublicConnections = PG_MAX_SESSION_PLAYERS;
+	SessionSettings.NumPrivateConnections = 0;
 	SessionSettings.bIsLANMatch = false;
-	SessionSettings.bShouldAdvertise = true;
 	SessionSettings.bUsesPresence = true;
-	SessionSettings.bAllowJoinViaPresence = true;
 	SessionSettings.bUseLobbiesIfAvailable = true;
 	SessionSettings.bAllowJoinInProgress = true;
 	SessionSettings.bAllowInvites = true;
 
-	SessionSettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineDataAdvertisementType::ViaOnlineService);
-	SessionSettings.Set(SESSION_KEY_CURRENT_PLAYERS, 1, EOnlineDataAdvertisementType::ViaOnlineService);
-	SessionSettings.Set(SESSION_KEY_DIFFICULTY, (int32)SelectedDifficulty, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.bShouldAdvertise = !Options.bIsInviteOnly;
+	SessionSettings.bAllowJoinViaPresence = !Options.bIsInviteOnly;
+	SessionSettings.bAllowJoinViaPresenceFriendsOnly = Options.bIsInviteOnly;
 
-	SessionInterface->CreateSession(0, SessionName, SessionSettings);
+	SessionSettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_SESSION_NAME, Options.DisplayName, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_CURRENT_PLAYERS, 1, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_DIFFICULTY, (int32)Options.Difficulty, EOnlineDataAdvertisementType::ViaOnlineService);
+
+	SessionInterface->CreateSession(0, NAME_GameSession, SessionSettings);
 }
 
 /*
@@ -303,9 +307,8 @@ void UPGAdvancedFriendsGameInstance::ForceReturnToMainMenu()
 
 	bIsHostingAfterDestroy = false;
 	AcceptedInviteInfo.Reset();
-	PendingSessionName = NAME_None;
-	PendingMaxPlayers = 0;
-	bIsPendingSessionPrivate = false;
+	PendingHostOptions = FPGHostSessionOptions();
+	CurrentHostOptions = FPGHostSessionOptions();
 
 	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
 }
@@ -369,23 +372,22 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 		return;
 	}
 
+	CurrentHostOptions = FPGHostSessionOptions();
+
 	if (bWasSuccessful)
 	{
 		if (bIsHostingAfterDestroy)
 		{
-			CreateNewSession(PendingSessionName, PendingMaxPlayers, bIsPendingSessionPrivate);
+			CreateNewSession(PendingHostOptions);
 
 			bIsHostingAfterDestroy = false;
-			PendingSessionName = NAME_None;
-			PendingMaxPlayers = 0;
-			bIsPendingSessionPrivate = false;
+			PendingHostOptions = FPGHostSessionOptions();
 
 			return;
 		}
 		else if (AcceptedInviteInfo.IsValid())
 		{
 			SessionInterface->JoinSession(0, NAME_GameSession, *AcceptedInviteInfo.Get());
-
 			AcceptedInviteInfo.Reset();
 
 			return;
@@ -396,11 +398,6 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 		if (bIsHostingAfterDestroy)
 		{
 			OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Failed to destroy previous session")));
-
-			bIsHostingAfterDestroy = false;
-			PendingSessionName = NAME_None;
-			PendingMaxPlayers = 0;
-			bIsPendingSessionPrivate = false;
 		}
 	}
 
@@ -492,7 +489,7 @@ void UPGAdvancedFriendsGameInstance::OpenSession()
 	{
 		UE_LOG(LogTemp, Log, TEXT("GI::OpenSession: Re-opening session for new players."));
 		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
-		UpdatedSettings.bShouldAdvertise = true;
+		UpdatedSettings.bShouldAdvertise = !CurrentHostOptions.bIsInviteOnly;
 		SessionInterface->UpdateSession(NAME_GameSession, UpdatedSettings);
 	}
 }

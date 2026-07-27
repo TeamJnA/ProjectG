@@ -16,6 +16,7 @@
 #include "Player/PGSaveGame.h"
 #include "Type/PGRankTypes.h"
 #include "Type/PGDifficultyTypes.h"
+#include "Type/PGSessionTypes.h"
 #include "AudioMixerBlueprintLibrary.h"
 
 #include "PGAdvancedFriendsGameInstance.generated.h"
@@ -29,6 +30,7 @@ class UDataTable;
 
 static const FName SESSION_KEY_CURRENT_PLAYERS = FName(TEXT("CURRENT_PLAYERS"));
 static const FName SESSION_KEY_DIFFICULTY = FName(TEXT("DIFFICULTY"));
+static const FName SESSION_KEY_SESSION_NAME = FName(TEXT("SESSION_NAME"));
 
 USTRUCT(BlueprintType)
 struct FSteamFriendInfo
@@ -75,7 +77,7 @@ public:
 
 	// --------- Session ---------
 	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
-	void HostSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate);
+	void HostSession(const FPGHostSessionOptions& Options);
 
 	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
 	void FindSessions();
@@ -181,7 +183,7 @@ private:
 	// 세션 세팅 업데이트 시 호출
 	void OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful);
 
-	void CreateNewSession(FName SessionName, int32 MaxPlayers, bool bIsPrivate);
+	void CreateNewSession(const FPGHostSessionOptions& Options);
 	void ForceReturnToMainMenu();
 
 	IOnlineSessionPtr SessionInterface;
@@ -198,9 +200,8 @@ private:
 	bool bIsHostingAfterDestroy;
 
 	FString PendingNetworkFailureMessage;
-	FName PendingSessionName;
-	int32 PendingMaxPlayers;
-	bool bIsPendingSessionPrivate;
+	FPGHostSessionOptions PendingHostOptions; // 기존 세션 파괴 후 재생성용
+	FPGHostSessionOptions CurrentHostOptions; // 현재 호스팅 중인 세션의 옵션
 
 	TArray<FUniqueNetIdRepl> ExpectedPlayersForTravel;
 	// ------- Session --------

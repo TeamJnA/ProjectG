@@ -156,7 +156,7 @@ void UPGMainMenuWidget::NativeDestruct()
 
 	if (DifficultySelectWidgetInstance)
 	{
-		DifficultySelectWidgetInstance->OnDifficultySelected.RemoveAll(this);
+		DifficultySelectWidgetInstance->OnHostSessionConfirmed.RemoveAll(this);
 	}
 
 	Super::NativeDestruct();
@@ -253,8 +253,8 @@ void UPGMainMenuWidget::OnHostButtonClicked()
 	if (DifficultySelectWidgetInstance)
 	{
 		DifficultySelectWidgetInstance->SetReturnFocusWidget(this);
-		DifficultySelectWidgetInstance->OnDifficultySelected.RemoveAll(this);
-		DifficultySelectWidgetInstance->OnDifficultySelected.AddDynamic(this, &UPGMainMenuWidget::OnDifficultySelected);
+		DifficultySelectWidgetInstance->OnHostSessionConfirmed.RemoveAll(this);
+		DifficultySelectWidgetInstance->OnHostSessionConfirmed.AddDynamic(this, &UPGMainMenuWidget::OnHostSessionConfirmed);
 		if (!DifficultySelectWidgetInstance->IsInViewport())
 		{
 			DifficultySelectWidgetInstance->AddToViewport();
@@ -262,13 +262,9 @@ void UPGMainMenuWidget::OnHostButtonClicked()
 	}
 }
 
-void UPGMainMenuWidget::OnDifficultySelected(EPGDifficulty SelectedDifficulty)
+void UPGMainMenuWidget::OnHostSessionConfirmed(const FPGHostSessionOptions& Options)
 {
-	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
-	{
-		GI->SetSelectedDifficulty(SelectedDifficulty);
-	}
-
+	PendingHostOptions = Options;
 	if (!ConfirmWidgetClass)
 	{
 		return;
@@ -286,6 +282,7 @@ void UPGMainMenuWidget::OnDifficultySelected(EPGDifficulty SelectedDifficulty)
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::StartHostSession);
+
 		if (!ConfirmWidgetInstance->IsInViewport())
 		{
 			ConfirmWidgetInstance->AddToViewport();
@@ -297,7 +294,7 @@ void UPGMainMenuWidget::StartHostSession()
 {
 	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
-		GI->HostSession(NAME_GameSession, 4, false);
+		GI->HostSession(PendingHostOptions);
 	}
 }
 

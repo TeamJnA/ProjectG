@@ -11,6 +11,8 @@
 
 void UPGSessionSlotWidget::NativeOnInitialized()
 {
+	Super::NativeOnInitialized();
+
 	if (JoinButton)
 	{
 		JoinButton->OnClicked.AddUniqueDynamic(this, &UPGSessionSlotWidget::OnJoinClicked);
@@ -23,41 +25,36 @@ void UPGSessionSlotWidget::NativeOnInitialized()
 void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult, int32 SessionIndex, UPGAdvancedFriendsGameInstance* GI)
 {
 	Index = SessionIndex;
+	const FOnlineSessionSettings& SessionSettings = SearchResult.Session.SessionSettings;
 
 	if (SessionNameText)
 	{
-		FString SessionName = FString::Printf(TEXT("%s Session"), *SearchResult.Session.OwningUserName);
+		FString SessionName;
+		if (!SessionSettings.Get(SESSION_KEY_SESSION_NAME, SessionName) || SessionName.IsEmpty())
+		{
+			SessionName = FString::Printf(TEXT("%s Session"), *SearchResult.Session.OwningUserName);
+		}
 		SessionNameText->SetText(FText::FromString(SessionName));
 	}
 
 	if (PlayerCountText)
 	{
-		const FOnlineSessionSettings& SessionSettings = SearchResult.Session.SessionSettings;
 		const int32 MaxPlayers = SessionSettings.NumPublicConnections;
 		int32 CurrentPlayers = 0;
 
-		if (SessionSettings.Settings.Contains(SESSION_KEY_CURRENT_PLAYERS))
-		{
-			SessionSettings.Settings[SESSION_KEY_CURRENT_PLAYERS].Data.GetValue(CurrentPlayers);
-		}
-		else
+		if (!SessionSettings.Get(SESSION_KEY_CURRENT_PLAYERS, CurrentPlayers))
 		{
 			CurrentPlayers = MaxPlayers - SearchResult.Session.NumOpenPublicConnections;
 			UE_LOG(LogTemp, Warning, TEXT("SessionSlotWidget::Setup: Could not find CURRENT_PLAYERS key. Using fallback logic."));
 		}
 
-		FText PlayerCount = FText::FromString(FString::Printf(TEXT("%d / %d"), CurrentPlayers, MaxPlayers));
-		PlayerCountText->SetText(PlayerCount);
+		PlayerCountText->SetText(FText::FromString(FString::Printf(TEXT("%d / %d"), CurrentPlayers, MaxPlayers)));
 	}
 
 	if (DifficultyText)
 	{
-		const FOnlineSessionSettings& SessionSettings = SearchResult.Session.SessionSettings;
-		int32 DiffValue = 0; // default: Normal
-		if (SessionSettings.Settings.Contains(SESSION_KEY_DIFFICULTY))
-		{
-			SessionSettings.Settings[SESSION_KEY_DIFFICULTY].Data.GetValue(DiffValue);
-		}
+		int32 DiffValue = (int32)EPGDifficulty::Normal; // default: Normal
+		SessionSettings.Get(SESSION_KEY_DIFFICULTY, DiffValue); // 키가 없으면 값 유지 -> Normal
 
 		const EPGDifficulty Diff = (EPGDifficulty)DiffValue;
 		const FString DiffStr = (Diff == EPGDifficulty::Hard) ? TEXT("HARD") : TEXT("NORMAL");
@@ -66,8 +63,7 @@ void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult,
 
 	if (PingText)
 	{
-		FText Ping = FText::FromString(FString::Printf(TEXT("%d ms"), SearchResult.PingInMs));
-		PingText->SetText(Ping);
+		PingText->SetText(FText::FromString(FString::Printf(TEXT("%d ms"), SearchResult.PingInMs)));
 	}
 }
 
