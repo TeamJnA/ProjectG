@@ -10,7 +10,7 @@
 #include "Components/WidgetSwitcher.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
-#include "Game/PGGameMode.h"
+#include "Game/PGGameState.h"
 #include "Player/PGPlayerController.h"
 #include "Player/PGLobbyPlayerController.h"
 
@@ -64,14 +64,7 @@ void UPGPauseMenuWidget::NativeConstruct()
 	bIsFocusable = true;
 	SetKeyboardFocus();
 
-	if (InviteFriendButton)
-	{
-		APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
-		if (GS && GS->GetCurrentGameState() != EGameState::Lobby)
-		{
-			InviteFriendButton->SetVisibility(ESlateVisibility::Collapsed);
-		}
-	}
+	UpdateInviteButtonVisibility();
 }
 
 FReply UPGPauseMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
@@ -300,4 +293,30 @@ void UPGPauseMenuWidget::OnBackButtonClicked()
 	{
 		WidgetSwitcher->SetActiveWidgetIndex(0);
 	}
+}
+
+void UPGPauseMenuWidget::UpdateInviteButtonVisibility()
+{
+	if (!InviteFriendButton)
+	{
+		return;
+	}
+
+	// 로비에서만 초대 가능
+	bool bCanInvite = false;
+	if (const APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+	{
+		bCanInvite = (GS->GetCurrentGameState() == EGameState::Lobby);
+	}
+
+	// 싱글플레이는 로비/인게임 모두 불가
+	if (const UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
+	{
+		if (GI->IsSinglePlaySession())
+		{
+			bCanInvite = false;
+		}
+	}
+
+	InviteFriendButton->SetVisibility(bCanInvite ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }

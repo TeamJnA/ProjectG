@@ -36,13 +36,13 @@ protected:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UButton> HardButton;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
 	TObjectPtr<UButton> Btn_Public;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
 	TObjectPtr<UButton> Btn_InviteOnly;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
 	TObjectPtr<UEditableText> ET_SessionName;
 
 	UPROPERTY(meta = (BindWidget))
@@ -50,6 +50,10 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> HostGameButton;
+
+	/** 싱글플레이 전용 팝업 여부 (WBP 기본값으로 설정) */
+	UPROPERTY(EditDefaultsOnly, Category = "Session")
+	bool bSinglePlayMode = false;
 
 	bool bIsDifNormal;
 	bool bIsInviteOnly;

@@ -31,6 +31,7 @@ class UDataTable;
 static const FName SESSION_KEY_CURRENT_PLAYERS = FName(TEXT("CURRENT_PLAYERS"));
 static const FName SESSION_KEY_DIFFICULTY = FName(TEXT("DIFFICULTY"));
 static const FName SESSION_KEY_SESSION_NAME = FName(TEXT("SESSION_NAME"));
+static const FName SESSION_KEY_INVITE_ONLY = FName(TEXT("INVITE_ONLY"));
 
 USTRUCT(BlueprintType)
 struct FSteamFriendInfo
@@ -106,6 +107,7 @@ public:
 	FORCEINLINE void SetPendingNetworkFailureMessage(const FString& Message) { PendingNetworkFailureMessage = Message; }
 	FORCEINLINE const FString& GetPendingNetworkFailureMessage() const { return PendingNetworkFailureMessage; }
 	FORCEINLINE void ClearPendingNetworkFailureMessage() { PendingNetworkFailureMessage.Empty(); }
+	FORCEINLINE bool IsSinglePlaySession() const { return CurrentHostOptions.bIsSinglePlay; }
 
 	FOnSessionsFoundDelegate OnSessionsFound;
 	FOnHostSessionAttemptStartedDelegate OnHostSessionAttemptStarted;
@@ -191,6 +193,7 @@ private:
 
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSearch> LatestSessionSearch;
+	TArray<FOnlineSessionSearchResult> VisibleSessionResults;
 	// 초대 정보 임시 저장
 	TSharedPtr<FOnlineSessionSearchResult> AcceptedInviteInfo;
 

@@ -62,8 +62,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;
 
+	// Host
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGDifficultySelectWidget> DifficultySelectWidgetClass;
+
+	// Single
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UPGDifficultySelectWidget> SinglePlaySelectWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGSessionStatusWidget> SessionStatusWidgetClass;
@@ -76,6 +81,9 @@ public:
 
 	UPROPERTY()
 	TObjectPtr<UPGDifficultySelectWidget> DifficultySelectWidgetInstance;
+
+	UPROPERTY()
+	TObjectPtr<UPGDifficultySelectWidget> SinglePlaySelectWidgetInstance;
 
 	UPROPERTY()
 	TObjectPtr<UPGSessionStatusWidget> SessionStatusWidgetInstance;
@@ -112,6 +120,8 @@ protected:
 
 	UFUNCTION()
 	void OnHostButtonClicked();
+
+	void ShowSessionCreateWidget(const TSubclassOf<UPGDifficultySelectWidget>& WidgetClass, TObjectPtr<UPGDifficultySelectWidget>& InstanceRef);
 
 	UFUNCTION()
 	void OnHostSessionConfirmed(const FPGHostSessionOptions& Options);

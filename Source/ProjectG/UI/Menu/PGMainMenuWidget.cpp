@@ -159,6 +159,11 @@ void UPGMainMenuWidget::NativeDestruct()
 		DifficultySelectWidgetInstance->OnHostSessionConfirmed.RemoveAll(this);
 	}
 
+	if (SinglePlaySelectWidgetInstance)
+	{
+		SinglePlaySelectWidgetInstance->OnHostSessionConfirmed.RemoveAll(this);
+	}
+
 	Super::NativeDestruct();
 }
 
@@ -196,10 +201,6 @@ FReply UPGMainMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKe
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
-void UPGMainMenuWidget::OnSinglePlayButtonClicked()
-{
-}
-
 /*
 * 技记 浇吩 积己何
 * 技记 积己/Setup
@@ -233,9 +234,19 @@ void UPGMainMenuWidget::ClearSessionList()
 	}
 }
 
+void UPGMainMenuWidget::OnSinglePlayButtonClicked()
+{
+	ShowSessionCreateWidget(SinglePlaySelectWidgetClass, SinglePlaySelectWidgetInstance);
+}
+
 void UPGMainMenuWidget::OnHostButtonClicked()
 {
-	if (!DifficultySelectWidgetClass)
+	ShowSessionCreateWidget(DifficultySelectWidgetClass, DifficultySelectWidgetInstance);
+}
+
+void UPGMainMenuWidget::ShowSessionCreateWidget(const TSubclassOf<UPGDifficultySelectWidget>& WidgetClass, TObjectPtr<UPGDifficultySelectWidget>& InstanceRef)
+{
+	if (!WidgetClass)
 	{
 		return;
 	}
@@ -245,19 +256,26 @@ void UPGMainMenuWidget::OnHostButtonClicked()
 		return;
 	}
 
-	if (!DifficultySelectWidgetInstance)
+	UPGDifficultySelectWidget* Other = (&InstanceRef == &DifficultySelectWidgetInstance)
+		? SinglePlaySelectWidgetInstance.Get() : DifficultySelectWidgetInstance.Get();
+	if (Other && Other->IsInViewport())
 	{
-		DifficultySelectWidgetInstance = CreateWidget<UPGDifficultySelectWidget>(this, DifficultySelectWidgetClass);
+		Other->RemoveFromParent();
 	}
 
-	if (DifficultySelectWidgetInstance)
+	if (!InstanceRef)
 	{
-		DifficultySelectWidgetInstance->SetReturnFocusWidget(this);
-		DifficultySelectWidgetInstance->OnHostSessionConfirmed.RemoveAll(this);
-		DifficultySelectWidgetInstance->OnHostSessionConfirmed.AddDynamic(this, &UPGMainMenuWidget::OnHostSessionConfirmed);
-		if (!DifficultySelectWidgetInstance->IsInViewport())
+		InstanceRef = CreateWidget<UPGDifficultySelectWidget>(this, WidgetClass);
+	}
+
+	if (InstanceRef)
+	{
+		InstanceRef->SetReturnFocusWidget(this);
+		InstanceRef->OnHostSessionConfirmed.RemoveAll(this);
+		InstanceRef->OnHostSessionConfirmed.AddDynamic(this, &UPGMainMenuWidget::OnHostSessionConfirmed);
+		if (!InstanceRef->IsInViewport())
 		{
-			DifficultySelectWidgetInstance->AddToViewport();
+			InstanceRef->AddToViewport();
 		}
 	}
 }
@@ -277,8 +295,9 @@ void UPGMainMenuWidget::OnHostSessionConfirmed(const FPGHostSessionOptions& Opti
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Create Session")));
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Create a new session?")));
+		const bool bSingle = Options.bIsSinglePlay;
+		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(bSingle ? TEXT("Single Play") : TEXT("Create Session")));
+		ConfirmWidgetInstance->SetConfirmText(FText::FromString(bSingle ? TEXT("Start a single play?") : TEXT("Create a new session?")));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::StartHostSession);

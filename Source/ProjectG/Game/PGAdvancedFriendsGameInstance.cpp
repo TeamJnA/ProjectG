@@ -129,22 +129,35 @@ void UPGAdvancedFriendsGameInstance::CreateNewSession(const FPGHostSessionOption
 	CurrentHostOptions = Options;
 
 	FOnlineSessionSettings SessionSettings;
-	SessionSettings.NumPublicConnections = PG_MAX_SESSION_PLAYERS;
+	SessionSettings.NumPublicConnections = Options.bIsSinglePlay ? 1 : PG_MAX_SESSION_PLAYERS;
 	SessionSettings.NumPrivateConnections = 0;
 	SessionSettings.bIsLANMatch = false;
+
 	SessionSettings.bUsesPresence = true;
 	SessionSettings.bUseLobbiesIfAvailable = true;
-	SessionSettings.bAllowJoinInProgress = true;
-	SessionSettings.bAllowInvites = true;
 
-	SessionSettings.bShouldAdvertise = !Options.bIsInviteOnly;
-	SessionSettings.bAllowJoinViaPresence = !Options.bIsInviteOnly;
-	SessionSettings.bAllowJoinViaPresenceFriendsOnly = Options.bIsInviteOnly;
+	if (Options.bIsSinglePlay)
+	{
+		SessionSettings.bShouldAdvertise = false;
+		SessionSettings.bAllowJoinInProgress = false;
+		SessionSettings.bAllowInvites = false;
+		SessionSettings.bAllowJoinViaPresence = false;
+		SessionSettings.bAllowJoinViaPresenceFriendsOnly = false;
+	}
+	else
+	{
+		SessionSettings.bShouldAdvertise = true;
+		SessionSettings.bAllowJoinInProgress = true;
+		SessionSettings.bAllowInvites = true;
+		SessionSettings.bAllowJoinViaPresence = !Options.bIsInviteOnly;
+		SessionSettings.bAllowJoinViaPresenceFriendsOnly = Options.bIsInviteOnly;
+	}
 
 	SessionSettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_SESSION_NAME, Options.DisplayName, EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_CURRENT_PLAYERS, 1, EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_DIFFICULTY, (int32)Options.Difficulty, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_INVITE_ONLY, Options.bIsInviteOnly ? 1 : 0, EOnlineDataAdvertisementType::ViaOnlineService);
 
 	SessionInterface->CreateSession(0, NAME_GameSession, SessionSettings);
 }
@@ -196,6 +209,7 @@ void UPGAdvancedFriendsGameInstance::FindSessions()
 	LatestSessionSearch->MaxSearchResults = 20;
 	LatestSessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
 	LatestSessionSearch->QuerySettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineComparisonOp::Equals);
+	LatestSessionSearch->QuerySettings.Set(SESSION_KEY_INVITE_ONLY, 0, EOnlineComparisonOp::Equals);
 
 	SessionInterface->FindSessions(0, LatestSessionSearch.ToSharedRef());
 }
@@ -207,17 +221,34 @@ void UPGAdvancedFriendsGameInstance::FindSessions()
 void UPGAdvancedFriendsGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 {
 	OnFindSessionAttemptFinished.Broadcast(bWasSuccessful);
+	VisibleSessionResults.Empty();
 
 	if (bWasSuccessful && LatestSessionSearch.IsValid())
 	{
-		UE_LOG(LogTemp, Log, TEXT("GI::OnFindSessionsComplete: Found %d sessions."), LatestSessionSearch->SearchResults.Num());
-		OnSessionsFound.Broadcast(LatestSessionSearch->SearchResults);
+		for (const FOnlineSessionSearchResult& Result : LatestSessionSearch->SearchResults)
+		{
+			int32 InviteOnlyValue = 0;
+			Result.Session.SessionSettings.Get(SESSION_KEY_INVITE_ONLY, InviteOnlyValue);
+			if (InviteOnlyValue != 0)
+			{
+				// FriendsOnly 세션은 목록에 노출x
+				UE_LOG(LogTemp, Log, TEXT("GI::OnFindSessionsComplete: Filtered out invite-only session"));
+				continue;
+			}
+
+			VisibleSessionResults.Add(Result);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("GI::OnFindSessionsComplete: Found %d sessions (%d visible)."),
+			LatestSessionSearch->SearchResults.Num(), VisibleSessionResults.Num());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GI::OnFindSessionsComplete: FindSessions call failed. bWasSuccessful: %s"), bWasSuccessful ? TEXT("true") : TEXT("false"));
-		OnSessionsFound.Broadcast(TArray<FOnlineSessionSearchResult>());
+		UE_LOG(LogTemp, Error, TEXT("GI::OnFindSessionsComplete: FindSessions call failed. bWasSuccessful: %s"),
+			bWasSuccessful ? TEXT("true") : TEXT("false"));
 	}
+
+	OnSessionsFound.Broadcast(VisibleSessionResults);
 }
 
 /*
@@ -238,17 +269,17 @@ void UPGAdvancedFriendsGameInstance::JoinSessionInternal(FOnlineSessionSearchRes
 */
 void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
 {
-	if (!SessionInterface.IsValid() || !LatestSessionSearch.IsValid())
+	if (!SessionInterface.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("GI::JoinFoundSession: no valid session interface or session search"));
 		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Session system error")));
 		return;
 	}
 
-	if (LatestSessionSearch->SearchResults.IsValidIndex(SessionIndex))
+	if (VisibleSessionResults.IsValidIndex(SessionIndex))
 	{
 		OnJoinSessionAttemptStarted.Broadcast();
-		JoinSessionInternal(LatestSessionSearch->SearchResults[SessionIndex]);
+		JoinSessionInternal(VisibleSessionResults[SessionIndex]);
 	}
 	else
 	{
@@ -344,6 +375,7 @@ void UPGAdvancedFriendsGameInstance::ForceReturnToMainMenu()
 	AcceptedInviteInfo.Reset();
 	PendingHostOptions = FPGHostSessionOptions();
 	CurrentHostOptions = FPGHostSessionOptions();
+	VisibleSessionResults.Empty();
 
 	UGameplayStatics::OpenLevel(this, FName("/Game/ProjectG/Levels/LV_PGLobbyRoom"), true);
 }
@@ -527,9 +559,21 @@ void UPGAdvancedFriendsGameInstance::OpenSession()
 	{
 		UE_LOG(LogTemp, Log, TEXT("GI::OpenSession: Re-opening session for new players."));
 		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
-		UpdatedSettings.bShouldAdvertise = !CurrentHostOptions.bIsInviteOnly;
-		UpdatedSettings.bAllowJoinInProgress = true;
-		UpdatedSettings.bAllowInvites = true;
+		if (CurrentHostOptions.bIsSinglePlay)
+		{
+			UpdatedSettings.bShouldAdvertise = false;
+			UpdatedSettings.bAllowJoinInProgress = false;
+			UpdatedSettings.bAllowInvites = false;
+		}
+		else
+		{
+			UpdatedSettings.bShouldAdvertise = true;
+			UpdatedSettings.bAllowJoinInProgress = true;
+			UpdatedSettings.bAllowInvites = true;
+			UpdatedSettings.bAllowJoinViaPresence = !CurrentHostOptions.bIsInviteOnly;
+			UpdatedSettings.bAllowJoinViaPresenceFriendsOnly = CurrentHostOptions.bIsInviteOnly;
+		}
+
 		SessionInterface->UpdateSession(NAME_GameSession, UpdatedSettings);
 	}
 }
@@ -881,6 +925,12 @@ UTexture2D* UPGAdvancedFriendsGameInstance::GetSteamAvatarAsTexture(const FUniqu
 
 void UPGAdvancedFriendsGameInstance::InviteFriend(const FUniqueNetId& FriendToInvite)
 {
+	if (CurrentHostOptions.bIsSinglePlay)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::InviteFriend: Ignored. This is a single play session."));
+		return;
+	}
+
 	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
 	if (OnlineSubsystem)
 	{

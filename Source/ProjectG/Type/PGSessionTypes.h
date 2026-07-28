@@ -29,5 +29,8 @@ struct FPGHostSessionOptions
     bool bIsInviteOnly = false;
 
     UPROPERTY(BlueprintReadWrite, Category = "Session")
+    bool bIsSinglePlay = false;
+
+    UPROPERTY(BlueprintReadWrite, Category = "Session")
     EPGDifficulty Difficulty = EPGDifficulty::Normal;
 };

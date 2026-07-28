@@ -124,7 +124,8 @@ void UPGDifficultySelectWidget::OnHostGameClicked()
 {
 	FPGHostSessionOptions Options;
 	Options.Difficulty = bIsDifNormal ? EPGDifficulty::Normal : EPGDifficulty::Hard;
-	Options.bIsInviteOnly = bIsInviteOnly;
+	Options.bIsSinglePlay = bSinglePlayMode;
+	Options.bIsInviteOnly = bSinglePlayMode ? true : bIsInviteOnly;
 	Options.DisplayName = BuildSessionDisplayName();
 
 	OnHostSessionConfirmed.Broadcast(Options);

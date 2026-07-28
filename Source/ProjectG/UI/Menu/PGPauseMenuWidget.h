@@ -51,6 +51,8 @@ protected:
 	UFUNCTION()
 	void OnBackButtonClicked();
 
+	void UpdateInviteButtonVisibility();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;
 
