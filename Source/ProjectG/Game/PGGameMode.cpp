@@ -93,14 +93,8 @@ void APGGameMode::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
 	}
 
-	FTimerHandle TravelCheckTimer;
-	GetWorld()->GetTimerManager().SetTimer(
-		TravelCheckTimer,
-		this,
-		&APGGameMode::CheckAllPlayersArrived,
-		5.0f,
-		false
-	);
+	TravelCheckElapsed = 0.0f;
+	GetWorld()->GetTimerManager().SetTimer(TravelCheckTimerHandle, this, &APGGameMode::CheckAllPlayersArrived, 1.0f, true, 1.0f);
 }
 
 void APGGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -108,6 +102,7 @@ void APGGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(InGameStartTimerHandle);
+		World->GetTimerManager().ClearTimer(TravelCheckTimerHandle);
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -122,24 +117,28 @@ void APGGameMode::PreLogin(const FString& Options, const FString& Address, const
 	}
 
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (GI)
+	if (!GI)
 	{
-		const TArray<FUniqueNetIdRepl>& ExpectedPlayers = GI->GetExpectedPlayersForTravel();
-		bool bIsExpected = false;
-		for (const FUniqueNetIdRepl& ExpectedUser : ExpectedPlayers)
-		{
-			if (ExpectedUser == UniqueId)
-			{
-				bIsExpected = true;
-				break;
-			}
-		}
+		UE_LOG(LogTemp, Error, TEXT("GM::PreLogin: No valid GI. Rejecting login."));
+		ErrorMessage = TEXT("Server Error");
+		return;
+	}
 
-		if (!bIsExpected)
+	const TArray<FUniqueNetIdRepl>& ExpectedPlayers = GI->GetExpectedPlayersForTravel();
+	bool bIsExpected = false;
+	for (const FUniqueNetIdRepl& ExpectedUser : ExpectedPlayers)
+	{
+		if (ExpectedUser == UniqueId)
 		{
-			ErrorMessage = TEXT("Game Started");
-			//UE_LOG(LogTemp, Warning, TEXT("[PreLogin] Rejected unexpected player: %s"), *UniqueId.ToString());
+			bIsExpected = true;
+			break;
 		}
+	}
+
+	if (!bIsExpected)
+	{
+		ErrorMessage = TEXT("Game Started");
+		//UE_LOG(LogTemp, Warning, TEXT("[PreLogin] Rejected unexpected player: %s"), *UniqueId.ToString());
 	}
 }
 
@@ -166,26 +165,47 @@ void APGGameMode::CheckAllPlayersArrived()
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (!GI)
 	{
+		GetWorld()->GetTimerManager().ClearTimer(TravelCheckTimerHandle);
 		return;
 	}
 
+	TravelCheckElapsed += 1.0f;
+
 	const TArray<FUniqueNetIdRepl>& ExpectedPlayers = GI->GetExpectedPlayersForTravel();
+	bool bAllArived = ExpectedPlayers.Num() > 0;
 	for (const FUniqueNetIdRepl& ExpectedPlayer : ExpectedPlayers)
 	{
 		if (!ArrivedPlayers.Contains(ExpectedPlayer))
 		{
-			if (ExpectedPlayer.IsValid())
-			{
-				GI->KickPlayerFromSession(*ExpectedPlayer.GetUniqueNetId());
-			}
+			bAllArived = false;
+			break;
 		}
 	}
 
+	if (!bAllArived && TravelCheckElapsed < TravelCheckDeadline)
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(TravelCheckTimerHandle);
+
+	for (const FUniqueNetIdRepl& ExpectedPlayer : ExpectedPlayers)
+	{
+		if (!ArrivedPlayers.Contains(ExpectedPlayer) && ExpectedPlayer.IsValid())
+		{
+			GI->KickPlayerFromSession(*ExpectedPlayer.GetUniqueNetId());
+		}
+	}
 	GI->ClearExpectedPlayersForTravel();
 
 	if (!ArrivedPlayers.IsEmpty())
 	{
 		SpawnLevelGenerator();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GM::CheckAllPlayersArrived: No player arrived. Returning to lobby."));
+		RequestServerTravel();
 	}
 }
 

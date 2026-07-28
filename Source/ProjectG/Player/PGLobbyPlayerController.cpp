@@ -85,6 +85,7 @@ void APGLobbyPlayerController::BeginPlay()
 		case EGameState::MainMenu:
 			SetupMainMenuView();
 			SetupMainMenuUI();
+			GetWorld()->GetTimerManager().SetTimer(HideLoadingScreenTimerHandle, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
 			break;
 
 		case EGameState::Lobby:
@@ -140,8 +141,7 @@ void APGLobbyPlayerController::OnPossess(APawn* aPawn)
 	{
 		InitLocalVoice();
 
-		FTimerHandle HideTimer;
-		GetWorld()->GetTimerManager().SetTimer(HideTimer, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
+		GetWorld()->GetTimerManager().SetTimer(HideLoadingScreenTimerHandle, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
 	}
 }
 
@@ -153,8 +153,7 @@ void APGLobbyPlayerController::OnRep_Pawn()
 	{
 		InitLocalVoice();
 
-		FTimerHandle HideTimer;
-		GetWorld()->GetTimerManager().SetTimer(HideTimer, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
+		GetWorld()->GetTimerManager().SetTimer(HideLoadingScreenTimerHandle, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
 	}
 }
 
@@ -162,15 +161,18 @@ void APGLobbyPlayerController::InitLocalVoice()
 {
 	ApplyVoiceMode();
 
-	FTimerHandle InputDeviceTimer;
-	GetWorld()->GetTimerManager().SetTimer(InputDeviceTimer, [this]()
-	{
-		PGVoiceUtils::ApplySavedInputDevice(GetWorld());
-	}, 0.5f, false);
+	GetWorld()->GetTimerManager().SetTimer(InputDeviceTimerHandle, this, &APGLobbyPlayerController::ApplySavedInputDeviceDeferred, 0.5f, false);
+}
+
+void APGLobbyPlayerController::ApplySavedInputDeviceDeferred()
+{
+	PGVoiceUtils::ApplySavedInputDevice(GetWorld());
 }
 
 void APGLobbyPlayerController::HideLoadingScreenDelayed()
 {
+	GetWorld()->GetTimerManager().ClearTimer(LoadingScreenFailsafeHandle);
+
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (!GI)
 	{
@@ -178,6 +180,12 @@ void APGLobbyPlayerController::HideLoadingScreenDelayed()
 		return;
 	}
 	GI->HideLoadingScreen();
+}
+
+void APGLobbyPlayerController::ForceHideLoadingScreen()
+{
+	UE_LOG(LogTemp, Warning, TEXT("LobbyPC::ForceHideLoadingScreen: Failsafe triggered"));
+	HideLoadingScreenDelayed();
 }
 
 /*
@@ -269,16 +277,6 @@ void APGLobbyPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 	}
 }
 
-void APGLobbyPlayerController::Client_ShowLoadingScreen_Implementation()
-{
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GI)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("LobbyPC::Client_ShowLoadingScreen: No valid gi"));
-	}
-	GI->ShowLoadingScreen();
-}
-
 void APGLobbyPlayerController::RefreshVoiceChannel()
 {
 	if (bIsLeavingSession)
@@ -346,6 +344,7 @@ void APGLobbyPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanu
 		{
 			GI->ShowLoadingScreen();
 		}
+		GetWorld()->GetTimerManager().SetTimer(LoadingScreenFailsafeHandle, this, &APGLobbyPlayerController::ForceHideLoadingScreen, 15.0f, false);
 	}
 
 	PerformCleanup(TargetNetId);
@@ -370,12 +369,18 @@ void APGLobbyPlayerController::PerformCleanup(const FUniqueNetIdRepl& TargetNetI
 		VoiceInterface->MuteRemoteTalker(0, *TargetNetId, false);
 
 		FTimerHandle RemoveTimer;
+		TWeakObjectPtr<APGLobbyPlayerController> WeakThis(this);
 		FUniqueNetIdRepl CapturedId = TargetNetId;
-		GetWorld()->GetTimerManager().SetTimer(RemoveTimer, [this, CapturedId]()
+		GetWorld()->GetTimerManager().SetTimer(RemoveTimer, [WeakThis, CapturedId]()
 		{
-			Leavers.Remove(CapturedId);
+			if (!WeakThis.IsValid())
+			{
+				return;
+			}
+
+			WeakThis->Leavers.Remove(CapturedId);
 			UE_LOG(LogTemp, Log, TEXT("[VoiceDebug] Removed leaver from Leavers set"));
-		}, 2.5f, false);
+		}, 10.0f, false);
 	}
 	else
 	{
@@ -470,7 +475,7 @@ void APGLobbyPlayerController::ApplyVoiceMode()
 	}
 
 	bPushToTalkActive = false;
-	bPushToTalkActive = false;
+	bPushToTalkPrimed = false;
 
 	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
 	switch (Settings->GetMicMode())

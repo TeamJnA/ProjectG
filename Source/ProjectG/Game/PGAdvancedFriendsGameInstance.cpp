@@ -53,6 +53,8 @@ void UPGAdvancedFriendsGameInstance::Init()
 		SessionInterface = OnlineSubsystem->GetSessionInterface();
 		if (SessionInterface.IsValid())
 		{
+			SessionInterface->OnSessionUserInviteAcceptedDelegates.RemoveAll(this);
+
 			SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnCreateSessionComplete);
 			SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnFindSessionsComplete);
 			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UPGAdvancedFriendsGameInstance::OnJoinSessionComplete);
@@ -180,6 +182,12 @@ void UPGAdvancedFriendsGameInstance::FindSessions()
 		OnFindSessionAttemptFinished.Broadcast(false);
 		return;
 	}
+	
+	if (LatestSessionSearch.IsValid() && LatestSessionSearch->SearchState == EOnlineAsyncTaskState::InProgress)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::FindSessions: Search already in progress"));
+		return;
+	}
 
 	OnFindSessionAttemptStarted.Broadcast();
 
@@ -213,6 +221,17 @@ void UPGAdvancedFriendsGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 }
 
 /*
+* Join 전 bUseLobbiesIfAvailable과 bUsesPresence 통일 
+*/
+void UPGAdvancedFriendsGameInstance::JoinSessionInternal(FOnlineSessionSearchResult& SearchResult)
+{
+	SearchResult.Session.SessionSettings.bUsesPresence = true;
+	SearchResult.Session.SessionSettings.bUseLobbiesIfAvailable = true;
+
+	SessionInterface->JoinSession(0, NAME_GameSession, SearchResult);
+}
+
+/*
 * 위젯에서 선택한 세션 참가
 * 세션의 bUseLobbiesIfAvailable과 bUsesPresence값이 동일해야 참가할 수 있지만,
 * UE5.3에서 세션의 bUseLobbiesIfAvailable값이 true로 설정이 안되는 현상이 있어 검색후 true로 직접 바꿔줘야함
@@ -229,11 +248,7 @@ void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
 	if (LatestSessionSearch->SearchResults.IsValidIndex(SessionIndex))
 	{
 		OnJoinSessionAttemptStarted.Broadcast();
-
-		LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUseLobbiesIfAvailable = true;
-		LatestSessionSearch->SearchResults[SessionIndex].Session.SessionSettings.bUsesPresence = true;
-
-		SessionInterface->JoinSession(0, NAME_GameSession, LatestSessionSearch->SearchResults[SessionIndex]);
+		JoinSessionInternal(LatestSessionSearch->SearchResults[SessionIndex]);
 	}
 	else
 	{
@@ -269,14 +284,14 @@ void UPGAdvancedFriendsGameInstance::OnJoinSessionComplete(FName SessionName, EO
 		}
 		else
 		{
+			HideLoadingScreen();
 			OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Could not resolve connection string")));
-			//ForceReturnToMainMenu();
 		}
 	}
 	else
 	{
+		HideLoadingScreen();
 		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Failed to join session")));
-		//ForceReturnToMainMenu();
 	}
 }
 
@@ -292,8 +307,28 @@ void UPGAdvancedFriendsGameInstance::OnSessionUserInviteAccepted(bool bWasSucces
 		return;
 	}
 
+	if (!InviteResult.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::OnSessionUserInviteAccepted: Invalid invite result"));
+		return;
+	}
+
 	AcceptedInviteInfo = MakeShared<FOnlineSessionSearchResult>(InviteResult);
-	LeaveSessionAndReturnToMainMenu();
+
+	ShowLoadingScreen();
+
+	if (SessionInterface->GetNamedSession(NAME_GameSession) != nullptr)
+	{
+		// 기존 세션이 있으면 파괴 후 OnDestroySessionComplete 에서 조인
+		LeaveSessionAndReturnToMainMenu();
+	}
+	else
+	{
+		// 세션이 없으면(메인메뉴 등) 바로 조인
+		bIsHost = false;
+		JoinSessionInternal(*AcceptedInviteInfo.Get());
+		AcceptedInviteInfo.Reset();
+	}
 }
 
 /*
@@ -387,7 +422,8 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 		}
 		else if (AcceptedInviteInfo.IsValid())
 		{
-			SessionInterface->JoinSession(0, NAME_GameSession, *AcceptedInviteInfo.Get());
+			bIsHost = false;
+			JoinSessionInternal(*AcceptedInviteInfo.Get());
 			AcceptedInviteInfo.Reset();
 
 			return;
@@ -417,10 +453,10 @@ void UPGAdvancedFriendsGameInstance::HandleTravelFailure(UWorld* World, ETravelF
 
 	if (SessionInterface.IsValid())
 	{
-		FNamedOnlineSession* ExistingSession = SessionInterface->GetNamedSession(NAME_GameSession);
-		if (ExistingSession)
+		if (SessionInterface->GetNamedSession(NAME_GameSession))
 		{
 			SessionInterface->DestroySession(NAME_GameSession);
+			return;
 		}
 	}
 
@@ -444,10 +480,10 @@ void UPGAdvancedFriendsGameInstance::HandleNetworkFailure(UWorld* World, UNetDri
 
 	if (SessionInterface.IsValid())
 	{
-		FNamedOnlineSession* ExistingSession = SessionInterface->GetNamedSession(NAME_GameSession);
-		if (ExistingSession)
+		if (SessionInterface->GetNamedSession(NAME_GameSession))
 		{
 			SessionInterface->DestroySession(NAME_GameSession);
+			return;
 		}
 	}
 
@@ -470,6 +506,8 @@ void UPGAdvancedFriendsGameInstance::CloseSession()
 		UE_LOG(LogTemp, Log, TEXT("GI::CloseSession: Close session for new players."));
 		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
 		UpdatedSettings.bShouldAdvertise = false;
+		UpdatedSettings.bAllowJoinInProgress = false;
+		UpdatedSettings.bAllowInvites = false;
 		SessionInterface->UpdateSession(NAME_GameSession, UpdatedSettings);
 	}
 }
@@ -490,12 +528,19 @@ void UPGAdvancedFriendsGameInstance::OpenSession()
 		UE_LOG(LogTemp, Log, TEXT("GI::OpenSession: Re-opening session for new players."));
 		FOnlineSessionSettings UpdatedSettings = Session->SessionSettings;
 		UpdatedSettings.bShouldAdvertise = !CurrentHostOptions.bIsInviteOnly;
+		UpdatedSettings.bAllowJoinInProgress = true;
+		UpdatedSettings.bAllowInvites = true;
 		SessionInterface->UpdateSession(NAME_GameSession, UpdatedSettings);
 	}
 }
 
 void UPGAdvancedFriendsGameInstance::OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	if (!SessionInterface.IsValid())
+	{
+		return;
+	}
+
 	if (SessionInterface->GetNamedSession(NAME_GameSession))
 	{
 		UE_LOG(LogTemp, Log, TEXT("GI::OnUpdateSessionComplete: Session '%s' update completed. Success: %d. bShouldAdvertise: %d"),
@@ -570,6 +615,12 @@ void UPGAdvancedFriendsGameInstance::ShowLoadingScreen()
 	if (!LoadingScreenWidgetClass || (LoadingScreenWidget && LoadingScreenWidget->IsInViewport()))
 	{
 		return;
+	}
+
+	if (LoadingScreenWidget)
+	{
+		LoadingScreenWidget->RemoveFromParent();
+		LoadingScreenWidget = nullptr;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("GI::ShowLoadingScreen: Show loading screen"));

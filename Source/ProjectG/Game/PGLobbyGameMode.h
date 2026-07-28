@@ -63,4 +63,16 @@ private:
 
 	bool bIsMassProcessing = false;
 	bool bServerShouldQuit = false;
+
+	// ----------- Spawn -----------
+	int32 FindLobbySpawnIndex();
+	bool IsLobbySlotOccupied(int32 Index) const;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	TArray<FTransform> LobbySpawnTransforms;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	float LobbySlotClearRadius = 100.0f;
+
+	int32 NextLobbySpawnIndex = 0;
 };

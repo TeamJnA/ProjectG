@@ -27,9 +27,6 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_ForceReturnToLobby();
 
-	UFUNCTION(Client, Reliable)
-	void Client_ShowLoadingScreen();
-
 	void ApplyVoiceMode();
 	void HandlePushToTalkToggle();
 	bool IsPushToTalkReady() const;
@@ -45,7 +42,9 @@ protected:
 	virtual void OnRep_Pawn() override;
 
 	void InitLocalVoice();
+	void ApplySavedInputDeviceDeferred();
 	void HideLoadingScreenDelayed();
+	void ForceHideLoadingScreen();
 
 	UFUNCTION(Server, Reliable)
 	void Server_SpawnAndPossessPlayer();
@@ -91,6 +90,10 @@ private:
 
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> Leavers;
+
+	FTimerHandle InputDeviceTimerHandle;
+	FTimerHandle HideLoadingScreenTimerHandle;
+	FTimerHandle LoadingScreenFailsafeHandle;
 
 	float PushToTalkStartTime = 0.0f;
 

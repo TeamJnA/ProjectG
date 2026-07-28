@@ -98,6 +98,10 @@ private:
 	TSubclassOf<APGLevelGenerator> PGLevelGenerator;
 
 	FTimerHandle InGameStartTimerHandle;
+	FTimerHandle TravelCheckTimerHandle;
+
+	float TravelCheckElapsed = 0.0f;
+	float TravelCheckDeadline = 20.0f;
 
 	ECleanupActionType PendingActionType = ECleanupActionType::None;
 

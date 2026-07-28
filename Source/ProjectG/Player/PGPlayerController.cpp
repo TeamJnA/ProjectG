@@ -166,11 +166,12 @@ void APGPlayerController::InitLocalVoice()
 {
 	ApplyVoiceMode();
 
-	FTimerHandle InputDeviceTimer;
-	GetWorld()->GetTimerManager().SetTimer(InputDeviceTimer, [this]()
-	{
-		PGVoiceUtils::ApplySavedInputDevice(GetWorld());
-	}, 0.5f, false);
+	GetWorld()->GetTimerManager().SetTimer(InputDeviceTimerHandle, this, &APGPlayerController::ApplySavedInputDeviceDeferred, 0.5f, false);
+}
+
+void APGPlayerController::ApplySavedInputDeviceDeferred()
+{
+	PGVoiceUtils::ApplySavedInputDevice(GetWorld());
 }
 
 void APGPlayerController::SetupPlayerForGameplay()
@@ -267,19 +268,10 @@ void APGPlayerController::Client_ForceReturnToLobby_Implementation()
 	}
 }
 
-void APGPlayerController::Client_ShowLoadingScreen_Implementation()
-{
-	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GI)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PC::Client_HidLoadingScreen: No valid GI"));
-		return;
-	}
-	GI->ShowLoadingScreen();
-}
-
 void APGPlayerController::Client_HideLoadingScreen_Implementation()
 {
+	GetWorld()->GetTimerManager().ClearTimer(LoadingScreenFailsafeHandle);
+
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (!GI)
 	{
@@ -857,9 +849,22 @@ void APGPlayerController::Client_StopVoiceAndCleanup_Implementation(ECleanupActi
 		{
 			GI->ShowLoadingScreen();
 		}
+		GetWorld()->GetTimerManager().SetTimer(LoadingScreenFailsafeHandle, this, &APGPlayerController::ForceHideLoadingScreen, 15.0f, false);
 	}
 
 	PerformCleanup(TargetNetId);
+}
+
+void APGPlayerController::ForceHideLoadingScreen()
+{
+	UE_LOG(LogTemp, Warning, TEXT("PGPC::ForceHideLoadingScreen: Failsafe triggered"));
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PGPC::ForceHideLoadingScreen: No valid GI"));
+		return;
+	}
+	GI->HideLoadingScreen();
 }
 
 void APGPlayerController::PerformCleanup(const FUniqueNetIdRepl& TargetNetId)
@@ -879,6 +884,20 @@ void APGPlayerController::PerformCleanup(const FUniqueNetIdRepl& TargetNetId)
 		Leavers.Add(TargetNetId);
 		VoiceInterface->RegisterRemoteTalker(*TargetNetId);
 		VoiceInterface->MuteRemoteTalker(0, *TargetNetId, false);
+
+		FTimerHandle RemoveTimer;
+		TWeakObjectPtr<APGPlayerController> WeakThis(this);
+		FUniqueNetIdRepl CapturedId = TargetNetId;
+		GetWorld()->GetTimerManager().SetTimer(RemoveTimer, [WeakThis, CapturedId]()
+		{
+			if (!WeakThis.IsValid())
+			{
+				return;
+			}
+		
+			WeakThis->Leavers.Remove(CapturedId);
+			UE_LOG(LogTemp, Log, TEXT("[VoiceDebug] Removed leaver from Leavers set"));
+		}, 10.0f, false);
 	}
 	else
 	{
@@ -971,7 +990,7 @@ void APGPlayerController::ApplyVoiceMode()
 	}
 
 	bPushToTalkActive = false;
-	bPushToTalkActive = false;
+	bPushToTalkPrimed = false;
 
 	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
 	switch (Settings->GetMicMode())

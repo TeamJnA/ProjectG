@@ -82,6 +82,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
 	void FindSessions();
 
+	// Helper
+	void JoinSessionInternal(FOnlineSessionSearchResult& SearchResult);
+
 	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
 	void JoinFoundSession(int32 SessionIndex);
 

@@ -163,13 +163,14 @@ void APGLobbyGameMode::StartGame()
 {
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	APGGameState* GS = GetGameState<APGGameState>();
-	if (!GS || !GS)
+	if (!GI || !GS)
 	{
 		return;
 	}
 
 	GI->SaveGameStateOnTravel(EGameState::InGame);
 	GI->SetExpectedPlayersForTravel(GS->PlayerArray);
+	GI->CloseSession();
 
 	UE_LOG(LogTemp, Log, TEXT("LobbyGM: Start Game (Mass Travel). Muting All."));
 
@@ -311,9 +312,21 @@ void APGLobbyGameMode::SpawnAndPossessPlayer(APlayerController* NewPlayer)
 		return;
 	}
 
-	const FTransform SpawnTransform(FRotator::ZeroRotator, FVector(0.0f, -500.0f, 300.0f));
+	if (NewPlayer->GetPawn())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LobbyGM::SpawnAndPossessPlayer: %s already has a pawn"), *GetNameSafe(NewPlayer));
+		return;
+	}
+
+	const int32 SlotIndex = FindLobbySpawnIndex();
+	if (SlotIndex == INDEX_NONE)
+	{
+		UE_LOG(LogTemp, Error, TEXT("LobbyGM::SpawnAndPossessPlayer: LobbySpawnTransforms is empty"));
+		return;
+	}
+	const FTransform& SpawnTransform = LobbySpawnTransforms[SlotIndex];
+
 	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	UE_LOG(LogTemp, Warning, TEXT("LobbyGM::SpawnAndPossessPlayer: Called for %s"), *GetNameSafe(NewPlayer));
@@ -322,14 +335,61 @@ void APGLobbyGameMode::SpawnAndPossessPlayer(APlayerController* NewPlayer)
 	if (LobbyCharacter)
 	{
 		NewPlayer->Possess(LobbyCharacter);
-		// TODO: 서버쪽에서 사운드매니저가 안달리는듯?
-		//LobbyCharacter->InitSoundManager(SoundManager);
 
-		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this, LobbyCharacter]()
+		TWeakObjectPtr<APGPlayerCharacter> WeakChar(LobbyCharacter);
+		TWeakObjectPtr<APGLobbyGameMode> WeakThis(this);
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([WeakThis, WeakChar]()
 		{
-			LobbyCharacter->InitSoundManager(SoundManager);
+			if (WeakThis.IsValid() && WeakChar.IsValid())
+			{
+				WeakChar->InitSoundManager(WeakThis->SoundManager);
+			}
 		}));
 	}
+}
+
+int32 APGLobbyGameMode::FindLobbySpawnIndex()
+{
+	const int32 Num = LobbySpawnTransforms.Num();
+	if (Num == 0)
+	{
+		return INDEX_NONE;
+	}
+
+	for (int32 Offset = 0; Offset < Num; ++Offset)
+	{
+		const int32 Index = (NextLobbySpawnIndex + Offset) % Num;
+		if (!IsLobbySlotOccupied(Index))
+		{
+			NextLobbySpawnIndex = (Index + 1) % Num;
+			return Index;
+		}
+	}
+
+	const int32 Fallback = NextLobbySpawnIndex;
+	NextLobbySpawnIndex = (NextLobbySpawnIndex + 1) % Num;
+	return Fallback;
+}
+
+bool APGLobbyGameMode::IsLobbySlotOccupied(int32 Index) const
+{
+	const FVector SlotLocation = LobbySpawnTransforms[Index].GetLocation();
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		const APlayerController* PC = It->Get();
+		if (!PC || !PC->GetPawn())
+		{
+			continue;
+		}
+
+		const FVector Delta = PC->GetPawn()->GetActorLocation() - SlotLocation;
+		if (FVector2D(Delta.X, Delta.Y).SizeSquared() < FMath::Square(LobbySlotClearRadius))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 APGSoundManager* APGLobbyGameMode::GetSoundManager()

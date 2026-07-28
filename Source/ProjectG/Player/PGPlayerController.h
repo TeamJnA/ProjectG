@@ -31,9 +31,6 @@ public:
 	APGPlayerController();
 
 	UFUNCTION(Client, Reliable)
-	void Client_ShowLoadingScreen();
-
-	UFUNCTION(Client, Reliable)
 	void Client_HideLoadingScreen();
 
 	void StartSpectate();
@@ -69,6 +66,7 @@ protected:
 	virtual void PostSeamlessTravel() override;
 
 	void InitLocalVoice();
+	void ApplySavedInputDeviceDeferred();
 
 	void ReplaceInputMappingContext(const APawn* PawnType);
 
@@ -161,6 +159,8 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_StopVoiceAndCleanup(ECleanupActionType ActionType, const FUniqueNetIdRepl& TargetNetId);
 
+	void ForceHideLoadingScreen();
+
 	UFUNCTION(Client, Reliable)
 	void Client_ExecuteSoloAction(ECleanupActionType ActionType);
 
@@ -176,6 +176,9 @@ private:
 
 	UPROPERTY()
 	TSet<FUniqueNetIdRepl> Leavers;
+
+	FTimerHandle InputDeviceTimerHandle;
+	FTimerHandle LoadingScreenFailsafeHandle;
 
 	float PushToTalkStartTime = 0.0f;
 

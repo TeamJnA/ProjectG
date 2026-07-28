@@ -32,7 +32,7 @@ void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult,
 		FString SessionName;
 		if (!SessionSettings.Get(SESSION_KEY_SESSION_NAME, SessionName) || SessionName.IsEmpty())
 		{
-			SessionName = FString::Printf(TEXT("%s Session"), *SearchResult.Session.OwningUserName);
+			SessionName = FString::Printf(TEXT("%s's Session"), *SearchResult.Session.OwningUserName);
 		}
 		SessionNameText->SetText(FText::FromString(SessionName));
 	}
