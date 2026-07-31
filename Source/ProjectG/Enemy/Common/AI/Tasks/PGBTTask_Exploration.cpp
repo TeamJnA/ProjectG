@@ -51,10 +51,10 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
 
     const FVector CurrentLocation = Enemy->GetActorLocation();
 
-    // Waypoint 기반 탐색
     if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
     {
-        FVector WaypointTarget = GS->GetExplorationTarget(CurrentLocation);
+        bool bUsedPlayerBias = false;
+        FVector WaypointTarget = GS->GetExplorationTarget(CurrentLocation, &bUsedPlayerBias);
         if (!WaypointTarget.IsZero())
         {
             FNavLocation NavLoc;
@@ -64,15 +64,29 @@ EBTNodeResult::Type UPGBTTask_Exploration::ExecuteTask(UBehaviorTreeComponent& O
                 // 선: AI → 선택된 Waypoint까지 경로, 구체: 선택된 Waypoint
                 FColor DebugColor;
                 if (Enemy->IsA(APGBlindCharacter::StaticClass()))
+                {
                     DebugColor = FColor::Red;
+                }
                 else if (Enemy->IsA(APGChargerCharacter::StaticClass()))
+                {
                     DebugColor = FColor::Yellow;
+                }
                 else
+                {
                     DebugColor = FColor::Green;
+                }
+                const TCHAR* ModeStr = bUsedPlayerBias ? TEXT("Player") : TEXT("WP");
 
                 DrawDebugLine(GetWorld(), CurrentLocation, NavLoc.Location, DebugColor, false, 5.0f, 0, 3.0f);
                 DrawDebugSphere(GetWorld(), NavLoc.Location, 50.0f, 8, DebugColor, false, 5.0f);
-                DrawDebugString(GetWorld(), NavLoc.Location + FVector(0, 0, 70), FString::Printf(TEXT("%s → WP"), *Enemy->GetName()), nullptr, DebugColor, 5.0f);
+                DrawDebugString(GetWorld(), NavLoc.Location + FVector(0, 0, 70),
+                    FString::Printf(TEXT("%s → %s"), *Enemy->GetName(), ModeStr), nullptr, DebugColor, 5.0f);
+
+                if (bUsedPlayerBias)
+                {
+                    DrawDebugSphere(GetWorld(), WaypointTarget, 120.0f, 12, FColor::Cyan, false, 5.0f);
+                    DrawDebugLine(GetWorld(), WaypointTarget, NavLoc.Location, FColor::Cyan, false, 5.0f, 0, 1.0f);
+                }
 #endif
 
                 OwnerComp.GetBlackboardComponent()->SetValueAsVector(GetSelectedBlackboardKey(), NavLoc.Location);

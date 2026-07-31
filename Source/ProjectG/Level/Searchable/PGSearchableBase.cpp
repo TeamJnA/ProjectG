@@ -69,7 +69,7 @@ APGSearchableSlotBase* APGSearchableBase::GetRandomSlot() const
     return ValidSlots[RandomIndex];
 }
 
-bool APGSearchableBase::GetRandomSlot(APGSearchableSlotBase*& OutSlot)
+bool APGSearchableBase::GetRandomSlot(APGSearchableSlotBase*& OutSlot, const FRandomStream& InStream)
 {
     if (SpawnedSlots.IsEmpty())
     {
@@ -77,7 +77,7 @@ bool APGSearchableBase::GetRandomSlot(APGSearchableSlotBase*& OutSlot)
     }
 
     // 무작위로 하나 선택
-    const int32 RandomIndex = FMath::RandRange(0, SpawnedSlots.Num() - 1);
+    const int32 RandomIndex = InStream.RandRange(0, SpawnedSlots.Num() - 1);
     if (!IsValid(SpawnedSlots[RandomIndex]))
     {
         return false;

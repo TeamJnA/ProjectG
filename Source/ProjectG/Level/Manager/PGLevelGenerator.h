@@ -17,6 +17,7 @@ class APGFuseBox;
 class APGWaiterStand;
 class APGHideProp;
 class APGSearchableBase;
+class APGSearchableSlotBase;
 class UPGBloodstainSpawnPoint;
 
 UCLASS()
@@ -27,8 +28,6 @@ class PROJECTG_API APGLevelGenerator : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APGLevelGenerator();
-
-	const TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>>& GetRoomGraph() const { return RoomGraph; }
 
 protected:
 	void SetSeed();
@@ -46,6 +45,14 @@ protected:
 	void SpawnDoors();
 	void SpawnSearchables();
 	void SpawnItems();
+	void SpawnExitItems();
+	void SpawnItemAtSlot(const FName& ItemKey, APGSearchableSlotBase* Slot);
+	APGSearchableSlotBase* AcquireExitItemSlot(
+		int32 MinDepth,
+		TSet<TObjectPtr<APGMasterRoom>>& UsedRooms,
+		TSet<TObjectPtr<APGMasterRoom>>& UsedBranches,
+		TSet<TObjectPtr<APGSearchableBase>>& UsedSearchables);
+	APGMasterRoom* GetBranchRoot(APGMasterRoom* Room) const;
 	void SpawnMannequins();
 	void SpawnArmorStands();
 	void SpawnFuseBoxes();
@@ -59,6 +66,8 @@ protected:
 	void CheckLevelGenerateTimeOut();
 	void ReGenerateLevel();
 
+	void EnsureRoomDepthMap();
+	void BuildRoomDepthMap();
 	const APGMasterRoom* FindFarthestRoom() const;
 	const APGMasterRoom* FindMiddleDistanceRoom(const FVector& AvoidLocation = FVector::ZeroVector) const;
 	void ComputeExplorationWaypoints();
@@ -75,6 +84,25 @@ private:
 	TMap<FName, TSubclassOf<APGMasterRoom>> RoomClassMap;
 
 	TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>> RoomGraph;
+
+	// Room -> StartRoom 으로부터의 깊이
+	UPROPERTY()
+	TMap<TObjectPtr<APGMasterRoom>, int32> RoomDepths;
+
+	// Room -> BFS 트리상의 부모 (StartRoom 은 미포함)
+	UPROPERTY()
+	TMap<TObjectPtr<APGMasterRoom>, TObjectPtr<APGMasterRoom>> RoomParents;
+
+	// Enum으로만 해당 Searchable을 스폰하기 위한 맵
+	UPROPERTY(EditDefaultsOnly, Category = "Searchable", meta = (AllowPrivateAccess = "true"))
+	TMap<ESearchableType, TSubclassOf<APGSearchableBase>> SearchableClassMap;
+
+	// Searchable -> 소속 Room
+	UPROPERTY()
+	TMap<TObjectPtr<APGSearchableBase>, TObjectPtr<APGMasterRoom>> SearchableOwnerRooms;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Level Generation", meta = (AllowPrivateAccess = "true"))
+	TArray<FName> ExitItemKeys = { FName("ChainKey"), FName("HandWheel"), FName("RustOil") };
 
 	UPROPERTY(EditDefaultsOnly, Category = "Level Generation", meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<APGMasterRoom>> LoopCorridorClassArray;
@@ -108,10 +136,6 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UPGBloodstainSpawnPoint>> BloodstainSpawnPointsList;
-
-	// Enum:Class를 통해, Enum으로만 해당 Searchable을 스폰하기 위한 맵
-	UPROPERTY(EditDefaultsOnly, Category = "Searchable", meta = (AllowPrivateAccess = "true"))
-	TMap<ESearchableType, TSubclassOf<APGSearchableBase>> SearchableClassMap;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Environment", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<APGFuseBox> FuseBoxClass;
@@ -154,5 +178,6 @@ private:
 	int32 SeedValue = -1;
 	int32 RoomAmount;
 
+	bool bRoomDepthsDirty = true;
 	bool bIsGenerationStopped = false;
 };

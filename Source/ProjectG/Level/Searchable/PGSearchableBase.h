@@ -42,7 +42,7 @@ public:
 
     // Spawn할 위치를 알려주면서, 만약에 이제 스폰할 자리가 없으면 False를 Return.
     // False일 경우, level generator에서는 더 이상 아이템을 스폰할 공간이 없다고 판단 후 이 Searchable을 스폰 배열에서 제거.
-    bool GetRandomSlot(APGSearchableSlotBase*& OutSlot);
+    bool GetRandomSlot(APGSearchableSlotBase*& OutSlot, const FRandomStream& InStream);
 
 protected:
 	// Called when the game starts or when spawned

@@ -168,6 +168,7 @@ void APGLevelGenerator::SpawnStartRoom()
 	// Add to RoomGraph
 	StartRoom = NewRoom;
 	RoomGraph.Add(NewRoom);
+	bRoomDepthsDirty = true;
 
 	// MasterRoom .h
 	//  const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
@@ -387,6 +388,7 @@ void APGLevelGenerator::SpawnSingleLoopCorridor(TSubclassOf<APGMasterRoom> LoopC
 
 	RoomGraph.FindOrAdd(StartRoom).Add(LoopRoom);
 	RoomGraph.FindOrAdd(LoopRoom).Add(StartRoom);
+	bRoomDepthsDirty = true;
 
 	ExitPointsList.Remove(StartExit);
 	ExitPointsList.Remove(EndExit);
@@ -565,19 +567,27 @@ void APGLevelGenerator::SpawnNextRoom()
 	TWeakObjectPtr<APGMasterRoom> WeakNewRoom(NewRoom);
 	TWeakObjectPtr<USceneComponent> WeakSelectedExitPoint(SelectedExitPoint);
 
-	FTimerHandle DelayTimerHandle;
-	World->GetTimerManager().SetTimer(
-		DelayTimerHandle,
+	//FTimerHandle DelayTimerHandle;
+	//World->GetTimerManager().SetTimer(
+	//	DelayTimerHandle,
+	//	FTimerDelegate::CreateLambda([WeakThis, WeakSelectedExitPoint, WeakNewRoom]()
+	//	{
+	//		if (WeakThis.IsValid() && WeakSelectedExitPoint.IsValid() && WeakNewRoom.IsValid())
+	//		{
+	//			WeakThis->CheckOverlap(WeakSelectedExitPoint.Get(), WeakNewRoom.Get());
+	//		}
+	//	}), 
+	//	0.1f,
+	//	false
+	//);
+	World->GetTimerManager().SetTimerForNextTick(
 		FTimerDelegate::CreateLambda([WeakThis, WeakSelectedExitPoint, WeakNewRoom]()
 		{
 			if (WeakThis.IsValid() && WeakSelectedExitPoint.IsValid() && WeakNewRoom.IsValid())
 			{
 				WeakThis->CheckOverlap(WeakSelectedExitPoint.Get(), WeakNewRoom.Get());
 			}
-		}), 
-		0.1f,
-		false
-	);
+		}));
 }
 
 int32 APGLevelGenerator::SelectExitPointWithBalancing()
@@ -586,6 +596,8 @@ int32 APGLevelGenerator::SelectExitPointWithBalancing()
 	{
 		return INDEX_NONE;
 	}
+
+	EnsureRoomDepthMap();
 
 	TArray<int32> Depths;
 	Depths.Reserve(ExitPointsList.Num());
@@ -631,47 +643,13 @@ int32 APGLevelGenerator::SelectExitPointWithBalancing()
 
 int32 APGLevelGenerator::GetRoomDepthFromStart(const APGMasterRoom* Room) const
 {
-	if (!Room || !StartRoom)
+	if (!Room)
 	{
 		return 0;
 	}
 
-	if (Room == StartRoom)
-	{
-		return 0;
-	}
-
-	TMap<const APGMasterRoom*, int32> Visited;
-	TQueue<const APGMasterRoom*> Queue;
-
-	Visited.Add(StartRoom, 0);
-	Queue.Enqueue(StartRoom);
-
-	while (!Queue.IsEmpty())
-	{
-		const APGMasterRoom* Current;
-		Queue.Dequeue(Current);
-		
-		const int32 CurrentDepth = Visited[Current];
-
-		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(const_cast<APGMasterRoom*>(Current)))
-		{
-			for (const TObjectPtr<APGMasterRoom>& Neighbor : *Neighbors)
-			{
-				if (Neighbor && !Visited.Contains(Neighbor))
-				{
-					Visited.Add(Neighbor, CurrentDepth + 1);
-					if (Neighbor == Room)
-					{
-						return CurrentDepth + 1;
-					}
-					Queue.Enqueue(Neighbor);
-				}
-			}
-		}
-	}
-
-	return 0;
+	const int32* DepthPtr = RoomDepths.Find(const_cast<APGMasterRoom*>(Room));
+	return DepthPtr ? *DepthPtr : 0;
 }
 
 /*
@@ -709,6 +687,7 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		{
 			RoomGraph.FindOrAdd(ParentRoom).Add(RoomToCheck);
 			RoomGraph.FindOrAdd(RoomToCheck).Add(ParentRoom);
+			bRoomDepthsDirty = true;
 		}
 		DoorPointsList.Add(InSelectedExitPoint);
 		ExitPointsList.Remove(InSelectedExitPoint);
@@ -852,6 +831,8 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	bIsGenerationStopped = true;
 	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 
+	EnsureRoomDepthMap();
+
 	CloseHoles();
 	SpawnDoors();
 	SpawnSearchables();
@@ -891,6 +872,10 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	FuseBoxSpawnPointsList.Empty();
 	BloodstainSpawnPointsList.Empty();
 	RoomGraph.Empty();
+	RoomDepths.Empty();
+	RoomParents.Empty();
+	SearchableOwnerRooms.Empty();
+	bRoomDepthsDirty = true;
 }
 
 /*
@@ -1000,9 +985,9 @@ void APGLevelGenerator::SpawnSearchables()
 		{
 			continue; 
 		}
+		APGMasterRoom* OwnerRoom = Cast<APGMasterRoom>(SearchablePoint->GetOwner());
 
 		ESearchableType TypeToSpawn = SearchablePoint->GetSearchableType();
-
 		// TMap에서 해당 Enum에 매핑된 클래스 포인터 찾기
 		if (const TSubclassOf<APGSearchableBase>* ClassPtr = SearchableClassMap.Find(TypeToSpawn))
 		{
@@ -1018,6 +1003,7 @@ void APGLevelGenerator::SpawnSearchables()
 				if (NewSearchable)
 				{
 					SpawnedSearchables.Add(NewSearchable);
+					SearchableOwnerRooms.Add(NewSearchable, OwnerRoom);
 				}
 			}
 			else
@@ -1070,18 +1056,25 @@ void APGLevelGenerator::AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck
 */
 void APGLevelGenerator::SpawnItems()
 {
-	// Spawn basic items
+	// Spawn exit items
+	SpawnExitItems();
 
+	// Spawn basic items
 	// 스폰하기 전에 배열을 섞어서, 특정 아이템이 앞이나 뒤에 쏠리는 현상을 방지
-	Algo::RandomShuffle(SpawnedSearchables);
-	const int32 ItemAmount = 19;
+	//Algo::RandomShuffle(SpawnedSearchables);
+	for (int32 i = SpawnedSearchables.Num() - 1; i > 0; --i)
+	{
+		const int32 j = Seed.RandRange(0, i);
+		SpawnedSearchables.Swap(i, j);
+	}
+	const int32 ItemAmount = 16;
 	SpawnSingleItem_Async(ItemAmount, 0);
 
 	// Spawn glass bottles
 	for (TObjectPtr<USceneComponent> SpawnPoint : GlassBottleSpawnPointsList)
 	{
 		// 20% 확률로 생성 안함
-		if (FMath::FRand() < 0.2f)
+		if (Seed.FRand() < 0.2f)
 		{
 			continue;
 		}
@@ -1101,16 +1094,23 @@ void APGLevelGenerator::SpawnItems()
 			SpawnParams.Owner = this;
 			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-			GI->RequestLoadItemData(FName("GlassBottle"), FOnItemDataLoaded::CreateLambda([World, SpawnTransform, SpawnParams, ItemAmount, this](UPGItemData* LoadedItemData)
+			TWeakObjectPtr<UWorld> WeakWorld = World;
+
+			GI->RequestLoadItemData(FName("GlassBottle"), FOnItemDataLoaded::CreateLambda(
+				[WeakWorld, SpawnTransform, SpawnParams](UPGItemData* LoadedItemData)
 				{
-					if (LoadedItemData)
+					if (!LoadedItemData || !WeakWorld.IsValid())
 					{
-						APGItemActor* NewItem = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
-						if (NewItem)
-						{
-							NewItem->InitWithData(LoadedItemData);
-						}
+						return;
 					}
+
+					APGItemActor* NewItem = WeakWorld->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
+					if (!NewItem)
+					{
+						 return;
+					}
+
+					NewItem->InitWithData(LoadedItemData);
 				}));
 		}
 	}
@@ -1118,7 +1118,6 @@ void APGLevelGenerator::SpawnItems()
 
 void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 {
-
 	UWorld* World = GetWorld();
 
 	// 종료 조건: 스폰할 아이템이 없거나, 배치할 Searchable이 남지 않은 경우
@@ -1135,10 +1134,7 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 	FName ItemKeyToLoad;
 
 	// ItemAmount에 맞춰서 아이템 스폰
-	if (ItemAmount > 18) ItemKeyToLoad = FName("ChainKey");
-	else if (ItemAmount > 17) ItemKeyToLoad = FName("HandWheel");
-	else if (ItemAmount > 16) ItemKeyToLoad = FName("RustOil");
-	else if (ItemAmount > 12) ItemKeyToLoad = FName("ReviveKit");
+	if (ItemAmount > 12) ItemKeyToLoad = FName("ReviveKit");
 	else if (ItemAmount > 5) ItemKeyToLoad = FName("Match");
 	else ItemKeyToLoad = FName("GlassBottle");
 
@@ -1166,7 +1162,7 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 	if (IsValid(SelectedSearchable))
 	{
 		// 슬롯 하나 꺼내기. 더 이상 남은 슬롯이 없으면 False 반환됨
-		bHasMoreSlots = SelectedSearchable->GetRandomSlot(SelectedSlot);
+		bHasMoreSlots = SelectedSearchable->GetRandomSlot(SelectedSlot, Seed);
 	}
 
 	// 예외 처리: 유효한 슬롯을 가져오지 못했다면 해당 가구를 제거하고 다시 시도
@@ -1209,36 +1205,253 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// 비동기 람다 내에서 안전하게 Slot을 참조하기 위해 Weak Pointer 사용
+	TWeakObjectPtr<APGLevelGenerator> WeakThis(this);
+	TWeakObjectPtr<UWorld> WeakWorld = World;
 	TWeakObjectPtr<APGSearchableSlotBase> WeakSlot = SelectedSlot;
 
-	GI->RequestLoadItemData(ItemKeyToLoad, FOnItemDataLoaded::CreateLambda([World, SpawnTransform, SpawnParams, ItemAmount, NextSeqIndex, WeakSlot, this](UPGItemData* LoadedItemData)
+	GI->RequestLoadItemData(ItemKeyToLoad, FOnItemDataLoaded::CreateLambda(
+		[WeakThis, WeakWorld, WeakSlot, SpawnTransform, SpawnParams, ItemAmount, NextSeqIndex](UPGItemData* LoadedItemData)
 		{
-			if (LoadedItemData)
+			if (!LoadedItemData || !WeakThis.IsValid() || !WeakWorld.IsValid())
 			{
-				APGItemActor* NewItem = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
-				if (NewItem)
-				{
-					NewItem->InitWithData(LoadedItemData);
-					
-					// 아이템을 슬롯에 장착시킴. 슬롯과 같이 움직이도록.
-					if (WeakSlot.IsValid())
-					{
-						// 아이템을 장착할 때, 슬롯에 맞게 회전시키는 경우들 확인
-						FGameplayTagContainer RotateItemTags;
-						RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.RustOil")));
-						RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.GlassBottle")));
+				return;
+			}
 
-						bool bSpawnItemWithRotate = RotateItemTags.HasTagExact(LoadedItemData->ItemTag);
+			APGItemActor* NewItem = WeakWorld->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
+			if (!NewItem)
+			{
+				return;
+			}
 
-						WeakSlot->AttachSpawnedItem(NewItem, bSpawnItemWithRotate);
-					}
-				}
+			NewItem->InitWithData(LoadedItemData);
+
+			// 아이템을 슬롯에 장착시킴. 슬롯과 같이 움직이도록.
+			if (WeakSlot.IsValid())
+			{
+				// 아이템을 장착할 때, 슬롯에 맞게 회전시키는 경우들 확인
+				FGameplayTagContainer RotateItemTags;
+				RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.RustOil")));
+				RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.GlassBottle")));
+
+				bool bSpawnItemWithRotate = RotateItemTags.HasTagExact(LoadedItemData->ItemTag);
+				WeakSlot->AttachSpawnedItem(NewItem, bSpawnItemWithRotate);
 			}
 
 			// 재귀 호출 (증가되거나 보정된 인덱스를 넘겨줌)
-			SpawnSingleItem_Async(ItemAmount, NextSeqIndex);
+			WeakThis->SpawnSingleItem_Async(ItemAmount, NextSeqIndex);
 		}));
+}
+
+/*
+* 탈출 핵심 아이템(ChainKey / HandWheel / RustOil) 스폰
+* RoomGraph 깊이 절반+1 이상인 방에, 서로 다른 방/다른 Searchable에 스폰
+* 일반 아이템보다 먼저 호출되어 슬롯 선점
+*/
+void APGLevelGenerator::SpawnExitItems()
+{
+	EnsureRoomDepthMap();
+
+	int32 MaxDepth = 0;
+	for (const auto& Elem : RoomDepths)
+	{
+		MaxDepth = FMath::Max(MaxDepth, Elem.Value);
+	}
+
+	const int32 MinDepth = FMath::Max(1, MaxDepth / 2);
+	TSet<TObjectPtr<APGMasterRoom>> UsedRooms;
+	TSet<TObjectPtr<APGMasterRoom>> UsedBranches;
+	TSet<TObjectPtr<APGSearchableBase>> UsedSearchables;
+	for (const FName& ItemKey : ExitItemKeys)
+	{
+		APGSearchableSlotBase* Slot = AcquireExitItemSlot(MinDepth, UsedRooms, UsedBranches, UsedSearchables);
+		if (!Slot)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LG::SpawnExitItems: Failed to find slot for %s"), *ItemKey.ToString());
+			continue;
+		}
+
+		SpawnItemAtSlot(ItemKey, Slot);
+	}
+
+	// Branch 수 = StartRoom 인접 방 수
+	const int32 BranchCount = RoomGraph.Contains(StartRoom) ? RoomGraph[StartRoom].Num() : 0;
+
+	UE_LOG(LogTemp, Log, TEXT("LG::SpawnExitItems: MaxDepth=%d MinDepth=%d Branches=%d / UsedBranches=%d UsedRooms=%d"),
+		MaxDepth, MinDepth, BranchCount, UsedBranches.Num(), UsedRooms.Num());
+}
+
+void APGLevelGenerator::SpawnItemAtSlot(const FName& ItemKey, APGSearchableSlotBase* Slot)
+{
+	UWorld* World = GetWorld();
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!World || !GI || !Slot)
+	{
+		return;
+	}
+
+	USceneComponent* ItemSpawnComp = Slot->GetItemSpawnPoint();
+	const FVector SpawnLocation = ItemSpawnComp ? ItemSpawnComp->GetComponentLocation() : Slot->GetActorLocation();
+	const FRotator SpawnRotation = ItemSpawnComp ? ItemSpawnComp->GetComponentRotation() : Slot->GetActorRotation();
+	const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	TWeakObjectPtr<UWorld> WeakWorld = World;
+	TWeakObjectPtr<APGSearchableSlotBase> WeakSlot = Slot;
+
+	GI->RequestLoadItemData(ItemKey, FOnItemDataLoaded::CreateLambda([WeakWorld, SpawnTransform, SpawnParams, WeakSlot](UPGItemData* LoadedItemData)
+	{
+		if (!LoadedItemData || !WeakWorld.IsValid())
+		{
+			return;
+		}
+
+		APGItemActor* NewItem = WeakWorld->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnTransform, SpawnParams);
+		if (!NewItem)
+		{
+			return;
+		}
+
+		NewItem->InitWithData(LoadedItemData);
+
+		if (WeakSlot.IsValid())
+		{
+			FGameplayTagContainer RotateItemTags;
+			RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Exit.RustOil")));
+			RotateItemTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.GlassBottle")));
+
+			const bool bSpawnItemWithRotate = RotateItemTags.HasTagExact(LoadedItemData->ItemTag);
+			WeakSlot->AttachSpawnedItem(NewItem, bSpawnItemWithRotate);
+		}
+	}));
+}
+
+/*
+* Pass 0: Depth + 서로 다른 Branch	(Branch, Room 중복 x)
+* Pass 1: Depth + 서로 다른 Room		(Branch 중복 허용)
+* Pass 2: Depth						(Room 중복 허용)
+* Pass 3: 제한 없음					(Branch, Room 중복 허용 + Room 최소 Depth x)
+* Searchable 중복 금지는 항상 적용
+*/
+APGSearchableSlotBase* APGLevelGenerator::AcquireExitItemSlot(
+	int32 MinDepth,
+	TSet<TObjectPtr<APGMasterRoom>>& UsedRooms,
+	TSet<TObjectPtr<APGMasterRoom>>& UsedBranches,
+	TSet<TObjectPtr<APGSearchableBase>>& UsedSearchables)
+{
+	// 0->1->2->3 순서대로 제한 완화하며 스폰할 SearchableSlot return
+	for (int32 Pass = 0; Pass < 4; ++Pass)
+	{
+		const bool bRequireDepth = (Pass <= 2);
+		const bool bRequireUnusedBranch = (Pass == 0);
+		const bool bRequireUnusedRoom = (Pass <= 1);
+
+		TArray<TObjectPtr<APGSearchableBase>> Candidates;
+		for (const TObjectPtr<APGSearchableBase>& Searchable : SpawnedSearchables)
+		{
+			if (!IsValid(Searchable) || UsedSearchables.Contains(Searchable))
+			{
+				// 이미 쓴 Searchable이면 continue. Searchable은 무조건 중복 금지
+				continue;
+			}
+
+			const TObjectPtr<APGMasterRoom>* RoomPtr = SearchableOwnerRooms.Find(Searchable); // 판정중인 Searchable이 있는 Room
+			APGMasterRoom* Room = RoomPtr ? RoomPtr->Get() : nullptr;
+			const int32* DepthPtr = Room ? RoomDepths.Find(Room) : nullptr; // 그 Room의 Depth(StartRoom부터의 거리)
+			if (!DepthPtr || *DepthPtr <= 0)
+			{
+				continue;
+			}
+
+			if (bRequireDepth && *DepthPtr < MinDepth)
+			{
+				// Depth 체크 하는 단계(0~2)인 경우 Depth 제한 못넘으면 continue
+				continue;
+			}
+
+			if (bRequireUnusedRoom && UsedRooms.Contains(Room))
+			{
+				// Room 중복 체크 하는 단계(0~1)인 경우 Room 중복이면 continue
+				continue;
+			}
+
+			if (bRequireUnusedBranch)
+			{
+				// Branch 중복 체크 하는 단계(0)인 경우 Branch 중복이면 continue
+				APGMasterRoom* BranchRoot = GetBranchRoot(Room);
+				if (!BranchRoot || UsedBranches.Contains(BranchRoot))
+				{
+					continue;
+				}
+			}
+
+			Candidates.Add(Searchable);
+		}
+
+		// 해당 단계에서 모인 Searchable Candidates에서 뽑기
+		while (!Candidates.IsEmpty())
+		{
+			const int32 Pick = UKismetMathLibrary::RandomIntegerFromStream(Seed, Candidates.Num());
+			TObjectPtr<APGSearchableBase> Searchable = Candidates[Pick];
+			Candidates.RemoveAtSwap(Pick);
+
+			APGSearchableSlotBase* OutSlot = nullptr;
+			const bool bHasMoreSlots = Searchable->GetRandomSlot(OutSlot, Seed);
+
+			if (!bHasMoreSlots)
+			{
+				SpawnedSearchables.Remove(Searchable);
+			}
+
+			// 선택된 Searchable, Searchable이 있는 Room, Branch 사용 목록에 등록
+			if (OutSlot)
+			{
+				UsedSearchables.Add(Searchable);
+
+				if (const TObjectPtr<APGMasterRoom>* RoomPtr = SearchableOwnerRooms.Find(Searchable))
+				{
+					UsedRooms.Add(*RoomPtr);
+
+					if (APGMasterRoom* BranchRoot = GetBranchRoot(RoomPtr->Get()))
+					{
+						UsedBranches.Add(BranchRoot);
+					}
+				}
+
+				UE_LOG(LogTemp, Log, TEXT("LG::AcquireExitItemSlot: Pass=%d Depth=%d"), Pass, RoomDepths.FindRef(SearchableOwnerRooms.FindRef(Searchable)));
+
+				return OutSlot;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+/*
+* Input Room's Branch return
+*/
+APGMasterRoom* APGLevelGenerator::GetBranchRoot(APGMasterRoom* Room) const
+{
+	while (Room)
+	{
+		const int32* DepthPtr = RoomDepths.Find(Room);
+		if (!DepthPtr || *DepthPtr <= 0)
+		{
+			return nullptr;
+		}
+
+		if (*DepthPtr == 1)
+		{
+			return Room;
+		}
+
+		Room = RoomParents.FindRef(Room);
+	}
+
+	return nullptr;
 }
 
 TObjectPtr<USceneComponent> APGLevelGenerator::GetRandomPointFromSpecificListAndRemove(TArray<TObjectPtr<USceneComponent>>& TargetList, TArray<TObjectPtr<USceneComponent>>& TargetRemoveList)
@@ -1653,6 +1866,55 @@ void APGLevelGenerator::ReGenerateLevel()
 	GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGMainLevel?listen", true);
 }
 
+void APGLevelGenerator::EnsureRoomDepthMap()
+{
+	if (!bRoomDepthsDirty)
+	{
+		return;
+	}
+
+	BuildRoomDepthMap();
+	bRoomDepthsDirty = false;
+}
+
+void APGLevelGenerator::BuildRoomDepthMap()
+{
+	RoomDepths.Empty();
+	RoomParents.Empty();
+
+	if (!StartRoom)
+	{
+		return;
+	}
+
+	RoomDepths.Add(StartRoom, 0);
+
+	TQueue<TObjectPtr<APGMasterRoom>> Queue;
+	Queue.Enqueue(StartRoom);
+	while (!Queue.IsEmpty())
+	{
+		TObjectPtr<APGMasterRoom> Current;
+		Queue.Dequeue(Current);
+
+		const int32 CurrentDepth = RoomDepths[Current];
+
+		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(Current))
+		{
+			for (const TObjectPtr<APGMasterRoom>& Neighbor : *Neighbors)
+			{
+				if (!Neighbor || RoomDepths.Contains(Neighbor))
+				{
+					continue;
+				}
+
+				RoomDepths.Add(Neighbor, CurrentDepth + 1);
+				RoomParents.Add(Neighbor, Current);
+				Queue.Enqueue(Neighbor);
+			}
+		}
+	}
+}
+
 /*
 * RoomGrpah에 대해 BFS 방식으로 StartRoom에서 가장 먼 Room 탐색
 * 가장 먼 Room 중 랜덤 석택
@@ -1664,37 +1926,10 @@ const APGMasterRoom* APGLevelGenerator::FindFarthestRoom() const
 		return nullptr;
 	}
 
-	TQueue<TObjectPtr<APGMasterRoom>> RoomsToVisit;
-	TMap<TObjectPtr<APGMasterRoom>, int32> Distances;
-
-	RoomsToVisit.Enqueue(StartRoom);
-	Distances.Add(StartRoom, 0);
-
-	// BFS
-	while (!RoomsToVisit.IsEmpty())
-	{
-		TObjectPtr<APGMasterRoom> CurrentRoom;
-		RoomsToVisit.Dequeue(CurrentRoom);
-
-		const int32 CurrentDistance = Distances[CurrentRoom];
-
-		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
-		{
-			for (const TObjectPtr<APGMasterRoom> Neighbor : *Neighbors)
-			{
-				if (Neighbor && !Distances.Contains(Neighbor))
-				{
-					Distances.Add(Neighbor, CurrentDistance + 1);
-					RoomsToVisit.Enqueue(Neighbor);
-				}
-			}
-		}
-	}
-
 	// find farthest room	
 	TArray<TObjectPtr<APGMasterRoom>> FarthestRooms;
 	int32 MaxDistance = -1;
-	for (const auto& Elem : Distances)
+	for (const auto& Elem : RoomDepths)
 	{
 		if (Elem.Value > MaxDistance)
 		{
@@ -1730,38 +1965,16 @@ const APGMasterRoom* APGLevelGenerator::FindMiddleDistanceRoom(const FVector& Av
 		return nullptr;
 	}
 
-	TQueue<TObjectPtr<APGMasterRoom>> RoomsToVisit;
-	TMap<TObjectPtr<APGMasterRoom>, int32> Distances;
-
-	RoomsToVisit.Enqueue(StartRoom);
-	Distances.Add(StartRoom, 0);
 	int32 MaxDistance = 0;
-
-	// BFS
-	while (!RoomsToVisit.IsEmpty())
+	for (const auto& Elem : RoomDepths)
 	{
-		TObjectPtr<APGMasterRoom> CurrentRoom;
-		RoomsToVisit.Dequeue(CurrentRoom);
-		const int32 CurrentDistance = Distances[CurrentRoom];
-		MaxDistance = FMath::Max(MaxDistance, CurrentDistance);
-
-		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
-		{
-			for (const TObjectPtr<APGMasterRoom> Neighbor : *Neighbors)
-			{
-				if (Neighbor && !Distances.Contains(Neighbor))
-				{
-					Distances.Add(Neighbor, CurrentDistance + 1);
-					RoomsToVisit.Enqueue(Neighbor);
-				}
-			}
-		}
+		MaxDistance = FMath::Max(MaxDistance, Elem.Value);
 	}
 
 	// find middle distance room
 	const int32 TargetDistance = MaxDistance / 2 + 1;
 	TArray<TObjectPtr<APGMasterRoom>> MiddleDistanceRooms;
-	for (const auto& Elem : Distances)
+	for (const auto& Elem : RoomDepths)
 	{
 		if (Elem.Value == TargetDistance)
 		{
@@ -1806,34 +2019,10 @@ void APGLevelGenerator::ComputeExplorationWaypoints()
 		return;
 	}
 
-	TQueue<TObjectPtr<APGMasterRoom>> RoomsToVisit;
-	TMap<TObjectPtr<APGMasterRoom>, int32>  Distances;
-	TMap<TObjectPtr<APGMasterRoom>, TObjectPtr<APGMasterRoom>> ParentMap;
-
-	RoomsToVisit.Enqueue(StartRoom);
-	Distances.Add(StartRoom, 0);
-
 	int32 MaxDistance = 0;
-
-	while (!RoomsToVisit.IsEmpty())
+	for (const auto& Elem : RoomDepths)
 	{
-		TObjectPtr<APGMasterRoom> CurrentRoom;
-		RoomsToVisit.Dequeue(CurrentRoom);
-		const int32 CurrentDistance = Distances[CurrentRoom];
-		MaxDistance = FMath::Max(MaxDistance, CurrentDistance);
-
-		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(CurrentRoom))
-		{
-			for (const TObjectPtr<APGMasterRoom>& Neighbor : *Neighbors)
-			{
-				if (Neighbor && !Distances.Contains(Neighbor))
-				{
-					Distances.Add(Neighbor, CurrentDistance + 1);
-					ParentMap.Add(Neighbor, CurrentRoom);
-					RoomsToVisit.Enqueue(Neighbor);
-				}
-			}
-		}
+		MaxDistance = FMath::Max(MaxDistance, Elem.Value);
 	}
 
 	TArray<TObjectPtr<APGMasterRoom>> LeafRooms;
@@ -1855,13 +2044,13 @@ void APGLevelGenerator::ComputeExplorationWaypoints()
 
 	for (const TObjectPtr<APGMasterRoom>& Leaf : LeafRooms)
 	{
-		int32 LeafDist = Distances.Contains(Leaf) ? Distances[Leaf] : 0;
+		int32 LeafDist = RoomDepths.Contains(Leaf) ? RoomDepths[Leaf] : 0;
 		int32 TargetDist = FMath::RoundToInt(LeafDist * 0.75f);
 
 		TObjectPtr<APGMasterRoom> Current = Leaf;
-		while (Current && Distances.Contains(Current))
+		while (Current && RoomDepths.Contains(Current))
 		{
-			if (Distances[Current] == TargetDist)
+			if (RoomDepths[Current] == TargetDist)
 			{
 				if (!UsedRooms.Contains(Current))
 				{
@@ -1871,9 +2060,9 @@ void APGLevelGenerator::ComputeExplorationWaypoints()
 				break;
 			}
 
-			if (ParentMap.Contains(Current))
+			if (RoomParents.Contains(Current))
 			{
-				Current = ParentMap[Current];
+				Current = RoomParents[Current];
 			}
 			else
 			{
@@ -1885,8 +2074,8 @@ void APGLevelGenerator::ComputeExplorationWaypoints()
 	if (Waypoints.Num() < 4)
 	{
 		UE_LOG(LogTemp, Log, TEXT("LG::ComputeExplorationWaypoints: Too little waypoints"));
-		int32 MidDist = MaxDistance / 2;
-		for (const auto& Elem : Distances)
+		const int32 MidDist = MaxDistance / 2;
+		for (const auto& Elem : RoomDepths)
 		{
 			if (Elem.Key == StartRoom)
 			{

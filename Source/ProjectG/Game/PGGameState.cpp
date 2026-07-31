@@ -468,8 +468,69 @@ void APGGameState::OnEnterSequenceFinished()
 	}
 }
 
-// 가중치 기반 Waypoint 결정
-FVector APGGameState::GetExplorationTarget(const FVector& CurrentLocation) const
+FVector APGGameState::GetExplorationTarget(const FVector& CurrentLocation, bool* bOutUsedPlayerBias) const
+{
+	if (bOutUsedPlayerBias)
+	{
+		*bOutUsedPlayerBias = false;
+	}
+
+	if (FMath::FRand() < PlayerBiasChance)
+	{
+		const FVector PlayerTarget = GetPlayerBiasedTarget(CurrentLocation);
+		if (!PlayerTarget.IsZero())
+		{
+			UE_LOG(LogTemp, Log, TEXT("GS::GetExplorationTarget: Player Target"));
+			if (bOutUsedPlayerBias)
+			{
+				*bOutUsedPlayerBias = true;
+			}
+
+			return PlayerTarget;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("GS::GetExplorationTarget: WP Target"));
+	return GetWaypointTarget(CurrentLocation);
+}
+
+// 랜덤 인게임 플레이어 근처로 타겟 설정
+FVector APGGameState::GetPlayerBiasedTarget(const FVector& CurrentLocation) const
+{
+	TArray<FVector> CandidateLocations;
+	for (APlayerState* PS : PlayerArray)
+	{
+		APGPlayerState* PGPS = Cast<APGPlayerState>(PS);
+		if (!PGPS || !PGPS->IsInGame())
+		{
+			continue;
+		}
+
+		AActor* Character = PGPS->GetPlayerCharacter();
+		if (!IsValid(Character))
+		{
+			continue;
+		}
+
+		const FVector PlayerLocation = Character->GetActorLocation();
+		if (FVector::Dist(CurrentLocation, PlayerLocation) < PlayerBiasMinDistanceFromEnemy)
+		{
+			continue;
+		}
+
+		CandidateLocations.Add(PlayerLocation);
+	}
+
+	if (CandidateLocations.IsEmpty())
+	{
+		return FVector::ZeroVector;
+	}
+
+	return CandidateLocations[FMath::RandRange(0, CandidateLocations.Num() - 1)];
+}
+
+// Waypoint들 중 멀수록 가중치를 두고 타겟 설정
+FVector APGGameState::GetWaypointTarget(const FVector& CurrentLocation) const
 {
 	if (ExplorationWaypoints.IsEmpty())
 	{

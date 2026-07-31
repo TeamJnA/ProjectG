@@ -141,13 +141,24 @@ public:
 	FORCEINLINE const TArray<FVector>& GetExplorationWaypoints() const { return ExplorationWaypoints; }
 	void SetExplorationWaypoints(const TArray<FVector>& InWaypoints) { ExplorationWaypoints = InWaypoints; }
 
-	FVector GetExplorationTarget(const FVector& CurrentLocation) const;
+	/* Waypoint 또는 플레이어 근처 중 하나를 확률적으로 선택 */
+	FVector GetExplorationTarget(const FVector& CurrentLocation, bool* bOutUsedPlayerBias = nullptr) const;
 
 	void DrawDebugWaypoints() const;
 
 protected:
+	FVector GetWaypointTarget(const FVector& CurrentLocation) const;
+	FVector GetPlayerBiasedTarget(const FVector& CurrentLocation) const;
+
 	UPROPERTY()
 	TArray<FVector> ExplorationWaypoints;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Exploration")
+	float PlayerBiasChance = 0.25f;
+
+	/* 가까운 플레이어 제외 */
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Exploration")
+	float PlayerBiasMinDistanceFromEnemy = 1500.0f;
 
 public:
 	void StartMaxSanityDecreaseTimer();
