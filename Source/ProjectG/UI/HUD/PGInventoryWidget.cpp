@@ -214,6 +214,7 @@ void UPGInventoryWidget::RefreshKeyGuides()
 
 	const FGuideEntry Guides[] =
 	{
+		{ HeadlightKeyGuide, true },
 		{ VoiceKeyGuide, bPushToTalk },
 		{ CameraKeyGuide, true },
 		{ HelperKeyGuide, bHelperGuideAvailable },
