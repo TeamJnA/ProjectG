@@ -72,7 +72,7 @@ void UPGPlayerProfileWidgetBase::ApplyProgressForXP(int64 DisplayXP)
 		}
 		else
 		{
-			XPText->SetText(FText::FromString(FString::Printf(TEXT("%lld / %lld"),
+			XPText->SetText(FText::FromString(FString::Printf(TEXT("%lld/%lld"),
 				DisplayXP - Prog.CurrentRankFloorXP, Prog.NextRankXP - Prog.CurrentRankFloorXP)));
 		}
 	}
