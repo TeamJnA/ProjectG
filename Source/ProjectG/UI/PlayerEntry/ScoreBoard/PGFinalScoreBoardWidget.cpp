@@ -10,6 +10,7 @@
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
+#include "Components/TextBlock.h"
 
 #include "Game/PGGameState.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
@@ -190,6 +191,7 @@ void UPGFinalScoreBoardWidget::UpdatePlayerEntry()
 
 void UPGFinalScoreBoardWidget::RebuildReadyCheckboxes()
 {
+	/*
 	if (!ReadyCheckboxContainer)
 	{
 		return;
@@ -224,12 +226,13 @@ void UPGFinalScoreBoardWidget::RebuildReadyCheckboxes()
 			ReadyCheckboxes.Add(Checkbox);
 		}
 	}
-
+	*/
 	UpdateReadyCheckboxes();
 }
 
 void UPGFinalScoreBoardWidget::UpdateReadyCheckboxes()
 {
+	/*
 	if (!bStampCompleted)
 	{
 		return;
@@ -255,6 +258,40 @@ void UPGFinalScoreBoardWidget::UpdateReadyCheckboxes()
 			ReadyCheckboxes[i]->SetBrushFromMaterial(CheckboxImage);
 			ReadyCheckboxes[i]->SetBrushSize(FVector2D(64.0f, 64.0f));
 		}
+	}
+
+	if (APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer()))
+	{
+		if (APGPlayerState* MyPS = PC->GetPlayerState<APGPlayerState>())
+		{
+			const bool bMyReady = MyPS->IsReadyToReturnLobby();
+			if (ReturnToLobbyButton)
+			{
+				ReturnToLobbyButton->SetIsEnabled(!bMyReady);
+			}
+		}
+	}
+	*/
+
+	if (!bStampCompleted)
+	{
+		return;
+	}
+
+	APGGameState* GS = GSRef.Get();
+	if (!GS)
+	{
+		return;
+	}
+
+	const int32 TotalPlayers = GS->PlayerArray.Num();
+	const int32 ReadyCount = GS->GetReadyToReturnLobbyCount();
+
+	// Update text
+	if (ReadyCountText)
+	{
+		FString VotedString = FString::Printf(TEXT("%d/%d Voted"), ReadyCount, TotalPlayers);
+		ReadyCountText->SetText(FText::FromString(VotedString));
 	}
 
 	if (APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer()))

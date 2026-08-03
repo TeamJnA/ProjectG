@@ -14,6 +14,7 @@ class UVerticalBox;
 class UHorizontalBox;
 class UButton;
 class UImage;
+class UTextBlock;
 class UPGConfirmWidget;
 class UPGFinalScoreProfileWidget;
 class UPGAdvancedFriendsGameInstance;
@@ -74,10 +75,14 @@ protected:
 	TObjectPtr<UButton> ReturnToLobbyButton;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UPGFinalScoreProfileWidget> PlayerProfileWidget;
+
+	/*
+	* Ready Vote
+	
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UHorizontalBox> ReadyCheckboxContainer;
 
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UPGFinalScoreProfileWidget> PlayerProfileWidget;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TObjectPtr<UMaterialInterface> CheckboxEmptyImage;
@@ -87,6 +92,11 @@ protected:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UImage>> ReadyCheckboxes;
+	*/
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> ReadyCountText;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UPGConfirmWidget> ConfirmWidgetClass;

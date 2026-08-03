@@ -27,6 +27,10 @@ class UPGMicSettingWidget;
 class FOnlineSessionSearchResult;
 class UPGAdvancedFriendsGameInstance;
 
+/* TEST */
+class UPGFinalScoreBoardWidget;
+/* TEST */
+
 /**
  * 
  */
@@ -36,6 +40,7 @@ class PROJECTG_API UPGMainMenuWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+
 	void AddSessionSlot(const FOnlineSessionSearchResult& SearchResult, int32 Index);
 
 	UFUNCTION()

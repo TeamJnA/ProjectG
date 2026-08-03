@@ -11,7 +11,7 @@ UENUM(BlueprintType)
 enum class EMicMode : uint8
 {
 	OpenMic		UMETA(DisplayName = "OpenMic"),
-	PushToTalk	UMETA(DisplayName = "PushToTalk"),
+	PushToTalk	UMETA(DisplayName = "Toggle"),
 	Off			UMETA(DisplayName = "Off"),
 };
 
