@@ -71,9 +71,6 @@ protected:
 	TObjectPtr<UTextBlock> CurrentItemNameText;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UWidget> HeadlightKeyGuide;
-
-	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidget> VoiceKeyGuide;
 
 	UPROPERTY(meta = (BindWidget))
