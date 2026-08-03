@@ -247,6 +247,14 @@ void APGGameState::NotifyGameFinished()
 	{
 		return;
 	}
+
+	if (bGameFinishedNotified)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GS::NotifyGameFinished: Already notified. Ignored."));
+		return;
+	}
+	bGameFinishedNotified = true;
+
 	UE_LOG(LogTemp, Warning, TEXT("GS::NotifyGameFinished: called [%s] | HasAuthority = %d"), *GetNameSafe(this), HasAuthority());
 
 	FTimerHandle FinalScoreBoardTimerHandle;
@@ -305,13 +313,13 @@ bool APGGameState::IsAllReadyToReturnLobby() const
 	return true;
 }
 
-void APGGameState::NotifyPlayerFinished(APlayerState* FinishedPlayerState)
+void APGGameState::NotifyPlayerFinished(APlayerState* FinishedPlayerState, float ScoreBoardDelay)
 {
 	if (!HasAuthority() || !FinishedPlayerState)
 	{
 		return;
 	}
-	HandlePlayerFinished(FinishedPlayerState);
+	HandlePlayerFinished(FinishedPlayerState, ScoreBoardDelay);
 }
 
 /*
@@ -321,28 +329,47 @@ void APGGameState::NotifyPlayerFinished(APlayerState* FinishedPlayerState)
 * 종료 상태인 경우 게임을 종료 상태로 변경
 * 아직 플레이 중인 플레이어가 있는 경우 종료 상태인 플레이어들의 상태를 디스플레이하는 ScoreBoardWidget Init
 */
-void APGGameState::HandlePlayerFinished(APlayerState* FinishedPlayerState)
+void APGGameState::HandlePlayerFinished(APlayerState* FinishedPlayerState, float ScoreBoardDelay)
 {
 	APGPlayerState* PS = Cast<APGPlayerState>(FinishedPlayerState);
-	if (PS && !PS->HasFinishedGame())
+	if (!PS || PS->HasFinishedGame())
 	{
-		PS->SetHasFinishedGame(true);
-
-		APGPlayerCharacter* FinishedPlayerCharacter = Cast<APGPlayerCharacter>(PS->GetPawn());
-		
-		if (IsGameFinished())
-		{
-			SetCurrentGameState(EGameState::EndGame);
-			NotifyGameFinished();
-		}
-		else
-		{
-			if (FinishedPlayerCharacter)
-			{
-				FinishedPlayerCharacter->Client_InitScoreBoardWidget();
-			}
-		}
+		UE_LOG(LogTemp, Warning, TEXT("[GS::HandlePlayerFinished] PS not valid or Already finished game"));
+		return;
 	}
+
+	PS->SetHasFinishedGame(true);
+
+	if (IsGameFinished())
+	{
+		SetCurrentGameState(EGameState::EndGame);
+		NotifyGameFinished();
+		return;
+	}
+
+	APGPlayerCharacter* FinishedPlayerCharacter = Cast<APGPlayerCharacter>(PS->GetPawn());
+	if (!FinishedPlayerCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[GS::HandlePlayerFinished] FinishedPlayer is not valid"));
+		return;
+	}
+
+	if (ScoreBoardDelay <= 0.0f)
+	{
+		FinishedPlayerCharacter->Client_InitScoreBoardWidget();
+		return;
+	}
+
+	TWeakObjectPtr<APGPlayerCharacter> WeakChar(FinishedPlayerCharacter);
+	FTimerHandle ScoreBoardTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(ScoreBoardTimerHandle,
+		[WeakChar]()
+		{
+			if (WeakChar.IsValid())
+			{
+				WeakChar->Client_InitScoreBoardWidget();
+			}
+		}, ScoreBoardDelay, false);
 }
 
 void APGGameState::OnRep_CurrentGameState()

@@ -114,14 +114,14 @@ void APGExitPointBase::PlaySoundPlayers(const FName& SoundName, const FVector& S
 	}
 }
 
-void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType InExitPoint)
+void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType InExitPoint, bool bNeedAutomove, FVector AutomoveLocation)
 {
 	DropEscaperItems(EscapeStartActor);
 
 	if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(EscapeStartActor))
 	{
 		// 컷신 -> 종료처리 -> 종료 카메라 뷰 변환 -> 스코어보드
-		if (APGPlayerState* PS = PlayerCharacter->GetPlayerState<APGPlayerState>(); PS && !PS->HasFinishedGame())
+		if (APGPlayerState* PS = PlayerCharacter->GetPlayerState<APGPlayerState>(); PS && PS->IsInGame() && !PS->IsDead())
 		{
 			if (APGGameMode* GM = GetWorld()->GetAuthGameMode<APGGameMode>())
 			{
@@ -130,7 +130,7 @@ void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType In
 
 			if (APGPlayerController* PC = Cast<APGPlayerController>(PlayerCharacter->GetController()))
 			{
-				PC->Client_StartEscapeSequence(InExitPoint);
+				PC->Client_StartEscapeSequence(InExitPoint, bNeedAutomove, AutomoveLocation);
 			}
 		}
 	}

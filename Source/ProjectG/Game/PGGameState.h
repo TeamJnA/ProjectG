@@ -48,7 +48,7 @@ public:
 	bool IsGameFinished() const;
 	void NotifyGameFinished();
 	bool IsAllReadyToReturnLobby() const;
-	void NotifyPlayerFinished(APlayerState* FinishedPlayerState);	
+	void NotifyPlayerFinished(APlayerState* FinishedPlayerState, float ScoreBoardDelay = 0.0f);
 
 	// ----- Player List ---------
 	FOnPlayerArrayChangedDelegate OnPlayerArrayChanged;
@@ -98,7 +98,7 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InitFinalScoreBoardWidget();
 
-	void HandlePlayerFinished(APlayerState* FinishedPlayerState);
+	void HandlePlayerFinished(APlayerState* FinishedPlayerState, float ScoreBoardDelay);
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentGameState, BlueprintReadOnly, Category = "GameState")
 	EGameState CurrentGameState; 
@@ -108,6 +108,8 @@ protected:
 
 	UPROPERTY()
 	TMap<EExitPointType, TObjectPtr<AActor>> ExitCameraMap;
+
+	bool bGameFinishedNotified = false;
 
 // Play Seqeunce
 public:

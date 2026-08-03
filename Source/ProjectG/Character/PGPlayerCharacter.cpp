@@ -302,10 +302,20 @@ bool APGPlayerCharacter::IsValidAttackableTarget() const
 		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("Player::IsValidAttackableTarget: no ASC"));
 		return false;
 	}
+
+	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
+	if (!IsValid(PS))
+	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("Player::IsValidAttackableTarget: no PS"));
+		return false;
+	}
+
 	// Check player is valid by checking gameplay tag.
 	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.Dead"))
-		|| AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.OnAttacked")))
+		|| AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Player.State.OnAttacked"))
+		|| !PS->IsInGame())
 	{
+		UE_LOG(LogPGPlayerCharacter, Warning, TEXT("Player::IsValidAttackableTarget: already not in game"));
 		return false;
 	}
 	return true;
@@ -320,6 +330,16 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 	}
 
 	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[%s] OnAttacked"), *GetNameSafe(this));
+
+	if (APGPlayerState* PS = GetPlayerState<APGPlayerState>())
+	{
+		DeadPlayerState = PS;
+		PS->SetIsDead(true);
+	}
+	else
+	{
+		UE_LOG(LogPGPlayerCharacter, Error, TEXT("OnAttacked: no PS"));
+	}
 
 	FGameplayTag AttackedTag = FGameplayTag::RequestGameplayTag("Player.State.OnAttacked");
 	AbilitySystemComponent->AddLooseGameplayTag(AttackedTag);
@@ -467,22 +487,11 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 	{
 		return;
 	}
+	PS->AddDeathCount();
 
-	if (GS)
+	if (IsValid(GS))
 	{
-		DeadPlayerState = PS;
-		PS->SetHasFinishedGame(true);
-		PS->SetIsDead(true);
-		if (GS->IsGameFinished())
-		{
-			GS->SetCurrentGameState(EGameState::EndGame);
-			GS->NotifyGameFinished();
-		}
-		else
-		{
-			FTimerHandle ScoreBoardTimerHandle;
-			GetWorld()->GetTimerManager().SetTimer(ScoreBoardTimerHandle, this, &APGPlayerCharacter::Client_InitScoreBoardWidget, 2.0f, false);
-		}
+		GS->NotifyPlayerFinished(PS, 2.0f);
 	}
 
 	// Stop character movement and animation
@@ -509,8 +518,6 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
 	bIsRagdoll = true;
 	OnRep_IsRagdoll();
-
-	PS->AddDeathCount();
 }
 
 // This function is called on Client when [Player.State.Dead] tag was added.

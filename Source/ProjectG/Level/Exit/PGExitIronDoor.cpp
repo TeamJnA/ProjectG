@@ -854,20 +854,5 @@ void APGExitIronDoor::OnEscapeTriggerOverlap(UPrimitiveComponent* OverlappedComp
         return;
     }
 
-    if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(OtherActor))
-    {
-        // 컷신 -> 종료처리 -> 종료 카메라 뷰 변환 -> 스코어보드
-        if (APGPlayerState* PS = PlayerCharacter->GetPlayerState<APGPlayerState>(); PS && !PS->HasFinishedGame())
-        {
-            if (APGGameMode* GM = GetWorld()->GetAuthGameMode<APGGameMode>())
-            {
-                GM->HandlePlayerEscaping(PlayerCharacter);
-            }
-
-            if (APGPlayerController* PC = Cast<APGPlayerController>(PlayerCharacter->GetController()))
-            {
-                PC->Client_StartEscapeSequence(ExitPointType, true, FVector(3380.0f, 320.0f, -320.0f));
-            }
-        }
-    }
+    OnEscapeStart(OtherActor, ExitPointType, true, FVector(3380.0f, 320.0f, -320.0f));
 }

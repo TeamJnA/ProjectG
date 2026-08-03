@@ -52,7 +52,8 @@ protected:
 	void PlaySoundPlayers(const FName& SoundName, const FVector& SoundLocation);
 
 	UFUNCTION()
-	void OnEscapeStart(AActor* EscapeStartActor, EExitPointType ExitPointType = EExitPointType::IronDoor);
+	void OnEscapeStart(AActor* EscapeStartActor, EExitPointType ExitPointType = EExitPointType::IronDoor,
+		bool bNeedAutomove = false, FVector AutomoveLocation = FVector::ZeroVector);
 
 	void DropEscaperItems(AActor* EscapeStartActor);
 

@@ -203,6 +203,62 @@ void APGLevelGenerator::SpawnStartRoom()
 
 	/*
 	// for test ~
+	APGItemActor* TestChainKey = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* ChainKeyData = GI->GetItemDataByKey("ChainKey"))
+	{
+		TestChainKey->InitWithData(ChainKeyData);
+	}
+	TestChainKey->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestRustOil = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* RustOilData = GI->GetItemDataByKey("RustOil"))
+	{
+		TestRustOil->InitWithData(RustOilData);
+	}
+	TestRustOil->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestHandWheel = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* HandWheelData = GI->GetItemDataByKey("HandWheel"))
+	{
+		TestHandWheel->InitWithData(HandWheelData);
+	}
+	TestHandWheel->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestMatch0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* MatchItemData0 = GI->GetItemDataByKey("Match"))
+	{
+		TestMatch0->InitWithData(MatchItemData0);
+	}
+	TestMatch0->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestMatch1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* MatchItemData1 = GI->GetItemDataByKey("Match"))
+	{
+		TestMatch1->InitWithData(MatchItemData1);
+	}
+	TestMatch1->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestMatch2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* MatchItemData2 = GI->GetItemDataByKey("Match"))
+	{
+		TestMatch2->InitWithData(MatchItemData2);
+	}
+	TestMatch2->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestFuse0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* FuseItemData0 = GI->GetItemDataByKey("Fuse"))
+	{
+		TestFuse0->InitWithData(FuseItemData0);
+	}
+	TestFuse0->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestFuse1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* FuseItemData1 = GI->GetItemDataByKey("Fuse"))
+	{
+		TestFuse1->InitWithData(FuseItemData1);
+	}
+	TestFuse1->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
 	APGItemActor* TestReviveKit0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
 	if (UPGItemData* ReviveKitItemData0 = GI->GetItemDataByKey("ReviveKit"))
 	{
@@ -237,41 +293,6 @@ void APGLevelGenerator::SpawnStartRoom()
 		TestReviveKit4->InitWithData(ReviveKitItemData4);
 	}
 	TestReviveKit4->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
-
-	APGItemActor* TestMatch0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* MatchItemData0 = GI->GetItemDataByKey("Match"))
-	{
-		TestMatch0->InitWithData(MatchItemData0);
-	}
-	TestMatch0->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
-
-	APGItemActor* TestMatch1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* MatchItemData1 = GI->GetItemDataByKey("Match"))
-	{
-		TestMatch1->InitWithData(MatchItemData1);
-	}
-	TestMatch1->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
-
-	APGItemActor* TestMatch2 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* MatchItemData2 = GI->GetItemDataByKey("Match"))
-	{
-		TestMatch2->InitWithData(MatchItemData2);
-	}
-	TestMatch2->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
-
-	APGItemActor* TestMatch3 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* MatchItemData3 = GI->GetItemDataByKey("Match"))
-	{
-		TestMatch3->InitWithData(MatchItemData3);
-	}
-	TestMatch3->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
-
-	APGItemActor* TestMatch4 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* MatchItemData4 = GI->GetItemDataByKey("Match"))
-	{
-		TestMatch4->InitWithData(MatchItemData4);
-	}
-	TestMatch4->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 	*/
 }
 
@@ -1243,8 +1264,8 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 }
 
 /*
-* 탈출 핵심 아이템(ChainKey / HandWheel / RustOil) 스폰
-* RoomGraph 깊이 절반+1 이상인 방에, 서로 다른 방/다른 Searchable에 스폰
+* 탈출 아이템(ChainKey / HandWheel / RustOil) 스폰
+* RoomGraph 깊이 절반 이상인 방에, 서로 다른 방/다른 Searchable에 스폰
 * 일반 아이템보다 먼저 호출되어 슬롯 선점
 */
 void APGLevelGenerator::SpawnExitItems()
