@@ -79,12 +79,10 @@ protected:
 
 	/*
 	* Ready Vote
-	*/
+	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UHorizontalBox> ReadyCheckboxContainer;
 
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> ReadyCountText;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TObjectPtr<UMaterialInterface> CheckboxEmptyImage;
@@ -94,6 +92,10 @@ protected:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UImage>> ReadyCheckboxes;
+	*/
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> ReadyCountText;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")

@@ -74,6 +74,9 @@ protected:
 	TObjectPtr<UWidget> VoiceKeyGuide;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWidget> HeadLightKeyGuide;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidget> CameraKeyGuide;
 
 	UPROPERTY(meta = (BindWidget))
