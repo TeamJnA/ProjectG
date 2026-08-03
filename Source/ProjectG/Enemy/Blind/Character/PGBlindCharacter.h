@@ -68,6 +68,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
+	virtual void BeginPlay() override;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	FVector2D BreathInterval = FVector2D(1.5f, 3.0f);
 

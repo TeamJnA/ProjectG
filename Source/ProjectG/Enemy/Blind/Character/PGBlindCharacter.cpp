@@ -122,6 +122,13 @@ void APGBlindCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
     DOREPLIFETIME(APGBlindCharacter, SoundState);
 }
 
+void APGBlindCharacter::BeginPlay()
+{
+    Super::BeginPlay();
+
+    OnRep_SoundState();
+}
+
 void APGBlindCharacter::OnPlayerOverlapped(AActor* OverlapPlayer)
 {
     if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting"))))
