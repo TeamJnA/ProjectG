@@ -129,25 +129,25 @@ void APGInteractableGimmickArmorStand::CollapseArmor(AActor* Investigator)
 void APGInteractableGimmickArmorStand::HighlightOn() const
 {
 
-    for (UStaticMeshComponent* ArmorMesh : ArmorMeshs)
-    {
-        if (ArmorMesh)
-        {
-            ArmorMesh->SetRenderCustomDepth(true);
-            ArmorMesh->SetCustomDepthStencilValue(0);
-        }
-    }
+    //for (UStaticMeshComponent* ArmorMesh : ArmorMeshs)
+    //{
+    //    if (ArmorMesh)
+    //    {
+    //        ArmorMesh->SetRenderCustomDepth(true);
+    //        ArmorMesh->SetCustomDepthStencilValue(0);
+    //    }
+    //}
 }
 
 void APGInteractableGimmickArmorStand::HighlightOff() const
 {
-    for (UStaticMeshComponent* ArmorMesh : ArmorMeshs)
-    {
-        if (ArmorMesh)
-        {
-            ArmorMesh->SetRenderCustomDepth(false);
-        }
-    }
+    //for (UStaticMeshComponent* ArmorMesh : ArmorMeshs)
+    //{
+    //    if (ArmorMesh)
+    //    {
+    //        ArmorMesh->SetRenderCustomDepth(false);
+    //    }
+    //}
 }
 
 FInteractionInfo APGInteractableGimmickArmorStand::GetInteractionInfo() const

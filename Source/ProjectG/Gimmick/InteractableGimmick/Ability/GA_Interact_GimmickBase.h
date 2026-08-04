@@ -27,4 +27,9 @@ public:
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		bool bReplicateEndAbility,
 		bool bWasCancelled) override;
+
+protected:
+	/** 상호작용 시 애님 재생 여부, child에서 자체적으로 재생하면 false */
+	UPROPERTY(EditDefaultsOnly, Category = "Interact")
+	bool bPlayMontage = true;
 };
