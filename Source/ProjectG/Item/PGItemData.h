@@ -24,6 +24,18 @@ struct FItemActionGuide
 	FVector2D KeyIconSize = FVector2D(15.0f, 15.0f);
 };
 
+/** 아이템 Drop 시 취할 수 있는 자세.(Pitch 조절해야하는 경우가 있고 Roll 조절해야하는 경우가 있음) */
+USTRUCT(BlueprintType)
+struct FItemDropPose
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	float Pitch = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float Roll = 0.0f;
+};
 
 /**
  * 
@@ -56,6 +68,11 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TArray<FItemActionGuide> ActionGuides;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Drop")
+	TArray<FItemDropPose> DropPoses;
+
 	UPROPERTY(EditDefaultsOnly)
 	EHandPoseType HandPoseType = EHandPoseType::Default;
+
+	FRotator GetRandomDropRotation() const;
 };

@@ -184,6 +184,12 @@ void UPGInventoryComponent::AddItemToInventory(UPGItemData* ItemData)
 */
 void UPGInventoryComponent::OnRep_InventoryItems()
 {
+	for (int32 i = 0; i < InventoryItems.Num(); ++i)
+	{
+		UE_LOG(LogInventory, Warning, TEXT("[OnRep] [%d] ItemData=%s"),
+			i, *GetNameSafe(InventoryItems[i].ItemData));
+	}
+
 	OnInventoryItemUpdate.Broadcast(InventoryItems);
 }
 
@@ -256,13 +262,14 @@ void UPGInventoryComponent::DropItemByIndex(const FVector DropLocation, const FR
 		SpawnParams.Owner = GetOwner();
 		SpawnParams.Instigator = Cast<APawn>(GetOwner());
 
-		UE_LOG(LogInventory, Log, TEXT("Spawned item to drop."));
-		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, FRotator::ZeroRotator, SpawnParams);
-
+		UPGItemData* DropItemData = InventoryItems[DropItemIndex].ItemData;
+		const FRotator SpawnRotation = DropItemData ? DropItemData->GetRandomDropRotation() : FRotator::ZeroRotator;
+		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, SpawnRotation, SpawnParams);
 		if (DropItem)
 		{
 			DropItem->InitWithData(InventoryItems[DropItemIndex].ItemData);
 			DropItem->DropItemSpawned(DropRotation);
+			UE_LOG(LogInventory, Log, TEXT("[ItemDrop] Spawned item to drop."));
 		}
 	}
 
@@ -351,11 +358,13 @@ void UPGInventoryComponent::DropAllItemsOnDestroy(const FVector DropLocation)
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 		FRotator DropRotation(0.0f, 72.0f * i, 0.0f);
-		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, FRotator::ZeroRotator, SpawnParams);
+		const FRotator SpawnRotation = InventoryItems[i].ItemData->GetRandomDropRotation();
+		APGItemActor* DropItem = World->SpawnActor<APGItemActor>(ItemActor, DropLocation, SpawnRotation, SpawnParams);
 		if (DropItem)
 		{
 			DropItem->InitWithData(InventoryItems[i].ItemData);
 			DropItem->DropItemSpawned(DropRotation);
+			UE_LOG(LogInventory, Log, TEXT("[ItemDrop] Spawned item to drop on destroy."));
 		}
 
 		InventoryItems[i].ItemData = nullptr;

@@ -501,7 +501,7 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
             SoundPlayChecker[NowIndex] = true;
             if (NowIndex % 2 == 0 && NowIndex != 0)
             {
-                PlaySound(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
+                PlaySoundPlayers(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
         }
 
