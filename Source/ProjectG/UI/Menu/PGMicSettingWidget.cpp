@@ -164,7 +164,7 @@ void UPGMicSettingWidget::UpdateMicTestBar(float InDeltaTime)
 
 void UPGMicSettingWidget::OnMicModeChanged(EMicMode InMicMode)
 {
-	bool bActivate = (InMicMode == EMicMode::OpenMic) ? true : false;
+	bool bActivate = (InMicMode == EMicMode::Off) ? false : true;
 	SetMicIcon(bActivate);
 }
 
