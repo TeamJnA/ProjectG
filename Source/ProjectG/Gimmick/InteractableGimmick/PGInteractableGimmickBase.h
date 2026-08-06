@@ -41,6 +41,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	APGSoundManager* GetSoundManager();
 	void PlayLocalSound(FName SoundName, FVector SoundLocation);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

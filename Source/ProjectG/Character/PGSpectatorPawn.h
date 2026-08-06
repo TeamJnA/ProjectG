@@ -71,6 +71,12 @@ private:
 
 	// 대상으로부터의 거리
 	float CurrentOrbitDistance = 150.0f;
+	float SmoothedOrbitDistance = 150.0f;
+
+	float MinOrbitDistance = 40.0f;
+	float CameraProbeRadius = 30.0f;
+	float OrbitDistanceInterpSpeed = 5.0f;
+
 	// 대상 주위를 공전하는 현재 Yaw 각도
 	float CurrentOrbitYawAngle = 0.0f;
 	float CurrentOrbitPitchAngle = 15.0f;

@@ -112,7 +112,7 @@ void APGSpectatorPawn::OnOrbitYaw(const FInputActionValue& Value)
 }
 
 /*
-* 설정된 타겟과의 거리(150.0f)를 유지하며 트래킹/궤도 유지
+* 설정된 타겟과의 거리를 유지하며 트래킹/궤도 유지
 */
 void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 {
@@ -123,9 +123,33 @@ void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 
 	const FVector TargetLocation = TargetToOrbit->GetActorLocation() + FVector(0.0f, 0.0f, 65.0f);
 	const FRotator OrbitRotation = FRotator(CurrentOrbitPitchAngle, CurrentOrbitYawAngle, 0.0f);
-	const FVector RelativeVector = OrbitRotation.Vector() * CurrentOrbitDistance;
-	const FVector NewLocation = TargetLocation + RelativeVector;
+	const FVector OrbitDirection = OrbitRotation.Vector();
 
+	float DesiredDistance = CurrentOrbitDistance;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	Params.AddIgnoredActor(TargetToOrbit);
+
+	const FVector TraceEnd = TargetLocation + OrbitDirection * CurrentOrbitDistance;
+
+	if (GetWorld()->SweepSingleByChannel(Hit, TargetLocation, TraceEnd, FQuat::Identity,
+		ECC_Camera, FCollisionShape::MakeSphere(CameraProbeRadius), Params))
+	{
+		DesiredDistance = FMath::Max(Hit.Distance, MinOrbitDistance);
+	}
+
+	if (DesiredDistance < SmoothedOrbitDistance)
+	{
+		SmoothedOrbitDistance = DesiredDistance;
+	}
+	else
+	{
+		SmoothedOrbitDistance = FMath::FInterpTo(SmoothedOrbitDistance, DesiredDistance, GetWorld()->GetDeltaSeconds(), OrbitDistanceInterpSpeed);
+	}
+
+	const FVector NewLocation = TargetLocation + OrbitDirection * SmoothedOrbitDistance;
 	// Location -> PawnLocation 업데이트
 	SetActorLocation(NewLocation);
 
@@ -160,6 +184,8 @@ void APGSpectatorPawn::OnRep_TargetToOrbit()
 {
 	if (IsLocallyControlled())
 	{
+		SmoothedOrbitDistance = CurrentOrbitDistance;
+
 		if (APGExitPointBase* ExitPoint = Cast<APGExitPointBase>(TargetToOrbit))
 		{
 			bCanOrbit = false;

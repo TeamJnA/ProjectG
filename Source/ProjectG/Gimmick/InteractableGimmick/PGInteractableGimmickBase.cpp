@@ -43,14 +43,6 @@ void APGInteractableGimmickBase::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	DOREPLIFETIME(APGInteractableGimmickBase, SoundManager);
 }
 
-void APGInteractableGimmickBase::PlayLocalSound(FName _SoundName, FVector _SoundLocation)
-{
-	if (SoundManager)
-	{
-		SoundManager->PlaySoundLocally(_SoundName, _SoundLocation);
-	}
-}
-
 void APGInteractableGimmickBase::GimmickInteract(AActor* Investigator)
 {
 }
@@ -72,6 +64,25 @@ void APGInteractableGimmickBase::InitSoundManager()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Init SoundManager Failed. Cannot find soundmanagerInterface [%s]"), *GetNameSafe(this));
+	}
+}
+
+APGSoundManager* APGInteractableGimmickBase::GetSoundManager()
+{
+	// BeginPlay 순서에 따라 GameMode의 SoundManager가 아직 없을 수 있음(레벨에 미리 배치한 경우)
+	if (!SoundManager && HasAuthority())
+	{
+		InitSoundManager();
+	}
+
+	return SoundManager;
+}
+
+void APGInteractableGimmickBase::PlayLocalSound(FName _SoundName, FVector _SoundLocation)
+{
+	if (APGSoundManager* SM = GetSoundManager())
+	{
+		SM->PlaySoundLocally(_SoundName, _SoundLocation);
 	}
 }
 

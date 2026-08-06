@@ -27,6 +27,11 @@ void APGLobbyGameMode::BeginPlay()
 	Super::BeginPlay();
 
 	UE_LOG(LogTemp, Warning, TEXT("LobbyGM::Beginplay"));
+	SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
+	if (!SoundManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
+	}
 
 	if (UPGAdvancedFriendsGameInstance* GI = Cast<UPGAdvancedFriendsGameInstance>(GetWorld()->GetGameInstance()))
 	{
@@ -40,12 +45,6 @@ void APGLobbyGameMode::BeginPlay()
 				GS->InitDifficulty(GI->GetSelectedDifficulty());
 			}
 		}
-	}
-
-	SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
-	if (!SoundManager)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to spawn sound manager."));
 	}
 }
 

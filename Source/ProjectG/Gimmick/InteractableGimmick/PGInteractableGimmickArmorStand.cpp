@@ -120,7 +120,14 @@ void APGInteractableGimmickArmorStand::CollapseArmor(AActor* Investigator)
     OnRep_CollisionDisabled();
 
     // Play Sound
-    SoundManager->PlaySoundWithNoise(ArmorStandCollapseSound, GetActorLocation(), false, Investigator);
+    if (APGSoundManager* SM = GetSoundManager())
+    {
+        SM->PlaySoundWithNoise(ArmorStandCollapseSound, GetActorLocation(), false, Investigator);
+    }
+    else
+    {
+        UE_LOG(LogPGInteractableGimmick, Warning, TEXT("ArmorStand: No SoundManager"));
+    }
 
     // Highlight ²ô±â
     HighlightOff();
