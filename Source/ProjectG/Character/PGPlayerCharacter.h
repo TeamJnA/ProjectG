@@ -715,7 +715,7 @@ private:
 	float CurrentBonfireVignetteIntensity = 0.0f;
 	float TargetBonfireVignetteIntensity = 0.0f;
 
-// --------------Bonfire Vignette --------------
+// -------------- Body Blood --------------
 public:
 	void UpdateBloodMaterial(int32 InDeathCount);
 
@@ -729,4 +729,31 @@ protected:
 	TObjectPtr<UMaterialInstanceDynamic> BodyMID;
 
 	int32 BloodInitRetryCount = 0;
+
+// -------------- Death Camera --------------
+protected:
+	void PickDeathCameraAngle();
+	void UpdateDeathCameraBlend();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Death")
+	TArray<float> DeathCameraYawOffsets = { 30.0f, 60.0f, 120.0f, 150.0f, -30.0f, -60.0f, -120.0f, -150.0f };
+
+	FTimerHandle DeathCameraBlendTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Death")
+	float DeathCameraPitch = -20.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Death")
+	float DeathCameraProbeRadius = 30.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Death")
+	float DeathCameraBlendSpeed = 4.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Death")
+	float DeathCameraBlendInterval = 0.016f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Death")
+	float DeathCameraStartArmLength = 30.0f;
+
+	float DeathCameraTargetArmLength = 500.0f;
 };

@@ -352,6 +352,11 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 	// Stop character movement.
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
+		if (bIsCrouched)
+		{
+			Movement->UnCrouch(false);
+		}
+
 		Movement->StopMovementImmediately();
 		Movement->DisableMovement();
 	}
@@ -533,6 +538,8 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 
 	// 본인이 보이도록 
 	GetMesh()->SetOwnerNoSee(false);
+
+	PickDeathCameraAngle();
 
 	// TODO : 물리고 나서 카메라 천천히 멀어지기 [ 나중구현 ] ( Client )
 	FirstPersonCamera->Deactivate();
@@ -2827,5 +2834,88 @@ void APGPlayerCharacter::TryInitBloodMaterial()
 		BloodInitRetryCount++;
 		FTimerHandle RetryHandle;
 		GetWorldTimerManager().SetTimer(RetryHandle, this, &APGPlayerCharacter::TryInitBloodMaterial, 0.1f, false);
+	}
+}
+
+/*
+* 사망 연출 카메라 각도 선택
+* 후보 각도 중 시야가 막히지 않은 것들 중 랜덤 선택
+* 전부 막혔다면 가장 여유 있는 각도 사용
+*/
+void APGPlayerCharacter::PickDeathCameraAngle()
+{
+	if (DeathCameraYawOffsets.IsEmpty() || !CameraBoom)
+	{
+		return;
+	}
+
+	const FVector Origin = GetActorLocation() + FVector(0.0f, 0.0f, 30.0f);
+	const float Distance = CameraBoom->TargetArmLength;
+	const FRotator BaseRotation = GetActorRotation();
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	TArray<float> ClearOffsets;
+	float BestOffset = DeathCameraYawOffsets[0];
+	float BestClearance = -1.0f;
+
+	for (float YawOffset : DeathCameraYawOffsets)
+	{
+		const FRotator Dir = BaseRotation + FRotator(0.0f, YawOffset, 0.0f);
+		const FVector End = Origin - Dir.Vector() * Distance;
+
+		FHitResult Hit;
+		const bool bBlocked = GetWorld()->SweepSingleByChannel(
+			Hit, Origin, End, FQuat::Identity, ECC_Camera, FCollisionShape::MakeSphere(DeathCameraProbeRadius), Params);
+
+		if (!bBlocked)
+		{
+			ClearOffsets.Add(YawOffset);
+			continue;
+		}
+
+		if (Hit.Distance > BestClearance)
+		{
+			BestClearance = Hit.Distance;
+			BestOffset = YawOffset;
+		}
+	}
+
+	const float SelectedOffset = ClearOffsets.IsEmpty()
+		? BestOffset
+		: ClearOffsets[FMath::RandRange(0, ClearOffsets.Num() - 1)];
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		PC->SetControlRotation(BaseRotation + FRotator(DeathCameraPitch, SelectedOffset, 0.0f));
+	}
+
+	if (CameraBoom)
+	{
+		DeathCameraTargetArmLength = CameraBoom->TargetArmLength;
+		CameraBoom->TargetArmLength = DeathCameraStartArmLength;
+
+		GetWorldTimerManager().SetTimer(DeathCameraBlendTimerHandle, this,
+			&APGPlayerCharacter::UpdateDeathCameraBlend, DeathCameraBlendInterval, true);
+	}
+}
+
+void APGPlayerCharacter::UpdateDeathCameraBlend()
+{
+	if (!CameraBoom)
+	{
+		GetWorldTimerManager().ClearTimer(DeathCameraBlendTimerHandle);
+		return;
+	}
+
+	CameraBoom->TargetArmLength = FMath::FInterpTo(
+		CameraBoom->TargetArmLength, DeathCameraTargetArmLength,
+		DeathCameraBlendInterval, DeathCameraBlendSpeed);
+
+	if (FMath::IsNearlyEqual(CameraBoom->TargetArmLength, DeathCameraTargetArmLength, 1.0f))
+	{
+		CameraBoom->TargetArmLength = DeathCameraTargetArmLength;
+		GetWorldTimerManager().ClearTimer(DeathCameraBlendTimerHandle);
 	}
 }
