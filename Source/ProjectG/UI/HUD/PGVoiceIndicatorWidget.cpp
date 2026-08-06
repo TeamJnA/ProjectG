@@ -5,15 +5,19 @@
 #include "Components/Image.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGSoundManagerComponent.h"
-#include "Player/PGGameUserSettings.h"
-#include "Player/PGPlayerController.h"
+// #include "Player/PGPlayerController.h"
 #include "Player/PGLobbyPlayerController.h"
 
 
 void UPGVoiceIndicatorWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+	
+	UpdateNoiseBar(InDeltaTime);
+}
 
+void UPGVoiceIndicatorWidget::UpdateNoiseBar(float InDeltaTime)
+{
 	if (!BarMID)
 	{
 		if (NoiseBar)
@@ -53,45 +57,66 @@ void UPGVoiceIndicatorWidget::NativeTick(const FGeometry& MyGeometry, float InDe
 
 	const float FillRatio = (MaxDisplayLevel > 0.0f) ? FMath::Clamp(DisplayLevel / MaxDisplayLevel, 0.0f, 1.0f) : 0.0f;
 	BarMID->SetScalarParameterValue(FillRatioParam, FillRatio);
+}
 
-	if (MicModeIcon)
+void UPGVoiceIndicatorWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
 	{
-		const float TargetMicOpacity = IsMicReady() ? MicActiveOpaciity : MicInactiveOpacity;
-		CurrentMicOpacity = FMath::FInterpTo(CurrentMicOpacity, TargetMicOpacity, InDeltaTime, MicOpacityInterpSpeed);
-		MicModeIcon->SetRenderOpacity(CurrentMicOpacity);
+		CachedSettings = Settings;
+		Settings->OnMicModeChanged.AddUniqueDynamic(this, &UPGVoiceIndicatorWidget::OnMicModeChanged);
+		Settings->OnMicToggleChanged.AddUniqueDynamic(this, &UPGVoiceIndicatorWidget::OnMicToggleChanged);
 	}
 }
 
-bool UPGVoiceIndicatorWidget::IsMicReady() const
+void UPGVoiceIndicatorWidget::NativeDestruct()
+{
+	if (UPGGameUserSettings* Settings = CachedSettings.Get())
+	{
+		Settings->OnMicModeChanged.RemoveAll(this);
+		Settings->OnMicToggleChanged.RemoveAll(this);
+	}
+
+	Super::NativeDestruct();
+}
+
+void UPGVoiceIndicatorWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	SetMicIcon();
+}
+
+void UPGVoiceIndicatorWidget::OnMicModeChanged(EMicMode InMicMode)
+{
+	SetMicIcon();
+}
+
+void UPGVoiceIndicatorWidget::OnMicToggleChanged(bool bMicToggled)
+{
+	SetMicIcon();
+}
+
+// 마이크 모드 혹은 토글에 따라, 마이크 사용 가능 여부 표시
+void UPGVoiceIndicatorWidget::SetMicIcon()
 {
 	const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
 	if (!Settings)
 	{
-		return false;
+		return;
 	}
 
-	switch (Settings->GetMicMode())
+	bool bIsReady = Settings->IsMicReady();
+
+	if (MicModeIcon)
 	{
-	case EMicMode::OpenMic:
-		return true;
-
-	case EMicMode::Off:
-		return false;
-
-	case EMicMode::PushToTalk:
-		{
-			APlayerController* PC = GetOwningPlayer();
-			if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
-			{
-				return PGPC->IsPushToTalkActive();
-			}
-			else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
-			{
-				return LobbyPC->IsPushToTalkActive();
-			}
-		}
-		break;
+		MicModeIcon->SetRenderOpacity(bIsReady ? 1.0f : 0.2f);
 	}
 
-	return false;
+	if (MicStopSlash)
+	{
+		MicStopSlash->SetRenderOpacity(bIsReady ? 0.0f : 1.0f);
+	}
 }

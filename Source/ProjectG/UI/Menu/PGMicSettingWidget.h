@@ -5,11 +5,12 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Interfaces/VoiceCapture.h"
+#include "Player/PGGameUserSettings.h"
 #include "PGMicSettingWidget.generated.h"
 
 class UComboBoxString;
 class USlider;
-class UProgressBar;
+class UImage;
 class UButton;
 class UPGOptionSwitcherWidget;
 
@@ -25,9 +26,18 @@ public:
 	void SetReturnToFocusWidget(UUserWidget* InWidget) { ReturnFocusWidget = InWidget; }
 
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual void NativeDestruct() override;
+
+	void UpdateMicTestBar(float InDeltaTime);
+
+	UFUNCTION()
+	void OnMicModeChanged(EMicMode InMicMode);
+
+	void SetMicIcon(bool bMicActivate);
+
 
 	// -------- BindWidget --------
 	UPROPERTY(meta = (BindWidget))
@@ -43,10 +53,26 @@ protected:
 	TObjectPtr<USlider> MicSensitivitySlider;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UProgressBar> MicAmplitudeBar;
+	TObjectPtr<UButton> ConfirmButton;
+
+	/* Mic Test Bars*/
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> MicTestBar;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> MicTestBarMID;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> ConfirmButton;
+	TObjectPtr<UImage> MicModeIcon;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> MicStopSlash;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator")
+	FName FillRatioParam = TEXT("FillRatio");
+
+	TWeakObjectPtr<UPGGameUserSettings> CachedSettings;
+	/*  */
 
 private:
 	// -------- Callbacks --------

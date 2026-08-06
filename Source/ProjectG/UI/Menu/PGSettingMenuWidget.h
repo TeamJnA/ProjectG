@@ -4,13 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Player/PGGameUserSettings.h"
 #include "Interfaces/VoiceCapture.h"
 
 #include "PGSettingMenuWidget.generated.h"
 
 class UVerticalBox;
 class USlider;
+/* TODO 프로그레스 바 제거 필요(헤더도)*/
 class UProgressBar;
+class UImage;
 class UButton;
 class UComboBoxString;
 class UWidgetSwitcher;
@@ -39,6 +42,16 @@ protected:
     virtual void NativeConstruct() override;
     virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
     virtual void NativeDestruct() override;
+
+    void UpdateMicTestBar(float InDeltaTime);
+
+    UFUNCTION()
+    void OnMicModeChanged(EMicMode InMicMode);
+
+    UFUNCTION()
+    void OnMicToggleChanged(bool bMicToggled);
+
+    void SetMicIcon();
 
     // -------- Player Voice List --------
     UFUNCTION()
@@ -80,7 +93,21 @@ protected:
     TObjectPtr<USlider> MicSensitivitySlider;
 
     UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UProgressBar> MicAmplitudeBar;
+    TObjectPtr<UImage> MicTestBar;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> MicTestBarMID;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UImage> MicModeIcon;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UImage> MicStopSlash;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Indicator")
+    FName FillRatioParam = TEXT("FillRatio");
+
+    TWeakObjectPtr<UPGGameUserSettings> CachedSettings;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<USlider> MicVolumeSlider;
