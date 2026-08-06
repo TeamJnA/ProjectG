@@ -164,12 +164,11 @@ void APGExitPointBase::RegisterExitCamera()
 	}
 	else
 	{
-		// 최대 10번(약 5초)까지만 재시도하도록 방어 로직 추가
+		// 최대 10번(약 5초)까지만 재시도
 		if (RegistrationRetries < 10)
 		{
 			RegistrationRetries++;
 
-			// NextTick 대신 0.5초 간격으로 본인 함수 다시 호출
 			FTimerHandle TempHandle;
 			World->GetTimerManager().SetTimer(TempHandle, this, &APGExitPointBase::RegisterExitCamera, 0.5f, false);
 

@@ -54,6 +54,9 @@ protected:
 
 	// 클라이언트 입력에 따라 궤도 Yaw 업데이트
 	void OnOrbitYaw(const FInputActionValue& Value);
+	
+	// 추적 스무딩
+	FVector GetTargetTrackLocation() const;
 
 private:
 	// 관전 대상 Actor (서버에서 설정하고 클라이언트로 복제)
@@ -69,9 +72,11 @@ private:
 	UFUNCTION()
 	void OnRep_TargetPlayerState();
 
+	FVector SmoothedTargetLocation = FVector::ZeroVector;
+
 	// 대상으로부터의 거리
+	float DefaultOrbitDistance = 150.0f;
 	float CurrentOrbitDistance = 150.0f;
-	float SmoothedOrbitDistance = 150.0f;
 
 	float MinOrbitDistance = 40.0f;
 	float CameraProbeRadius = 30.0f;
@@ -81,7 +86,13 @@ private:
 	float CurrentOrbitYawAngle = 0.0f;
 	float CurrentOrbitPitchAngle = 15.0f;
 
+	// 추적 스무딩
+	float TargetLocationLagSpeed = 10.0f;
+
 	bool bCanOrbit = true;
+
+	// 스무딩 적용 여부
+	bool bTrackingInitialized = false;
 
 protected:
 	UPROPERTY()

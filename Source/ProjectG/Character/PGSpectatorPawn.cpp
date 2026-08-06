@@ -25,6 +25,7 @@
 APGSpectatorPawn::APGSpectatorPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickGroup = TG_PostUpdateWork;
 	SetActorTickEnabled(false);
 	bReplicates = true;
 
@@ -112,6 +113,24 @@ void APGSpectatorPawn::OnOrbitYaw(const FInputActionValue& Value)
 }
 
 /*
+* 시뮬레이티드 프록시의 캡슐은 복제 시점마다 스냅
+* 네트워크 스무딩이 적용된 메시 위치를 기준으로 추적
+*/
+FVector APGSpectatorPawn::GetTargetTrackLocation() const
+{
+	if (const ACharacter* TargetCharacter = Cast<ACharacter>(TargetToOrbit))
+	{
+		if (const USkeletalMeshComponent* Mesh = TargetCharacter->GetMesh())
+		{
+			// 메시는 발밑 기준 -> 캡슐 오프셋만큼 되돌리기
+			return Mesh->GetComponentLocation() - TargetCharacter->GetBaseTranslationOffset();
+		}
+	}
+
+	return TargetToOrbit->GetActorLocation();
+}
+
+/*
 * 설정된 타겟과의 거리를 유지하며 트래킹/궤도 유지
 */
 void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
@@ -121,18 +140,30 @@ void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 		return;
 	}
 
-	const FVector TargetLocation = TargetToOrbit->GetActorLocation() + FVector(0.0f, 0.0f, 65.0f);
+	const FVector RawLocation = GetTargetTrackLocation();
+
+	if (!bTrackingInitialized)
+	{
+		SmoothedTargetLocation = RawLocation;
+		bTrackingInitialized = true;
+	}
+	else
+	{
+		SmoothedTargetLocation = FMath::VInterpTo(SmoothedTargetLocation, RawLocation, GetWorld()->GetDeltaSeconds(), TargetLocationLagSpeed);
+	}
+
+	const FVector TargetLocation = SmoothedTargetLocation + FVector(0.0f, 0.0f, 65.0f);
 	const FRotator OrbitRotation = FRotator(CurrentOrbitPitchAngle, CurrentOrbitYawAngle, 0.0f);
 	const FVector OrbitDirection = OrbitRotation.Vector();
 
-	float DesiredDistance = CurrentOrbitDistance;
+	float DesiredDistance = DefaultOrbitDistance;
 
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	Params.AddIgnoredActor(TargetToOrbit);
 
-	const FVector TraceEnd = TargetLocation + OrbitDirection * CurrentOrbitDistance;
+	const FVector TraceEnd = TargetLocation + OrbitDirection * DefaultOrbitDistance;
 
 	if (GetWorld()->SweepSingleByChannel(Hit, TargetLocation, TraceEnd, FQuat::Identity,
 		ECC_Camera, FCollisionShape::MakeSphere(CameraProbeRadius), Params))
@@ -140,16 +171,16 @@ void APGSpectatorPawn::UpdateSpectatorPositionAndRotation()
 		DesiredDistance = FMath::Max(Hit.Distance, MinOrbitDistance);
 	}
 
-	if (DesiredDistance < SmoothedOrbitDistance)
+	if (DesiredDistance < CurrentOrbitDistance)
 	{
-		SmoothedOrbitDistance = DesiredDistance;
+		CurrentOrbitDistance = DesiredDistance;
 	}
 	else
 	{
-		SmoothedOrbitDistance = FMath::FInterpTo(SmoothedOrbitDistance, DesiredDistance, GetWorld()->GetDeltaSeconds(), OrbitDistanceInterpSpeed);
+		CurrentOrbitDistance = FMath::FInterpTo(CurrentOrbitDistance, DesiredDistance, GetWorld()->GetDeltaSeconds(), OrbitDistanceInterpSpeed);
 	}
 
-	const FVector NewLocation = TargetLocation + OrbitDirection * SmoothedOrbitDistance;
+	const FVector NewLocation = TargetLocation + OrbitDirection * CurrentOrbitDistance;
 	// Location -> PawnLocation 업데이트
 	SetActorLocation(NewLocation);
 
@@ -184,7 +215,8 @@ void APGSpectatorPawn::OnRep_TargetToOrbit()
 {
 	if (IsLocallyControlled())
 	{
-		SmoothedOrbitDistance = CurrentOrbitDistance;
+		CurrentOrbitDistance = DefaultOrbitDistance;
+		bTrackingInitialized = false;
 
 		if (APGExitPointBase* ExitPoint = Cast<APGExitPointBase>(TargetToOrbit))
 		{
