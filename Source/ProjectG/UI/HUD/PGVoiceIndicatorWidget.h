@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Player/PGGameUserSettings.h"
 #include "PGVoiceIndicatorWidget.generated.h"
 
 class UImage;
@@ -18,14 +19,31 @@ class PROJECTG_API UPGVoiceIndicatorWidget : public UUserWidget
 	
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void NativeOnInitialized() override;
+	virtual void NativeDestruct() override;
+	virtual void NativeConstruct() override;
 
-	bool IsMicReady() const;
+	// 마이크의 모드와, Toggle일 때의 변화를 확인하고 업데이트 한다.
+	UFUNCTION()
+	void OnMicModeChanged(EMicMode InMicMode);
+
+	UFUNCTION()
+	void OnMicToggleChanged(bool bMicToggled);
+
+	void SetMicIcon();
+
+	void UpdateNoiseBar(float InDeltaTime);
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> NoiseBar;
 
+	TWeakObjectPtr<UPGGameUserSettings> CachedSettings;
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> MicModeIcon;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> MicStopSlash;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> BarMID;

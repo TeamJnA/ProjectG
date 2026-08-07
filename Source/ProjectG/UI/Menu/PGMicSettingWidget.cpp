@@ -5,14 +5,25 @@
 #include "UI/Menu/PGOptionSwitcherWidget.h"
 #include "Components/ComboBoxString.h"
 #include "Components/Slider.h"
-#include "Components/ProgressBar.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
 
-#include "Player/PGGameUserSettings.h"
 #include "Utils/PGVoiceUtils.h"
 #include "VoiceModule.h"
 #include "AudioCapture.h"
 
+
+void UPGMicSettingWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	/* Bind mic mode and toggle setting changed with mic icon*/
+	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		CachedSettings = Settings;
+		Settings->OnMicModeChanged.AddUniqueDynamic(this, &UPGMicSettingWidget::OnMicModeChanged);
+	}
+}
 
 void UPGMicSettingWidget::NativeConstruct()
 {
@@ -57,13 +68,49 @@ void UPGMicSettingWidget::NativeConstruct()
 	{
 		SettingsVoiceCapture->Start();
 	}
+
+	//
+	SetMicIcon(true);
 }
 
 void UPGMicSettingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (!SettingsVoiceCapture.IsValid() || !MicAmplitudeBar)
+	UpdateMicTestBar(InDeltaTime);
+}
+
+void UPGMicSettingWidget::NativeDestruct()
+{
+	if (SettingsVoiceCapture.IsValid())
+	{
+		SettingsVoiceCapture->Stop();
+		SettingsVoiceCapture.Reset();
+	}
+
+	if (UPGGameUserSettings* Settings = CachedSettings.Get())
+	{
+		Settings->OnMicModeChanged.RemoveAll(this);
+	}
+
+	Super::NativeDestruct();
+}
+
+void UPGMicSettingWidget::UpdateMicTestBar(float InDeltaTime)
+{
+	if (!MicTestBarMID)
+	{
+		if (MicTestBar)
+		{
+			MicTestBarMID = MicTestBar->GetDynamicMaterial();
+		}
+		if (!MicTestBarMID)
+		{
+			return;
+		}
+	}
+
+	if (!SettingsVoiceCapture.IsValid())
 	{
 		return;
 	}
@@ -108,18 +155,38 @@ void UPGMicSettingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 	const float Speed = (RawAmplitude > DisplayMicAmplitude) ? 9.0f : 5.0f;
 	DisplayMicAmplitude = FMath::FInterpTo(DisplayMicAmplitude, RawAmplitude, EffectiveDelta, Speed);
 
-	MicAmplitudeBar->SetPercent(FMath::Clamp(DisplayMicAmplitude / MaxAmplitude, 0.0f, 1.0f));
+	// MicAmplitudeBar->SetPercent(FMath::Clamp(DisplayMicAmplitude / MaxAmplitude, 0.0f, 1.0f));
+
+	const float FillRatio = FMath::Clamp(DisplayMicAmplitude / MaxAmplitude, 0.0f, 1.0f);
+
+	MicTestBarMID->SetScalarParameterValue(FillRatioParam, FillRatio);
 }
 
-void UPGMicSettingWidget::NativeDestruct()
+void UPGMicSettingWidget::OnMicModeChanged(EMicMode InMicMode)
 {
-	if (SettingsVoiceCapture.IsValid())
+	bool bActivate = (InMicMode == EMicMode::Off) ? false : true;
+	SetMicIcon(bActivate);
+}
+
+void UPGMicSettingWidget::SetMicIcon(bool bMicActivate)
+{
+	const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+	if (!Settings)
 	{
-		SettingsVoiceCapture->Stop();
-		SettingsVoiceCapture.Reset();
+		return;
 	}
 
-	Super::NativeDestruct();
+	bool bIsReady = Settings->IsMicReady();
+
+	if (MicModeIcon)
+	{
+		MicModeIcon->SetRenderOpacity(bIsReady ? 1.0f : 0.2f);
+	}
+
+	if (MicStopSlash)
+	{
+		MicStopSlash->SetRenderOpacity(bIsReady ? 0.0f : 1.0f);
+	}
 }
 
 void UPGMicSettingWidget::PopulateInputDevices()

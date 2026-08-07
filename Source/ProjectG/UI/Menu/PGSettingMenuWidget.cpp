@@ -6,15 +6,14 @@
 #include "UI/Menu/PGOptionSwitcherWidget.h"
 #include "Components/VerticalBox.h"
 #include "Components/Slider.h"
-#include "Components/ProgressBar.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/ComboBoxString.h"
+#include "Components/Image.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
-#include "Player/PGGameUserSettings.h"
 #include "Player/PGPlayerController.h"
 #include "Player/PGLobbyPlayerController.h"
 
@@ -130,6 +129,14 @@ void UPGSettingMenuWidget::NativeOnInitialized()
     {
         VideoOptionButton->OnClicked.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnVideoOptionButtonClicked);
     }
+
+    /* Bind mic mode and toggle setting changed with mic icon*/
+    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+    {
+        CachedSettings = Settings;
+        Settings->OnMicModeChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnMicModeChanged);
+        Settings->OnMicToggleChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnMicToggleChanged);
+    }
 }
 
 void UPGSettingMenuWidget::NativeConstruct()
@@ -145,6 +152,8 @@ void UPGSettingMenuWidget::NativeConstruct()
     UE_LOG(LogTemp, Log, TEXT("[SettingMenu] Update setting menu"));
     LoadAndApplySettings();
     UpdatePlayerVoiceList();
+
+    SetMicIcon();
 }
 
 void UPGSettingMenuWidget::ActivateMicCapture()
@@ -179,7 +188,43 @@ void UPGSettingMenuWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 {
     Super::NativeTick(MyGeometry, InDeltaTime);
 
-    if (!SettingsVoiceCapture.IsValid() || !MicAmplitudeBar)
+    UpdateMicTestBar(InDeltaTime);
+}
+
+void UPGSettingMenuWidget::NativeDestruct()
+{
+    UE_LOG(LogTemp, Log, TEXT("UPGSettingMenuWidget::NativeDestruct"));
+    DeactivateMicCapture();
+
+    if (APGGameState* GS = GSRef.Get())
+    {
+        GS->OnPlayerArrayChanged.RemoveAll(this);
+    }
+
+    if (UPGGameUserSettings* Settings = CachedSettings.Get())
+    {
+        Settings->OnMicModeChanged.RemoveAll(this);
+        Settings->OnMicToggleChanged.RemoveAll(this);
+    }
+
+    Super::NativeDestruct();
+}
+
+void UPGSettingMenuWidget::UpdateMicTestBar(float InDeltaTime)
+{
+    if (!MicTestBarMID)
+    {
+        if (MicTestBar)
+        {
+            MicTestBarMID = MicTestBar->GetDynamicMaterial();
+        }
+        if (!MicTestBarMID)
+        {
+            return;
+        }
+    }
+
+    if (!SettingsVoiceCapture.IsValid())
     {
         return;
     }
@@ -244,20 +289,41 @@ void UPGSettingMenuWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
     const float Speed = (RawAmplitude > DisplayMicAmplitude) ? 9.0f : 5.0f;
     DisplayMicAmplitude = FMath::FInterpTo(DisplayMicAmplitude, RawAmplitude, EffectiveDelta, Speed);
 
-    MicAmplitudeBar->SetPercent(FMath::Clamp(DisplayMicAmplitude / MaxAmplitude, 0.0f, 1.0f));
+    // MIC Image
+    const float FillRatio = FMath::Clamp(DisplayMicAmplitude / MaxAmplitude, 0.0f, 1.0f);
+
+    MicTestBarMID->SetScalarParameterValue(FillRatioParam, FillRatio);
 }
 
-void UPGSettingMenuWidget::NativeDestruct()
+void UPGSettingMenuWidget::OnMicModeChanged(EMicMode InMicMode)
 {
-    UE_LOG(LogTemp, Log, TEXT("UPGSettingMenuWidget::NativeDestruct"));
-    DeactivateMicCapture();
+    SetMicIcon();
+}
 
-    if (APGGameState* GS = GSRef.Get())
+void UPGSettingMenuWidget::OnMicToggleChanged(bool bMicToggled)
+{
+    SetMicIcon();
+}
+
+void UPGSettingMenuWidget::SetMicIcon()
+{
+    const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
+    if (!Settings)
     {
-        GS->OnPlayerArrayChanged.RemoveAll(this);
+        return;
     }
 
-    Super::NativeDestruct();
+    bool bIsReady = Settings->IsMicReady();
+
+    if (MicModeIcon)
+    {
+        MicModeIcon->SetRenderOpacity(bIsReady ? 1.0f : 0.2f);
+    }
+
+    if (MicStopSlash)
+    {
+        MicStopSlash->SetRenderOpacity(bIsReady ? 0.0f : 1.0f);
+    }
 }
 
 /**

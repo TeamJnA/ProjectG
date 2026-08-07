@@ -17,6 +17,33 @@ UPGGameUserSettings::UPGGameUserSettings()
 {
 }
 
+bool UPGGameUserSettings::IsMicReady() const
+{
+	switch (GetMicMode())
+	{
+	case EMicMode::OpenMic:
+		return true;
+
+	case EMicMode::Off:
+		return false;
+
+	case EMicMode::PushToTalk:
+	{
+		if (IsMicToggled())
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	break;
+	}
+
+	return false;
+}
+
 UPGGameUserSettings* UPGGameUserSettings::GetPGGameUserSettings()
 {
 	return Cast<UPGGameUserSettings>(UGameUserSettings::GetGameUserSettings());
@@ -34,6 +61,20 @@ void UPGGameUserSettings::SetMicMode(EMicMode NewMode)
 	SaveConfig();
 
 	OnMicModeChanged.Broadcast(NewMode);
+}
+
+void UPGGameUserSettings::SetMicToggle(bool bToggleActive)
+{
+	if (bMicToggleActive == bToggleActive)
+	{
+		return;
+	}
+
+	bMicToggleActive = bToggleActive;
+	SaveSettings();
+	SaveConfig();
+
+	OnMicToggleChanged.Broadcast(bMicToggleActive);
 }
 
 EMicMode UPGGameUserSettings::IndexToMicMode(int32 Index)

@@ -16,6 +16,7 @@ enum class EMicMode : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMicModeChanged, EMicMode, NewMicMode);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMicToggleChanged, bool, bMicToggled);
 
 /**
  * Custom GameUserSettings that persists all user preferences.
@@ -32,6 +33,8 @@ class PROJECTG_API UPGGameUserSettings : public UGameUserSettings
 
 public:
 	UPGGameUserSettings();
+
+	bool IsMicReady() const;
 
 	/** Static accessor */
 	UFUNCTION(BlueprintCallable, Category = "Settings")
@@ -68,13 +71,22 @@ public:
 	UPROPERTY(Config)
 	EMicMode MicMode;
 
+	UPROPERTY(Config)
+	bool bMicToggleActive;
+
 	UPROPERTY()
 	FOnMicModeChanged OnMicModeChanged;
+
+	UPROPERTY()
+	FOnMicToggleChanged OnMicToggleChanged;
 
 	void SetMicMode(EMicMode NewMode);
 	FORCEINLINE EMicMode GetMicMode() const { return MicMode; }
 	FORCEINLINE bool IsPushToTalk() const { return MicMode == EMicMode::PushToTalk; }
 	FORCEINLINE bool IsMicOff() const { return MicMode == EMicMode::Off; }
+
+	FORCEINLINE bool IsMicToggled() const { return bMicToggleActive;	}
+	void SetMicToggle(bool bToggleActive);
 
 	static EMicMode IndexToMicMode(int32 Index);
 	static int32 MicModeToIndex(EMicMode Mode);
