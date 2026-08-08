@@ -25,6 +25,7 @@
 #include "Player/PGPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 
+#define LOCTEXT_NAMESPACE "PGMenu"
 
 void UPGMainMenuWidget::NativeOnInitialized()
 {
@@ -296,8 +297,15 @@ void UPGMainMenuWidget::OnHostSessionConfirmed(const FPGHostSessionOptions& Opti
 	if (ConfirmWidgetInstance)
 	{
 		const bool bSingle = Options.bIsSinglePlay;
-		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(bSingle ? TEXT("Single Play") : TEXT("Create Session")));
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(bSingle ? TEXT("Start a single play?") : TEXT("Create a new session?")));
+
+		ConfirmWidgetInstance->SetConfirmTitle(bSingle
+			? LOCTEXT("Confirm_SinglePlayTitle", "Single Play")
+			: LOCTEXT("Confirm_CreateSessionTitle", "Create Session"));
+
+		ConfirmWidgetInstance->SetConfirmText(bSingle
+			? LOCTEXT("Confirm_SinglePlayBody", "Start a single play?")
+			: LOCTEXT("Confirm_CreateSessionBody", "Create a new session?"));
+
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::StartHostSession);
@@ -351,8 +359,8 @@ void UPGMainMenuWidget::OnExitButtonClicked()
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Quit Game")));
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Are you sure you want to quit?")));
+		ConfirmWidgetInstance->SetConfirmTitle(LOCTEXT("Confirm_QuitTitle", "Quit Game"));
+		ConfirmWidgetInstance->SetConfirmText(LOCTEXT("Confirm_QuitBody", "Are you sure you want to quit?"));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGMainMenuWidget::QuitGame);
@@ -410,7 +418,7 @@ void UPGMainMenuWidget::OnBackButtonClicked()
 
 void UPGMainMenuWidget::HandleHostSessionStarted()
 {
-	ShowSessionStatusWidget(FText::FromString(TEXT("Creating Session")), false);
+	ShowSessionStatusWidget(LOCTEXT("Status_CreatingSession", "Creating Session"), false);
 	SetMainMenuButtonEnabled(false);
 	SetSessionListButtonEnabled(false);
 }
@@ -435,7 +443,7 @@ void UPGMainMenuWidget::OnSessionsFound(const TArray<FOnlineSessionSearchResult>
 
 	if (SessionResults.Num() == 0)
 	{
-		ShowSessionStatusWidget(FText::FromString(TEXT("No sessions found")), true);
+		ShowSessionStatusWidget(LOCTEXT("Status_NoSessionFound", "No sessions found"), true);
 		HideSessionStatusWidget(5.0f);
 		UE_LOG(LogTemp, Log, TEXT("MainMenuWidget::OnSessionsFound: No sessions found"));
 	}
@@ -456,7 +464,7 @@ void UPGMainMenuWidget::OnSessionsFound(const TArray<FOnlineSessionSearchResult>
 
 void UPGMainMenuWidget::HandleFindSessionStarted()
 {
-	ShowSessionStatusWidget(FText::FromString(TEXT("Finding Sessions")), false);
+	ShowSessionStatusWidget(LOCTEXT("Status_FindingSessions", "Finding Sessions"), false);
 	SetMainMenuButtonEnabled(false);
 	SetSessionListButtonEnabled(false);
 }
@@ -465,7 +473,7 @@ void UPGMainMenuWidget::HandleFindSessionFinished(bool bWasSuccessful)
 {
 	if (!bWasSuccessful)
 	{
-		ShowSessionStatusWidget(FText::FromString(TEXT("Failed to find sessions")), true);
+		ShowSessionStatusWidget(LOCTEXT("Status_FindFailed", "Failed to find sessions"), true);
 		HideSessionStatusWidget(2.0f);
 	}
 	else
@@ -476,7 +484,7 @@ void UPGMainMenuWidget::HandleFindSessionFinished(bool bWasSuccessful)
 
 void UPGMainMenuWidget::HandleJoinSessionStarted()
 {
-	ShowSessionStatusWidget(FText::FromString(TEXT("Joining Session")), false);
+	ShowSessionStatusWidget(LOCTEXT("Status_JoiningSession", "Joining Session"), false);
 	SetMainMenuButtonEnabled(false);
 	SetSessionListButtonEnabled(false);
 }
@@ -496,10 +504,10 @@ void UPGMainMenuWidget::CheckPendingNetworkFailure()
 {
 	if (UPGAdvancedFriendsGameInstance* GI = GIRef.Get())
 	{
-		FString ErrorMessage = GI->GetPendingNetworkFailureMessage();
+		const FText ErrorMessage = GI->GetPendingNetworkFailureMessage();
 		if (!ErrorMessage.IsEmpty())
 		{
-			HandleNetworkFailure(FText::FromString(ErrorMessage));
+			HandleNetworkFailure(ErrorMessage);
 			GI->ClearPendingNetworkFailureMessage();
 		}
 	}
@@ -624,3 +632,5 @@ void UPGMainMenuWidget::HideSessionStatusWidget(float Delay)
 		GetWorld()->GetTimerManager().ClearTimer(SessionStatusWidgetTimerHandle);
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

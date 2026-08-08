@@ -6,6 +6,8 @@
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickBase.h"
 #include "PGInteractableGimmickBonfire.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 class USphereComponent;
 class UBoxComponent;
 class UPointLightComponent;
@@ -85,7 +87,7 @@ protected:
 	FVector2D MatchIconSize = FVector2D(70.0f, 60.0f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText FireText = FText::FromString(TEXT("Fire"));
+	FText FireText = LOCTEXT("Bonfire_Fire", "Fire");
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
 	FName BoneFireStartSound;
@@ -128,3 +130,5 @@ protected:
 	UFUNCTION()
 	void OnRep_IsLit();
 };
+
+#undef LOCTEXT_NAMESPACE

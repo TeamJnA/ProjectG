@@ -8,6 +8,8 @@
 #include "Interface/HoldInteractProgressHandler.h"
 #include "PGFuseBox.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 class APGItemActor;
 class UPGItemData;
 class UNiagaraComponent;
@@ -115,7 +117,7 @@ protected:
 	TObjectPtr<UMaterialInstanceDynamic> MIDCover;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText OpenText = FText::FromString(TEXT("Open"));
+	FText OpenText = LOCTEXT("FuseBox_Open", "Open");
 
 	FTimerHandle ShakeEffectTimerHandle;
 
@@ -129,3 +131,5 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
 	TObjectPtr<UNiagaraComponent> FuseSparkFX;
 };
+
+#undef LOCTEXT_NAMESPACE

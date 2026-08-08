@@ -208,7 +208,7 @@ FText APGExitIronDoor::GetInteractionText() const
         }
         case E_LockPhase::E_WheelAttach:
         {
-            return AttatchHandleText;
+            return AttachHandleText;
         }
         case E_LockPhase::E_OilApplied:
         {

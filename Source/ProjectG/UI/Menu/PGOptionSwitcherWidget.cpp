@@ -65,7 +65,7 @@ void UPGOptionSwitcherWidget::UpdateDisplay()
 {
 	if (OptionText && Options.IsValidIndex(CurrentOption))
 	{
-		OptionText->SetText(FText::FromString(Options[CurrentOption]));
+		OptionText->SetText(Options[CurrentOption]);
 	}
 }
 

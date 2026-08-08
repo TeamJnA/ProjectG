@@ -104,9 +104,9 @@ public:
 
 	void UpdateSessionPlayerCount(int32 CurrentPlayers);
 
-	FORCEINLINE void SetPendingNetworkFailureMessage(const FString& Message) { PendingNetworkFailureMessage = Message; }
-	FORCEINLINE const FString& GetPendingNetworkFailureMessage() const { return PendingNetworkFailureMessage; }
-	FORCEINLINE void ClearPendingNetworkFailureMessage() { PendingNetworkFailureMessage.Empty(); }
+	FORCEINLINE void SetPendingNetworkFailureMessage(const FText& Message) { PendingNetworkFailureMessage = Message; }
+	FORCEINLINE const FText& GetPendingNetworkFailureMessage() const { return PendingNetworkFailureMessage; }
+	FORCEINLINE void ClearPendingNetworkFailureMessage() { PendingNetworkFailureMessage = FText::GetEmpty(); }
 	FORCEINLINE bool IsSinglePlaySession() const { return CurrentHostOptions.bIsSinglePlay; }
 
 	FOnSessionsFoundDelegate OnSessionsFound;
@@ -205,7 +205,7 @@ private:
 
 	bool bIsHostingAfterDestroy;
 
-	FString PendingNetworkFailureMessage;
+	FText PendingNetworkFailureMessage;
 	FPGHostSessionOptions PendingHostOptions; // 기존 세션 파괴 후 재생성용
 	FPGHostSessionOptions CurrentHostOptions; // 현재 호스팅 중인 세션의 옵션
 

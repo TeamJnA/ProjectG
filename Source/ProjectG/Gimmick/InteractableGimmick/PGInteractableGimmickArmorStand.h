@@ -6,6 +6,8 @@
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickBase.h"
 #include "PGInteractableGimmickArmorStand.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 class UBoxComponent;
 class UCameraShakeSourceComponent;
 
@@ -61,7 +63,7 @@ private:
 	FName ArmorStandCollapseSound;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText BreakText = FText::FromString(TEXT("Break"));
+	FText BreakText = LOCTEXT("ArmorStand_Break", "Break");
 
 	UPROPERTY(ReplicatedUsing = OnRep_CollisionDisabled)
 	bool bIsCollisionDisabled;
@@ -71,3 +73,5 @@ private:
 
 	bool bAlreadyCollapsed;
 };
+
+#undef LOCTEXT_NAMESPACE

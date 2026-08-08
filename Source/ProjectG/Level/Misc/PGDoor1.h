@@ -9,6 +9,8 @@
 
 #include "PGDoor1.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 class APGChaosCacheManager;
 class UNiagaraComponent;
 
@@ -96,10 +98,10 @@ protected:
 	FVector2D KeyIconSize = FVector2D(40.0f, 40.0f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText OpenDoorText = FText::FromString(TEXT("Open"));
+	FText OpenDoorText = LOCTEXT("Door_Open", "Open");
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText CloseDoorText = FText::FromString(TEXT("Close"));
+	FText CloseDoorText = LOCTEXT("Door_Close", "Close");
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DoorState", meta = (AllowPrivateAccess = "true"), Replicated)
 	bool bIsOpen = false;
@@ -184,3 +186,5 @@ private:
 	UPROPERTY(Replicated, VisibleAnywhere)
 	EDoorOpenType DoorOpenType;
 };
+
+#undef LOCTEXT_NAMESPACE

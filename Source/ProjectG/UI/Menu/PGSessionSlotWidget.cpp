@@ -8,6 +8,7 @@
 #include "OnlineSessionSettings.h"
 #include "Type/PGDifficultyTypes.h"
 
+#define LOCTEXT_NAMESPACE "PGMenu"
 
 void UPGSessionSlotWidget::NativeOnInitialized()
 {
@@ -57,8 +58,10 @@ void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult,
 		SessionSettings.Get(SESSION_KEY_DIFFICULTY, DiffValue); // 키가 없으면 값 유지 -> Normal
 
 		const EPGDifficulty Diff = (EPGDifficulty)DiffValue;
-		const FString DiffStr = (Diff == EPGDifficulty::Hard) ? TEXT("HARD") : TEXT("NORMAL");
-		DifficultyText->SetText(FText::FromString(DiffStr));
+		const FText DiffText = (Diff == EPGDifficulty::Hard)
+			? LOCTEXT("Difficulty_HardUpper", "HARD")
+			: LOCTEXT("Difficulty_NormalUpper", "NORMAL");
+		DifficultyText->SetText(DiffText);
 	}
 
 	if (PingText)
@@ -81,3 +84,5 @@ void UPGSessionSlotWidget::OnJoinClicked()
 	UE_LOG(LogTemp, Log, TEXT("SessionSlotWidget::OnJoinClicked: Session Slot Join Button Clicked for index %d."), Index);
 	GI->JoinFoundSession(Index);
 }
+
+#undef LOCTEXT_NAMESPACE

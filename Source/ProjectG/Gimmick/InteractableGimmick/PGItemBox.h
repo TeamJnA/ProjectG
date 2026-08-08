@@ -6,6 +6,8 @@
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickBase.h"
 #include "PGItemBox.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 class UPGItemData;
 
 /**
@@ -32,5 +34,7 @@ protected:
 	TObjectPtr<UPGItemData> ItemToDispense;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	FText TakeText = FText::FromString(TEXT("Take"));
+	FText TakeText = LOCTEXT("ItemBox_Take", "Take");
 };
+
+#undef LOCTEXT_NAMESPACE

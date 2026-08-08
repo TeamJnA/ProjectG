@@ -10,6 +10,7 @@
 #include "Player/PGPlayerState.h"
 #include "Type/PGPhotoTypes.h"
 
+#define LOCTEXT_NAMESPACE "PGMenu"
 
 /*
 * 받은 데이터를 바탕으로 플레이어 이미지, 이름, 상태 디스플레이
@@ -49,7 +50,7 @@ void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D*
 		StatusFontSize = 8;
 		if (InPlayerState->IsHost())
 		{
-			StatusMessage = FText::FromString(TEXT("HOST"));
+			StatusMessage = LOCTEXT("PlayerStatus_Host", "HOST");
 			StatusColor = FLinearColor::Green;
 		}
 		else
@@ -63,12 +64,12 @@ void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D*
 		StatusFontSize = 24;
 		if (InPlayerState->IsDead())
 		{
-			StatusMessage = FText::FromString(TEXT("DEAD"));
+			StatusMessage = LOCTEXT("PlayerStatus_Dead", "DEAD");
 			StatusColor = FLinearColor::Red;
 		}
 		else if (InPlayerState->HasFinishedGame())
 		{
-			StatusMessage = FText::FromString(TEXT("ESCAPED"));
+			StatusMessage = LOCTEXT("PlayerStatus_Escaped", "ESCAPED");
 			StatusColor = FLinearColor::Green;
 		}
 	}
@@ -79,12 +80,12 @@ void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D*
 		bShowScore = true;
 		if (InPlayerState->IsDead())
 		{
-			StatusMessage = FText::FromString(TEXT("DEAD"));
+			StatusMessage = LOCTEXT("PlayerStatus_Dead", "DEAD");
 			StatusColor = FLinearColor::Red;
 		}
 		else if (InPlayerState->HasFinishedGame())
 		{
-			StatusMessage = FText::FromString(TEXT("ESCAPED"));
+			StatusMessage = LOCTEXT("PlayerStatus_Escaped", "ESCAPED");
 			StatusColor = FLinearColor::Green;
 		}
 	}
@@ -94,12 +95,12 @@ void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D*
 		StatusFontSize = 8;
 		if (InPlayerState->IsDead())
 		{
-			StatusMessage = FText::FromString(TEXT("DEAD"));
+			StatusMessage = LOCTEXT("PlayerStatus_Dead", "DEAD");
 			StatusColor = FLinearColor::Red;
 		}
 		else if (InPlayerState->HasFinishedGame())
 		{
-			StatusMessage = FText::FromString(TEXT("ESCAPED"));
+			StatusMessage = LOCTEXT("PlayerStatus_Escaped", "ESCAPED");
 			StatusColor = FLinearColor::Green;
 		}
 	}
@@ -165,3 +166,5 @@ void UPGPlayerEntryWidget::PlayGradeStampEffect()
 		PlayAnimation(GradeStampAnim);
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

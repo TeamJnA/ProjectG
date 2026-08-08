@@ -11,6 +11,8 @@
 #include "Sound/PGSoundManager.h"
 #include "PGLogChannels.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 // Sets default values
 APGSearchableSlotBase::APGSearchableSlotBase()
 {
@@ -212,11 +214,9 @@ FInteractionInfo APGSearchableSlotBase::GetInteractionInfo() const
 
 FText APGSearchableSlotBase::GetInteractionText() const
 {
-	if (bIsDrawn)
-	{
-		return FText::FromString(TEXT("Close"));
-	}
-	return FText::FromString(TEXT("Open"));
+	return bIsDrawn
+		? LOCTEXT("Slot_Close", "Close")
+		: LOCTEXT("Slot_Open", "Open");
 }
 
 bool APGSearchableSlotBase::CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const
@@ -381,3 +381,5 @@ void APGSearchableSlotBase::OnTimelineFinished()
 		SlotMesh1->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

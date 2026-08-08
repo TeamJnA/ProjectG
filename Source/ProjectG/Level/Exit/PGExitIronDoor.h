@@ -7,6 +7,8 @@
 #include "Interface/HoldInteractProgressHandler.h"
 #include "PGExitIronDoor.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 /**
  * 
  */
@@ -276,16 +278,18 @@ private:
 	FVector2D OilIconSize = FVector2D(60.0f, 70.0f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText UnlockText = FText::FromString(TEXT("Unlock"));
+	FText UnlockText = LOCTEXT("IronDoor_Unlock", "Unlock");
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText AttatchHandleText = FText::FromString(TEXT("Attatch"));
+	FText AttachHandleText = LOCTEXT("IronDoor_AttachHandle", "Attach");
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText OilText = FText::FromString(TEXT("Oiling"));
+	FText OilText = LOCTEXT("IronDoor_Oiling", "Oiling");
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText CrankHandleText = FText::FromString(TEXT("Open"));
+	FText CrankHandleText = LOCTEXT("IronDoor_Crank", "Open");
 
 	TWeakObjectPtr<AActor> CachedChainUnlockInvestigator;
 };
+
+#undef LOCTEXT_NAMESPACE

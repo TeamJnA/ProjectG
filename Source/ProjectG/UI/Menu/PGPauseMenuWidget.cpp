@@ -16,6 +16,7 @@
 
 #include "Kismet/GameplayStatics.h"
 
+#define LOCTEXT_NAMESPACE "PGMenu"
 
 void UPGPauseMenuWidget::NativeOnInitialized()
 {
@@ -167,8 +168,8 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Main Menu")));
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return to the main menu?")));
+		ConfirmWidgetInstance->SetConfirmTitle(LOCTEXT("Confirm_MainMenuTitle", "Main Menu"));
+		ConfirmWidgetInstance->SetConfirmText(LOCTEXT("Confirm_MainMenuBody", "Return to the main menu?"));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToMainMenu);
@@ -232,8 +233,8 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Quit Game")));
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Are you sure you want to quit?")));
+		ConfirmWidgetInstance->SetConfirmTitle(LOCTEXT("Confirm_QuitTitle", "Quit Game"));
+		ConfirmWidgetInstance->SetConfirmText(LOCTEXT("Confirm_QuitBody", "Are you sure you want to quit?"));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToDesktop);
@@ -320,3 +321,5 @@ void UPGPauseMenuWidget::UpdateInviteButtonVisibility()
 
 	InviteFriendButton->SetVisibility(bCanInvite ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
+
+#undef LOCTEXT_NAMESPACE

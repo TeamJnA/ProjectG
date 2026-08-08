@@ -11,6 +11,8 @@
 
 #include "PGItemActor.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 UCLASS()
 class PROJECTG_API APGItemActor : public AActor, public IInteractableActorInterface, public IItemInteractInterface
 {
@@ -69,7 +71,7 @@ protected:
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText PickupText = FText::FromString(TEXT("Pickup"));
+	FText PickupText = LOCTEXT("Item_Pickup", "Pickup");
 
 	FTimerHandle HighlightOnTimer;
 
@@ -78,3 +80,5 @@ protected:
 
 	bool bOwned = false;
 };
+
+#undef LOCTEXT_NAMESPACE

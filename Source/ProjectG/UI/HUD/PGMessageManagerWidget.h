@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "PGMessageManagerWidget.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGHUD"
+
 class APGPlayerCharacter;
 class UImage;
 class UTextBlock;
@@ -54,7 +56,7 @@ protected:
 	FVector2D InteractIconSize = FVector2D(32.0f, 32.0f);
 
 	UPROPERTY(EditAnywhere, Category = "UI")
-	FText FailedText = FText::FromString(TEXT("Failed"));
+	FText FailedText = LOCTEXT("Message_Failed", "Failed");
 
 	FTimerHandle FailureIconTimerHandle;
 
@@ -67,3 +69,5 @@ private:
 
 	TWeakObjectPtr<APGPlayerCharacter> CharacterRef;
 };
+
+#undef LOCTEXT_NAMESPACE

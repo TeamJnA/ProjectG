@@ -42,7 +42,7 @@ public:
 protected:
 	/** Available options - set per instance in Details panel */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Option")
-	TArray<FString> Options;
+	TArray<FText> Options;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> PrevOptionButton;

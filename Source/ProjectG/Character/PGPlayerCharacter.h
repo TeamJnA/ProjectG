@@ -16,6 +16,8 @@
 
 #include "PGPlayerCharacter.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
@@ -440,7 +442,7 @@ protected:
 	FVector2D NoBatteryIconSize = FVector2D(85.0f, 45.0f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText ReviveText = FText::FromString(TEXT("Revive"));
+	FText ReviveText = LOCTEXT("Player_Revive", "Revive");
 
 	// --------------Camera Component parts --------------
 public:
@@ -757,3 +759,5 @@ protected:
 
 	float DeathCameraTargetArmLength = 500.0f;
 };
+
+#undef LOCTEXT_NAMESPACE

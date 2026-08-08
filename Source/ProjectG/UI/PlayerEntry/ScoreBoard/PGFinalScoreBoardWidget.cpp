@@ -20,6 +20,7 @@
 
 #include "Kismet/GameplayStatics.h"
 
+#define LOCTEXT_NAMESPACE "PGMenu"
 
 void UPGFinalScoreBoardWidget::NativeOnInitialized()
 {
@@ -290,8 +291,8 @@ void UPGFinalScoreBoardWidget::UpdateReadyCheckboxes()
 	// Update text
 	if (ReadyCountText)
 	{
-		FString VotedString = FString::Printf(TEXT("%d/%d Voted"), ReadyCount, TotalPlayers);
-		ReadyCountText->SetText(FText::FromString(VotedString));
+		ReadyCountText->SetText(FText::Format(
+			LOCTEXT("Scoreboard_VoteCount", "{0}/{1} Voted"), ReadyCount, TotalPlayers));
 	}
 
 	if (APGPlayerController* PC = Cast<APGPlayerController>(GetOwningPlayer()))
@@ -400,8 +401,8 @@ void UPGFinalScoreBoardWidget::OnReturnToMainMenuButtonClicked()
 
 	if (ConfirmWidgetInstance)
 	{
-		ConfirmWidgetInstance->SetConfirmTitle(FText::FromString(TEXT("Main Menu")));
-		ConfirmWidgetInstance->SetConfirmText(FText::FromString(TEXT("Return to the main menu?")));
+		ConfirmWidgetInstance->SetConfirmTitle(LOCTEXT("Confirm_MainMenuTitle", "Main Menu"));
+		ConfirmWidgetInstance->SetConfirmText(LOCTEXT("Confirm_MainMenuBody", "Return to the main menu?"));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGFinalScoreBoardWidget::ReturnToMainMenu);
@@ -453,3 +454,5 @@ void UPGFinalScoreBoardWidget::OnReturnToLobbyButtonClicked()
 		UE_LOG(LogTemp, Error, TEXT("FinalScoreBoardWidget::ReturnToLobbyButtonClicked: PC Ref is not PG class"));
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

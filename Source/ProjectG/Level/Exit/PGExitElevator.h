@@ -7,6 +7,8 @@
 #include "Components/TimelineComponent.h"
 #include "PGExitElevator.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 class UBoxComponent;
 class UNiagaraComponent;
 /**
@@ -155,8 +157,10 @@ private:
 	FVector2D FuseIconSize = FVector2D(45.0f, 65.0f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText FuseText = FText::FromString(TEXT("Insert"));
+	FText FuseText = LOCTEXT("Elevator_InsertFuse", "Insert");
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText ActivateText = FText::FromString(TEXT("Activate"));
+	FText ActivateText = LOCTEXT("Elevator_Activate", "Activate");
 };
+
+#undef LOCTEXT_NAMESPACE

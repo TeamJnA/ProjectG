@@ -9,6 +9,8 @@
 
 #include "PGLobbyDoor.generated.h"
 
+#define LOCTEXT_NAMESPACE "PGInteraction"
+
 UCLASS()
 class PROJECTG_API APGLobbyDoor : public AActor, public IInteractableActorInterface
 {
@@ -47,5 +49,7 @@ protected:
 	FVector2D HostOnlyIconSize = FVector2D(70.0f, 70.0f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
-	FText StartGameText = FText::FromString(TEXT("Start Game"));
+	FText StartGameText = LOCTEXT("LobbyDoor_Enter", "Enter");
 };
+
+#undef LOCTEXT_NAMESPACE

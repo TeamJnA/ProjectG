@@ -31,6 +31,7 @@
 #include "steam/steam_api.h" 
 #endif
 
+#define LOCTEXT_NAMESPACE "PGSession"
 
 namespace
 {
@@ -100,7 +101,7 @@ void UPGAdvancedFriendsGameInstance::HostSession(const FPGHostSessionOptions& Op
 {
 	if (!SessionInterface.IsValid())
 	{
-		OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Online Subsystem is not available")));
+		OnHostSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_NoOnlineSubsystem", "Online Subsystem is not available"));
 		return;
 	}
 
@@ -178,7 +179,7 @@ void UPGAdvancedFriendsGameInstance::OnCreateSessionComplete(FName SessionName, 
 	}
 	else
 	{
-		OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Failed to create session")));
+		OnHostSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_CreateSessionFailed", "Failed to create session"));
 		//ForceReturnToMainMenu();
 	}
 }
@@ -272,7 +273,7 @@ void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
 	if (!SessionInterface.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("GI::JoinFoundSession: no valid session interface or session search"));
-		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Session system error")));
+		OnJoinSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_SessionSystem", "Session system error"));
 		return;
 	}
 
@@ -283,7 +284,7 @@ void UPGAdvancedFriendsGameInstance::JoinFoundSession(int32 SessionIndex)
 	}
 	else
 	{
-		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Invalid session selected")));
+		OnJoinSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_InvalidSession", "Invalid session selected"));
 		UE_LOG(LogTemp, Warning, TEXT("GI::JoinFoundSession: Invalid session index [%d]"), SessionIndex);
 	}
 }
@@ -296,7 +297,7 @@ void UPGAdvancedFriendsGameInstance::OnJoinSessionComplete(FName SessionName, EO
 {
 	if (!SessionInterface.IsValid())
 	{
-		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Online Subsystem is not available")));
+		OnJoinSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_NoOnlineSubsystem", "Online Subsystem is not available"));
 		return;
 	}
 
@@ -316,13 +317,13 @@ void UPGAdvancedFriendsGameInstance::OnJoinSessionComplete(FName SessionName, EO
 		else
 		{
 			HideLoadingScreen();
-			OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Could not resolve connection string")));
+			OnJoinSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_ResolveConnectString", "Could not resolve connect string"));
 		}
 	}
 	else
 	{
 		HideLoadingScreen();
-		OnJoinSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Failed to join session")));
+		OnJoinSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_JoinFailed", "Failed to join session"));
 	}
 }
 
@@ -435,7 +436,7 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 {
 	if (!SessionInterface.IsValid())
 	{
-		OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Online Subsystem is not available")));
+		OnHostSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_NoOnlineSubsystem", "Online Subsystem is not available"));
 		return;
 	}
 
@@ -465,7 +466,7 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 	{
 		if (bIsHostingAfterDestroy)
 		{
-			OnHostSessionAttemptFinished.Broadcast(false, FText::FromString(TEXT("Failed to destroy previous session")));
+			OnHostSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_DestroyPrevSession", "Failed to destroy previous session"));
 		}
 	}
 
@@ -478,10 +479,9 @@ void UPGAdvancedFriendsGameInstance::OnDestroySessionComplete(FName SessionName,
 */
 void UPGAdvancedFriendsGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type FailureType, const FString& ErrorString)
 {
-	UE_LOG(LogTemp, Error, TEXT("GI::HandleNetworkFailure: %s"), *ErrorString);
+	UE_LOG(LogTemp, Error, TEXT("GI::HandleTravelFailure: %s"), *ErrorString);
 
-	FString DisplayMessage = TEXT("Network Error");
-	SetPendingNetworkFailureMessage(DisplayMessage);
+	SetPendingNetworkFailureMessage(LOCTEXT("Error_NetworkError", "Network Error"));
 
 	if (SessionInterface.IsValid())
 	{
@@ -501,13 +501,12 @@ void UPGAdvancedFriendsGameInstance::HandleTravelFailure(UWorld* World, ETravelF
 */
 void UPGAdvancedFriendsGameInstance::HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString)
 {
-	UE_LOG(LogTemp, Error, TEXT("GI::HandleTravelFailure: %s"), *ErrorString);
+	UE_LOG(LogTemp, Error, TEXT("GI::HandleNetworkFailure: %s"), *ErrorString);
 
-	FString DisplayMessage = TEXT("Network Error");
-	if (ErrorString.Contains(TEXT("Game Started")))
-	{
-		DisplayMessage = TEXT("Game Started");
-	}
+	FText DisplayMessage = ErrorString.Contains(TEXT("Game Started"))
+		? LOCTEXT("Error_GameStarted", "Game Started")
+		: LOCTEXT("Error_NetworkError", "Network Error");
+
 	SetPendingNetworkFailureMessage(DisplayMessage);
 
 	if (SessionInterface.IsValid())
@@ -1112,3 +1111,5 @@ FText UPGAdvancedFriendsGameInstance::GetRankTitleByIndex(int32 RankIndex)
 
 	return FText::GetEmpty();
 }
+
+#undef LOCTEXT_NAMESPACE

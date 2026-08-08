@@ -26,6 +26,7 @@
 #include "Engine/DataTable.h"
 #include "EngineUtils.h"
 
+#define LOCTEXT_NAMESPACE "PGHUD"
 
 APGHUD::APGHUD()
 {
@@ -750,24 +751,31 @@ void APGHUD::DisplayCaptureLog(const TArray<FPhotoCaptureResult>& Entries)
 				{
 					FCaptureLogLine SpeciesLine;
 					SpeciesLine.bValid = true;
-					SpeciesLine.Text = FText::FromString(TEXT("+ New enemy record"));
+					SpeciesLine.Text = LOCTEXT("CaptureLog_NewEnemy", "[+] New enemy record");
 					Lines.Add(SpeciesLine);
 				}
 
 				FCaptureLogLine BehaviorLine;
 				BehaviorLine.bValid = true;
-				BehaviorLine.Text = FText::FromString(TEXT("+ New enemy behavior record"));
+				BehaviorLine.Text = LOCTEXT("CaptureLog_NewBehavior", "[+] New enemy behavior record");
 				Lines.Add(BehaviorLine);
 			}
 			else
 			{
-				const TCHAR* Cat =
-					PhotoID::IsAnomaly(Entry.SubjectID) ? TEXT("anomaly") :
-					PhotoID::IsRoom(Entry.SubjectID)	? TEXT("room") : TEXT("");
-
 				FCaptureLogLine Line;
 				Line.bValid = true;
-				Line.Text = FText::FromString(FString::Printf(TEXT("+ New %s record"), Cat));
+				if (PhotoID::IsAnomaly(Entry.SubjectID))
+				{
+					Line.Text = LOCTEXT("CaptureLog_NewAnomaly", "[+] New anomaly record");
+				}
+				else if (PhotoID::IsRoom(Entry.SubjectID))
+				{
+					Line.Text = LOCTEXT("CaptureLog_NewRoom", "[+] New room record");
+				}
+				else
+				{
+					Line.Text = LOCTEXT("CaptureLog_NewRecord", "[+] New record");
+				}
 				Lines.Add(Line);
 			}
 		}
@@ -777,8 +785,8 @@ void APGHUD::DisplayCaptureLog(const TArray<FPhotoCaptureResult>& Entries)
 		FCaptureLogLine Line;
 		Line.bValid = false;
 		Line.Text = (Entries.Num() == 0)
-			? FText::FromString(TEXT("X Nothing recorded"))
-			: FText::FromString(TEXT("X Not valid record"));
+			? LOCTEXT("CaptureLog_NothingRecorded", "[X] Nothing recorded")
+			: LOCTEXT("CaptureLog_AlreadyRecorded", "[X] Already recorded");
 		Lines.Add(Line);
 	}
 
@@ -937,3 +945,5 @@ void APGHUD::DisplayEnemyToast(const FText& TooltipText)
 		AlertContainerWidget->PlayEnemyToast(TooltipText);
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

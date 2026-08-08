@@ -79,4 +79,6 @@ Content/MetaHumans/
 Content/Imports/
 Content/StarterBundle/
 Content/Movies/
+Content/Localization/Game/Game.csv
+Content/Localization/Game/Game_Conflicts.txt
 .vsconfig
