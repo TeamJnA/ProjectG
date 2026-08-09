@@ -1,8 +1,6 @@
 #include "PGVoiceUtils.h"
 
 #include "Player/PGGameUserSettings.h"
-#include "Player/PGPlayerController.h"
-#include "Player/PGLobbyPlayerController.h"
 #include "AudioCapture.h"
 #include "Net/VoiceConfig.h"
 #include "VoiceInterfaceImpl.h"
@@ -120,30 +118,7 @@ bool PGVoiceUtils::ChangeInputDevice(UWorld* World, const FString& DeviceName)
         bool bShouldStartVoice = false;
         if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
         {
-            switch (Settings->GetMicMode())
-            {
-            case EMicMode::OpenMic:
-                bShouldStartVoice = true;
-                break;
-
-            case EMicMode::PushToTalk:
-                if (APlayerController* PC = World->GetFirstPlayerController())
-                {
-                    if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
-                    {
-                        bShouldStartVoice = PGPC->IsPushToTalkActive();
-                    }
-                    else if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(PC))
-                    {
-                        bShouldStartVoice = LobbyPC->IsPushToTalkActive();
-                    }
-                }
-                break;
-
-            case EMicMode::Off:
-                bShouldStartVoice = false;
-                break;
-            }
+            bShouldStartVoice = Settings->IsMicReady();
         }
 
         if (bShouldStartVoice)

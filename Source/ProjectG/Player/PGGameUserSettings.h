@@ -71,7 +71,7 @@ public:
 	UPROPERTY(Config)
 	EMicMode MicMode;
 
-	UPROPERTY(Config)
+	UPROPERTY()
 	bool bMicToggleActive;
 
 	UPROPERTY()
@@ -85,7 +85,7 @@ public:
 	FORCEINLINE bool IsPushToTalk() const { return MicMode == EMicMode::PushToTalk; }
 	FORCEINLINE bool IsMicOff() const { return MicMode == EMicMode::Off; }
 
-	FORCEINLINE bool IsMicToggled() const { return bMicToggleActive;	}
+	FORCEINLINE bool IsMicToggled() const { return bMicToggleActive; }
 	void SetMicToggle(bool bToggleActive);
 
 	static EMicMode IndexToMicMode(int32 Index);

@@ -5,8 +5,6 @@
 #include "Components/Image.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Character/Component/PGSoundManagerComponent.h"
-// #include "Player/PGPlayerController.h"
-#include "Player/PGLobbyPlayerController.h"
 
 
 void UPGVoiceIndicatorWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -59,18 +57,6 @@ void UPGVoiceIndicatorWidget::UpdateNoiseBar(float InDeltaTime)
 	BarMID->SetScalarParameterValue(FillRatioParam, FillRatio);
 }
 
-void UPGVoiceIndicatorWidget::NativeOnInitialized()
-{
-	Super::NativeOnInitialized();
-
-	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
-	{
-		CachedSettings = Settings;
-		Settings->OnMicModeChanged.AddUniqueDynamic(this, &UPGVoiceIndicatorWidget::OnMicModeChanged);
-		Settings->OnMicToggleChanged.AddUniqueDynamic(this, &UPGVoiceIndicatorWidget::OnMicToggleChanged);
-	}
-}
-
 void UPGVoiceIndicatorWidget::NativeDestruct()
 {
 	if (UPGGameUserSettings* Settings = CachedSettings.Get())
@@ -85,6 +71,13 @@ void UPGVoiceIndicatorWidget::NativeDestruct()
 void UPGVoiceIndicatorWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		CachedSettings = Settings;
+		Settings->OnMicModeChanged.AddUniqueDynamic(this, &UPGVoiceIndicatorWidget::OnMicModeChanged);
+		Settings->OnMicToggleChanged.AddUniqueDynamic(this, &UPGVoiceIndicatorWidget::OnMicToggleChanged);
+	}
 
 	SetMicIcon();
 }

@@ -8,6 +8,8 @@
 #include "Components/Button.h"
 #include "Components/Image.h"
 
+#include "Player/PGLobbyPlayerController.h"
+
 #include "Utils/PGVoiceUtils.h"
 #include "VoiceModule.h"
 #include "AudioCapture.h"
@@ -22,6 +24,7 @@ void UPGMicSettingWidget::NativeOnInitialized()
 	{
 		CachedSettings = Settings;
 		Settings->OnMicModeChanged.AddUniqueDynamic(this, &UPGMicSettingWidget::OnMicModeChanged);
+		Settings->OnMicToggleChanged.AddUniqueDynamic(this, &UPGMicSettingWidget::OnMicToggleChanged);
 	}
 }
 
@@ -70,7 +73,7 @@ void UPGMicSettingWidget::NativeConstruct()
 	}
 
 	//
-	SetMicIcon(true);
+	SetMicIcon();
 }
 
 void UPGMicSettingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -91,9 +94,25 @@ void UPGMicSettingWidget::NativeDestruct()
 	if (UPGGameUserSettings* Settings = CachedSettings.Get())
 	{
 		Settings->OnMicModeChanged.RemoveAll(this);
+		Settings->OnMicToggleChanged.RemoveAll(this);
 	}
 
 	Super::NativeDestruct();
+}
+
+FReply UPGMicSettingWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::V)
+	{
+		if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(GetOwningPlayer()))
+		{
+			LobbyPC->HandlePushToTalkToggle();
+		}
+
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 void UPGMicSettingWidget::UpdateMicTestBar(float InDeltaTime)
@@ -133,7 +152,7 @@ void UPGMicSettingWidget::UpdateMicTestBar(float InDeltaTime)
 	float RawAmplitude = SettingsVoiceCapture->GetCurrentAmplitude();
 	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
 	{
-		if (Settings->IsMicOff())
+		if (!Settings->IsMicReady())
 		{
 			RawAmplitude = 0.0f;
 		}
@@ -155,20 +174,21 @@ void UPGMicSettingWidget::UpdateMicTestBar(float InDeltaTime)
 	const float Speed = (RawAmplitude > DisplayMicAmplitude) ? 9.0f : 5.0f;
 	DisplayMicAmplitude = FMath::FInterpTo(DisplayMicAmplitude, RawAmplitude, EffectiveDelta, Speed);
 
-	// MicAmplitudeBar->SetPercent(FMath::Clamp(DisplayMicAmplitude / MaxAmplitude, 0.0f, 1.0f));
-
 	const float FillRatio = FMath::Clamp(DisplayMicAmplitude / MaxAmplitude, 0.0f, 1.0f);
-
 	MicTestBarMID->SetScalarParameterValue(FillRatioParam, FillRatio);
 }
 
 void UPGMicSettingWidget::OnMicModeChanged(EMicMode InMicMode)
 {
-	bool bActivate = (InMicMode == EMicMode::Off) ? false : true;
-	SetMicIcon(bActivate);
+	SetMicIcon();
 }
 
-void UPGMicSettingWidget::SetMicIcon(bool bMicActivate)
+void UPGMicSettingWidget::OnMicToggleChanged(bool bMicToggled)
+{
+	SetMicIcon();
+}
+
+void UPGMicSettingWidget::SetMicIcon()
 {
 	const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
 	if (!Settings)
@@ -299,6 +319,11 @@ void UPGMicSettingWidget::OnPushToTalkChanged(int32 OptionIndex)
 	{
 		Settings->SetMicMode(UPGGameUserSettings::IndexToMicMode(OptionIndex));
 		ApplyAndSaveSettings();
+	}
+
+	if (APGLobbyPlayerController* LobbyPC = Cast<APGLobbyPlayerController>(GetOwningPlayer()))
+	{
+		LobbyPC->ApplyVoiceMode();
 	}
 }
 

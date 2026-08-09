@@ -85,6 +85,7 @@ void APGLobbyPlayerController::BeginPlay()
 		case EGameState::MainMenu:
 			SetupMainMenuView();
 			SetupMainMenuUI();
+			InitLocalVoice();
 			GetWorld()->GetTimerManager().SetTimer(HideLoadingScreenTimerHandle, this, &APGLobbyPlayerController::HideLoadingScreenDelayed, 0.5f, false);
 			break;
 
@@ -482,10 +483,7 @@ void APGLobbyPlayerController::ApplyVoiceMode()
 	// 마이크를 킬 지 말 지 결정하기.
 	// Open || Toggled + bActive == true
 	// Off || PushToTalk + notActive == false
-	bool bShouldTransmit = (Settings->GetMicMode() == EMicMode::OpenMic) ||
-		(Settings->GetMicMode() == EMicMode::PushToTalk && bPushToTalkActive);
-
-	// 평가 결과에 따라 실행
+	const bool bShouldTransmit = Settings->IsMicReady();
 	if (bShouldTransmit) // 기본 ON
 	{
 		StartTalking();
@@ -524,35 +522,33 @@ void APGLobbyPlayerController::OnPushToTalkToggled(const FInputActionValue& Valu
 		return;
 	}
 
-	// 바뀌게 될 모드를 Setting에 저장
-	Settings->SetMicToggle(!bPushToTalkActive);
+	// 바뀌게 될 토글 모드를 Setting에 저장
+	const bool bNewActive = !Settings->IsMicToggled();
+	Settings->SetMicToggle(bNewActive);
 
-	if (bPushToTalkActive)
-	{
-		bPushToTalkActive = false;
-		bPushToTalkPrimed = false;
-		StopTalking();
+	bPushToTalkActive = bNewActive;
+	bPushToTalkPrimed = false;
 
-		IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
-		if (VoiceInterface.IsValid())
-		{
-			VoiceInterface->StopNetworkedVoice(0);
-			VoiceInterface->ClearVoicePackets();
-		}
-	}
-	else
+	IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
+
+	if (bNewActive)
 	{
-		bPushToTalkActive = true;
-		bPushToTalkPrimed = false;
 		PushToTalkStartTime = GetWorld()->GetTimeSeconds();
-
-		IOnlineVoicePtr VoiceInterface = Online::GetVoiceInterface(GetWorld());
 		if (VoiceInterface.IsValid())
 		{
 			VoiceInterface->ClearVoicePackets();
 			VoiceInterface->StartNetworkedVoice(0);
 		}
 		StartTalking();
+	}
+	else
+	{
+		StopTalking();
+		if (VoiceInterface.IsValid())
+		{
+			VoiceInterface->StopNetworkedVoice(0);
+			VoiceInterface->ClearVoicePackets();
+		}
 	}
 }
 

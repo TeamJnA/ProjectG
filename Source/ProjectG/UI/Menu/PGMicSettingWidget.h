@@ -30,14 +30,17 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual void NativeDestruct() override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	void UpdateMicTestBar(float InDeltaTime);
 
 	UFUNCTION()
 	void OnMicModeChanged(EMicMode InMicMode);
 
-	void SetMicIcon(bool bMicActivate);
+	UFUNCTION()
+	void OnMicToggleChanged(bool bMicToggled);
 
+	void SetMicIcon();
 
 	// -------- BindWidget --------
 	UPROPERTY(meta = (BindWidget))

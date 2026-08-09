@@ -19,7 +19,6 @@ class PROJECTG_API UPGVoiceIndicatorWidget : public UUserWidget
 	
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-	virtual void NativeOnInitialized() override;
 	virtual void NativeDestruct() override;
 	virtual void NativeConstruct() override;
 

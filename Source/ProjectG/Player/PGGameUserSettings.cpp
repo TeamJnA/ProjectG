@@ -14,6 +14,7 @@ UPGGameUserSettings::UPGGameUserSettings()
 	, MicSensitivity(0.01f)
 	, MicInputGain(3.0f)
 	, MicMode(EMicMode::OpenMic)
+	, bMicToggleActive(false)
 {
 }
 
@@ -57,10 +58,17 @@ void UPGGameUserSettings::SetMicMode(EMicMode NewMode)
 	}
 
 	MicMode = NewMode;
+
 	SaveSettings();
 	SaveConfig();
 
 	OnMicModeChanged.Broadcast(NewMode);
+
+	if (bMicToggleActive)
+	{
+		bMicToggleActive = false;
+		OnMicToggleChanged.Broadcast(false);
+	}
 }
 
 void UPGGameUserSettings::SetMicToggle(bool bToggleActive)
@@ -71,9 +79,6 @@ void UPGGameUserSettings::SetMicToggle(bool bToggleActive)
 	}
 
 	bMicToggleActive = bToggleActive;
-	SaveSettings();
-	SaveConfig();
-
 	OnMicToggleChanged.Broadcast(bMicToggleActive);
 }
 
