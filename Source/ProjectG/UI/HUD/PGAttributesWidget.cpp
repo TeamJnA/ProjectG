@@ -2,7 +2,7 @@
 
 
 #include "UI/HUD/PGAttributesWidget.h"
-#include "Components/ProgressBar.h"
+#include "Components/Image.h"
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Player/PGPlayerState.h"
 
@@ -67,19 +67,42 @@ void UPGAttributesWidget::BindToAttributes()
 
 void UPGAttributesWidget::RefreshSanity(float InSanity)
 {
-	SanityValue = InSanity;
-	SanityPercent = FMath::Clamp(InSanity / SanityDisplayMax, 0.0f, 1.0f);
-
-	if (SanityBar)
+	/* New Logic Image 
+	*  앨리어싱(계단 현상)을 방지하기 위해 Progress Bar 대신 Image로 현재 정신력 수치를 표현한다.
+	* 5.5 이전 버전까지는 ProgressBar를 Shear 했을 때 깨짐 현상(계단)이 발생함에 대한 해결법이 없음.
+	* Retainer Box가 정석 해결법이나, 5.5 이전 버전에는 Progress Bar와 충돌이 발생.
+	*/
+	if (!CurSanityBarMID)
 	{
-		const FLinearColor BarColor = (InSanity <= SanityLowColorThreshold) ? SanityLowColor : SanityNormalColor;
-		SanityBar->SetFillColorAndOpacity(BarColor);
+		if (SanityCurrentBar)
+		{
+			CurSanityBarMID = SanityCurrentBar->GetDynamicMaterial();
+		}
+	}
+
+	float SanityCurPercent = FMath::Clamp(InSanity / SanityDisplayMax, 0.0f, 1.0f);
+
+	if (CurSanityBarMID)
+	{
+		CurSanityBarMID->SetScalarParameterValue(PercentParam, SanityCurPercent);
 	}
 }
 
 void UPGAttributesWidget::RefreshMaxSanity(float InMaxSanity)
 {
-	MaxSanityValue = InMaxSanity;
+	if (!SanityLockedMID)
+	{
+		if (SanityLockedBar)
+		{
+			SanityLockedMID = SanityLockedBar->GetDynamicMaterial();
+		}
+	}
+
 	const float MaxRatio = FMath::Clamp(InMaxSanity / SanityDisplayMax, 0.0f, 1.0f);
-	LockedPercent = 1.0f - MaxRatio;
+	float LockedPercent = MaxRatio;
+
+	if (SanityLockedMID)
+	{
+		SanityLockedMID->SetScalarParameterValue(PercentParam, LockedPercent);
+	}
 }
