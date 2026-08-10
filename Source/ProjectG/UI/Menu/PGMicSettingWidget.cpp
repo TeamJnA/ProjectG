@@ -15,9 +15,12 @@
 #include "AudioCapture.h"
 
 
-void UPGMicSettingWidget::NativeOnInitialized()
+void UPGMicSettingWidget::NativeConstruct()
 {
-	Super::NativeOnInitialized();
+	Super::NativeConstruct();
+
+	bIsFocusable = true;
+	SetKeyboardFocus();
 
 	/* Bind mic mode and toggle setting changed with mic icon*/
 	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
@@ -26,14 +29,6 @@ void UPGMicSettingWidget::NativeOnInitialized()
 		Settings->OnMicModeChanged.AddUniqueDynamic(this, &UPGMicSettingWidget::OnMicModeChanged);
 		Settings->OnMicToggleChanged.AddUniqueDynamic(this, &UPGMicSettingWidget::OnMicToggleChanged);
 	}
-}
-
-void UPGMicSettingWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	bIsFocusable = true;
-	SetKeyboardFocus();
 
 	if (InputDeviceComboBox)
 	{

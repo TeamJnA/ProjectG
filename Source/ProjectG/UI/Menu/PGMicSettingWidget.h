@@ -26,7 +26,6 @@ public:
 	void SetReturnToFocusWidget(UUserWidget* InWidget) { ReturnFocusWidget = InWidget; }
 
 protected:
-	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual void NativeDestruct() override;
