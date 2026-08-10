@@ -169,7 +169,7 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 	if (ConfirmWidgetInstance)
 	{
 		ConfirmWidgetInstance->SetConfirmTitle(LOCTEXT("Confirm_MainMenuTitle", "Main Menu"));
-		ConfirmWidgetInstance->SetConfirmText(LOCTEXT("Confirm_MainMenuBody", "Return to the main menu?"));
+		ConfirmWidgetInstance->SetConfirmText(LOCTEXT("Confirm_MainMenuBody", "Exit to the main menu?"));
 		ConfirmWidgetInstance->SetReturnFocusWidget(this);
 		ConfirmWidgetInstance->OnConfirmClicked.RemoveAll(this);
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToMainMenu);
