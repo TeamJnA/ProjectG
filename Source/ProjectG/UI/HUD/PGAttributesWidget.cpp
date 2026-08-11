@@ -5,6 +5,7 @@
 #include "Components/Image.h"
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Player/PGPlayerState.h"
+#include "PGLogChannels.h"
 
 
 void UPGAttributesWidget::NativeDestruct()
@@ -13,6 +14,12 @@ void UPGAttributesWidget::NativeDestruct()
 	{
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetMaxSanityAttribute()).Remove(MaxSanityChangedHandle);
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetSanityAttribute()).Remove(SanityChangedHandle);
+
+		if (SanityRecoverTagHandle.IsValid())
+		{
+			LastBoundASC->RegisterGameplayTagEvent(SanityRecoverStateTag, EGameplayTagEventType::NewOrRemoved).Remove(SanityRecoverTagHandle);
+			SanityRecoverTagHandle.Reset();
+		}
 	}
 
 	Super::NativeDestruct();
@@ -30,6 +37,8 @@ void UPGAttributesWidget::BindToAttributes()
 		return;
 	}
 
+	UE_LOG(LogPGWidget, Log, TEXT("UPGAttributesWidget::BindToAttributes [%s]"), *(PS->GetName()));
+
 	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
 	UPGAttributeSet* AS = PS->GetAttributeSet();
 	if (!ASC || !AS)
@@ -42,6 +51,12 @@ void UPGAttributesWidget::BindToAttributes()
 	{
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).Remove(SanityChangedHandle);
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetMaxSanityAttribute()).Remove(MaxSanityChangedHandle);
+
+		if (SanityRecoverTagHandle.IsValid())
+		{
+			LastBoundASC->RegisterGameplayTagEvent(SanityRecoverStateTag, EGameplayTagEventType::NewOrRemoved).Remove(SanityRecoverTagHandle);
+			SanityRecoverTagHandle.Reset();
+		}
 	}
 
 	// Initial Attributes
@@ -61,6 +76,12 @@ void UPGAttributesWidget::BindToAttributes()
 		{
 			RefreshMaxSanity(Data.NewValue);
 		});
+
+	// Bind Sanity recover Tag change
+	SanityRecoverTagHandle = ASC->RegisterGameplayTagEvent(
+		SanityRecoverStateTag,
+		EGameplayTagEventType::NewOrRemoved
+	).AddUObject(this, &UPGAttributesWidget::OnSanityRecover);
 
 	LastBoundASC = ASC;
 }
@@ -104,5 +125,23 @@ void UPGAttributesWidget::RefreshMaxSanity(float InMaxSanity)
 	if (SanityLockedMID)
 	{
 		SanityLockedMID->SetScalarParameterValue(PercentParam, LockedPercent);
+	}
+}
+
+void UPGAttributesWidget::OnSanityRecover(const FGameplayTag Tag, int32 NewCount)
+{
+	UE_LOG(LogPGWidget, Log, TEXT("On sanity recover changed to %d"), NewCount);
+
+	if (!CurSanityBarMID)
+	{
+		if (SanityCurrentBar)
+		{
+			CurSanityBarMID = SanityCurrentBar->GetDynamicMaterial();
+		}
+	}
+
+	if (CurSanityBarMID)
+	{
+		CurSanityBarMID->SetScalarParameterValue(SanityRecoverParameterName, NewCount);
 	}
 }

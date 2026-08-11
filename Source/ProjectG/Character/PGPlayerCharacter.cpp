@@ -1582,7 +1582,7 @@ void APGPlayerCharacter::OnSanityChanged(const FOnAttributeChangeData& Data)
 		return;
 	}
 
-	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Sanity] OnSanityChanged: %.1f -> %.1f"), Data.OldValue, Data.NewValue);
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Sanity] OnSanityChanged: %.1f -> %.1f"), Data.OldValue, Data.NewValue);
 
 	const float CurrentSanity = Data.NewValue;
 	UpdateSanityPostProcessEffect(CurrentSanity);
@@ -1595,7 +1595,7 @@ void APGPlayerCharacter::UpdateSanityPostProcessEffect(float CurrentSanity)
 		return;
 	}
 
-	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Sanity] UpdatePostProcess called - CurrentSanity: %.1f, BaseNoise will be: %.3f"),
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Sanity] UpdatePostProcess called - CurrentSanity: %.1f, BaseNoise will be: %.3f"),
 		CurrentSanity, FMath::Pow(1.0f - CurrentSanity / 100.0f, 2.0f) * 0.2f);
 
 	const float SanityRatio = FMath::Clamp(CurrentSanity / 100.0f, 0.0f, 1.0f);

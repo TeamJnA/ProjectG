@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "GameplayTagContainer.h"
 #include "PGAttributesWidget.generated.h"
 
 class UAbilitySystemComponent;
@@ -26,8 +27,11 @@ protected:
 	void RefreshSanity(float InSanity);
 	void RefreshMaxSanity(float InMaxSanity);
 
+	void OnSanityRecover(const FGameplayTag Tag, int32 NewCount);
+	
 	FDelegateHandle SanityChangedHandle;
 	FDelegateHandle MaxSanityChangedHandle;
+	FDelegateHandle SanityRecoverTagHandle;
 
 	TWeakObjectPtr<UAbilitySystemComponent> LastBoundASC;
 
@@ -57,4 +61,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
 	float SanityLowColorThreshold = 40.0f;
+
+	/* Sanity Recover */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
+	FGameplayTag SanityRecoverStateTag;
+
+	// 파라미터 이름은 바뀌지 않으므로 기본값을 설정해두면 좋습니다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
+	FName SanityRecoverParameterName = FName("bPanner");
 };
