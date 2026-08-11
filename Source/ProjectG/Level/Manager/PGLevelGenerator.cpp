@@ -601,19 +601,6 @@ void APGLevelGenerator::SpawnNextRoom()
 	TWeakObjectPtr<APGMasterRoom> WeakNewRoom(NewRoom);
 	TWeakObjectPtr<USceneComponent> WeakSelectedExitPoint(SelectedExitPoint);
 
-	//FTimerHandle DelayTimerHandle;
-	//World->GetTimerManager().SetTimer(
-	//	DelayTimerHandle,
-	//	FTimerDelegate::CreateLambda([WeakThis, WeakSelectedExitPoint, WeakNewRoom]()
-	//	{
-	//		if (WeakThis.IsValid() && WeakSelectedExitPoint.IsValid() && WeakNewRoom.IsValid())
-	//		{
-	//			WeakThis->CheckOverlap(WeakSelectedExitPoint.Get(), WeakNewRoom.Get());
-	//		}
-	//	}), 
-	//	0.1f,
-	//	false
-	//);
 	World->GetTimerManager().SetTimerForNextTick(
 		FTimerDelegate::CreateLambda([WeakThis, WeakSelectedExitPoint, WeakNewRoom]()
 		{
@@ -1564,13 +1551,67 @@ void APGLevelGenerator::SpawnFuseBoxes()
 		return;
 	}
 
+	// RoomDepths 데이터가 최신 상태인지 보장
+	EnsureRoomDepthMap();
+
 	int32 FuseBoxCount = FMath::Min(2, FuseBoxSpawnPointsList.Num());
+	FVector FirstFuseBoxLocation = FVector::ZeroVector;
+	bool bIsFirstFuseBox = true;
+
 	while (FuseBoxCount > 0 && !FuseBoxSpawnPointsList.IsEmpty())
 	{
-		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, FuseBoxSpawnPointsList.Num());
-		const TObjectPtr<USceneComponent> SelectedPoint = FuseBoxSpawnPointsList[RandomIndex];
-		FuseBoxSpawnPointsList.RemoveAt(RandomIndex);
+		int32 SelectedIndex = 0;
+		if (bIsFirstFuseBox)
+		{
+			// 첫 번째 -> Graph 상 가장 먼 Spawn Point
+			int32 MaxDepth = -1;
+			TArray<int32> MaxDepthIndices;
 
+			for (int32 i = 0; i < FuseBoxSpawnPointsList.Num(); ++i)
+			{
+				if (USceneComponent* Point = FuseBoxSpawnPointsList[i])
+				{
+					APGMasterRoom* OwnerRoom = Cast<APGMasterRoom>(Point->GetOwner());
+					int32 RoomDepth = GetRoomDepthFromStart(OwnerRoom);
+					if (RoomDepth > MaxDepth)
+					{
+						MaxDepth = RoomDepth;
+						MaxDepthIndices.Empty();
+						MaxDepthIndices.Add(i);
+					}
+					else if (RoomDepth == MaxDepth)
+					{
+						MaxDepthIndices.Add(i);
+					}
+				}
+			}
+
+			if (MaxDepthIndices.Num() > 0)
+			{
+				int32 RandomPick = UKismetMathLibrary::RandomIntegerFromStream(Seed, MaxDepthIndices.Num());
+				SelectedIndex = MaxDepthIndices[RandomPick];
+			}
+		}
+		else
+		{
+			// 두 번째 -> 첫 번째 위치와 가장 거리가 먼 Spawn Point
+			float MaxDistanceSq = -1.0f;
+			for (int32 i = 0; i < FuseBoxSpawnPointsList.Num(); ++i)
+			{
+				if (FuseBoxSpawnPointsList[i])
+				{
+					float DistSq = FVector::DistSquared(FirstFuseBoxLocation, FuseBoxSpawnPointsList[i]->GetComponentLocation());
+					if (DistSq > MaxDistanceSq)
+					{
+						MaxDistanceSq = DistSq;
+						SelectedIndex = i;
+					}
+				}
+			}
+		}
+
+		const TObjectPtr<USceneComponent> SelectedPoint = FuseBoxSpawnPointsList[SelectedIndex];
+		FuseBoxSpawnPointsList.RemoveAt(SelectedIndex);
 		if (!SelectedPoint)
 		{
 			continue;
@@ -1587,7 +1628,14 @@ void APGLevelGenerator::SpawnFuseBoxes()
 			AActor* OwnerRoom = SelectedPoint->GetOwner();
 			NewFuseBox->SetOwnerRoom(OwnerRoom);
 
-			UE_LOG(LogTemp, Log, TEXT("LG::SpawnFuseBoxes: Spawned FuseBox in room '%s'"), *GetNameSafe(OwnerRoom));
+			if (bIsFirstFuseBox)
+			{
+				FirstFuseBoxLocation = SpawnTransform.GetLocation();
+				bIsFirstFuseBox = false;
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("LG::SpawnFuseBoxes: Spawned FuseBox in room '%s' (Depth: %d)"),
+				*GetNameSafe(OwnerRoom), GetRoomDepthFromStart(Cast<APGMasterRoom>(OwnerRoom)));
 		}
 
 		FuseBoxCount--;
