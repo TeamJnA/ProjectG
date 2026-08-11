@@ -237,9 +237,13 @@ public:
 	UPROPERTY()
 	FOnAutomatedMovementCompleted OnAutomatedMovementCompleted;
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetEscapeCollision();
+
 	void StartAutomatedMovement(const FVector& TargetLocation);
 
-	void OnEscapeFinished();
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_OnEscapeFinished();
 
 private:
 	// 자동 이동 관련 변수들

@@ -509,7 +509,7 @@ void APGPlayerController::Server_RequestFinishEscape_Implementation()
 
 	if (APGPlayerCharacter* MyCharacter = GetPawn<APGPlayerCharacter>())
 	{
-		MyCharacter->OnEscapeFinished();
+		MyCharacter->Multicast_OnEscapeFinished();
 	}
 }
 

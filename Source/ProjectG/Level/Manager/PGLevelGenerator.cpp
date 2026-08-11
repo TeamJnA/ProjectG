@@ -223,6 +223,19 @@ void APGLevelGenerator::SpawnStartRoom()
 	}
 	TestHandWheel->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
+	APGItemActor* TestFuse0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* FuseItemData0 = GI->GetItemDataByKey("Fuse"))
+	{
+		TestFuse0->InitWithData(FuseItemData0);
+	}
+	TestFuse0->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
+
+	APGItemActor* TestFuse1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
+	if (UPGItemData* FuseItemData1 = GI->GetItemDataByKey("Fuse"))
+	{
+		TestFuse1->InitWithData(FuseItemData1);
+	}
+	TestFuse1->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 	/*
 	APGItemActor* TestMatch0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
 	if (UPGItemData* MatchItemData0 = GI->GetItemDataByKey("Match"))

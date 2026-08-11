@@ -859,6 +859,17 @@ void APGPlayerCharacter::InitHUD()
 }
 
 /*
+* 플레이어 탈출 시 콜리전 처리
+*/
+void APGPlayerCharacter::Multicast_SetEscapeCollision_Implementation()
+{
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+	HeadlightMesh->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+	EquippedItemMesh->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+}
+
+/*
 * 플레이어 탈출 시 목표 지점으로 이동
 */
 void APGPlayerCharacter::StartAutomatedMovement(const FVector& TargetLocation)
@@ -900,7 +911,7 @@ void APGPlayerCharacter::UpdateAutomatedMovement()
 	}
 }
 
-void APGPlayerCharacter::OnEscapeFinished()
+void APGPlayerCharacter::Multicast_OnEscapeFinished_Implementation()
 {
 	SetActorHiddenInGame(true);
 
@@ -909,7 +920,10 @@ void APGPlayerCharacter::OnEscapeFinished()
 	HeadlightMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	EquippedItemMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
-	StopVoiceCheck();
+	if (IsLocallyControlled())
+	{
+		StopVoiceCheck();
+	}
 }
 
 void APGPlayerCharacter::RequestApplyGimmickEffect(TSubclassOf<UGameplayEffect> EffectClass)

@@ -120,6 +120,11 @@ void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType In
 
 	if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(EscapeStartActor))
 	{
+		if (bNeedAutomove)
+		{
+			PlayerCharacter->Multicast_SetEscapeCollision();
+		}
+
 		// 컷신 -> 종료처리 -> 종료 카메라 뷰 변환 -> 스코어보드
 		if (APGPlayerState* PS = PlayerCharacter->GetPlayerState<APGPlayerState>(); PS && PS->IsInGame() && !PS->IsDead())
 		{
