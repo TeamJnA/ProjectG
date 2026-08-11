@@ -24,6 +24,10 @@
 #include "Utils/PGVoiceUtils.h"
 #include "VoiceModule.h"
 
+#include "Internationalization/Internationalization.h"
+#include "Internationalization/TextLocalizationManager.h"
+#include "Internationalization/Culture.h"
+
 
 void UPGSettingMenuWidget::NativeOnInitialized()
 {
@@ -38,6 +42,11 @@ void UPGSettingMenuWidget::NativeOnInitialized()
     if (CameraSensitivitySlider)
     {
         CameraSensitivitySlider->OnValueChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnCameraSensitivityChanged);
+    }
+
+    if (LanguageComboBox)
+    {
+        LanguageComboBox->OnSelectionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnLanguageSelectionChanged);
     }
 
     // -------- Bind Device Option Callbacks --------
@@ -452,6 +461,7 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
 
     // Find/Set available devices and Load saved device settings
     EnumerateAudioDevices();
+    PopulateLanguages();
 
     if (PushToTalkOption)
     {
@@ -472,6 +482,84 @@ void UPGSettingMenuWidget::OnCameraSensitivityChanged(float NewValue)
         Settings->CameraSensitivity = NewValue;
         ApplyAndSaveSettings();
     }
+}
+
+void UPGSettingMenuWidget::OnLanguageSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+    if (bIsLoadingSettings)
+    {
+        return;
+    }
+
+    const FString* CultureName = LanguageNameToCulture.Find(SelectedItem);
+    if (!CultureName)
+    {
+        return;
+    }
+
+    FInternationalization::Get().SetCurrentLanguageAndLocale(*CultureName);
+
+    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+    {
+        Settings->LanguageCulture = *CultureName;
+        ApplyAndSaveSettings();
+    }
+}
+
+void UPGSettingMenuWidget::PopulateLanguages()
+{
+    if (!LanguageComboBox)
+    {
+        return;
+    }
+
+    bIsLoadingSettings = true;
+    LanguageComboBox->ClearOptions();
+    LanguageNameToCulture.Empty();
+
+    FInternationalization& I18N = FInternationalization::Get();
+    TArray<FString> CultureNames = FTextLocalizationManager::Get().GetLocalizedCultureNames(ELocalizationLoadFlags::Game);
+
+    const FString NativeCulture = TEXT("en");
+    if (!CultureNames.Contains(NativeCulture))
+    {
+        CultureNames.Insert(NativeCulture, 0);
+    }
+
+    const FString CurrentCulture = I18N.GetCurrentLanguage()->GetName();
+    FString SelectedName;
+    FString FirstName;
+
+    for (const FString& CultureName : CultureNames)
+    {
+        FCulturePtr Culture = I18N.GetCulture(CultureName);
+        if (!Culture.IsValid())
+        {
+            continue;
+        }
+
+        const FString DisplayName = Culture->GetNativeLanguage();
+        if (DisplayName.IsEmpty() || LanguageNameToCulture.Contains(DisplayName))
+        {
+            continue;
+        }
+
+        LanguageNameToCulture.Add(DisplayName, CultureName);
+        LanguageComboBox->AddOption(DisplayName);
+
+        if (FirstName.IsEmpty())
+        {
+            FirstName = DisplayName;
+        }
+
+        if (CurrentCulture == CultureName || CurrentCulture.StartsWith(CultureName + TEXT("-")))
+        {
+            SelectedName = DisplayName;
+        }
+    }
+
+    LanguageComboBox->SetSelectedOption(SelectedName.IsEmpty() ? FirstName : SelectedName);
+    bIsLoadingSettings = false;
 }
 
 // -------- Audio --------

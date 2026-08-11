@@ -61,6 +61,9 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<USlider> CameraSensitivitySlider;
 
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UComboBoxString> LanguageComboBox;
+
     // -------- Audio Device --------
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UComboBoxString> OutputDeviceComboBox;
@@ -146,9 +149,16 @@ protected:
 
 private:
     // -------- Slider Callbacks --------
+    // -------- GamePlay Callbacks --------
     UFUNCTION()
     void OnCameraSensitivityChanged(float NewValue);
 
+    UFUNCTION()
+    void OnLanguageSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+    void PopulateLanguages();
+
+    // -------- Audio Callbacks --------
     UFUNCTION()
     void OnMusicVolumeChanged(float NewValue);
 
@@ -236,6 +246,7 @@ private:
     // Device ComboBox 표시명 -> DeviceId 매핑
     TMap<FString, FString> OutputDeviceNameToId;
     TMap<FString, FString> InputDeviceNameToId;
+    TMap<FString, FString> LanguageNameToCulture;
 
     TWeakObjectPtr<UPGAdvancedFriendsGameInstance> GIRef;
     TWeakObjectPtr<APGGameState> GSRef;

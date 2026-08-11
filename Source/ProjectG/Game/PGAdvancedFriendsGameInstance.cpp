@@ -73,6 +73,10 @@ void UPGAdvancedFriendsGameInstance::Init()
 	// 저장된 오디오/마이크 설정 적용
 	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
 	{
+		if (!Settings->LanguageCulture.IsEmpty())
+		{
+			FInternationalization::Get().SetCurrentLanguageAndLocale(Settings->LanguageCulture);
+		}
 		Settings->ApplyMicSettings();
 	}
 

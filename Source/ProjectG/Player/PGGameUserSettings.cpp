@@ -6,6 +6,7 @@
 
 UPGGameUserSettings::UPGGameUserSettings()
 	: CameraSensitivity(0.5f)
+	, LanguageCulture(TEXT("en"))
 	, OutputDeviceId(FString())
 	, InputDeviceId(FString())
 	, MusicVolume(0.5f)

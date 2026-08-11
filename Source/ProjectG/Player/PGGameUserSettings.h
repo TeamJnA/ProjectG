@@ -44,6 +44,9 @@ public:
 	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|GamePlay")
 	float CameraSensitivity;
 
+	UPROPERTY(Config)
+	FString LanguageCulture;
+
 	// -------- Audio Device --------
 	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|Audio")
 	FString OutputDeviceId;
