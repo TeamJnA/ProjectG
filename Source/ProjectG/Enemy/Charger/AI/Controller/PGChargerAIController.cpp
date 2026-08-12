@@ -53,7 +53,7 @@ void APGChargerAIController::ApplyDifficultyToSight()
 
 	if (UAIPerceptionComponent* Perception = GetPerceptionComponent())
 	{
-		Perception->ConfigureSense(*SightConfig);   // 런타임 변경 반영 필수
+		Perception->ConfigureSense(*SightConfig);
 	}
 }
 
@@ -199,14 +199,10 @@ bool APGChargerAIController::CanChargeToLocation(FVector TargetLoc, float Tolera
 		return false;
 	}
 
-	FVector StartLoc = Charger->GetActorLocation();
-	FVector LineTraceStartLoc = Charger->GetActorLocation();
-	LineTraceStartLoc.Z -= 60.0f;
-
 	// 시작점과 목표점 사이에 끊긴 길(NavMesh 구멍)이 있는지 검사
+	FVector StartLoc = Charger->GetActorLocation();
 	FVector HitLocation;
 	const bool bHitWall = NavSystem->NavigationRaycast(Charger, StartLoc, TargetLoc, HitLocation, NULL, this);
-
 	if (bHitWall)
 	{
 		// 막힌 지점이 목표 지점과 거의 비슷하다면(오차범위) 통과

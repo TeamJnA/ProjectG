@@ -21,15 +21,28 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
 	APGChargerAIController* AIC = Cast<APGChargerAIController>(OwnerComp.GetAIOwner());
-	APGChargerCharacter* Charger = Cast<APGChargerCharacter>(AIC->GetPawn());
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	if (!AIC || !Charger || !BB)
+	if (!AIC || !BB)
 	{
 		return;
 	}
 
+	APGChargerCharacter* Charger = Cast<APGChargerCharacter>(AIC->GetPawn());
+	if (!Charger)
+	{
+		return;
+	}
+
+	FPGChargerCheckStateMemory* Mem = CastInstanceNodeMemory<FPGChargerCheckStateMemory>(NodeMemory);
+
 	E_PGChargerState CurrentState = (E_PGChargerState)BB->GetValueAsEnum(APGChargerAIController::BlackboardKey_AIState);
 	AActor* TargetActor = Cast<AActor>(BB->GetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor));
+
+	if (CurrentState != E_PGChargerState::Adjusting)
+	{
+		Mem->StuckTime = 0.0f;
+		Mem->bHasLastLocation = false;
+	}
 
 	switch (CurrentState)
 	{
@@ -201,11 +214,35 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 
 				BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Exploring);
 				Charger->SetCurrentState(E_PGChargerState::Exploring);
+				break;
+			}
+
+			// Adjust 중 정지상태 감지
+			const FVector CurrentLoc = Charger->GetActorLocation();
+			if (Mem->bHasLastLocation && FVector::Dist2D(CurrentLoc, Mem->LastLocation) < AdjustProgressThreshold * DeltaSeconds)
+			{
+				Mem->StuckTime += DeltaSeconds;
+			}
+			else
+			{
+				Mem->StuckTime = 0.0f;
+			}
+			Mem->LastLocation = CurrentLoc;
+			Mem->bHasLastLocation = true;
+
+			if (Mem->StuckTime >= AdjustStuckTimeLimit)
+			{
+				Mem->StuckTime = 0.0f;
+				Mem->bHasLastLocation = false;
+
+				BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Attacking);
+				Charger->SetCurrentState(E_PGChargerState::Attacking);
+				break;
 			}
 
 			// NavMesh 상에서 돌진 가능한지 판단
 			// 돌진 가능 -> Staring 복귀
-			// 이미 StaringTime이 충분히 누적되었다면, Staring으로 복귀하자마자 바로 Attackin으로 전환될 것
+			// 이미 StaringTime이 충분히 누적되었다면, Staring으로 복귀하자마자 바로 Attacking으로 전환될 것
 			const bool bCanCharge = AIC->CanChargeToLocation(FinalTargetLoc);
 			if (bCanCharge)
 			{
@@ -233,4 +270,9 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 		}
 		break;
 	}
+}
+
+uint16 UPGBTService_ChargerCheckState::GetInstanceMemorySize() const
+{
+	return sizeof(FPGChargerCheckStateMemory);
 }

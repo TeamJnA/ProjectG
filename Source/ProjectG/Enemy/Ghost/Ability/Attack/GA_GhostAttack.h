@@ -37,5 +37,5 @@ private:
 	void StartAirFloat(APGGhostCharacter* Ghost);
 	void StopAirFloat(APGGhostCharacter* Ghost);
 
-	float FloatingHeight = 70.0f;
+	float FloatingHeight = 30.0f;
 };
