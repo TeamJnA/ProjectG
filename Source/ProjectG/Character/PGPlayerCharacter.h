@@ -197,8 +197,11 @@ public:
 	void OnPlayerDeathLocally();
 
 	// Ragdolls 
-	UPROPERTY(Replicated, ReplicatedUsing = OnRep_IsRagdoll, VisibleAnywhere, BlueprintReadWrite, Category = Ragdoll)
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_IsRagdoll, VisibleAnywhere, BlueprintReadWrite, Category = "Ragdoll")
 	bool bIsRagdoll = false;
+
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_RagdollSnapshot)
+	FPGRagdollSnapshot RagdollSnapshot;
 
 	// IInteractableActorInterface ~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
@@ -231,6 +234,25 @@ protected:
 
 	UFUNCTION()
 	void OnRep_IsRagdoll();
+
+	UFUNCTION()
+	void OnRep_RagdollSnapshot();
+
+	void FinalizeRagdollOnServer();
+
+	void TryApplyRagdollState();
+	void ApplyRagdollSnapshot();
+	void FreezeRagdoll();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ragdoll")
+	FName RagdollRootBoneName = TEXT("pelvis");
+
+	FTimerHandle RagdollSettleHandle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ragdoll")
+	float RagdollSettleTime = 3.0f;
+
+	bool bRagdollFrozen = false;
 
 // --------------Escape--------------------
 public:

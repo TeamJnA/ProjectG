@@ -165,6 +165,7 @@ void APGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APGPlayerCharacter, bIsRagdoll);
+	DOREPLIFETIME(APGPlayerCharacter, RagdollSnapshot);
 	DOREPLIFETIME(APGPlayerCharacter, DeadPlayerState);
 	DOREPLIFETIME(APGPlayerCharacter, bIsTalking);
 	DOREPLIFETIME(APGPlayerCharacter, FlickerLevel);
@@ -523,6 +524,8 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 	// Ragdoll character ( Server. Client ragdoll is on OnRep_IsRagdoll )
 	bIsRagdoll = true;
 	OnRep_IsRagdoll();
+
+	GetWorldTimerManager().SetTimer(RagdollSettleHandle, this, &APGPlayerCharacter::FinalizeRagdollOnServer, RagdollSettleTime, false);
 }
 
 // This function is called on Client when [Player.State.Dead] tag was added.
@@ -549,20 +552,124 @@ void APGPlayerCharacter::OnPlayerDeathLocally()
 // Make client character ragdoll.
 void APGPlayerCharacter::OnRep_IsRagdoll()
 {
-	if (bIsRagdoll)
+	if (!bIsRagdoll)
 	{
-		HighlightOn();
-
-		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
-		GetCapsuleComponent()->SetSimulatePhysics(true);
-
-		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-		GetMesh()->SetSimulatePhysics(true);
-		
-		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-
-		SetItemMesh(false);
+		return;
 	}
+
+	HighlightOn();
+
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
+
+	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+	SetItemMesh(false);
+
+	TryApplyRagdollState();
+}
+
+void APGPlayerCharacter::OnRep_RagdollSnapshot()
+{
+	TryApplyRagdollState();
+}
+
+void APGPlayerCharacter::FinalizeRagdollOnServer()
+{
+	if (!HasAuthority() || !bIsRagdoll || bRagdollFrozen)
+	{
+		return;
+	}
+
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	const int32 BoneIndex = MeshComp->GetBoneIndex(RagdollRootBoneName);
+	if (BoneIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	const FTransform RootTM = MeshComp->GetBoneTransform(BoneIndex);
+	RagdollSnapshot.RootLocation = RootTM.GetLocation();
+	RagdollSnapshot.RootRotation = RootTM.Rotator();
+	RagdollSnapshot.BodyTransforms.Reset(MeshComp->Bodies.Num());
+	for (FBodyInstance* Body : MeshComp->Bodies)
+	{
+		const FTransform BodyTM = Body ? Body->GetUnrealWorldTransform() : FTransform::Identity;
+		RagdollSnapshot.BodyTransforms.Add(BodyTM * RootTM.Inverse());
+	}
+
+	RagdollSnapshot.bValid = true;
+
+	TryApplyRagdollState();
+}
+
+void APGPlayerCharacter::TryApplyRagdollState()
+{
+	if (!bIsRagdoll || !RagdollSnapshot.bValid || bRagdollFrozen)
+	{
+		return;
+	}
+
+	ApplyRagdollSnapshot();
+	FreezeRagdoll();
+}
+
+void APGPlayerCharacter::ApplyRagdollSnapshot()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	const int32 BoneIndex = MeshComp->GetBoneIndex(RagdollRootBoneName);
+	if (BoneIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	const FTransform CurrentRoot = MeshComp->GetBoneTransform(BoneIndex);
+	const FTransform TargetRoot(RagdollSnapshot.RootRotation, RagdollSnapshot.RootLocation);
+	for (int32 i = 0; i < MeshComp->Bodies.Num(); ++i)
+	{
+		FBodyInstance* Body = MeshComp->Bodies[i];
+		if (!Body || !RagdollSnapshot.BodyTransforms.IsValidIndex(i))
+		{
+			continue;
+		}
+
+		Body->SetBodyTransform(RagdollSnapshot.BodyTransforms[i] * TargetRoot, ETeleportType::TeleportPhysics);
+		Body->SetLinearVelocity(FVector::ZeroVector, false);
+		Body->SetAngularVelocityInRadians(FVector::ZeroVector, false);
+	}
+
+	MeshComp->UpdateComponentToWorld();
+	const int32 CheckIdx = MeshComp->GetBoneIndex(RagdollRootBoneName);
+}
+
+void APGPlayerCharacter::FreezeRagdoll()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+
+	bRagdollFrozen = true;
+
+	MeshComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+	MeshComp->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	MeshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+
+	MeshComp->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+	MeshComp->SetAllPhysicsAngularVelocityInRadians(FVector::ZeroVector);
+	MeshComp->PutAllRigidBodiesToSleep();
 }
 
 void APGPlayerCharacter::PossessedBy(AController* NewController)
@@ -1042,6 +1149,7 @@ void APGPlayerCharacter::OnRevive()
 
 	if (HasAuthority())
 	{
+		GetWorldTimerManager().ClearTimer(RagdollSettleHandle);
 		SyncMaxSanityFromGameState();
 	}
 }
