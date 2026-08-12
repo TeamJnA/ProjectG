@@ -311,7 +311,10 @@ void UGA_Interact::HandleFailedInteractionAttempt(AActor* TargetActor)
 	InteractableInterface->NotifyInteractionAttempted(OwnerCharacter);
 
 	FInteractionPromptInfo FailurePrompt;
-	InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailurePrompt);
+	if (InteractableInterface->CanStartInteraction(OwnerCharacter->GetAbilitySystemComponent(), FailurePrompt))
+	{
+		return;
+	}
 	InteractableInterface->InteractionFailed();
 	OwnerCharacter->Client_DisplayInteractionFailedIcon(FailurePrompt.Icon, FailurePrompt.IconSize);
 }
@@ -341,9 +344,18 @@ void UGA_Interact::UpdateInteractionUI(float Progress)
 */
 void UGA_Interact::OnHoldInputCompleted()
 {
-	InteractWithTarget(CachedTargetActor.Get());
-
+	AActor* Target = CachedTargetActor.Get();
 	CachedHoldTargetActor = nullptr;
+
+	if (IInteractableActorInterface* Interactable = Cast<IInteractableActorInterface>(Target))
+	{
+		if (!Interactable->IsWithinInteractionRange(GetAvatarActorFromActorInfo()))
+		{
+			return;
+		}
+	}
+
+	InteractWithTarget(Target);
 }
 
 void UGA_Interact::OnHoldInputStarted()

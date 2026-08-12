@@ -83,7 +83,7 @@ public:
 		return true;
 	}
 	virtual void InteractionFailed() {}
-
+	virtual bool IsWithinInteractionRange(const AActor* Investigator) const { return true; }
 	// only exits
 	virtual void NotifyInteractionAttempted(ACharacter* InteractingPlayer) {}
 };

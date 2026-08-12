@@ -114,9 +114,12 @@ void APGExitPointBase::PlaySoundPlayers(const FName& SoundName, const FVector& S
 	}
 }
 
-void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType InExitPoint, bool bNeedAutomove, FVector AutomoveLocation)
+void APGExitPointBase::OnEscapeStart(AActor* EscapeStartActor, EExitPointType InExitPoint, bool bNeedAutomove, FVector AutomoveLocation, bool bDropItems)
 {
-	DropEscaperItems(EscapeStartActor);
+	if (bDropItems)
+	{
+		DropEscaperItems(EscapeStartActor);
+	}
 
 	if (APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(EscapeStartActor))
 	{

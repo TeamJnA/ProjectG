@@ -65,6 +65,12 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 		// Check if the actor implements IInteractableActorInterface that allows interaction.
 		IInteractableActorInterface* InteractInterface = Cast<IInteractableActorInterface>(HitResult.GetActor());
 
+		// 거리 제한이 있는 대상은 범위 밖이면 타겟으로 인정하지 않음
+		if (InteractInterface && !InteractInterface->IsWithinInteractionRange(AvatarPawn))
+		{
+			InteractInterface = nullptr;
+		}
+
 		// If there's new interactable target, Broadcast the target.
 		//if (InteractInterface && (!PreviousTargetActor.IsValid() || PreviousTargetActor != HitResult.GetActor()) )
 		if (InteractInterface)

@@ -53,7 +53,7 @@ protected:
 
 	UFUNCTION()
 	void OnEscapeStart(AActor* EscapeStartActor, EExitPointType ExitPointType = EExitPointType::IronDoor,
-		bool bNeedAutomove = false, FVector AutomoveLocation = FVector::ZeroVector);
+		bool bNeedAutomove = false, FVector AutomoveLocation = FVector::ZeroVector, bool bDropItems = true);
 
 	void DropEscaperItems(AActor* EscapeStartActor);
 

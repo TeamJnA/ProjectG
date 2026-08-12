@@ -35,6 +35,7 @@ public:
 	virtual FText GetInteractionText() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	virtual void InteractionFailed() override;
+	virtual bool IsWithinInteractionRange(const AActor* Investigator) const override;
 	// ~IInteractableActorInterface
 
 	virtual bool Unlock(AActor* Investigator) override;
@@ -83,7 +84,7 @@ private:
 	void OnRep_FuseState();
 
 	void ExecuteEscapeSequence();
-
+	void PrepareElevatorDescent();
 	void EscapePlayers();
 
 	FTimerHandle EscapeTimerHandle;
@@ -161,6 +162,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
 	FText ActivateText = LOCTEXT("Elevator_Activate", "Activate");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fuse", meta = (AllowPrivateAccess = "true"))
+	float MaxFuseInteractDistance = 200.0f;
 };
 
 #undef LOCTEXT_NAMESPACE

@@ -7,6 +7,8 @@
 #include "Components/BoxComponent.h"
 #include "NiagaraComponent.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Item/PGItemActor.h"
+
 
 APGExitElevator::APGExitElevator()
 {
@@ -178,6 +180,19 @@ void APGExitElevator::InteractionFailed()
 	// TODO : Play Tick(약간 전기 칙) 하는 소리 정도 ??
 }
 
+bool APGExitElevator::IsWithinInteractionRange(const AActor* Investigator) const
+{
+	if (!Investigator || !FusePanel)
+	{
+		return true;
+	}
+
+	FVector Delta = Investigator->GetActorLocation() - FusePanel->GetComponentLocation();
+	Delta.Z = 0.0f;
+
+	return Delta.SizeSquared() <= FMath::Square(MaxFuseInteractDistance);
+}
+
 // true : remove item from inventory / false : do not remove item
 bool APGExitElevator::Unlock(AActor* Investigator)
 {
@@ -262,7 +277,68 @@ void APGExitElevator::ExecuteEscapeSequence()
 	DoorCloseTimeline.PlayFromStart();
 	ElevatorDescentTimeline.PlayFromStart();
 
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	PrepareElevatorDescent();
 	GetWorldTimerManager().SetTimer(EscapeTimerHandle, this, &APGExitElevator::EscapePlayers, 6.0f, false);
+}
+
+/*
+* 레버 작동 직후 호출
+* 1) 엘리베이터 내부에 이미 떨어져 있는 아이템들을 드랍 포인트로 이동
+* 2) 탑승 중인 플레이어들의 인벤토리를 즉시 드랍
+*/
+void APGExitElevator::PrepareElevatorDescent()
+{
+	UWorld* World = GetWorld();
+	if (!World || !ElevatorBodyCollision || !ItemDropPointOnExit)
+	{
+		return;
+	}
+
+	const FVector DropLocation = ItemDropPointOnExit->GetComponentLocation();
+
+	TArray<AActor*> OverlappingItems;
+	ElevatorBodyCollision->GetOverlappingActors(OverlappingItems, APGItemActor::StaticClass());
+
+	int32 DropIndex = 0;
+	for (AActor* Actor : OverlappingItems)
+	{
+		APGItemActor* OldItem = Cast<APGItemActor>(Actor);;
+		if (!OldItem)
+		{
+			continue;
+		}
+
+		UPGItemData* ItemData = OldItem->GetItemData();
+		if (!ItemData)
+		{
+			continue;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		const FRotator SpawnRotation = ItemData->GetRandomDropRotation();
+		if (APGItemActor* NewItem = World->SpawnActor<APGItemActor>(OldItem->GetClass(), DropLocation, SpawnRotation, SpawnParams))
+		{
+			NewItem->InitWithData(ItemData);
+			NewItem->DropItemSpawned(FRotator(0.0f, 72.0f * DropIndex, 0.0f));
+			++DropIndex;
+		}
+
+		OldItem->Destroy();
+	}
+
+	TArray<AActor*> OverlappingPlayers;
+	ElevatorBodyCollision->GetOverlappingActors(OverlappingPlayers, APGPlayerCharacter::StaticClass());
+	for (AActor* Actor : OverlappingPlayers)
+	{
+		DropEscaperItems(Actor);
+	}
 }
 
 void APGExitElevator::EscapePlayers()
@@ -280,7 +356,7 @@ void APGExitElevator::EscapePlayers()
 		APGPlayerCharacter* TargetPlayer = Cast<APGPlayerCharacter>(Actor);
 		if (TargetPlayer)
 		{
-			OnEscapeStart(TargetPlayer, ExitPointType);
+			OnEscapeStart(TargetPlayer, ExitPointType, false, FVector::ZeroVector, false);
 		}
 	}
 }
