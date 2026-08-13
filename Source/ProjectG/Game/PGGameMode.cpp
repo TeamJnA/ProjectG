@@ -86,6 +86,7 @@ void APGGameMode::BeginPlay()
 
 	GI->CloseSession();
 	GS->InitDifficulty(GI->GetSelectedDifficulty());
+	GS->SetSinglePlaySession(GI->IsSinglePlaySession());
 	GS->OnMapGenerationComplete.AddDynamic(this, &APGGameMode::HandleMapGenerationComplete);
 	SoundManager = GetWorld()->SpawnActor<APGSoundManager>(APGSoundManager::StaticClass(), FVector(0.0f, 0.0f, -500.0f), FRotator::ZeroRotator);
 	if (!SoundManager) 

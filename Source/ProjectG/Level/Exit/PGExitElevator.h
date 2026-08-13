@@ -23,9 +23,7 @@ public:
 	APGExitElevator(); 
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 	virtual void BeginPlay() override;
-
 	virtual void Tick(float DeltaTime) override;
 
 	// IInteractableActorInterface~
@@ -35,7 +33,6 @@ public:
 	virtual FText GetInteractionText() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
 	virtual void InteractionFailed() override;
-	virtual bool IsWithinInteractionRange(const AActor* Investigator) const override;
 	// ~IInteractableActorInterface
 
 	virtual bool Unlock(AActor* Investigator) override;
@@ -43,6 +40,7 @@ public:
 	virtual bool IsExitDepleted() const override;
 
 private:
+	virtual const USceneComponent* GetInteractionRangeOrigin() const override { return FusePanel; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "VisualMesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> ElevatorBody;
@@ -162,9 +160,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
 	FText ActivateText = LOCTEXT("Elevator_Activate", "Activate");
-
-	UPROPERTY(EditDefaultsOnly, Category = "Fuse", meta = (AllowPrivateAccess = "true"))
-	float MaxFuseInteractDistance = 200.0f;
 };
 
 #undef LOCTEXT_NAMESPACE

@@ -50,35 +50,93 @@ namespace PhotoID
     FORCEINLINE bool IsRoom(int32 ID) { return ID / 100 == 3; }
     FORCEINLINE int32 GetSpeciesKey(int32 ID) { return IsRoom(ID) ? ID : (ID / 10); }
     FORCEINLINE int32 GetCategory(int32 ID) { return ID / 100; }
+
+    struct FPhotoIDEntry
+    {
+        int32 ID;
+        int32 Score;
+        bool bMultiplayerOnly;
+    };
+
+    // 값 변경시 피사체 클래스의 GetPhotoSubjectInfo도 수정 필요
+    inline const TArray<FPhotoIDEntry>& GetAllEntries()
+    {
+        // 멀티 최대 125
+        // 싱글 최대 115
+        static const TArray<FPhotoIDEntry> Entries = 
+        {
+            { Blind_Exploring, 10, false },
+            { Blind_Chasing, 10, false },
+            { Blind_Attacking, 5, true },
+            { Charger_Exploring, 10, false },
+            { Charger_Staring, 10, false },
+            { Charger_Attacking, 5, false },
+            { Charger_Killing, 5, true },
+            { Ghost_Exploring, 10, false },
+            { Ghost_Chasing, 10, false },
+            { WindowBlood, 10, false },
+            { Room_Charger, 10, false },
+            { Room_Blind, 10, false },
+            { Room_Ghost, 10, false },
+            { Room_Elevator, 10, false },
+        };
+        return Entries;
+    }
+
+    inline int32 GetMaxPossibleScore(bool bSinglePlay)
+    {
+        int32 Total = 0;
+        for (const FPhotoIDEntry& Entry : GetAllEntries())
+        {
+            if (bSinglePlay && Entry.bMultiplayerOnly)
+            {
+                continue;
+            }
+            Total += Entry.Score;
+        }
+        return Total;
+    }
 }
 
 namespace PhotoGrade
 {
     enum class EGrade : uint8 { F, D, C, B, A, S };
 
-    FORCEINLINE EGrade GetGradeEnum(int32 Score)
+    FORCEINLINE EGrade GetGradeEnum(int32 Score, int32 MaxScore)
     {
-        if (Score >= 115)
+        if (MaxScore <= 0)
+        {
+            return EGrade::F;
+        }
+
+        const float Ratio = (float)Score / (float)MaxScore;
+
+        // Single: 103.5(105), Multi: 112.5(115)
+        if (Ratio >= 0.9)
         {
             return EGrade::S;
         }
 
-        if (Score >= 80)
+        // Single: 73.6(75), Multi: 80
+        if (Ratio >= 0.64)
         {
             return EGrade::A;
         }
 
-        if (Score >= 50)
+        // Single: 46(50), Multi: 50
+        if (Ratio >= 0.4)
         {
             return EGrade::B;
         }
 
-        if (Score >= 30)
+        // Single: 27.6(30), Multi: 30
+        if (Ratio >= 0.24)
         {
             return EGrade::C;
         }
 
-        if (Score >= 20)
+        // Single: 18.4(20), Multi: 20
+        if (Ratio >= 0.16)
         {
             return EGrade::D;
         }
@@ -158,8 +216,8 @@ namespace PhotoGrade
         }
     }
 
-    FORCEINLINE FString GetGrade(int32 Score) { return GetGradeText(GetGradeEnum(Score)); }
-    FORCEINLINE int32 GetGradeXPFromScore(int32 Score) { return GetGradeXP(GetGradeEnum(Score)); }
+    FORCEINLINE FString GetGrade(int32 Score, int32 MaxScore) { return GetGradeText(GetGradeEnum(Score, MaxScore)); }
+    FORCEINLINE int32 GetGradeXPFromScore(int32 Score, int32 MaxScore) { return GetGradeXP(GetGradeEnum(Score, MaxScore)); }
 }
 
 USTRUCT(BlueprintType)

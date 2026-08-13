@@ -7,6 +7,7 @@
 #include "Components/TextBlock.h"
 #include "Components/Border.h"
 
+#include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
 #include "Type/PGPhotoTypes.h"
 
@@ -120,10 +121,17 @@ void UPGPlayerEntryWidget::SetupEntry(APGPlayerState* InPlayerState, UTexture2D*
 
 	if (ScoreText)
 	{
-		if (InPlayerState->IsEscaping())
+		const APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
+		if (!GS)
 		{
-			int32 Score = InPlayerState->GetPhotoScore();
-			ScoreText->SetText(FText::FromString(PhotoGrade::GetGrade(Score)));
+			UE_LOG(LogTemp, Warning, TEXT("PlayerEntryWidget::SetupEntry: GS Not valid"));
+			ScoreText->SetText(FText::GetEmpty());
+		}
+		else if (InPlayerState->IsEscaping())
+		{
+			const int32 MaxScore = PhotoID::GetMaxPossibleScore(GS->IsSinglePlaySession());
+			const int32 Score = InPlayerState->GetPhotoScore();
+			ScoreText->SetText(FText::FromString(PhotoGrade::GetGrade(Score, MaxScore)));
 		}
 		else
 		{

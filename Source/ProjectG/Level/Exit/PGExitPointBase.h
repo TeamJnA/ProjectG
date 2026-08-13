@@ -30,6 +30,7 @@ public:
 	virtual void HighlightOff() const override;
 	virtual FInteractionInfo GetInteractionInfo() const override;
 	virtual bool CanStartInteraction(UAbilitySystemComponent* InteractingASC, FInteractionPromptInfo& OutFailurePrompt) const override;
+	virtual bool IsWithinInteractionRange(const AActor* Investigator) const override;
 	virtual void NotifyInteractionAttempted(ACharacter* InteractingPlayer) override;
 	// ~IInteractableActorInterface
 
@@ -61,6 +62,9 @@ protected:
 
 	void BroadcastLockStateChanged();
 
+	/** 거리 측정 기준 컴포넌트. nullptr return -> 거리 제한 x */
+	virtual const USceneComponent* GetInteractionRangeOrigin() const { return nullptr; }
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> Root;
 
@@ -72,6 +76,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDrop")
 	TObjectPtr<USceneComponent> ItemDropPointOnExit;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Interact")
+	float MaxInteractDistance = 200.0f;
 
 	int32 RegistrationRetries = 0;
 

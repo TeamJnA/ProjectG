@@ -180,19 +180,6 @@ void APGExitElevator::InteractionFailed()
 	// TODO : Play Tick(약간 전기 칙) 하는 소리 정도 ??
 }
 
-bool APGExitElevator::IsWithinInteractionRange(const AActor* Investigator) const
-{
-	if (!Investigator || !FusePanel)
-	{
-		return true;
-	}
-
-	FVector Delta = Investigator->GetActorLocation() - FusePanel->GetComponentLocation();
-	Delta.Z = 0.0f;
-
-	return Delta.SizeSquared() <= FMath::Square(MaxFuseInteractDistance);
-}
-
 // true : remove item from inventory / false : do not remove item
 bool APGExitElevator::Unlock(AActor* Investigator)
 {

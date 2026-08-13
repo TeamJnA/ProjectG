@@ -56,8 +56,8 @@ public:
 
 private:
 	virtual void BeginPlay() override;
-
 	virtual void Tick(float DeltaSeconds) override;
+	virtual const USceneComponent* GetInteractionRangeOrigin() const override { return HandWheelHole; }
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_UnlockChains();

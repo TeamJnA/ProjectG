@@ -202,11 +202,15 @@ private:
 
 	bool bLocalXPAwarded = false;
 
+// Session Settings
 public:
 	void InitDifficulty(EPGDifficulty InLevel);
 
 	FORCEINLINE const FPGDifficultySettings& GetDifficulty() const { return CurrentDifficulty; }
 	FORCEINLINE EPGDifficulty GetDifficultyLevel() const { return DifficultyLevel; }
+
+	FORCEINLINE void SetSinglePlaySession(bool bInSingle) { bIsSinglePlaySession = bInSingle; }
+	FORCEINLINE bool IsSinglePlaySession() const { return bIsSinglePlaySession; }
 
 protected:
 	UPROPERTY(Replicated)
@@ -214,4 +218,7 @@ protected:
 
 	UPROPERTY(Replicated)
 	EPGDifficulty DifficultyLevel = EPGDifficulty::Normal;
+
+	UPROPERTY(Replicated)
+	bool bIsSinglePlaySession = false;
 };

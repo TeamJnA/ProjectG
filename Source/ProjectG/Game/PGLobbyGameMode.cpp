@@ -43,6 +43,7 @@ void APGLobbyGameMode::BeginPlay()
 			{
 				UE_LOG(LogTemp, Warning, TEXT("LobbyGM::Beginplay: InitDifficulty"));
 				GS->InitDifficulty(GI->GetSelectedDifficulty());
+				GS->SetSinglePlaySession(GI->IsSinglePlaySession());
 			}
 		}
 	}

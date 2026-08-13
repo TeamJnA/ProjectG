@@ -31,6 +31,7 @@ void APGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(APGGameState, CurrentMaxSanityDecreaseCount);
 	DOREPLIFETIME(APGGameState, DifficultyLevel);
 	DOREPLIFETIME(APGGameState, CurrentDifficulty);
+	DOREPLIFETIME(APGGameState, bIsSinglePlaySession);
 }
 
 void APGGameState::BeginPlay()
@@ -221,10 +222,10 @@ void APGGameState::Multicast_InitFinalScoreBoardWidget_Implementation()
 		{
 			if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 			{
+				const int32 MaxScore = PhotoID::GetMaxPossibleScore(IsSinglePlaySession());
 				int32 GainedXP = PS->IsEscaping()
-					? PhotoGrade::GetGradeXPFromScore(PS->GetPhotoScore())
+					? PhotoGrade::GetGradeXPFromScore(PS->GetPhotoScore(), MaxScore)
 					: 0;
-
 				GainedXP = FMath::RoundToInt(GainedXP * GetDifficulty().XPMultiplier);
 				GI->AddMatchResult(GainedXP);
 			}

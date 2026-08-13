@@ -58,6 +58,20 @@ bool APGExitPointBase::CanStartInteraction(UAbilitySystemComponent* InteractingA
 	return false;
 }
 
+bool APGExitPointBase::IsWithinInteractionRange(const AActor* Investigator) const
+{
+	const USceneComponent* Origin = GetInteractionRangeOrigin();
+	if (!Investigator || !Origin)
+	{
+		return true;
+	}
+
+	FVector Delta = Investigator->GetActorLocation() - Origin->GetComponentLocation();
+	Delta.Z = 0.0f;
+
+	return Delta.SizeSquared() <= FMath::Square(MaxInteractDistance);
+}
+
 void APGExitPointBase::NotifyInteractionAttempted(ACharacter* InteractingPlayer)
 {
 	if (!HasAuthority() || !InteractingPlayer || LinkedSpeciesKey == 0)
