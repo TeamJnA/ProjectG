@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "PGInteractionProgressWidget.generated.h"
 
+class UImage;
+
 /**
  * 
  */
@@ -18,7 +20,14 @@ public:
 	void SetProgress(float InProgress);
 
 protected:
+	virtual void NativeConstruct() override;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> ProgressImage;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> ProgressMID;
+
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	float Progress;
-	
 };
