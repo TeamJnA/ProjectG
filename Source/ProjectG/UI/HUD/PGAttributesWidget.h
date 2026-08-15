@@ -28,6 +28,8 @@ protected:
 	void RefreshMaxSanity(float InMaxSanity);
 
 	void OnSanityRecover(const FGameplayTag Tag, int32 NewCount);
+
+	void SetOutLine();
 	
 	FDelegateHandle SanityChangedHandle;
 	FDelegateHandle MaxSanityChangedHandle;
@@ -46,6 +48,12 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> SanityLockedMID;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> Border;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> BorderMID;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Indicator")
 	FName PercentParam = TEXT("Percent");
@@ -66,7 +74,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
 	FGameplayTag SanityRecoverStateTag;
 
-	// 파라미터 이름은 바뀌지 않으므로 기본값을 설정해두면 좋습니다.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
 	FName SanityRecoverParameterName = FName("bPanner");
+
+	/* OutLine Parameters*/
+	bool bIsSanityDark = false;
+	bool bIsSanityRecovering = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Outline")
+	FName GlowColorParamName = FName("GlowColor");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Outline")
+	FName MetalLightColorParamName = FName("MetalLightColor");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Outline")
+	FName PulseMinBrightnessParamName = FName("PulseMinBrightness");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Outline")
+	FName PulseSpeedParamName = FName("PulseSpeed");
+
+
 };

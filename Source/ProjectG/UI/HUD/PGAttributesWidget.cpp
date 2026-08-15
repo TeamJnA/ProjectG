@@ -107,6 +107,13 @@ void UPGAttributesWidget::RefreshSanity(float InSanity)
 	{
 		CurSanityBarMID->SetScalarParameterValue(PercentParam, SanityCurPercent);
 	}
+
+	const bool bNewDark = (InSanity <= 40.0f);
+	if (bNewDark != bIsSanityDark)
+	{
+		bIsSanityDark = bNewDark;
+		SetOutLine();
+	}
 }
 
 void UPGAttributesWidget::RefreshMaxSanity(float InMaxSanity)
@@ -144,4 +151,109 @@ void UPGAttributesWidget::OnSanityRecover(const FGameplayTag Tag, int32 NewCount
 	{
 		CurSanityBarMID->SetScalarParameterValue(SanityRecoverParameterName, NewCount);
 	}
+
+	const bool bNewRecovering = (NewCount == 1);
+	if (bNewRecovering != bIsSanityRecovering)
+	{
+		bIsSanityRecovering = bNewRecovering;
+		SetOutLine();
+	}
 }
+
+void UPGAttributesWidget::SetOutLine()
+{
+	if (!BorderMID)
+	{
+		if (Border)
+		{
+			BorderMID = Border->GetDynamicMaterial();
+		}
+	}
+
+	if (!BorderMID)
+	{
+		return;
+	}
+
+	// 4가지 조합: Origin / Recover / Dark / Dark & Recover
+	if (bIsSanityDark && bIsSanityRecovering)
+	{
+		// [Dark & Recover]
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.25f, 0.0f, 0.0f));
+		BorderMID->SetVectorParameterValue(MetalLightColorParamName, FLinearColor(0.0f, 0.0f, 0.0f));
+		BorderMID->SetScalarParameterValue(PulseMinBrightnessParamName, 0.0f);
+		BorderMID->SetScalarParameterValue(PulseSpeedParamName, 2.0f);
+	}
+	else if (bIsSanityDark)
+	{
+		// [Dark]
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.0f, 0.0f, 0.0f));
+		BorderMID->SetVectorParameterValue(MetalLightColorParamName, FLinearColor(0.0f, 0.0f, 0.0f));
+	}
+	else if (bIsSanityRecovering)
+	{
+		// [Recover]
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.25f, 0.0f, 0.0f));
+		BorderMID->SetScalarParameterValue(PulseMinBrightnessParamName, 0.0f);
+		BorderMID->SetScalarParameterValue(PulseSpeedParamName, 2.0f);
+	}
+	else
+	{
+		// [Origin]
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.03f, 0.05f, 0.07f));
+		BorderMID->SetVectorParameterValue(MetalLightColorParamName, FLinearColor(0.055f, 0.06f, 0.065f));
+		BorderMID->SetScalarParameterValue(PulseMinBrightnessParamName, 0.8f);
+		BorderMID->SetScalarParameterValue(PulseSpeedParamName, 1.0f);
+	}
+}
+
+
+/*
+[Origin]
+PulseMinBrightness 0.8
+
+GlowColor
+0.03
+0.05
+0.07
+
+PulseSpeed
+1
+
+
+****** 
+[Recover]
+PulseMinBrightness 0
+
+GlowColor
+0.25
+0.0
+0.0
+
+PulseSpeed 
+2
+
+********
+[Dark]
+GlowColor
+0.0
+0.0
+0.0
+
+MetalLightColor
+0.0
+0.0
+0.0
+
+******
+[Dark & Recover]
+GlowColor
+0.25
+0.0
+0.0
+
+MetalLightColor
+0.0
+0.0
+0.0
+*/
