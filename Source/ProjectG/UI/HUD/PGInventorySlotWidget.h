@@ -28,6 +28,14 @@ protected:
 	TObjectPtr<UTexture2D> ItemImage;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UBorder> OutlineBorder;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> OutlineBorderMID;
+
+	FName OutlineColorParam = TEXT("MetalDarkColor");
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UBorder> HighlightBorder;
 
 	UPROPERTY(EditAnywhere, Category = "UI")

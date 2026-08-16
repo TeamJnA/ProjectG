@@ -43,6 +43,12 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> CurSanityBarMID;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
+	FName NoiseFlipSpeedParam = FName("NoiseFlipSpeed");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
+	FName NoiseDarkParam = FName("NoiseDarkParam");
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> SanityLockedBar;
 

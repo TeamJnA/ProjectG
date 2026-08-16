@@ -106,6 +106,15 @@ void UPGAttributesWidget::RefreshSanity(float InSanity)
 	if (CurSanityBarMID)
 	{
 		CurSanityBarMID->SetScalarParameterValue(PercentParam, SanityCurPercent);
+
+		// 40 이하일 경우 1.0, 아니면 0.2
+		const float NewScalarValue = (InSanity <= 40.0f) ? 1.0f : 0.2f;
+		CurSanityBarMID->SetScalarParameterValue(NoiseFlipSpeedParam, NewScalarValue);
+
+		// 60~40 구간에서 (1,1,1) -> (0.1,0.1,0.1) 선형 보간, 범위 밖은 클램프
+		const float Alpha = FMath::Clamp((InSanity - 40.0f) / (60.0f - 40.0f), 0.0f, 1.0f);
+		const FLinearColor NewColorValue = FMath::Lerp( FLinearColor(0.1f, 0.1f, 0.1f, 1.0f), FLinearColor(1.0f, 1.0f, 1.0f, 1.0f), Alpha);
+		CurSanityBarMID->SetVectorParameterValue(NoiseDarkParam, NewColorValue);
 	}
 
 	const bool bNewDark = (InSanity <= 40.0f);
