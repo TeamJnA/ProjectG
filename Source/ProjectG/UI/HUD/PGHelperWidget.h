@@ -9,10 +9,28 @@
 
 #include "PGHelperWidget.generated.h"
 
-class UVerticalBox;
+class UHorizontalBox;
 class UDataTable;
 class UPGHelperExitEntryWidget;
 class APGExitPointBase;
+
+USTRUCT()
+struct FPGHelperPendingRow
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    FPGHelperEntryRow Row;
+
+    UPROPERTY()
+    TMap<EPGExitItemType, int32> UnlockedCounts;
+
+    UPROPERTY()
+    int32 SpeciesKey = 0;
+
+    UPROPERTY()
+    bool bDepleted = false;
+};
 
 /**
  * 
@@ -55,10 +73,16 @@ protected:
 
     bool IsIntroPlaying() const;
     void BuildExitByKeyMap(TMap<int32, APGExitPointBase*>& OutExitByKey) const;
+    void ResolvePendingRows();
 
     // Typewriter, Icon Image 등장 연출
     UFUNCTION()
     void AppearNextRow();
+
+    TArray<TWeakObjectPtr<UPGHelperExitEntryWidget>> ActiveEntries;
+
+    UPROPERTY()
+    TArray<FPGHelperPendingRow> PendingRows;
 
     UPROPERTY(EditDefaultsOnly, Category = "Helper")
     TObjectPtr<UDataTable> CatalogTable;
@@ -70,8 +94,7 @@ protected:
     TObjectPtr<UWidget> HelperPeek;
 
     UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UVerticalBox> ExitListBox;
-    TArray<TWeakObjectPtr<UPGHelperExitEntryWidget>> ActiveEntries;
+    TObjectPtr<UHorizontalBox> ExitListBox;
 
     UPROPERTY(EditDefaultsOnly, Category = "Helper")
     TSubclassOf<UPGHelperExitEntryWidget> ExitEntryWidgetClass;
@@ -87,15 +110,6 @@ protected:
 
     FTimerHandle AutoCloseTimerHandle;
     FTimerHandle RowAppearTimerHandle;
-
-    struct FPendingRow
-    {
-        FPGHelperEntryRow Row;
-        TSet<FName> UnlockedIds;
-        int32 SpeciesKey = 0;
-        bool bDepleted = false;
-    };
-    TArray<FPendingRow> PendingRows;
 
     UPROPERTY(EditDefaultsOnly)
     float AutoCloseDelay = 5.0f;

@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Type/PGHelperTypes.h"
 #include "PGHelperExitEntryWidget.generated.h"
 
 class UTextBlock;
 class UHorizontalBox;
 class UImage;
-struct FPGHelperEntryRow;
 
 /**
  * 
@@ -20,10 +20,10 @@ class PROJECTG_API UPGHelperExitEntryWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	void SetEntry(int32 InSpeciesKey, const FPGHelperEntryRow& Row, const TSet<FName>& UnlockedItemIds, bool bDepleted);
+	void SetEntry(int32 InSpeciesKey, const FPGHelperEntryRow& Row, const TMap<EPGExitItemType, int32>& UnlockedItemIds, bool bDepleted);
 	void PlayIntroAnim();
 
-	void UpdateInPlace(const TSet<FName>& UnlockedItemIds, bool bDepleted);
+	void UpdateInPlace(const TMap<EPGExitItemType, int32>& UnlockedCounts, bool bDepleted);
 
 	bool IsIntroComplete() const { return bIntroComplete; }
 	int32 GetSpeciesKey() const { return SpeciesKey; }
@@ -35,7 +35,9 @@ protected:
 	void TypewriterStep();
 
 	UFUNCTION()
-	void IconAppearStep();
+	void RequirementTypewriterStep();
+
+	void RebuildRequirementString(const TMap<EPGExitItemType, int32>& UnlockedCounts);
 
 	void CompleteIntro();
 
@@ -43,7 +45,7 @@ protected:
 	TObjectPtr<UTextBlock> NameText;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UHorizontalBox> ItemIconBox;
+	TObjectPtr<UTextBlock> RequirementText;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> DepletedLine;
@@ -54,27 +56,23 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Helper")
 	FLinearColor LockedColor = FLinearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-	FString FullDisplayName;
-
 	UPROPERTY()
-	TArray<TObjectPtr<UImage>> SpawnedIconImages;
+	TArray<FPGHelperRequiredItem> CachedItems;
 
-	TArray<FName> SpawnedIconItemIds;
+	FString FullDisplayName;
+	FString FullRequirementText;
 
 	FTimerHandle TypewriterTimerHandle;
-	FTimerHandle IconAppearTimerHandle;
+	FTimerHandle RequirementTimerHandle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Helper")
 	float TypewriterStepInterval = 0.03f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Helper")
-	float IconStartDelay = 0.2f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Helper")
-	float IconStepInterval = 0.1f;
+	float RequirementStartDelay = 0.2f;
 
 	int32 TypewriterIndex = 0;
-	int32 IconAppearIndex = 0;
+	int32 RequirementIndex = 0;
 
 	int32 SpeciesKey = 0;
 	bool bIsDepleted = false;

@@ -9,6 +9,7 @@
 #include "Player/PGPlayerController.h"
 #include "Player/PGPlayerState.h"
 #include "Character/PGPlayerCharacter.h"
+#include "Level/Exit/PGExitPointBase.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -756,4 +757,24 @@ void APGGameState::InitDifficulty(EPGDifficulty InLevel)
 	{
 		CurrentDifficulty = *Row;
 	}
+}
+
+void APGGameState::RegisterExit(int32 SpeciesKey, APGExitPointBase* Exit)
+{
+	if (SpeciesKey == 0 || !Exit)
+	{
+		return;
+	}
+
+	ExitBySpeciesKey.Add(SpeciesKey, Exit);
+	OnExitRegistered.Broadcast(Exit);
+}
+
+APGExitPointBase* APGGameState::GetExitBySpeciesKey(int32 SpeciesKey) const
+{
+	if (const TObjectPtr<APGExitPointBase>* Found = ExitBySpeciesKey.Find(SpeciesKey))
+	{
+		return Found->Get();
+	}
+	return nullptr;
 }

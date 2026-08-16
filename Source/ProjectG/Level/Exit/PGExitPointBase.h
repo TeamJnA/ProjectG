@@ -36,7 +36,7 @@ public:
 
 	// If true, remove item from inventory
 	virtual bool Unlock(AActor* Investigator);
-	virtual TSet<FName> GetUnlockedItemIds() const { return TSet<FName>(); }
+	virtual TMap<EPGExitItemType, int32> GetUnlockedItemCounts() const { return TMap<EPGExitItemType, int32>(); }
 	virtual bool IsExitDepleted() const { return false; }
 
 	FORCEINLINE FVector GetCameraLocation() const { return ExitCamera->GetComponentLocation(); }
@@ -58,7 +58,7 @@ protected:
 
 	void DropEscaperItems(AActor* EscapeStartActor);
 
-	void RegisterExitCamera();
+	void RegisterToGameState();
 
 	void BroadcastLockStateChanged();
 

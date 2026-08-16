@@ -2,7 +2,6 @@
 
 
 #include "UI/HUD/PGHelperExitEntryWidget.h"
-#include "Type/PGHelperTypes.h"
 #include "Components/TextBlock.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
@@ -14,69 +13,40 @@ void UPGHelperExitEntryWidget::NativeDestruct()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TypewriterTimerHandle);
-		World->GetTimerManager().ClearTimer(IconAppearTimerHandle);
+		World->GetTimerManager().ClearTimer(RequirementTimerHandle);
 	}
 
 	Super::NativeDestruct();
 }
 
-void UPGHelperExitEntryWidget::SetEntry(int32 InSpeciesKey, const FPGHelperEntryRow& Row, const TSet<FName>& UnlockedItemIds, bool bDepleted)
+void UPGHelperExitEntryWidget::SetEntry(int32 InSpeciesKey, const FPGHelperEntryRow& Row,
+	const TMap<EPGExitItemType, int32>& UnlockedItemIds, bool bDepleted)
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(TypewriterTimerHandle);
+		World->GetTimerManager().ClearTimer(RequirementTimerHandle);
+	}
+
 	SpeciesKey = InSpeciesKey;
 	bIsDepleted = bDepleted;
 	bIntroComplete = false;
 
 	FullDisplayName = Row.DisplayName.ToString();
 	TypewriterIndex = 0;
-	IconAppearIndex = 0;
-
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(TypewriterTimerHandle);
-		World->GetTimerManager().ClearTimer(IconAppearTimerHandle);
-	}
 
 	if (NameText)
 	{
 		NameText->SetText(FText::GetEmpty());
 	}
 
-	SpawnedIconImages.Reset();
-	SpawnedIconItemIds.Reset();
+	CachedItems = Row.RequiredItems;
+	RebuildRequirementString(UnlockedItemIds);
+	RequirementIndex = 0;
 
-	if (ItemIconBox)
+	if (RequirementText)
 	{
-		ItemIconBox->ClearChildren();
-
-		for (const FPGHelperItemIcon& Item : Row.RequiredItemIcons)
-		{
-			if (!Item.Icon)
-			{
-				continue;
-			}
-
-			UImage* IconImage = NewObject<UImage>(this);
-
-			FSlateBrush Brush;
-			Brush.SetResourceObject(Item.Icon);
-			Brush.ImageSize = Item.Size;
-			Brush.DrawAs = ESlateBrushDrawType::Image;
-			IconImage->SetBrush(Brush);
-			IconImage->SetDesiredSizeOverride(Item.Size);
-
-			const bool bUnlocked = UnlockedItemIds.Contains(Item.ItemId);
-			IconImage->SetColorAndOpacity(bUnlocked ? UnlockedColor : LockedColor);
-			IconImage->SetRenderOpacity(0.0f);
-
-			if (UHorizontalBoxSlot* IconImageSlot = ItemIconBox->AddChildToHorizontalBox(IconImage))
-			{
-				IconImageSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
-				IconImageSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
-				IconImageSlot->SetPadding(FMargin(2.0f, 0.0f));
-			}
-			SpawnedIconImages.Add(IconImage);
-			SpawnedIconItemIds.Add(Item.ItemId);
-		}
+		RequirementText->SetText(FText::GetEmpty());
 	}
 
 	if (DepletedLine)
@@ -108,30 +78,16 @@ void UPGHelperExitEntryWidget::PlayIntroAnim()
 	}
 
 	const float TextTotal = FullDisplayName.Len() * TypewriterStepInterval;
-	const float IconStart = TextTotal + IconStartDelay;
-	World->GetTimerManager().SetTimer(IconAppearTimerHandle, this, &UPGHelperExitEntryWidget::IconAppearStep, IconStepInterval, true, IconStart);
-}
+	const float ReqStart = TextTotal + RequirementStartDelay;
 
-void UPGHelperExitEntryWidget::UpdateInPlace(const TSet<FName>& UnlockedItemIds, bool bDepleted)
-{
-	bIsDepleted = bDepleted;
-
-	const int32 IconCount = FMath::Min(SpawnedIconImages.Num(), SpawnedIconItemIds.Num());
-	for (int32 i = 0; i < IconCount; ++i)
+	if (!FullRequirementText.IsEmpty())
 	{
-		UImage* Img = SpawnedIconImages[i];
-		if (!Img)
-		{
-			continue;
-		}
-
-		const bool bUnlocked = UnlockedItemIds.Contains(SpawnedIconItemIds[i]);
-		Img->SetColorAndOpacity(bUnlocked ? UnlockedColor : LockedColor);
+		World->GetTimerManager().SetTimer(RequirementTimerHandle, this,
+			&UPGHelperExitEntryWidget::RequirementTypewriterStep, TypewriterStepInterval, true, ReqStart);
 	}
-
-	if (DepletedLine)
+	else
 	{
-		DepletedLine->SetVisibility(bIsDepleted ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		CompleteIntro();
 	}
 }
 
@@ -159,24 +115,62 @@ void UPGHelperExitEntryWidget::TypewriterStep()
 	}
 }
 
-void UPGHelperExitEntryWidget::IconAppearStep()
+void UPGHelperExitEntryWidget::RequirementTypewriterStep()
 {
-	if (SpawnedIconImages.IsValidIndex(IconAppearIndex))
+	++RequirementIndex;
+	if (RequirementIndex >= FullRequirementText.Len())
 	{
-		if (UImage* Img = SpawnedIconImages[IconAppearIndex])
+		if (RequirementText)
 		{
-			Img->SetRenderOpacity(1.0f);
+			RequirementText->SetText(FText::FromString(FullRequirementText));
 		}
-		++IconAppearIndex;
 
-		if (IconAppearIndex >= SpawnedIconImages.Num())
+		if (UWorld* World = GetWorld())
 		{
-			CompleteIntro();
+			World->GetTimerManager().ClearTimer(RequirementTimerHandle);
 		}
-	}
-	else
-	{
+
 		CompleteIntro();
+		return;
+	}
+
+	if (RequirementText)
+	{
+		RequirementText->SetText(FText::FromString(FullRequirementText.Left(RequirementIndex)));
+	}
+}
+
+void UPGHelperExitEntryWidget::UpdateInPlace(const TMap<EPGExitItemType, int32>& UnlockedItemIds, bool bDepleted)
+{
+	bIsDepleted = bDepleted;
+
+	RebuildRequirementString(UnlockedItemIds);
+
+	if (bIntroComplete && RequirementText)
+	{
+		RequirementText->SetText(FText::FromString(FullRequirementText));
+	}
+
+	if (DepletedLine)
+	{
+		DepletedLine->SetVisibility(bIsDepleted ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
+}
+
+void UPGHelperExitEntryWidget::RebuildRequirementString(const TMap<EPGExitItemType, int32>& UnlockedCounts)
+{
+	FullRequirementText.Reset();
+
+	for (const FPGHelperRequiredItem& Item : CachedItems)
+	{
+		const int32 Owned = FMath::Min(UnlockedCounts.FindRef(Item.ItemType), Item.RequiredCount);
+
+		if (!FullRequirementText.IsEmpty())
+		{
+			FullRequirementText += LINE_TERMINATOR;
+		}
+
+		FullRequirementText += FString::Printf(TEXT("%s %d/%d"), *Item.DisplayName.ToString(), Owned, Item.RequiredCount);
 	}
 }
 
@@ -190,6 +184,6 @@ void UPGHelperExitEntryWidget::CompleteIntro()
 
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().ClearTimer(IconAppearTimerHandle);
+		World->GetTimerManager().ClearTimer(RequirementTimerHandle);
 	}
 }

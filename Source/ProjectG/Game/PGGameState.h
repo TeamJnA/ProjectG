@@ -12,15 +12,17 @@
 
 #include "PGGameState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerArrayChangedDelegate);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReadyToReturnLobbyChanged);
-
 class APGPlayerController;
 class APGPlayerCharacter;
+class APGExitPointBase;
 class ULevelSequence;
 class ULevelSequencePlayer;
 class UGameplayEffect;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerArrayChangedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReadyToReturnLobbyChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnExitRegistered, APGExitPointBase*, Exit);
 
 UENUM(BlueprintType)
 enum class EGameState : uint8
@@ -64,6 +66,9 @@ public:
 	void ResetAllReadyToReturnLobby();
 	// ----- Return To Lobby ---------
 
+	// ----- Exit ---------
+	FOnExitRegistered OnExitRegistered;
+
 	FORCEINLINE void RegisterExitCamera(EExitPointType Type, AActor* CameraActor)
 	{
 		ExitCameraMap.Add(Type, CameraActor);
@@ -77,6 +82,16 @@ public:
 		}
 		return nullptr;
 	}
+
+	void RegisterExit(int32 SpeciesKey, APGExitPointBase* Exit);
+
+	FORCEINLINE const TMap<int32, TObjectPtr<APGExitPointBase>>& GetExitsBySpeciesKey() const
+	{
+		return ExitBySpeciesKey;
+	}
+
+	APGExitPointBase* GetExitBySpeciesKey(int32 SpeciesKey) const;
+	// ----- Exit ---------
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -108,6 +123,9 @@ protected:
 
 	UPROPERTY()
 	TMap<EExitPointType, TObjectPtr<AActor>> ExitCameraMap;
+
+	UPROPERTY()
+	TMap<int32, TObjectPtr<APGExitPointBase>> ExitBySpeciesKey;
 
 	bool bGameFinishedNotified = false;
 

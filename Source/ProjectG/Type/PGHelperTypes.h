@@ -4,24 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Type/PGGameTypes.h"
 #include "PGHelperTypes.generated.h"
 
 
-class UTexture2D;
-
 USTRUCT(BlueprintType)
-struct FPGHelperItemIcon
+struct FPGHelperRequiredItem
 {
     GENERATED_BODY()
 
     UPROPERTY(EditDefaultsOnly)
-    FName ItemId;
+    EPGExitItemType ItemType = EPGExitItemType::None;
 
     UPROPERTY(EditDefaultsOnly)
-    TObjectPtr<UTexture2D> Icon = nullptr;
+    FText DisplayName;
 
     UPROPERTY(EditDefaultsOnly)
-    FVector2D Size = FVector2D(32.0f);
+    int32 RequiredCount = 1;
 };
 
 USTRUCT(BlueprintType)
@@ -35,7 +34,7 @@ struct FPGHelperEntryRow : public FTableRowBase
 
     // 필요 아이템 아이콘 리스트
     UPROPERTY(EditDefaultsOnly)
-    TArray<FPGHelperItemIcon> RequiredItemIcons;
+    TArray<FPGHelperRequiredItem> RequiredItems;
 
     // 카테고리 내 정렬 시드. Exit는 MainExit=0, Elevator=1처럼 고정
     UPROPERTY(EditDefaultsOnly)

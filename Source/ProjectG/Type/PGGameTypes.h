@@ -15,6 +15,16 @@ enum class EExitPointType : uint8
 };
 
 UENUM(BlueprintType)
+enum class EPGExitItemType : uint8
+{
+	None      UMETA(Hidden),
+	ChainKey,
+	HandWheel,
+	RustOil,
+	Fuse
+};
+
+UENUM(BlueprintType)
 enum class ECleanupActionType : uint8
 {
 	None,

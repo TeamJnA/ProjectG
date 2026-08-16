@@ -52,7 +52,7 @@ public:
 	// ~IHoldInteractProgressHandler
 
 	virtual bool Unlock(AActor* Investigator) override;
-	virtual TSet<FName> GetUnlockedItemIds() const override;
+	virtual TMap<EPGExitItemType, int32> GetUnlockedItemCounts() const override;
 
 private:
 	virtual void BeginPlay() override;

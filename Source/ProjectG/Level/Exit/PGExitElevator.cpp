@@ -239,16 +239,13 @@ void APGExitElevator::OnRep_FuseState()
 	BroadcastLockStateChanged();
 }
 
-TSet<FName> APGExitElevator::GetUnlockedItemIds() const
+TMap<EPGExitItemType, int32> APGExitElevator::GetUnlockedItemCounts() const
 {
-	TSet<FName> Result;
-	if (FuseState >= 1)
+	TMap<EPGExitItemType, int32> Result;
+	const int32 FuseCount = FMath::Min(FuseState, 2);
+	if (FuseCount > 0)
 	{
-		Result.Add(FName("Fuse1"));
-	}
-	if (FuseState >= 2)
-	{
-		Result.Add(FName("Fuse2"));
+		Result.Add(EPGExitItemType::Fuse, FuseCount);
 	}
 	return Result;
 }

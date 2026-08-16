@@ -4,11 +4,11 @@
 #include "UI/HUD/PGHelperWidget.h"
 #include "UI/HUD/PGHelperExitEntryWidget.h"
 #include "Type/PGHelperTypes.h"
+#include "Game/PGGameState.h"
 #include "Player/PGPlayerState.h"
 #include "Level/Exit/PGExitPointBase.h"
-#include "Components/VerticalBox.h"
+#include "Components/HorizontalBox.h"
 #include "Engine/DataTable.h"
-#include "EngineUtils.h"
 
 
 void UPGHelperWidget::NativeOnInitialized()
@@ -229,20 +229,33 @@ void UPGHelperWidget::Refresh()
 		return;
 	}
 
-	APlayerController* PC = GetOwningPlayer();
-	if (!PC)
+	ResolvePendingRows();
+
+	ExitListBox->ClearChildren();
+	ActiveEntries.Reset();
+	NextPendingIndex = 0;
+
+	if (PendingRows.IsEmpty())
 	{
 		return;
 	}
 
-	APGPlayerState* PS = PC->GetPlayerState<APGPlayerState>();
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(RowAppearTimerHandle, this, &UPGHelperWidget::AppearNextRow, RowAppearInterval, true);
+	}
+}
+
+void UPGHelperWidget::ResolvePendingRows()
+{
+	PendingRows.Reset();
+
+	APlayerController* PC = GetOwningPlayer();
+	APGPlayerState* PS = PC ? PC->GetPlayerState<APGPlayerState>() : nullptr;
 	if (!PS)
 	{
 		return;
 	}
-
-	TMap<int32, APGExitPointBase*> ExitByKey;
-	BuildExitByKeyMap(ExitByKey);
 
 	TSet<int32> CapturedKeys;
 	for (int32 ID : PS->GetCapturedIDs())
@@ -250,12 +263,8 @@ void UPGHelperWidget::Refresh()
 		CapturedKeys.Add(PhotoID::GetSpeciesKey(ID));
 	}
 
-	struct FResolvedRow
-	{
-		int32 SpeciesKey;
-		const FPGHelperEntryRow* Row;
-	};
-	TArray<FResolvedRow> ResolvedRows;
+	TMap<int32, APGExitPointBase*> ExitByKey;
+	BuildExitByKeyMap(ExitByKey);
 
 	for (const auto& Pair : CatalogTable->GetRowMap())
 	{
@@ -271,55 +280,28 @@ void UPGHelperWidget::Refresh()
 			continue;
 		}
 
-		const bool bUnlocked = Row->bDefaultVisible || CapturedKeys.Contains(SpeciesKey);
-		if (!bUnlocked)
+		if (!Row->bDefaultVisible && !CapturedKeys.Contains(SpeciesKey))
 		{
 			continue;
 		}
 
-		ResolvedRows.Add({ SpeciesKey, Row });
-	}
+		FPGHelperPendingRow PendingRow;
+		PendingRow.SpeciesKey = SpeciesKey;
+		PendingRow.Row = *Row;
 
-	ResolvedRows.Sort([](const FResolvedRow& A, const FResolvedRow& B)
-	{
-		return A.Row->DisplayOrder < B.Row->DisplayOrder;
-	});
-
-	PendingRows.Reset();
-	for (const FResolvedRow& ResolvedRow : ResolvedRows)
-	{
-		FPendingRow PendingRow;
-		PendingRow.SpeciesKey = ResolvedRow.SpeciesKey;
-		PendingRow.Row = *ResolvedRow.Row;
-		if (APGExitPointBase* Exit = ExitByKey.FindRef(ResolvedRow.SpeciesKey))
+		if (APGExitPointBase* Exit = ExitByKey.FindRef(SpeciesKey))
 		{
-			PendingRow.UnlockedIds = Exit->GetUnlockedItemIds();
+			PendingRow.UnlockedCounts = Exit->GetUnlockedItemCounts();
 			PendingRow.bDepleted = Exit->IsExitDepleted();
 		}
+
 		PendingRows.Add(MoveTemp(PendingRow));
 	}
 
-	ExitListBox->ClearChildren();
-	ActiveEntries.Reset();
-	NextPendingIndex = 0;
-
-	if (PendingRows.IsEmpty())
-	{
-		return;
-	}
-
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(RowAppearTimerHandle);
-	}
-
-	if (NextPendingIndex < PendingRows.Num())
-	{
-		if (UWorld* World = GetWorld())
+	PendingRows.Sort([](const FPGHelperPendingRow& A, const FPGHelperPendingRow& B)
 		{
-			World->GetTimerManager().SetTimer(RowAppearTimerHandle, this, &UPGHelperWidget::AppearNextRow, RowAppearInterval, true);
-		}
-	}
+			return A.Row.DisplayOrder < B.Row.DisplayOrder;
+		});
 }
 
 void UPGHelperWidget::AppearNextRow()
@@ -338,7 +320,7 @@ void UPGHelperWidget::AppearNextRow()
 		return;
 	}
 
-	const FPendingRow& PendingRow = PendingRows[NextPendingIndex++];
+	const FPGHelperPendingRow& PendingRow = PendingRows[NextPendingIndex++];
 
 	UPGHelperExitEntryWidget* Entry = CreateWidget<UPGHelperExitEntryWidget>(this, ExitEntryWidgetClass);
 	if (!Entry)
@@ -346,8 +328,8 @@ void UPGHelperWidget::AppearNextRow()
 		return;
 	}
 
-	Entry->SetEntry(PendingRow.SpeciesKey, PendingRow.Row, PendingRow.UnlockedIds, PendingRow.bDepleted);
-	ExitListBox->AddChildToVerticalBox(Entry);
+	Entry->SetEntry(PendingRow.SpeciesKey, PendingRow.Row, PendingRow.UnlockedCounts, PendingRow.bDepleted);
+	ExitListBox->AddChildToHorizontalBox(Entry);
 	Entry->PlayIntroAnim();
 
 	ActiveEntries.Add(Entry);
@@ -366,15 +348,15 @@ void UPGHelperWidget::UpdateInPlace()
 			continue;
 		}
 
-		TSet<FName> UnlockedIds;
+		TMap<EPGExitItemType, int32> UnlockedCounts;
 		bool bDepleted = false;
 		if (APGExitPointBase* Exit = ExitByKey.FindRef(Entry->GetSpeciesKey()))
 		{
-			UnlockedIds = Exit->GetUnlockedItemIds();
+			UnlockedCounts = Exit->GetUnlockedItemCounts();
 			bDepleted = Exit->IsExitDepleted();
 		}
 
-		Entry->UpdateInPlace(UnlockedIds, bDepleted);
+		Entry->UpdateInPlace(UnlockedCounts, bDepleted);
 	}
 }
 
@@ -388,18 +370,17 @@ void UPGHelperWidget::BuildExitByKeyMap(TMap<int32, APGExitPointBase*>& OutExitB
 		return;
 	}
 
-	for (TActorIterator<APGExitPointBase> It(World); It; ++It)
+	APGGameState* GS = World->GetGameState<APGGameState>();
+	if (!GS)
 	{
-		APGExitPointBase* Exit = *It;
-		if (!Exit)
-		{
-			continue;
-		}
+		return;
+	}
 
-		const int32 SpeciesKey = Exit->GetLinkedSpeciesKey();
-		if (SpeciesKey != 0)
+	for (const auto& Pair : GS->GetExitsBySpeciesKey())
+	{
+		if (APGExitPointBase* Exit = Pair.Value.Get())
 		{
-			OutExitByKey.Add(SpeciesKey, Exit);
+			OutExitByKey.Add(Pair.Key, Exit);
 		}
 	}
 }

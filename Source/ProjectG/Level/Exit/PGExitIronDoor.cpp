@@ -444,21 +444,20 @@ bool APGExitIronDoor::Unlock(AActor* Investigator)
     return false;
 }
 
-TSet<FName> APGExitIronDoor::GetUnlockedItemIds() const
+TMap<EPGExitItemType, int32> APGExitIronDoor::GetUnlockedItemCounts() const
 {
-    TSet<FName> Result;
-    const uint8 Phase = (uint8)CurrentLockPhase;
-    if (Phase >= 1)
+    TMap<EPGExitItemType, int32> Result;
+    if (CurrentLockPhase >= E_LockPhase::E_WheelAttach)
     {
-        Result.Add(FName("Key"));
+        Result.Add(EPGExitItemType::ChainKey, 1);
     }
-    if (Phase >= 2)
+    if (CurrentLockPhase >= E_LockPhase::E_OilApplied)
     {
-        Result.Add(FName("Wheel"));
+        Result.Add(EPGExitItemType::HandWheel, 1);
     }
-    if (Phase >= 3)
+    if (CurrentLockPhase >= E_LockPhase::E_Unlocked)
     {
-        Result.Add(FName("Oil"));
+        Result.Add(EPGExitItemType::RustOil, 1);
     }
     return Result;
 }

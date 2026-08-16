@@ -32,7 +32,7 @@ void APGExitPointBase::BeginPlay()
 	Super::BeginPlay();
 
 	// Register Exit Camera both server and client
-	RegisterExitCamera();
+	RegisterToGameState();
 }
 
 TSubclassOf<UGameplayAbility> APGExitPointBase::GetAbilityToInteract() const
@@ -170,7 +170,7 @@ void APGExitPointBase::DropEscaperItems(AActor* EscapeStartActor)
 }
 
 // Register Exit Camera both server and client
-void APGExitPointBase::RegisterExitCamera()
+void APGExitPointBase::RegisterToGameState()
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -181,6 +181,7 @@ void APGExitPointBase::RegisterExitCamera()
 	if (APGGameState* GS = World->GetGameState<APGGameState>())
 	{
 		GS->RegisterExitCamera(ExitPointType, this);
+		GS->RegisterExit(LinkedSpeciesKey, this);
 
 		UE_LOG(LogPGExitPoint, Log, TEXT("%s Registered to GameState successfully."), *GetNameSafe(this));
 	}
@@ -192,7 +193,7 @@ void APGExitPointBase::RegisterExitCamera()
 			RegistrationRetries++;
 
 			FTimerHandle TempHandle;
-			World->GetTimerManager().SetTimer(TempHandle, this, &APGExitPointBase::RegisterExitCamera, 0.5f, false);
+			World->GetTimerManager().SetTimer(TempHandle, this, &APGExitPointBase::RegisterToGameState, 0.5f, false);
 
 			UE_LOG(LogPGExitPoint, Warning, TEXT("GameState not found. Retrying... (%d/10)"), RegistrationRetries);
 		}

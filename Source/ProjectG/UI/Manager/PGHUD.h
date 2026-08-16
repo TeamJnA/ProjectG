@@ -81,7 +81,12 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	void TryBindExits();
+
+	UFUNCTION()
+	void BindSingleExit(APGExitPointBase* Exit);
+
 	void UnbindExits();
+
 	UFUNCTION()
 	void HandleExitLockStateChanged(APGExitPointBase* ExitActor);
 

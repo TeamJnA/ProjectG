@@ -166,29 +166,46 @@ void APGHUD::TryBindExits()
 		return;
 	}
 
-	int32 BoundCount = 0;
-	for (TActorIterator<APGExitPointBase> It(World); It; ++It)
+	APGGameState* GS = World->GetGameState<APGGameState>();
+	if (!GS)
 	{
-		APGExitPointBase* Exit = *It;
-		if (!Exit)
+		if (ExitBindRetries < 10)
 		{
-			continue;
+			++ExitBindRetries;
+			World->GetTimerManager().SetTimer(ExitBindRetryHandle, this, &APGHUD::TryBindExits, 0.5f, false);
 		}
-
-		Exit->OnExitLockStateChanged.AddUniqueDynamic(this, &APGHUD::HandleExitLockStateChanged);
-		HUDSubscribedExits.AddUnique(Exit);
-		++BoundCount;
+		return;
 	}
 
-	if (BoundCount == 0 && ExitBindRetries < 10)
+	for (const auto& Pair : GS->GetExitsBySpeciesKey())
 	{
-		++ExitBindRetries;
-		World->GetTimerManager().SetTimer(ExitBindRetryHandle, this, &APGHUD::TryBindExits, 0.5f, false);
+		BindSingleExit(Pair.Value.Get());
 	}
+
+	GS->OnExitRegistered.AddUniqueDynamic(this, &APGHUD::BindSingleExit);
+}
+
+void APGHUD::BindSingleExit(APGExitPointBase* Exit)
+{
+	if (!Exit)
+	{
+		return;
+	}
+
+	Exit->OnExitLockStateChanged.AddUniqueDynamic(this, &APGHUD::HandleExitLockStateChanged);
+	HUDSubscribedExits.AddUnique(Exit);
 }
 
 void APGHUD::UnbindExits()
 {
+	if (UWorld* World = GetWorld())
+	{
+		if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+		{
+			GS->OnExitRegistered.RemoveAll(this);
+		}
+	}
+
 	for (const TWeakObjectPtr<APGExitPointBase>& WeakExit : HUDSubscribedExits)
 	{
 		if (APGExitPointBase* Exit = WeakExit.Get())
@@ -196,6 +213,7 @@ void APGHUD::UnbindExits()
 			Exit->OnExitLockStateChanged.RemoveDynamic(this, &APGHUD::HandleExitLockStateChanged);
 		}
 	}
+
 	HUDSubscribedExits.Reset();
 }
 
