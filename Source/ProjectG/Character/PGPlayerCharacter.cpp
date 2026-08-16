@@ -286,9 +286,6 @@ void APGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 			if(ChangeItemSlotAction[i])
 				EnhancedInputComponent->BindAction(ChangeItemSlotAction[i], ETriggerEvent::Started, this, &APGPlayerCharacter::ChangingItemSlot, i);
 		}
-
-		// debug, decrease sanity
-		EnhancedInputComponent->BindAction(DebugDecreaseSanityAction, ETriggerEvent::Started, this, &APGPlayerCharacter::OnDebugDecreaseSanity);
 	}
 	else
 	{
@@ -1630,39 +1627,6 @@ void APGPlayerCharacter::ChangingItemSlot(const FInputActionValue& Value, int32 
 	InventoryComponent->ChangeCurrentInventoryIndex(NumofSlot);
 }
 
-void APGPlayerCharacter::OnDebugDecreaseSanity(const FInputActionValue& Value)
-{
-	if (IsLocallyControlled())
-	{
-		Server_Debug_DecreaseSanity();
-	}
-}
-
-void APGPlayerCharacter::Server_Debug_DecreaseSanity_Implementation()
-{
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		return;
-	}
-
-	if (!SanityDecreaseEffect)
-	{
-		return;
-	}
-
-	FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
-	ContextHandle.AddInstigator(this, this);
-
-	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(SanityDecreaseEffect, 1.0f, ContextHandle);
-
-	if (SpecHandle.IsValid())
-	{
-		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Character::Server_Debug_DecreaseSanity: Applied Sanity Decrease Effect to %s"), *GetNameSafe(this));
-	}
-}
-
 void APGPlayerCharacter::InitPostProcessMaterial()
 {
 	if (SanityNoiseMID)
@@ -1704,7 +1668,7 @@ void APGPlayerCharacter::OnSanityChanged(const FOnAttributeChangeData& Data)
 		return;
 	}
 
-	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Sanity] OnSanityChanged: %.1f -> %.1f"), Data.OldValue, Data.NewValue);
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Sanity] OnSanityChanged: %.1f -> %.1f"), Data.OldValue, Data.NewValue);
 
 	const float CurrentSanity = Data.NewValue;
 	UpdateSanityPostProcessEffect(CurrentSanity);
@@ -1717,7 +1681,7 @@ void APGPlayerCharacter::UpdateSanityPostProcessEffect(float CurrentSanity)
 		return;
 	}
 
-	UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Sanity] UpdatePostProcess called - CurrentSanity: %.1f, BaseNoise will be: %.3f"),
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("[Sanity] UpdatePostProcess called - CurrentSanity: %.1f, BaseNoise will be: %.3f"),
 		CurrentSanity, FMath::Pow(1.0f - CurrentSanity / 100.0f, 2.0f) * 0.2f);
 
 	const float SanityRatio = FMath::Clamp(CurrentSanity / 100.0f, 0.0f, 1.0f);

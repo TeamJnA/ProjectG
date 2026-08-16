@@ -139,20 +139,33 @@ void APGInteractableGimmickBonfire::StartBonfire()
 	bIsLit = true;
 	OnRep_IsLit();
 
-	// 이미 범위 안에 있는 플레이어 추적, Vignette on
+	// 범위 내 플레이어 탐색 후 이펙트 적용
 	TArray<AActor*> OverlappingActors;
 	SanityHealAreaSphere->GetOverlappingActors(OverlappingActors, APGPlayerCharacter::StaticClass());
+
 	for (AActor* Actor : OverlappingActors)
 	{
 		if (APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(Actor))
 		{
-			PlayersInHealArea.Add(Player);
 			Player->Client_SetBonfireVignetteIntensity(VignetteIntensity);
+
+			// ASC를 가져와서 이펙트를 적용하고, 플레이어 별 핸들을 Map에 저장
+			if (UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent())
+			{
+				FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+				Context.AddInstigator(this, this);
+
+				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(SanityHealEffectClass, 1.0f, Context);
+
+				if (SpecHandle.IsValid())
+				{
+					FActiveGameplayEffectHandle EffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+					ActiveHealEffectsMap.Add(Player, EffectHandle);
+				}
+			}
 		}
 	}
 
-	// Sanity Heal Timer
-	GetWorld()->GetTimerManager().SetTimer(SanityHealTimerHandle, this, &APGInteractableGimmickBonfire::OnHealTick, SanityHealInterval, true);
 	// Bonfire Duration Timer
 	GetWorld()->GetTimerManager().SetTimer(BoneFireDurationTimerHandle, this, &APGInteractableGimmickBonfire::StopBonfire, BonfireDuration, false);
 }
@@ -164,19 +177,25 @@ void APGInteractableGimmickBonfire::StopBonfire()
 		return;
 	}
 
-	GetWorld()->GetTimerManager().ClearTimer(SanityHealTimerHandle);
+	// GetWorld()->GetTimerManager().ClearTimer(SanityHealTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(BoneFireDurationTimerHandle);
 
 	// 추적 중인 플레이어들 Vignette off
-	for (const TWeakObjectPtr<APGPlayerCharacter>& WeakPlayer : PlayersInHealArea)
+	for (const auto& Pair : ActiveHealEffectsMap)
 	{
-		if (APGPlayerCharacter* Player = WeakPlayer.Get())
+		if (APGPlayerCharacter* Player = Pair.Key.Get())
 		{
 			Player->Client_SetBonfireVignetteIntensity(0.0f);
+
+			// 활성화된 이펙트 제거
+			if (UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent())
+			{
+				ASC->RemoveActiveGameplayEffect(Pair.Value);
+			}
 		}
 	}
-	PlayersInHealArea.Empty();
-	
+	ActiveHealEffectsMap.Empty();
+		
 	bIsLit = false;
 	OnRep_IsLit();
 }
@@ -194,10 +213,22 @@ void APGInteractableGimmickBonfire::OnHealAreaBeginOverlap(UPrimitiveComponent* 
 		return;
 	}
 
-	if (!PlayersInHealArea.Contains(Player))
+	if (!ActiveHealEffectsMap.Contains(Player))
 	{
-		PlayersInHealArea.Add(Player);
 		Player->Client_SetBonfireVignetteIntensity(VignetteIntensity);
+
+		if (UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent())
+		{
+			FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+			Context.AddInstigator(this, this);
+			FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(SanityHealEffectClass, 1.0f, Context);
+
+			if (SpecHandle.IsValid())
+			{
+				FActiveGameplayEffectHandle EffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				ActiveHealEffectsMap.Add(Player, EffectHandle);
+			}
+		}
 	}
 }
 
@@ -214,30 +245,16 @@ void APGInteractableGimmickBonfire::OnHealAreaEndOverlap(UPrimitiveComponent* Ov
 		return;
 	}
 
-	if (PlayersInHealArea.Contains(Player))
+	if (FActiveGameplayEffectHandle* EffectHandlePtr = ActiveHealEffectsMap.Find(Player))
 	{
-		PlayersInHealArea.Remove(Player);
 		Player->Client_SetBonfireVignetteIntensity(0.0f);
-	}
-}
 
-void APGInteractableGimmickBonfire::OnHealTick()
-{
-	if (!SanityHealEffectClass)
-	{
-		return;
-	}
-
-	for (auto It = PlayersInHealArea.CreateIterator(); It; ++It)
-	{
-		APGPlayerCharacter* Player = It->Get();
-		if (!Player)
+		if (UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent())
 		{
-			It.RemoveCurrent();
-			continue;
+			ASC->RemoveActiveGameplayEffect(*EffectHandlePtr);
 		}
 
-		Player->Server_ApplyGameplayEffectToSelf(SanityHealEffectClass);
+		ActiveHealEffectsMap.Remove(Player);
 	}
 }
 

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickBase.h"
+#include "ActiveGameplayEffectHandle.h"
 #include "PGInteractableGimmickBonfire.generated.h"
 
 #define LOCTEXT_NAMESPACE "PGInteraction"
@@ -56,11 +57,10 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex);
 
-	void OnHealTick();
 	void SetBonfireLit();
 
 	UPROPERTY()
-	TSet<TWeakObjectPtr<APGPlayerCharacter>> PlayersInHealArea;
+	TMap<TWeakObjectPtr<APGPlayerCharacter>, FActiveGameplayEffectHandle> ActiveHealEffectsMap;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bonfire")
 	TObjectPtr<USphereComponent> SanityHealAreaSphere;
@@ -106,9 +106,6 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bonfire")
 	float BonfireDuration = 10.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bonfire")
-	float SanityHealInterval = 1.0f;
 
 	float TargetLightIntensity = 0.0f;
 	float TargetEmissiveValue = 0.0f;

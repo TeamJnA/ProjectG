@@ -5,6 +5,7 @@
 #include "Components/Image.h"
 #include "AbilitySystem/PGAttributeSet.h"
 #include "Player/PGPlayerState.h"
+#include "PGLogChannels.h"
 
 
 void UPGAttributesWidget::NativeDestruct()
@@ -13,6 +14,12 @@ void UPGAttributesWidget::NativeDestruct()
 	{
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetMaxSanityAttribute()).Remove(MaxSanityChangedHandle);
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(UPGAttributeSet::GetSanityAttribute()).Remove(SanityChangedHandle);
+
+		if (SanityRecoverTagHandle.IsValid())
+		{
+			LastBoundASC->RegisterGameplayTagEvent(SanityRecoverStateTag, EGameplayTagEventType::NewOrRemoved).Remove(SanityRecoverTagHandle);
+			SanityRecoverTagHandle.Reset();
+		}
 	}
 
 	Super::NativeDestruct();
@@ -30,6 +37,8 @@ void UPGAttributesWidget::BindToAttributes()
 		return;
 	}
 
+	UE_LOG(LogPGWidget, Log, TEXT("UPGAttributesWidget::BindToAttributes [%s]"), *(PS->GetName()));
+
 	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
 	UPGAttributeSet* AS = PS->GetAttributeSet();
 	if (!ASC || !AS)
@@ -42,6 +51,12 @@ void UPGAttributesWidget::BindToAttributes()
 	{
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).Remove(SanityChangedHandle);
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetMaxSanityAttribute()).Remove(MaxSanityChangedHandle);
+
+		if (SanityRecoverTagHandle.IsValid())
+		{
+			LastBoundASC->RegisterGameplayTagEvent(SanityRecoverStateTag, EGameplayTagEventType::NewOrRemoved).Remove(SanityRecoverTagHandle);
+			SanityRecoverTagHandle.Reset();
+		}
 	}
 
 	// Initial Attributes
@@ -61,6 +76,12 @@ void UPGAttributesWidget::BindToAttributes()
 		{
 			RefreshMaxSanity(Data.NewValue);
 		});
+
+	// Bind Sanity recover Tag change
+	SanityRecoverTagHandle = ASC->RegisterGameplayTagEvent(
+		SanityRecoverStateTag,
+		EGameplayTagEventType::NewOrRemoved
+	).AddUObject(this, &UPGAttributesWidget::OnSanityRecover);
 
 	LastBoundASC = ASC;
 }
@@ -85,6 +106,22 @@ void UPGAttributesWidget::RefreshSanity(float InSanity)
 	if (CurSanityBarMID)
 	{
 		CurSanityBarMID->SetScalarParameterValue(PercentParam, SanityCurPercent);
+
+		// 40 이하일 경우 1.0, 아니면 0.2
+		const float NewScalarValue = (InSanity <= 40.0f) ? 1.0f : 0.2f;
+		CurSanityBarMID->SetScalarParameterValue(NoiseFlipSpeedParam, NewScalarValue);
+
+		// 60~40 구간에서 (1,1,1) -> (0.1,0.1,0.1) 선형 보간, 범위 밖은 클램프
+		const float Alpha = FMath::Clamp((InSanity - 40.0f) / (60.0f - 40.0f), 0.0f, 1.0f);
+		const FLinearColor NewColorValue = FMath::Lerp( FLinearColor(0.1f, 0.1f, 0.1f, 1.0f), FLinearColor(1.0f, 1.0f, 1.0f, 1.0f), Alpha);
+		CurSanityBarMID->SetVectorParameterValue(NoiseDarkParam, NewColorValue);
+	}
+
+	const bool bNewDark = (InSanity <= 40.0f);
+	if (bNewDark != bIsSanityDark)
+	{
+		bIsSanityDark = bNewDark;
+		SetOutLine();
 	}
 }
 
@@ -106,3 +143,126 @@ void UPGAttributesWidget::RefreshMaxSanity(float InMaxSanity)
 		SanityLockedMID->SetScalarParameterValue(PercentParam, LockedPercent);
 	}
 }
+
+void UPGAttributesWidget::OnSanityRecover(const FGameplayTag Tag, int32 NewCount)
+{
+	UE_LOG(LogPGWidget, Log, TEXT("On sanity recover changed to %d"), NewCount);
+
+	if (!CurSanityBarMID)
+	{
+		if (SanityCurrentBar)
+		{
+			CurSanityBarMID = SanityCurrentBar->GetDynamicMaterial();
+		}
+	}
+
+	if (CurSanityBarMID)
+	{
+		CurSanityBarMID->SetScalarParameterValue(SanityRecoverParameterName, NewCount);
+	}
+
+	const bool bNewRecovering = (NewCount == 1);
+	if (bNewRecovering != bIsSanityRecovering)
+	{
+		bIsSanityRecovering = bNewRecovering;
+		SetOutLine();
+	}
+}
+
+void UPGAttributesWidget::SetOutLine()
+{
+	if (!BorderMID)
+	{
+		if (Border)
+		{
+			BorderMID = Border->GetDynamicMaterial();
+		}
+	}
+
+	if (!BorderMID)
+	{
+		return;
+	}
+
+	// 4가지 조합: Origin / Recover / Dark / Dark & Recover
+	if (bIsSanityDark && bIsSanityRecovering)
+	{
+		// [Dark & Recover]
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.25f, 0.0f, 0.0f));
+		BorderMID->SetVectorParameterValue(MetalLightColorParamName, FLinearColor(0.0f, 0.0f, 0.0f));
+		BorderMID->SetScalarParameterValue(PulseMinBrightnessParamName, 0.0f);
+		BorderMID->SetScalarParameterValue(PulseSpeedParamName, 2.0f);
+	}
+	else if (bIsSanityDark)
+	{
+		// [Dark]
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.0f, 0.0f, 0.0f));
+		BorderMID->SetVectorParameterValue(MetalLightColorParamName, FLinearColor(0.0f, 0.0f, 0.0f));
+	}
+	else if (bIsSanityRecovering)
+	{
+		// [Recover]
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.25f, 0.0f, 0.0f));
+		BorderMID->SetScalarParameterValue(PulseMinBrightnessParamName, 0.0f);
+		BorderMID->SetScalarParameterValue(PulseSpeedParamName, 2.0f);
+	}
+	else
+	{
+		// [Origin]
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.03f, 0.05f, 0.07f));
+		BorderMID->SetVectorParameterValue(MetalLightColorParamName, FLinearColor(0.055f, 0.06f, 0.065f));
+		BorderMID->SetScalarParameterValue(PulseMinBrightnessParamName, 0.8f);
+		BorderMID->SetScalarParameterValue(PulseSpeedParamName, 1.0f);
+	}
+}
+
+
+/*
+[Origin]
+PulseMinBrightness 0.8
+
+GlowColor
+0.03
+0.05
+0.07
+
+PulseSpeed
+1
+
+
+****** 
+[Recover]
+PulseMinBrightness 0
+
+GlowColor
+0.25
+0.0
+0.0
+
+PulseSpeed 
+2
+
+********
+[Dark]
+GlowColor
+0.0
+0.0
+0.0
+
+MetalLightColor
+0.0
+0.0
+0.0
+
+******
+[Dark & Recover]
+GlowColor
+0.25
+0.0
+0.0
+
+MetalLightColor
+0.0
+0.0
+0.0
+*/

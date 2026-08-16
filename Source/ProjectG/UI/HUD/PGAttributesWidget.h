@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "GameplayTagContainer.h"
 #include "PGAttributesWidget.generated.h"
 
 class UAbilitySystemComponent;
@@ -26,8 +27,13 @@ protected:
 	void RefreshSanity(float InSanity);
 	void RefreshMaxSanity(float InMaxSanity);
 
+	void OnSanityRecover(const FGameplayTag Tag, int32 NewCount);
+
+	void SetOutLine();
+	
 	FDelegateHandle SanityChangedHandle;
 	FDelegateHandle MaxSanityChangedHandle;
+	FDelegateHandle SanityRecoverTagHandle;
 
 	TWeakObjectPtr<UAbilitySystemComponent> LastBoundASC;
 
@@ -37,11 +43,23 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> CurSanityBarMID;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
+	FName NoiseFlipSpeedParam = FName("NoiseFlipSpeed");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
+	FName NoiseDarkParam = FName("NoiseDarkParam");
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> SanityLockedBar;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> SanityLockedMID;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> Border;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> BorderMID;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Indicator")
 	FName PercentParam = TEXT("Percent");
@@ -57,4 +75,29 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
 	float SanityLowColorThreshold = 40.0f;
+
+	/* Sanity Recover */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
+	FGameplayTag SanityRecoverStateTag;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sanity")
+	FName SanityRecoverParameterName = FName("bPanner");
+
+	/* OutLine Parameters*/
+	bool bIsSanityDark = false;
+	bool bIsSanityRecovering = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Outline")
+	FName GlowColorParamName = FName("GlowColor");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Outline")
+	FName MetalLightColorParamName = FName("MetalLightColor");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Outline")
+	FName PulseMinBrightnessParamName = FName("PulseMinBrightness");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Outline")
+	FName PulseSpeedParamName = FName("PulseSpeed");
+
+
 };
