@@ -8,6 +8,7 @@
 
 class UButton;
 class UTextBlock;
+class UImage;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnOptionChangedDelegate, int32, OptionIndex);
 
@@ -43,6 +44,12 @@ protected:
 	/** Available options - set per instance in Details panel */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Option")
 	TArray<FText> Options;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Option")
+	TArray<TObjectPtr<UTexture2D>> OptionIcons;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> NextOptionIcon;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> PrevOptionButton;

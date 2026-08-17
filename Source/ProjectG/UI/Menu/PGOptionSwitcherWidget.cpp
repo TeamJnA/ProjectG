@@ -4,6 +4,7 @@
 #include "UI/Menu/PGOptionSwitcherWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
+#include "Components/Image.h"
 
 void UPGOptionSwitcherWidget::NativeOnInitialized()
 {
@@ -66,6 +67,21 @@ void UPGOptionSwitcherWidget::UpdateDisplay()
 	if (OptionText && Options.IsValidIndex(CurrentOption))
 	{
 		OptionText->SetText(Options[CurrentOption]);
+	}
+
+	if (NextOptionIcon)
+	{
+		UTexture2D* Icon = OptionIcons.IsValidIndex(CurrentOption) ? OptionIcons[CurrentOption] : nullptr;
+
+		if (Icon)
+		{
+			NextOptionIcon->SetBrushFromTexture(Icon);
+			NextOptionIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+		else
+		{
+			NextOptionIcon->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
 }
 
