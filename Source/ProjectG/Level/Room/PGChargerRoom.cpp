@@ -9,23 +9,14 @@
 
 APGChargerRoom::APGChargerRoom()
 {
-	static ConstructorHelpers::FClassFinder<AActor> RoomMeshRef(TEXT("/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionChargerRoom.LI_MansionChargerRoom_C"));
+	static ConstructorHelpers::FClassFinder<AActor> RoomMeshRef(TEXT("/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionMannequinRoom.LI_MansionMannequinRoom_C"));
 
 	WallClass = APGWall::StaticClass();
 
-	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 480.0f));
-	OverlapBox->SetRelativeScale3D(FVector(19.25f, 19.5f, 14.75f));
+	OverlapBox->SetRelativeLocation(FVector(1450.0f, 240.0f, 0.0f));
+	OverlapBox->SetRelativeScale3D(FVector(44.5f, 20.1f, 12.75f));
 
-	OverlapBox1 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox1"));
-	OverlapBox1->SetupAttachment(OverlapBoxFolder);
-	OverlapBox1->CanCharacterStepUpOn = ECB_No;
-	OverlapBox1->SetCollisionObjectType(ECC_GameTraceChannel1);
-	OverlapBox1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	OverlapBox1->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
-	OverlapBox1->SetRelativeLocation(FVector(1255.0f, -940.0f, 695.0f));
-	OverlapBox1->SetRelativeScale3D(FVector(19.25f, 18.5f, 8.25f));
-
-	EnemySpawnPoint->SetRelativeLocation(FVector(1090.0f, -920.0f, 630.0f));
+	EnemySpawnPoint->SetRelativeLocation(FVector(2200.0f, 390.0f, -180.0f));
 
 	RoomDir->SetRelativeLocation(FVector(89.0f, 0.0f, 130.0f));
 	RoomDir->SetRelativeScale3D(FVector(3.0f, 3.0f, 3.0f));
@@ -36,12 +27,14 @@ APGChargerRoom::APGChargerRoom()
 	{
 		RoomMesh->SetChildActorClass(RoomMeshRef.Class);
 	}
-	RoomMesh->SetRelativeLocation(FVector(946.5f, -300.1f, -25.1f));
+	RoomMesh->SetRelativeLocation(FVector(1430.0f, 240.6f, -446.0f));
+	RoomMesh->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
 
 	PhotoSpotConfigs = {
-		{ PhotoID::Room_Charger, 10, FVector(730.0f, 400.0f, 480.0f) },
-		{ PhotoID::Room_Charger, 10, FVector(820.0f, 10.0f, 590.0f) },
-		{ PhotoID::Room_Charger, 10, FVector(1430.0f, -1290.0f, 620.0f) }
+		{ PhotoID::Room_Charger, 10, FVector(1595.0f, 390.0f, -340.0f) },
+		{ PhotoID::Room_Charger, 10, FVector(2130.0f, 730.0f, -250.0f), FRotator::ZeroRotator, FVector(128.0f, 32.0f, 32.0f) },
+		{ PhotoID::Room_Charger, 10, FVector(2475.0f, 590.0f, -195.0f), FRotator(0.0f, 22.5f, 0.0f), FVector(32.0f, 128.0f, 64.0f) },
+		{ PhotoID::Room_Charger, 10, FVector(2410.0f, -200.0f, -250.0f), FRotator::ZeroRotator, FVector(160.0f, 32.0f, 64.0f) }
 	};
 }
 

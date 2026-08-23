@@ -26,7 +26,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> RoomMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "OverlapBox")
-	TObjectPtr<UBoxComponent> OverlapBox1;
 };
