@@ -61,6 +61,48 @@ void APGHUD::Init()
 		return;
 	}
 
+
+	if (!MessageManagerWidget)
+	{
+		MessageManagerWidget = CreateWidget<UPGMessageManagerWidget>(PC, MessageManagerWidgetClass);
+	}
+
+	if (MessageManagerWidget && !MessageManagerWidget->IsInViewport())
+	{
+		UE_LOG(LogTemp, Log, TEXT("APGHUD::Init: MessageManagerWidget created successfully."));
+		MessageManagerWidget->AddToViewport();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("APGHUD::Init: Failed to create MessageManagerWidget! Check MessageManagerWidgetClass in HUD Blueprint."));
+	}
+
+	if (!InteractionProgressWidget)
+	{
+		InteractionProgressWidget = CreateWidget<UPGInteractionProgressWidget>(PC, InteractionProgressWidgetClass);
+	}
+
+	if (!CrosshairWidget)
+	{
+		CrosshairWidget = CreateWidget<UPGCrosshairWidget>(PC, CrosshairWidgetClass);
+	}
+
+	if (CrosshairWidget && !CrosshairWidget->IsInViewport())
+	{
+		CrosshairWidget->AddToViewport();
+	}
+
+	if (!BackgroundBlurWidget)
+	{
+		BackgroundBlurWidget = CreateWidget<UPGBackgroundBlurWidget>(PC, BackgroundBlurWidgetClass);
+	}
+
+	if (BackgroundBlurWidget && !BackgroundBlurWidget->IsInViewport())
+	{
+		BackgroundBlurWidget->AddToViewport(-1);
+	}
+
+	/*
 	if (!IndicatorContainerWidget)
 	{
 		IndicatorContainerWidget = CreateWidget<UPGIndicatorContainerWidget>(PC, IndicatorContainerWidgetClass);
@@ -156,6 +198,7 @@ void APGHUD::Init()
 
 	TryBindExits();
 	TrySubscribeCapturedSubjects();
+	*/
 }
 
 void APGHUD::TryBindExits()
