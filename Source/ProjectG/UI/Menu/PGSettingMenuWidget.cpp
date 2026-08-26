@@ -538,7 +538,9 @@ void UPGSettingMenuWidget::PopulateLanguages()
             continue;
         }
 
-        const FString DisplayName = Culture->GetNativeLanguage();
+        const FString DisplayName = CultureName.Contains(TEXT("-"))
+            ? Culture->GetNativeName()
+            : Culture->GetNativeLanguage();
         if (DisplayName.IsEmpty() || LanguageNameToCulture.Contains(DisplayName))
         {
             continue;
