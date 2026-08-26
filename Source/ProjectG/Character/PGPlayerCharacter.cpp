@@ -117,7 +117,7 @@ APGPlayerCharacter::APGPlayerCharacter()
 	EquippedItemMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 
 	HeadlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadlightMesh"));
-	HeadlightMesh->SetupAttachment(FirstPersonCamera);
+	HeadlightMesh->SetupAttachment(GetMesh(), TEXT("headSocket"));
 	HeadlightMesh->SetVisibility(true);
 	HeadlightMesh->SetOwnerNoSee(true);
 	HeadlightMesh->bCastHiddenShadow = false;
