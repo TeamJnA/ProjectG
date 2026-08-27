@@ -17,6 +17,7 @@ enum class EMicMode : uint8
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMicModeChanged, EMicMode, NewMicMode);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMicToggleChanged, bool, bMicToggled);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInitialVoiceSetupComplete);
 
 /**
  * Custom GameUserSettings that persists all user preferences.
@@ -97,6 +98,11 @@ public:
 	// -------- Voice Setup --------
 	UPROPERTY(Config, BlueprintReadWrite, Category = "Settings|VoiceSetup")
 	bool bHasCompletedInitialVoiceSetup = false;
+
+	void SetInitialVoiceSetupCompleted();
+
+	UPROPERTY(BlueprintAssignable)
+	FOnInitialVoiceSetupComplete OnInitialVoiceSetupComplete;
 
 	// -------- Helper --------
 	/** Apply mic CVar settings only */

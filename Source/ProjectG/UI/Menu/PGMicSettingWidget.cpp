@@ -356,7 +356,7 @@ void UPGMicSettingWidget::OnConfirmButtonClicked()
 {
 	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
 	{
-		Settings->bHasCompletedInitialVoiceSetup = true;
+		Settings->SetInitialVoiceSetupCompleted();
 		ApplyAndSaveSettings();
 	}
 

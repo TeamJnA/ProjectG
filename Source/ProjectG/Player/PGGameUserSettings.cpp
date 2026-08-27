@@ -113,6 +113,12 @@ int32 UPGGameUserSettings::MicModeToIndex(EMicMode Mode)
 	}
 }
 
+void UPGGameUserSettings::SetInitialVoiceSetupCompleted()
+{
+	bHasCompletedInitialVoiceSetup = true;
+	OnInitialVoiceSetupComplete.Broadcast();
+}
+
 void UPGGameUserSettings::ApplyMicSettings()
 {
 	IConsoleManager& CM = IConsoleManager::Get();

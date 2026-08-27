@@ -104,6 +104,7 @@ void UPGSettingMenuWidget::NativeOnInitialized()
         TextureQualityOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnTextureQualityChanged);
     }
 
+    /*
     if (ShadowQualityOption)
     {
         ShadowQualityOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnShadowQualityChanged);
@@ -113,6 +114,7 @@ void UPGSettingMenuWidget::NativeOnInitialized()
     {
         ViewDistanceQualityOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnViewDistanceQualityChanged);
     }
+    */
 
     if (AntiAliasingQualityOption)
     {
@@ -657,6 +659,7 @@ void UPGSettingMenuWidget::OnMicVolumeChanged(float NewValue)
 // -------- Video --------
 void UPGSettingMenuWidget::OnOverallGraphicsChanged(int32 OptionIndex)
 {
+    /*
     UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
     if (!Settings)
     {
@@ -670,6 +673,9 @@ void UPGSettingMenuWidget::OnOverallGraphicsChanged(int32 OptionIndex)
 
     // Update individual switchers to reflect the overall change
     RefreshIndividualQualityWidgets();
+    */
+    OnTextureQualityChanged(OptionIndex);
+    OnAntiAliasingQualityChanged(OptionIndex);
 }
 
 void UPGSettingMenuWidget::RefreshIndividualQualityWidgets()
@@ -685,6 +691,7 @@ void UPGSettingMenuWidget::RefreshIndividualQualityWidgets()
         TextureQualityOption->SetSelectedIndex(Settings->GetTextureQuality(), false);
     }
 
+    /*
     if (ShadowQualityOption)
     {
         ShadowQualityOption->SetSelectedIndex(Settings->GetShadowQuality(), false);
@@ -694,6 +701,7 @@ void UPGSettingMenuWidget::RefreshIndividualQualityWidgets()
     {
         ViewDistanceQualityOption->SetSelectedIndex(Settings->GetViewDistanceQuality(), false);
     }
+    */
 
     if (AntiAliasingQualityOption)
     {
@@ -711,6 +719,7 @@ void UPGSettingMenuWidget::OnTextureQualityChanged(int32 OptionIndex)
     }
 }
 
+/*
 void UPGSettingMenuWidget::OnShadowQualityChanged(int32 OptionIndex)
 {
     if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
@@ -730,6 +739,7 @@ void UPGSettingMenuWidget::OnViewDistanceQualityChanged(int32 OptionIndex)
         UpdateOverallGraphicsIndicator();
     }
 }
+*/
 
 void UPGSettingMenuWidget::OnAntiAliasingQualityChanged(int32 OptionIndex)
 {

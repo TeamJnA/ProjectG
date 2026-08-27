@@ -86,16 +86,14 @@ void APGInteractableGimmickArmorStand::OnHit(UPrimitiveComponent* HitComp, AActo
 
         CollapseArmor(OtherActor->GetInstigator());
     }
-    else if (OtherActor->IsA<APGPlayerCharacter>())
-    {
-        CollapseArmor(OtherActor);
-    }
 }
 
 void APGInteractableGimmickArmorStand::OnRep_CollisionDisabled()
 {
     ArmorBoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
     CameraShakeSource->Start();
+
+    HighlightOff();
 }
 
 void APGInteractableGimmickArmorStand::CollapseArmor(AActor* Investigator)
@@ -128,9 +126,6 @@ void APGInteractableGimmickArmorStand::CollapseArmor(AActor* Investigator)
     {
         UE_LOG(LogPGInteractableGimmick, Warning, TEXT("ArmorStand: No SoundManager"));
     }
-
-    // Highlight ²ô±â
-    HighlightOff();
 }
 
 void APGInteractableGimmickArmorStand::HighlightOn() const
@@ -148,13 +143,13 @@ void APGInteractableGimmickArmorStand::HighlightOn() const
 
 void APGInteractableGimmickArmorStand::HighlightOff() const
 {
-    //for (UStaticMeshComponent* ArmorMesh : ArmorMeshs)
-    //{
-    //    if (ArmorMesh)
-    //    {
-    //        ArmorMesh->SetRenderCustomDepth(false);
-    //    }
-    //}
+    for (UStaticMeshComponent* ArmorMesh : ArmorMeshs)
+    {
+        if (ArmorMesh)
+        {
+            ArmorMesh->SetRenderCustomDepth(false);
+        }
+    }
 }
 
 FInteractionInfo APGInteractableGimmickArmorStand::GetInteractionInfo() const

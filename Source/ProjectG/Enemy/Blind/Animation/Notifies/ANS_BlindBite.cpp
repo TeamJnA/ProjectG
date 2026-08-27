@@ -19,7 +19,7 @@ void UANS_BlindBite::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 		AActor* OwnerActor = MeshComp->GetOwner();
 		if (APGBlindCharacter* Blind = Cast<APGBlindCharacter>(OwnerActor))
 		{
-			UE_LOG(LogEnemyANS, Log, TEXT("BlineBite Notify Ended"));
+			UE_LOG(LogEnemyANS, Log, TEXT("BlineBite Notify Start"));
 			Blind->NotifyAttackStart();
 		}
 	}
