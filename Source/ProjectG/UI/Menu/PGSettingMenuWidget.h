@@ -122,11 +122,11 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UPGOptionSwitcherWidget> TextureQualityOption;
 
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UPGOptionSwitcherWidget> ShadowQualityOption;
+    // UPROPERTY(meta = (BindWidget))
+    // TObjectPtr<UPGOptionSwitcherWidget> ShadowQualityOption;
 
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UPGOptionSwitcherWidget> ViewDistanceQualityOption;
+    // UPROPERTY(meta = (BindWidget))
+    // TObjectPtr<UPGOptionSwitcherWidget> ViewDistanceQualityOption;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UPGOptionSwitcherWidget> AntiAliasingQualityOption;
@@ -181,11 +181,11 @@ private:
     UFUNCTION()
     void OnTextureQualityChanged(int32 OptionIndex);
 
-    UFUNCTION()
-    void OnShadowQualityChanged(int32 OptionIndex);
+    // UFUNCTION()
+    // void OnShadowQualityChanged(int32 OptionIndex);
 
-    UFUNCTION()
-    void OnViewDistanceQualityChanged(int32 OptionIndex);
+    // UFUNCTION()
+    // void OnViewDistanceQualityChanged(int32 OptionIndex);
 
     UFUNCTION()
     void OnAntiAliasingQualityChanged(int32 OptionIndex);
