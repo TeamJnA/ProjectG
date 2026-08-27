@@ -8,6 +8,17 @@
 void UANS_GhostAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
+
+	if (MeshComp)
+	{
+		AActor* OwnerActor = MeshComp->GetOwner();
+		if (APGGhostCharacter* Ghost = Cast<APGGhostCharacter>(OwnerActor))
+		{
+			UE_LOG(LogPGAnimNotify, Log, TEXT("ANS_GhostAttack::NotifyBegin: Notify attack Start"));
+
+			Ghost->NotifyAttackStart();
+		}
+	}
 }
 
 void UANS_GhostAttack::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
