@@ -40,6 +40,8 @@ public:
 	virtual FVector GetPhotoTargetLocation() const override;
 	// ~IPhotographableInterface
 
+	void NotifyAttackStart() override;
+
 	virtual bool ShouldPlayLocalSound() const override;
 	void PlaySoundToTargetPlayer(FName SoundName);
 

@@ -39,7 +39,7 @@ public:
 	TObjectPtr<UBoxComponent> TouchCollider;
 
 	// Notify target actor that attack is Start/finished
-	void NotifyAttackStart();
+	virtual void NotifyAttackStart();
 	void NotifyAttackEnded();
 
 	// IGenericTeamAgentInterface~

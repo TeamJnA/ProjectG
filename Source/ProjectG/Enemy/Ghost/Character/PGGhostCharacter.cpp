@@ -156,6 +156,11 @@ FVector APGGhostCharacter::GetPhotoTargetLocation() const
     return GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
 }
 
+void APGGhostCharacter::NotifyAttackStart()
+{
+    PlaySoundToTargetPlayer(AttackFinishSound);
+}
+
 bool APGGhostCharacter::ShouldPlayLocalSound() const
 {
     if (!TargetPlayerState)
