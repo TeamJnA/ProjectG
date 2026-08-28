@@ -3,20 +3,33 @@
 
 #include "Gimmick/InteractableGimmick/PGInteractableGimmickPhone.h"
 #include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
+#include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerState.h"
 #include "Sound/PGSoundManager.h"
+#include "Utils/PGPhotoSubjectRegistry.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 
 
 APGInteractableGimmickPhone::APGInteractableGimmickPhone()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
+
+	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	ReceiverMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ReceiverMesh"));
-	ReceiverMesh->SetupAttachment(StaticMesh);
+	ReceiverMesh->SetupAttachment(RootComponent);
 	ReceiverMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	InteractCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractCollision"));
+	InteractCollision->SetupAttachment(RootComponent);
+	InteractCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	InteractCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	InteractCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	InteractCollision->SetGenerateOverlapEvents(false);
 
 	EnterSphere = CreateDefaultSubobject<USphereComponent>(TEXT("EnterSphere"));
 	EnterSphere->SetupAttachment(RootComponent);
@@ -24,6 +37,7 @@ APGInteractableGimmickPhone::APGInteractableGimmickPhone()
 	EnterSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	EnterSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	EnterSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	EnterSphere->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Overlap);
 	EnterSphere->SetGenerateOverlapEvents(true);
 	
 	ExitSphere = CreateDefaultSubobject<USphereComponent>(TEXT("ExitSphere"));
@@ -35,6 +49,40 @@ APGInteractableGimmickPhone::APGInteractableGimmickPhone()
 	ExitSphere->SetGenerateOverlapEvents(true);
 }
 
+FPhotoSubjectInfo APGInteractableGimmickPhone::GetPhotoSubjectInfo() const
+{
+	return FPhotoSubjectInfo(PhotoID::Phone, 10);
+}
+
+FVector APGInteractableGimmickPhone::GetPhotoTargetLocation() const
+{
+	return GetActorLocation() + FVector(0.0f, 0.0f, 20.0f);
+}
+
+void APGInteractableGimmickPhone::RefreshPhotoRegistration()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>();
+	if (!Registry)
+	{
+		return;
+	}
+
+	if (IsPhotographable())
+	{
+		Registry->RegisterSubject(this);
+	}
+	else
+	{
+		Registry->UnregisterSubject(this);
+	}
+}
+
 void APGInteractableGimmickPhone::BeginPlay()
 {
 	Super::BeginPlay();
@@ -42,6 +90,7 @@ void APGInteractableGimmickPhone::BeginPlay()
 	if (HasAuthority())
 	{
 		EnterSphere->OnComponentBeginOverlap.AddDynamic(this, &APGInteractableGimmickPhone::OnEnterSphereBeginOverlap);
+		EnterSphere->OnComponentEndOverlap.AddDynamic(this, &APGInteractableGimmickPhone::OnEnterSphereEndOverlap);
 		ExitSphere->OnComponentBeginOverlap.AddDynamic(this, &APGInteractableGimmickPhone::OnExitSphereBeginOverlap);
 		ExitSphere->OnComponentEndOverlap.AddDynamic(this, &APGInteractableGimmickPhone::OnExitSphereEndOverlap);
 	}
@@ -52,6 +101,7 @@ void APGInteractableGimmickPhone::BeginPlay()
 	}
 
 	ApplyPhoneVisualState();
+	RefreshPhotoRegistration();
 }
 
 void APGInteractableGimmickPhone::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -59,6 +109,15 @@ void APGInteractableGimmickPhone::EndPlay(const EEndPlayReason::Type EndPlayReas
 	GetWorldTimerManager().ClearTimer(RingStartDelayHandle);
 	GetWorldTimerManager().ClearTimer(RingTimerHandle);
 	GetWorldTimerManager().ClearTimer(ShakeTimerHandle);
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
+		{
+			Registry->UnregisterSubject(this);
+		}
+	}
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -67,6 +126,33 @@ void APGInteractableGimmickPhone::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APGInteractableGimmickPhone, PhoneState);
 	DOREPLIFETIME(APGInteractableGimmickPhone, RingCount);
+}
+
+void APGInteractableGimmickPhone::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!bHangUpPlaying || !ReceiverMesh)
+	{
+		SetActorTickEnabled(false);
+		return;
+	}
+
+	HangUpElapsed += DeltaTime;
+	const float Alpha = FMath::Clamp(HangUpElapsed / FMath::Max(HangUpDuration, 0.01f), 0.0f, 1.0f);
+	// 감속 보간
+	const float Eased = 1.0f - FMath::Square(1.0f - Alpha);
+
+	ReceiverMesh->SetRelativeLocation(FMath::Lerp(ReceiverStartLocation, HangUpRelativeLocation, Eased));
+	ReceiverMesh->SetRelativeRotation(FMath::Lerp(ReceiverStartRotation.Quaternion(), HangUpRelativeRotation.Quaternion(), Eased));
+
+	if (Alpha >= 1.0f)
+	{
+		ReceiverMesh->SetRelativeLocation(HangUpRelativeLocation);
+		ReceiverMesh->SetRelativeRotation(HangUpRelativeRotation);
+		bHangUpPlaying = false;
+		SetActorTickEnabled(false);
+	}
 }
 
 void APGInteractableGimmickPhone::GimmickInteract(AActor* Investigator)
@@ -100,11 +186,24 @@ FInteractionInfo APGInteractableGimmickPhone::GetInteractionInfo() const
 
 FText APGInteractableGimmickPhone::GetInteractionText() const
 {
-	return (PhoneState == EPGPhoneState::Ringing) ? AnswerText : FText::GetEmpty();
+	return (PhoneState == EPGPhoneState::Ringing) ? OffText : FText::GetEmpty();
 }
 
 void APGInteractableGimmickPhone::OnEnterSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// Blind 접근시 Idle로 전환
+	if (Cast<APGBlindCharacter>(OtherActor))
+	{
+		bBlindInEnterSphere = true;
+		StopRinging();
+		return;
+	}
+
 	if (PhoneState != EPGPhoneState::Idle)
 	{
 		return;
@@ -127,8 +226,26 @@ void APGInteractableGimmickPhone::OnEnterSphereBeginOverlap(UPrimitiveComponent*
 	TryStartRinging();
 }
 
+void APGInteractableGimmickPhone::OnEnterSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (Cast<APGBlindCharacter>(OtherActor))
+	{
+		bBlindInEnterSphere = false;
+	}
+}
+
 void APGInteractableGimmickPhone::OnExitSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	APGPlayerState* PS = GetValidPlayerState(OtherActor);
 	if (IsValidPhoneTarget(PS))
 	{
@@ -138,6 +255,11 @@ void APGInteractableGimmickPhone::OnExitSphereBeginOverlap(UPrimitiveComponent* 
 
 void APGInteractableGimmickPhone::OnExitSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	APGPlayerState* PS = GetValidPlayerState(OtherActor);
 	if (!PS)
 	{
@@ -161,6 +283,12 @@ void APGInteractableGimmickPhone::TryStartRinging()
 		return;
 	}
 
+	// 적이 근처에 있으면 시작 x
+	if (bBlindInEnterSphere)
+	{
+		return;
+	}
+
 	if (GetWorldTimerManager().IsTimerActive(RingStartDelayHandle))
 	{
 		return;
@@ -176,8 +304,8 @@ void APGInteractableGimmickPhone::StartRinging()
 		return;
 	}
 
-	// 딜레이 후 플레이어가 없으면 취소
-	if (PlayersInRange.IsEmpty())
+	// 딜레이 후 플레이어가 없으면 취소 + Blind가 있으면 취소
+	if (bBlindInEnterSphere || PlayersInRange.IsEmpty())
 	{
 		return;
 	}
@@ -216,7 +344,7 @@ void APGInteractableGimmickPhone::PlayRingSound()
 
 void APGInteractableGimmickPhone::StopRinging()
 {
-	if (!HasAuthority())
+	if (!HasAuthority() || PhoneState == EPGPhoneState::Disabled)
 	{
 		return;
 	}
@@ -237,39 +365,46 @@ void APGInteractableGimmickPhone::SetPhoneState(EPGPhoneState NewState)
 	OnRep_PhoneState();
 }
 
-bool APGInteractableGimmickPhone::IsValidPhoneTarget(const APGPlayerState* PS) const
-{
-	return PS && !PS->IsDead() && PS->IsInGame();
-}
-
-APGPlayerState* APGInteractableGimmickPhone::GetValidPlayerState(AActor* OtherActor) const
-{
-	APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(OtherActor);
-	return Player ? Player->GetPlayerState<APGPlayerState>() : nullptr;
-}
-
 void APGInteractableGimmickPhone::OnRep_PhoneState()
 {
 	ApplyPhoneVisualState();
+	RefreshPhotoRegistration();
 	APGPlayerCharacter::NotifyLocalPlayerStareRefresh(this);
+
+	if (PhoneState == EPGPhoneState::Disabled)
+	{
+		StartHangUpMotion();
+	}
 }
 
 void APGInteractableGimmickPhone::ApplyPhoneVisualState()
 {
-	if (!StaticMesh)
+	const bool bRinging = (PhoneState == EPGPhoneState::Ringing);
+
+	if (InteractCollision)
 	{
-		return;
+		InteractCollision->SetCollisionResponseToChannel(ECC_Visibility, bRinging ? ECR_Block : ECR_Ignore);
 	}
 
-	const bool bRinging = (PhoneState == EPGPhoneState::Ringing);
-	StaticMesh->SetCollisionResponseToChannel(ECC_Visibility, bRinging ? ECR_Block : ECR_Ignore);
-	StaticMesh->SetRenderCustomDepth(bRinging);
-	if (bRinging)
+	if (StaticMesh)
 	{
-		StaticMesh->SetCustomDepthStencilValue(0);
-		ReceiverMesh->SetCustomDepthStencilValue(0);
+		StaticMesh->SetRenderCustomDepth(bRinging);
+		if (bRinging)
+		{
+			StaticMesh->SetCustomDepthStencilValue(0);
+		}
 	}
-	else
+
+	if (ReceiverMesh)
+	{
+		ReceiverMesh->SetRenderCustomDepth(bRinging);
+		if (bRinging)
+		{
+			ReceiverMesh->SetCustomDepthStencilValue(0);
+		}
+	}
+
+	if (!bRinging)
 	{
 		GetWorldTimerManager().ClearTimer(ShakeTimerHandle);
 		StopShake();
@@ -293,4 +428,30 @@ void APGInteractableGimmickPhone::StopShake()
 	{
 		MIDReceiver->SetScalarParameterValue(ShakeParameterName, 0.0f);
 	}
+}
+
+void APGInteractableGimmickPhone::StartHangUpMotion()
+{
+	if (!ReceiverMesh || bHangUpPlaying)
+	{
+		return;
+	}
+
+	ReceiverStartLocation = ReceiverMesh->GetRelativeLocation();
+	ReceiverStartRotation = ReceiverMesh->GetRelativeRotation();
+	HangUpElapsed = 0.0f;
+	bHangUpPlaying = true;
+
+	SetActorTickEnabled(true);
+}
+
+bool APGInteractableGimmickPhone::IsValidPhoneTarget(const APGPlayerState* PS) const
+{
+	return PS && !PS->IsDead() && PS->IsInGame();
+}
+
+APGPlayerState* APGInteractableGimmickPhone::GetValidPlayerState(AActor* OtherActor) const
+{
+	APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(OtherActor);
+	return Player ? Player->GetPlayerState<APGPlayerState>() : nullptr;
 }

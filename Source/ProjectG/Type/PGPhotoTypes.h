@@ -10,7 +10,7 @@
 
 // 십의 자리: 종류
 // Monster: 11x=Blind, 12x=Charger, 13x=Ghost
-// Anomaly: 21x=Mannequin, 22x=WindowBlood
+// Anomaly: 21x=Mannequin, 22x=WindowBlood, 23x=RockingChair, 24x=Phone
 
 // 일의 자리: 상태
 // Monster: x1=Exploring, x2=Investigating, x3=Chasing, x4=Attacking
@@ -36,6 +36,8 @@ namespace PhotoID
     // Anomaly
     constexpr int32 Mannequin = 210;
     constexpr int32 WindowBlood = 220;
+    constexpr int32 RockingChair = 230;
+    constexpr int32 Phone = 240;
     
     // Room
     constexpr int32 Room_Charger = 310;
@@ -61,8 +63,8 @@ namespace PhotoID
     // 값 변경시 피사체 클래스의 GetPhotoSubjectInfo도 수정 필요
     inline const TArray<FPhotoIDEntry>& GetAllEntries()
     {
-        // 멀티 최대 125
-        // 싱글 최대 115
+        // 멀티 최대 145
+        // 싱글 최대 135
         static const TArray<FPhotoIDEntry> Entries = 
         {
             { Blind_Exploring, 10, false },
@@ -75,6 +77,8 @@ namespace PhotoID
             { Ghost_Exploring, 10, false },
             { Ghost_Chasing, 10, false },
             { WindowBlood, 10, false },
+            { RockingChair, 10, false },
+            { Phone, 10, false },
             { Room_Charger, 10, false },
             { Room_Blind, 10, false },
             { Room_Ghost, 10, false },
@@ -111,32 +115,32 @@ namespace PhotoGrade
 
         const float Ratio = (float)Score / (float)MaxScore;
 
-        // Single: 103.5(105), Multi: 112.5(115)
-        if (Ratio >= 0.9)
+        // Single: 118.8(120), Multi: 127.6(130)
+        if (Ratio >= 0.88)
         {
             return EGrade::S;
         }
 
-        // Single: 73.6(75), Multi: 80
-        if (Ratio >= 0.64)
+        // Single: 87.75(90), Multi: 94.25(95)
+        if (Ratio >= 0.65)
         {
             return EGrade::A;
         }
 
-        // Single: 46(50), Multi: 50
-        if (Ratio >= 0.4)
+        // Single: 59.4(60), Multi: 63.8(65)
+        if (Ratio >= 0.44)
         {
             return EGrade::B;
         }
 
-        // Single: 27.6(30), Multi: 30
-        if (Ratio >= 0.24)
+        // Single: 36.45(40), Multi: 39.15(40)
+        if (Ratio >= 0.27)
         {
             return EGrade::C;
         }
 
-        // Single: 18.4(20), Multi: 20
-        if (Ratio >= 0.16)
+        // Single: 17.55(20), Multi: 18.85(20)
+        if (Ratio >= 0.13)
         {
             return EGrade::D;
         }
