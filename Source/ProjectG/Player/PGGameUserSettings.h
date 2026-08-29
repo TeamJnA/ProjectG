@@ -104,6 +104,17 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnInitialVoiceSetupComplete OnInitialVoiceSetupComplete;
 
+	// -------- Video --------
+	/*
+	* Resolution, Anti-Aliasing, GlobalIllumination 세 가지를 설정
+	*/
+	FORCEINLINE int32 GetOverallVideoQualityLevel() const { return OverallVideoQualityLevel; }
+	void SetAndApplyOverallVideoQuality(int32 Value);
+
+	UPROPERTY(Config)
+	int32 OverallVideoQualityLevel;
+
+
 	// -------- Helper --------
 	/** Apply mic CVar settings only */
 	void ApplyMicSettings();
