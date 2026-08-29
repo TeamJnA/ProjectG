@@ -202,6 +202,7 @@ void APGLevelGenerator::SpawnStartRoom()
 	}
 
 	// for test ~
+	/*
 	APGItemActor* TestChainKey = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
 	if (UPGItemData* ChainKeyData = GI->GetItemDataByKey("ChainKey"))
 	{
@@ -236,7 +237,7 @@ void APGLevelGenerator::SpawnStartRoom()
 		TestFuse1->InitWithData(FuseItemData1);
 	}
 	TestFuse1->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
-	/*
+	
 	APGItemActor* TestMatch0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
 	if (UPGItemData* MatchItemData0 = GI->GetItemDataByKey("Match"))
 	{
