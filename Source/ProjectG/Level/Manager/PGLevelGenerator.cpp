@@ -449,6 +449,9 @@ void APGLevelGenerator::SpawnSingleLoopCorridor(TSubclassOf<APGMasterRoom> LoopC
 			}
 		}
 	}
+
+	// Gimmick spawn(ArmorStand)
+	AddGimmickSpawnPoints(LoopRoom);
 }
 
 /*
@@ -761,6 +764,7 @@ void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitP
 		// Props(Hide prop, waiter stand) points 
 		// 방 별로 포인트를 하나씩 가져오고, 그 포인트를 제거 후 나머지 포인터들 HideProp생성용으로 가져옴.
 		AddPropsSpawnPoint(RoomToCheck);
+		AddGimmickSpawnPoints(RoomToCheck);
 
 		// Glass bottle spawn points
 		if (const USceneComponent* GlassBottleSpawnPointFolder = RoomToCheck->GetGlassBottleSpawnPointsFolder())
@@ -859,7 +863,8 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	SpawnSearchables();
 	SpawnItems();
 	//SpawnMannequins();
-	SpawnArmorStands();
+	//SpawnArmorStands();
+	SpawnGimmicks();
 	SpawnFuseBoxes();
 	SpawnWaiterStands();
 	SpawnHideProps();
@@ -1068,6 +1073,29 @@ void APGLevelGenerator::AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck
 		{
 			HidePropSpawnPointsList.Add(ShuffledPoints[i]);
 		}
+	}
+}
+
+void APGLevelGenerator::AddGimmickSpawnPoints(TObjectPtr<APGMasterRoom> Room)
+{
+	if (!IsValid(Room))
+	{
+		return;
+	}
+
+	TArray<USceneComponent*> GimmickSpawnPoints;
+	Room->GetGimmickSpawnPointsFolder()->GetChildrenComponents(true, GimmickSpawnPoints);
+
+	for (USceneComponent* SpawnPoint : GimmickSpawnPoints)
+	{
+		UPGGimmickSpawnPoint* Point = Cast<UPGGimmickSpawnPoint>(SpawnPoint);
+		if (!Point)
+		{
+			continue;
+		}
+
+		GimmickSpawnPointsMap.FindOrAdd(Point->GetGimmickType()).Points.Add(Point);
+		GimmickPointOwnerRooms.Add(Point, Room);
 	}
 }
 
@@ -1543,6 +1571,122 @@ void APGLevelGenerator::SpawnArmorStands()
 	}
 }
 
+void APGLevelGenerator::SpawnGimmicks()
+{
+	EnsureRoomDepthMap();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (const TPair<EGimmickType, FGimmickSpawnConfig>& ConfigPair : GimmickConfigMap)
+	{
+		const FGimmickSpawnConfig& Config = ConfigPair.Value;
+		if (!Config.GimmickClass || Config.SpawnCount <= 0)
+		{
+			continue;
+		}
+
+		FGimmickSpawnPointList* Found = GimmickSpawnPointsMap.Find(ConfigPair.Key);
+		if (!Found || Found->Points.IsEmpty())
+		{
+			continue;
+		}
+
+		// 후보 구성 (depth 필터)
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>> Candidates;
+		for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Found->Points)
+		{
+			const TObjectPtr<APGMasterRoom>* OwnerRoom = GimmickPointOwnerRooms.Find(Point);
+			if (!OwnerRoom || !IsValid(*OwnerRoom))
+			{
+				continue;
+			}
+
+			const int32* Depth = RoomDepths.Find(*OwnerRoom);
+			if (Config.MinRoomDepth > 0 && (!Depth || *Depth < Config.MinRoomDepth))
+			{
+				continue;
+			}
+
+			Candidates.Add(Point);
+		}
+
+		// 필터가 너무 빡세서 개수가 모자라면 필터 무시하고 원본 사용
+		if (Candidates.Num() < Config.SpawnCount)
+		{
+			Candidates = Found->Points;
+		}
+
+		const int32 SpawnCount = FMath::Min(Config.SpawnCount, Candidates.Num());
+		if (SpawnCount <= 0)
+		{
+			continue;
+		}
+
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>> Selected;
+		Selected.Reserve(SpawnCount);
+
+		// 1) 첫 번째는 랜덤
+		const int32 Index = Seed.RandRange(0, Candidates.Num() - 1);
+		Selected.Add(Candidates[Index]);
+		Candidates.RemoveAtSwap(Index);
+
+		// 2) 이후는 선택된 것들과의 최소 거리가 최대인 포인트
+		while (Selected.Num() < SpawnCount && Candidates.Num() > 0)
+		{
+			// 선택된 지점들 기준 홉 거리 테이블
+			TArray<TMap<TObjectPtr<APGMasterRoom>, int32>> DistTables;
+			DistTables.SetNum(Selected.Num());
+			for (int32 s = 0; s < Selected.Num(); ++s)
+			{
+				BuildHopDistanceFrom(GimmickPointOwnerRooms[Selected[s]], DistTables[s]);
+			}
+
+			int32 BestIndex = 0;
+			float BestScore = -1.0f;
+
+			for (int32 i = 0; i < Candidates.Num(); ++i)
+			{
+				const TObjectPtr<APGMasterRoom> Room = GimmickPointOwnerRooms[Candidates[i]];
+				const FVector Location = Candidates[i]->GetComponentLocation();
+
+				float MinEffective = TNumericLimits<float>::Max();
+
+				for (int32 s = 0; s < Selected.Num(); ++s)
+				{
+					const int32* Hop = DistTables[s].Find(Room);
+
+					// 홉 수를 방 간격으로 환산 (미도달이면 사실상 무한대)
+					const float HopDist = Hop
+						? (*Hop) * ApproxRoomSpacing
+						: TNumericLimits<float>::Max();
+
+					const float WorldDist = FVector::Dist(Location, Selected[s]->GetComponentLocation());
+
+					// 둘 중 더 가깝다고 판정하는 쪽을 채택
+					MinEffective = FMath::Min(MinEffective, FMath::Min(HopDist, WorldDist));
+				}
+
+				if (MinEffective > BestScore)
+				{
+					BestIndex = i;
+					BestScore = MinEffective;
+				}
+			}
+
+			Selected.Add(Candidates[BestIndex]);
+			Candidates.RemoveAtSwap(BestIndex);
+		}
+
+		// 3) 스폰
+		for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Selected)
+		{
+			GetWorld()->SpawnActor<AActor>(
+				Config.GimmickClass, Point->GetComponentTransform(), SpawnParams);
+		}
+	}
+}
+
 void APGLevelGenerator::SpawnFuseBoxes()
 {
 	UWorld* World = GetWorld();
@@ -1992,6 +2136,36 @@ void APGLevelGenerator::BuildRoomDepthMap()
 				RoomDepths.Add(Neighbor, CurrentDepth + 1);
 				RoomParents.Add(Neighbor, Current);
 				Queue.Enqueue(Neighbor);
+			}
+		}
+	}
+}
+
+void APGLevelGenerator::BuildHopDistanceFrom(APGMasterRoom* Origin, TMap<TObjectPtr<APGMasterRoom>, int32>& OutDist) const
+{
+	OutDist.Reset();
+	if (!IsValid(Origin))
+	{
+		return;
+	}
+
+	TQueue<TObjectPtr<APGMasterRoom>> Queue;
+	OutDist.Add(Origin, 0);
+	Queue.Enqueue(Origin);
+
+	TObjectPtr<APGMasterRoom> Current;
+	while (Queue.Dequeue(Current))
+	{
+		const int32 NextDist = OutDist[Current] + 1;
+		if (const TArray<TObjectPtr<APGMasterRoom>>* Neighbors = RoomGraph.Find(Current))
+		{
+			for (const TObjectPtr<APGMasterRoom>& Next : *Neighbors)
+			{
+				if (IsValid(Next) && !OutDist.Contains(Next))
+				{
+					OutDist.Add(Next, NextDist);
+					Queue.Enqueue(Next);
+				}
 			}
 		}
 	}

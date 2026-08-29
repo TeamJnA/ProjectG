@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Level/Searchable/PGSearchableSpawnPoint.h"
+#include "Level/Misc/Component/PGGimmickSpawnPoint.h"
 #include "PGLevelGenerator.generated.h"
 
 class APGMasterRoom;
@@ -19,6 +20,31 @@ class APGHideProp;
 class APGSearchableBase;
 class APGSearchableSlotBase;
 class UPGBloodstainSpawnPoint;
+
+USTRUCT()
+struct FGimmickSpawnConfig
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AActor> GimmickClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	int32 SpawnCount = 2;
+
+	// 이 depth 미만의 방은 후보에서 제외 (0이면 제한 x)
+	UPROPERTY(EditDefaultsOnly)
+	int32 MinRoomDepth = 0;
+};
+
+USTRUCT()
+struct FGimmickSpawnPointList
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<TObjectPtr<UPGGimmickSpawnPoint>> Points;
+};
 
 UCLASS()
 class PROJECTG_API APGLevelGenerator : public AActor
@@ -55,6 +81,7 @@ protected:
 	APGMasterRoom* GetBranchRoot(APGMasterRoom* Room) const;
 	void SpawnMannequins();
 	void SpawnArmorStands();
+	void SpawnGimmicks();
 	void SpawnFuseBoxes();
 	void SpawnWaiterStands();
 	void SpawnHideProps();
@@ -68,6 +95,7 @@ protected:
 
 	void EnsureRoomDepthMap();
 	void BuildRoomDepthMap();
+	void BuildHopDistanceFrom(APGMasterRoom* Origin, TMap<TObjectPtr<APGMasterRoom>, int32>& OutDist) const;
 	const APGMasterRoom* FindFarthestRoom() const;
 	const APGMasterRoom* FindMiddleDistanceRoom(const FVector& AvoidLocation = FVector::ZeroVector) const;
 	void ComputeExplorationWaypoints();
@@ -77,11 +105,21 @@ protected:
 
 private:
 	void AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck);
+	void AddGimmickSpawnPoints(TObjectPtr<APGMasterRoom> Room);
 
 	TObjectPtr<USceneComponent> GetRandomPointFromSpecificListAndRemove(TArray<TObjectPtr<USceneComponent>>& TargetList, TArray<TObjectPtr<USceneComponent>>& TargetRemoveList);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Level Generation", meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TSubclassOf<APGMasterRoom>> RoomClassMap;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gimmick", meta = (AllowPrivateAccess = "true"))
+	TMap<EGimmickType, FGimmickSpawnConfig> GimmickConfigMap;
+
+	UPROPERTY()
+	TMap<EGimmickType, FGimmickSpawnPointList> GimmickSpawnPointsMap;
+
+	UPROPERTY()
+	TMap<TObjectPtr<UPGGimmickSpawnPoint>, TObjectPtr<APGMasterRoom>> GimmickPointOwnerRooms;
 
 	TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>> RoomGraph;
 
@@ -172,6 +210,9 @@ private:
 
 	UPROPERTY()
 	FRandomStream Seed;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gimmick", meta = (AllowPrivateAccess = "true"))
+	float ApproxRoomSpacing = 2000.0f;
 
 	float GenerationStartTime;
 	float MaxGenerateTime;

@@ -14,7 +14,7 @@ APGChargerRoom::APGChargerRoom()
 	WallClass = APGWall::StaticClass();
 
 	OverlapBox->SetRelativeLocation(FVector(1450.0f, 240.0f, 0.0f));
-	OverlapBox->SetRelativeScale3D(FVector(44.5f, 20.1f, 12.75f));
+	OverlapBox->SetRelativeScale3D(FVector(44.5f, 20.1f, 13.25f));
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(2200.0f, 390.0f, -180.0f));
 

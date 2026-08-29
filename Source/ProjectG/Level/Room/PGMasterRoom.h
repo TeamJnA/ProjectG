@@ -26,6 +26,7 @@ public:
 	FORCEINLINE const USceneComponent* GetSearchableSpawnPointsFolder() const { return SearchableSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetArmorStandSpawnPointsFolder() const { return ArmorStandSpawnPointsFolder; }
+	FORCEINLINE const USceneComponent* GetGimmickSpawnPointsFolder() const { return GimmickSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetFuseBoxSpawnPointsFolder() const { return FuseBoxSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetPropsSpawnPointsFolder() const { return PropsSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetGlassBottleSpawnPointsFolder() const { return GlassBottleSpawnPointsFolder; }
@@ -68,6 +69,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> ArmorStandSpawnPointsFolder;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
+	TObjectPtr<USceneComponent> GimmickSpawnPointsFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> FuseBoxSpawnPointsFolder;
