@@ -119,21 +119,6 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UPGOptionSwitcherWidget> OverallGraphicsOption;
 
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UPGOptionSwitcherWidget> TextureQualityOption;
-
-    // UPROPERTY(meta = (BindWidget))
-    // TObjectPtr<UPGOptionSwitcherWidget> ShadowQualityOption;
-
-    // UPROPERTY(meta = (BindWidget))
-    // TObjectPtr<UPGOptionSwitcherWidget> ViewDistanceQualityOption;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UPGOptionSwitcherWidget> AntiAliasingQualityOption;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UPGOptionSwitcherWidget> VSyncOption;
-
     // -------- Widget Switcher --------
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
@@ -175,23 +160,14 @@ private:
     void OnMicVolumeChanged(float NewValue);
 
     // -------- Video Callbacks --------
+    /*
+                    상 중 하
+    Resolution 60 80 100
+    안티앨리어싱 종류 1(FXAA) 2(TAA) 4(TSR)
+    GlobalIllumination Quality Option 1 2 3
+    */
     UFUNCTION()
     void OnOverallGraphicsChanged(int32 OptionIndex);
-
-    UFUNCTION()
-    void OnTextureQualityChanged(int32 OptionIndex);
-
-    // UFUNCTION()
-    // void OnShadowQualityChanged(int32 OptionIndex);
-
-    // UFUNCTION()
-    // void OnViewDistanceQualityChanged(int32 OptionIndex);
-
-    UFUNCTION()
-    void OnAntiAliasingQualityChanged(int32 OptionIndex);
-
-    UFUNCTION()
-    void OnVSyncChanged(int32 OptionIndex);
 
     // -------- WidgetSwitch Callbacks --------
     UFUNCTION()
@@ -229,12 +205,6 @@ private:
 
     /** Apply and Save current settings to PGGameUserSettings */ 
     void ApplyAndSaveSettings();
-
-    /** After OverallGraphics changes, update individual quality widgets to reflect new values */
-    void RefreshIndividualQualityWidgets();
-
-    /** Update OverallGraphics indicator after individual quality change */
-    void UpdateOverallGraphicsIndicator();
 
     /** Convert mic sensitivity CVar value to normalized slider value (0~1) */
     float MicSensitivityToSlider(float Threshold) const;

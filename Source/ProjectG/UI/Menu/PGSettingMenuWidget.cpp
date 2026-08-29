@@ -99,33 +99,6 @@ void UPGSettingMenuWidget::NativeOnInitialized()
         OverallGraphicsOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnOverallGraphicsChanged);
     }
 
-    if (TextureQualityOption)
-    {
-        TextureQualityOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnTextureQualityChanged);
-    }
-
-    /*
-    if (ShadowQualityOption)
-    {
-        ShadowQualityOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnShadowQualityChanged);
-    }
-
-    if (ViewDistanceQualityOption)
-    {
-        ViewDistanceQualityOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnViewDistanceQualityChanged);
-    }
-    */
-
-    if (AntiAliasingQualityOption)
-    {
-        AntiAliasingQualityOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnAntiAliasingQualityChanged);
-    }
-
-    if (VSyncOption)
-    {
-        VSyncOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnVSyncChanged);
-    }
-
     if (GamePlayOptionButton)
     {
         GamePlayOptionButton->OnClicked.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnGamePlayOptionButtonClicked);
@@ -438,27 +411,15 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
     Settings->ApplyMicSettings();
 
     // Video
-    // Overall quality: 0=Low, 1=Medium, 2=High, 3=Ultra, 4(-1) = Custom
+    // 
+    // Overall quality: 0=Low, 1=Medium, 2=High
     if (OverallGraphicsOption)
     {
-        int32 OverallLevel = Settings->GetOverallScalabilityLevel();
-        if (OverallLevel >= 0)
-        {
-            OverallGraphicsOption->SetSelectedIndex(OverallLevel, false);
-        }
-        else
-        {
-            OverallGraphicsOption->SetSelectedIndex(4, false);
-        }
-    }
+        const int32 OverallLevel = Settings->GetOverallVideoQualityLevel();
 
-    // Refresh each video options
-    RefreshIndividualQualityWidgets();
+        Settings->SetAndApplyOverallVideoQuality(OverallLevel);
 
-    // VSync: 0=OFF, 1=ON
-    if (VSyncOption)
-    {
-        VSyncOption->SetSelectedIndex(Settings->IsVSyncEnabled() ? 1 : 0, false);
+        OverallGraphicsOption->SetSelectedIndex(OverallLevel);
     }
 
     // Find/Set available devices and Load saved device settings
@@ -659,118 +620,10 @@ void UPGSettingMenuWidget::OnMicVolumeChanged(float NewValue)
 // -------- Video --------
 void UPGSettingMenuWidget::OnOverallGraphicsChanged(int32 OptionIndex)
 {
-    /*
-    UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
-    if (!Settings)
-    {
-        UE_LOG(LogTemp, Error, TEXT("no gamesetting"));
-        return;
-    }
-
-    // SetOverallScalabilityLevel sets all individual qualities at once
-    Settings->SetOverallScalabilityLevel(OptionIndex);
-    ApplyAndSaveSettings();
-
-    // Update individual switchers to reflect the overall change
-    RefreshIndividualQualityWidgets();
-    */
-    OnTextureQualityChanged(OptionIndex);
-    OnAntiAliasingQualityChanged(OptionIndex);
-}
-
-void UPGSettingMenuWidget::RefreshIndividualQualityWidgets()
-{
-    UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings();
-    if (!Settings)
-    {
-        return;
-    }
-
-    if (TextureQualityOption)
-    {
-        TextureQualityOption->SetSelectedIndex(Settings->GetTextureQuality(), false);
-    }
-
-    /*
-    if (ShadowQualityOption)
-    {
-        ShadowQualityOption->SetSelectedIndex(Settings->GetShadowQuality(), false);
-    }
-
-    if (ViewDistanceQualityOption)
-    {
-        ViewDistanceQualityOption->SetSelectedIndex(Settings->GetViewDistanceQuality(), false);
-    }
-    */
-
-    if (AntiAliasingQualityOption)
-    {
-        AntiAliasingQualityOption->SetSelectedIndex(Settings->GetAntiAliasingQuality(), false);
-    }
-}
-
-void UPGSettingMenuWidget::OnTextureQualityChanged(int32 OptionIndex)
-{
     if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
     {
-        Settings->SetTextureQuality(OptionIndex);
+        Settings->SetAndApplyOverallVideoQuality(OptionIndex);
         ApplyAndSaveSettings();
-        UpdateOverallGraphicsIndicator();
-    }
-}
-
-/*
-void UPGSettingMenuWidget::OnShadowQualityChanged(int32 OptionIndex)
-{
-    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
-    {
-        Settings->SetShadowQuality(OptionIndex);
-        ApplyAndSaveSettings();
-        UpdateOverallGraphicsIndicator();
-    }
-}
-
-void UPGSettingMenuWidget::OnViewDistanceQualityChanged(int32 OptionIndex)
-{
-    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
-    {
-        Settings->SetViewDistanceQuality(OptionIndex);
-        ApplyAndSaveSettings();
-        UpdateOverallGraphicsIndicator();
-    }
-}
-*/
-
-void UPGSettingMenuWidget::OnAntiAliasingQualityChanged(int32 OptionIndex)
-{
-    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
-    {
-        Settings->SetAntiAliasingQuality(OptionIndex);
-        ApplyAndSaveSettings();
-        UpdateOverallGraphicsIndicator();
-    }
-}
-
-void UPGSettingMenuWidget::OnVSyncChanged(int32 OptionIndex)
-{
-    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
-    {
-        Settings->SetVSyncEnabled(OptionIndex == 1);
-        ApplyAndSaveSettings();
-    }
-}
-
-void UPGSettingMenuWidget::UpdateOverallGraphicsIndicator()
-{
-    if (!OverallGraphicsOption)
-    {
-        return;
-    }
-
-    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
-    {
-        int32 OverallLevel = Settings->GetOverallScalabilityLevel();
-        OverallGraphicsOption->SetSelectedIndex(OverallLevel >= 0 ? OverallLevel : 4, false);
     }
 }
 

@@ -16,6 +16,7 @@ UPGGameUserSettings::UPGGameUserSettings()
 	, MicInputGain(3.0f)
 	, MicMode(EMicMode::OpenMic)
 	, bMicToggleActive(false)
+	, OverallVideoQualityLevel(2)
 {
 }
 
@@ -117,6 +118,30 @@ void UPGGameUserSettings::SetInitialVoiceSetupCompleted()
 {
 	bHasCompletedInitialVoiceSetup = true;
 	OnInitialVoiceSetupComplete.Broadcast();
+}
+
+void UPGGameUserSettings::SetAndApplyOverallVideoQuality(int32 Value)
+{
+	check(Value >= 0 && Value <= 2);
+
+	OverallVideoQualityLevel = Value;
+
+	// Value(0, 1, 2)에 따른 설정값 매핑 배열
+	const float ResolutionScales[3] = { 75.0f, 85.0f, 100.0f };
+	const int32 AAMethods[3] = { 1, 4, 4 }; // 1: FXAA, 2: TAA, 4: TSR
+	const int32 GIQualities[3] = { 1, 2, 3 };
+
+	// Resolution (해상도 스케일) 설정
+	SetResolutionScaleValueEx(ResolutionScales[Value]);
+
+	// 안티앨리어싱 종류 (FXAA / TAA / TSR) 설정
+	if (IConsoleVariable* AAMethodCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("r.AntiAliasingMethod")))
+	{
+		AAMethodCVar->Set(AAMethods[Value], ECVF_SetByGameSetting);
+	}
+
+	// Global Illumination (글로벌 일루미네이션) 퀄리티 설정
+	SetGlobalIlluminationQuality(GIQualities[Value]);
 }
 
 void UPGGameUserSettings::ApplyMicSettings()
