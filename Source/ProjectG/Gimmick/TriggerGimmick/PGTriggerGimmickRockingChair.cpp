@@ -84,7 +84,8 @@ void APGTriggerGimmickRockingChair::Tick(float DeltaTime)
 	if (HalfCycle != LastCreakHalfCycle)
 	{
 		LastCreakHalfCycle = HalfCycle;
-		PlayCreakSound();
+		PlayCreakSound(CreakSoundFlipFlopState);
+		CreakSoundFlipFlopState = !CreakSoundFlipFlopState;
 	}
 }
 
@@ -121,10 +122,17 @@ void APGTriggerGimmickRockingChair::OnRep_IsRocking()
 	}
 }
 
-void APGTriggerGimmickRockingChair::PlayCreakSound()
+void APGTriggerGimmickRockingChair::PlayCreakSound(bool FlipFlop)
 {
 	if (APGSoundManager* SM = SoundManager)
 	{
-		SM->PlaySoundLocally(CreakSoundName, GetActorLocation());
+		if (FlipFlop)
+		{
+			SM->PlaySoundLocally(CreakSoundName, GetActorLocation());
+		}
+		else
+		{
+			SM->PlaySoundLocally(Creak2SoundName, GetActorLocation());
+		}
 	}
 }
