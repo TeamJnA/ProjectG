@@ -11,7 +11,8 @@ enum class EGimmickType : uint8
 {
     ArmorStand   UMETA(DisplayName = "Armor Stand"),
     Phone        UMETA(DisplayName = "Phone"),
-    RockingChair UMETA(DisplayName = "Rocking Chair")
+    RockingChair UMETA(DisplayName = "Rocking Chair"),
+    Window		 UMETA(DisplayName = "Window")
 };
 
 /**

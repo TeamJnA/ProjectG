@@ -39,12 +39,6 @@ APGMasterRoom::APGMasterRoom()
 	SearchableSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("SearchableSpawnPointsFolder"));
 	SearchableSpawnPointsFolder->SetupAttachment(RootComponent);
 
-	MannequinSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("MannequinSpawnPointsFolder"));
-	MannequinSpawnPointsFolder->SetupAttachment(RootComponent);
-
-	ArmorStandSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ArmorStandSpawnPointsFolder"));
-	ArmorStandSpawnPointsFolder->SetupAttachment(RootComponent);
-
 	GimmickSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GimmickSpawnPointsFolder"));
 	GimmickSpawnPointsFolder->SetupAttachment(RootComponent);
 
@@ -80,4 +74,53 @@ APGMasterRoom::APGMasterRoom()
 	EnemySpawnPoint->bHiddenInGame = true;
 
 	WallClass = APGWall::StaticClass();
+}
+
+void APGMasterRoom::GetOverlapBoxesForClass(TSubclassOf<APGMasterRoom> RoomClass, const FTransform& InRoomTransform, TArray<FPGRoomOverlapBox>& OutBoxes)
+{
+	OutBoxes.Reset();
+
+	if (!RoomClass)
+	{
+		return;
+	}
+
+	const APGMasterRoom* CDO = RoomClass->GetDefaultObject<APGMasterRoom>();
+	if (!CDO || !CDO->OverlapBoxFolder)
+	{
+		return;
+	}
+
+	// CDO는 컴포넌트가 등록되지 않아 AttachChildren이 비어있음 (Parent는 Children을 모르고 Children만 Parent를 아는 상태(SetupAttatchment))
+	// 소유 컴포넌트를 전부 체크 후 AttachParent 체인을 거슬러 OverlapBoxFolder 하위인지 확인
+	TArray<UBoxComponent*> BoxComps;
+	CDO->GetComponents<UBoxComponent>(BoxComps);
+
+	for (const UBoxComponent* BoxComp : BoxComps)
+	{
+		FTransform LocalTransform = FTransform::Identity;
+		bool bUnderOverlapFolder = false;
+
+		for (const USceneComponent* Current = BoxComp; Current && Current != CDO->Root; Current = Current->GetAttachParent())
+		{
+			if (Current == CDO->OverlapBoxFolder)
+			{
+				bUnderOverlapFolder = true;
+			}
+
+			LocalTransform = LocalTransform * Current->GetRelativeTransform();
+		}
+
+		if (!bUnderOverlapFolder)
+		{
+			continue;
+		}
+
+		const FTransform WorldTransform = LocalTransform * InRoomTransform;
+
+		FPGRoomOverlapBox& Out = OutBoxes.AddDefaulted_GetRef();
+		Out.Location = WorldTransform.GetLocation();
+		Out.Rotation = WorldTransform.GetRotation();
+		Out.HalfExtent = BoxComp->GetUnscaledBoxExtent() * WorldTransform.GetScale3D();
+	}
 }

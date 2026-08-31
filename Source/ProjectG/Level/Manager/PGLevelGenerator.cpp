@@ -6,7 +6,6 @@
 #include "Engine/World.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "Algo/RandomShuffle.h"
 
 #include "Components/SceneComponent.h"
 #include "Components/BoxComponent.h"
@@ -28,15 +27,48 @@
 
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Enemy/Charger/Character/PGChargerCharacter.h"
-#include "Gimmick/TriggerGimmick/PGTriggerGimmickMannequin.h"
 #include "Gimmick/InteractableGimmick/PGFuseBox.h"
-#include "Gimmick/InteractableGimmick/PGInteractableGimmickArmorStand.h"
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameMode.h"
 #include "Game/PGGameState.h"
 #include "Type/PGDifficultyTypes.h"
 
+
+namespace
+{
+	struct FPGScopedTimer
+	{
+		FPGScopedTimer(const TCHAR* InName)
+			: Name(InName), Accum(nullptr), Start(FPlatformTime::Seconds()) {
+		}
+
+		// 누적용
+		FPGScopedTimer(double& InAccum)
+			: Name(nullptr), Accum(&InAccum), Start(FPlatformTime::Seconds()) {
+		}
+
+		~FPGScopedTimer()
+		{
+			const double Elapsed = FPlatformTime::Seconds() - Start;
+			if (Accum)
+			{
+				*Accum += Elapsed;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("[LGPerf] %s: %.2f ms"), Name, Elapsed * 1000.0);
+			}
+		}
+
+		const TCHAR* Name;
+		double* Accum;
+		double Start;
+	};
+}
+
+#define PG_SCOPED_TIMER(Name) FPGScopedTimer ScopedTimer_##Name(TEXT(#Name))
+#define PG_ACCUM_TIMER(Var) FPGScopedTimer ScopedTimer_Accum(Var)
 
 // Sets default values
 APGLevelGenerator::APGLevelGenerator()
@@ -66,12 +98,6 @@ APGLevelGenerator::APGLevelGenerator()
 	if (ChargerCharacterRef.Class)
 	{
 		ChargerCharacter = ChargerCharacterRef.Class;
-	}
-
-	static ConstructorHelpers::FClassFinder<AActor> MannequinRef(TEXT("/Game/ProjectG/Gimmick/Trigger/Mannequin/BP_PGTriggerGimmickMannequin.BP_PGTriggerGimmickMannequin_C"));
-	if (MannequinRef.Succeeded())
-	{
-		MannequinClass = MannequinRef.Class;
 	}
 
 	// Set base Searchable Class Map
@@ -193,13 +219,8 @@ void APGLevelGenerator::SpawnStartRoom()
 		}
 	}
 
-	// TODO : for test ~ need to remove
-	if (const USceneComponent* ArmorStandSpawnPointFolder = NewRoom->GetArmorStandSpawnPointsFolder())
-	{
-		const TArray<USceneComponent*>& ArmorStandSpawnPoints = ArmorStandSpawnPointFolder->GetAttachChildren();
-		ArmorStandSpawnPointsList.Reserve(ArmorStandSpawnPointsList.Num() + ArmorStandSpawnPoints.Num());
-		ArmorStandSpawnPointsList.Append(ArmorStandSpawnPoints);
-	}
+	// Gimmick spawn(Window)
+	AddGimmickSpawnPoints(NewRoom);
 
 	// for test ~
 	/*
@@ -258,20 +279,6 @@ void APGLevelGenerator::SpawnStartRoom()
 		TestMatch2->InitWithData(MatchItemData2);
 	}
 	TestMatch2->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
-
-	APGItemActor* TestFuse0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* FuseItemData0 = GI->GetItemDataByKey("Fuse"))
-	{
-		TestFuse0->InitWithData(FuseItemData0);
-	}
-	TestFuse0->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
-
-	APGItemActor* TestFuse1 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
-	if (UPGItemData* FuseItemData1 = GI->GetItemDataByKey("Fuse"))
-	{
-		TestFuse1->InitWithData(FuseItemData1);
-	}
-	TestFuse1->SetActorRelativeLocation(FVector(2765.0f, 490.0f, 1700.0f));
 
 	APGItemActor* TestReviveKit0 = World->SpawnActor<APGItemActor>(APGItemActor::StaticClass(), SpawnParams);
 	if (UPGItemData* ReviveKitItemData0 = GI->GetItemDataByKey("ReviveKit"))
@@ -457,12 +464,12 @@ void APGLevelGenerator::SpawnSingleLoopCorridor(TSubclassOf<APGMasterRoom> LoopC
 
 /*
 * 다음 Room 생성
-* RoomAmount > 14(초기단계) -> 복도형 Room만 생성
-* RoomAmount <= 14 -> 모든 Room 클래스 중 선택하여 생성
-* Room 생성 후 Overlap 검사
 */
 void APGLevelGenerator::SpawnNextRoom()
 {
+	PG_ACCUM_TIMER(AccumSpawnNextRoom);
+	RoomSpawnAttempts++;
+
 	if (bIsGenerationStopped)
 	{
 		UE_LOG(LogTemp, Log, TEXT("LG::SpawnNextRoom: Generation stopped"));
@@ -475,25 +482,103 @@ void APGLevelGenerator::SpawnNextRoom()
 		return;
 	}
 
-	const int32 SelectedIndex = SelectExitPointWithBalancing();
-	if (SelectedIndex == INDEX_NONE)
+	TSubclassOf<APGMasterRoom> NewRoomClass = GetNextRoomClass();
+	if (!NewRoomClass)
 	{
+		UE_LOG(LogTemp, Error, TEXT("LG::SpawnNextRoom: No room class for RoomAmount(%d)."), RoomAmount);
 		return;
 	}
+
+	EnsureRoomDepthMap();
+
+	TArray<float> Weights;
+	BuildExitPointWeights(Weights);
+
+	float TotalWeight = 0.0f;
+	int32 RemainingCount = 0;
+	for (float W : Weights)
+	{
+		TotalWeight += W;
+		if (W > 0.0f)
+		{
+			RemainingCount++;
+		}
+	}
+
+	int32 SelectedIndex = INDEX_NONE;
+	FTransform SpawnTransform;
+
+	// 시도한 후보는 가중치를 0으로 만들어 다시 뽑히지 않음
+	while (RemainingCount > 0)
+	{
+		const int32 CandidateIndex = PickWeightedIndex(Weights, TotalWeight);
+		if (CandidateIndex == INDEX_NONE)
+		{
+			break;
+		}
+
+		TotalWeight -= Weights[CandidateIndex];
+		Weights[CandidateIndex] = 0.0f;
+		RemainingCount--;
+
+		const TObjectPtr<USceneComponent> Candidate = ExitPointsList[CandidateIndex];
+		if (!Candidate)
+		{
+			continue;
+		}
+
+		const FTransform CandidateTransform(Candidate->GetComponentRotation(), Candidate->GetComponentLocation());
+		if (WouldRoomOverlap(NewRoomClass, CandidateTransform))
+		{
+			RoomOverlapFails++;
+			continue;
+		}
+
+		SelectedIndex = CandidateIndex;
+		SpawnTransform = CandidateTransform;
+		break;
+	}
+
+	// 모든 ExitPoint를 확인했으나 놓을 자리가 없음 -> 즉시 재생성
+	if (SelectedIndex == INDEX_NONE)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::SpawnNextRoom: No valid exit point for '%s'. Regenerating."), *GetNameSafe(NewRoomClass));
+
+		bIsGenerationStopped = true;
+		World->GetTimerManager().ClearAllTimersForObject(this);
+
+		FTimerHandle RegenerateTimerHandle;
+		World->GetTimerManager().SetTimer(RegenerateTimerHandle, this, &APGLevelGenerator::ReGenerateLevel, 1.0f, false);
+		return;
+	}
+
 	const TObjectPtr<USceneComponent> SelectedExitPoint = ExitPointsList[SelectedIndex];
-	//const TObjectPtr<USceneComponent> SelectedExitPoint = ExitPointsList[UKismetMathLibrary::RandomIntegerFromStream(Seed, ExitPointsList.Num())];
-	const FTransform SpawnTransform(SelectedExitPoint->GetComponentRotation(), SelectedExitPoint->GetComponentLocation());
 
-	FActorSpawnParameters spawnParams;
-	spawnParams.Owner = this;
-	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	APGMasterRoom* NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, SpawnParams);
+	if (!NewRoom)
+	{
+		UE_LOG(LogTemp, Error, TEXT("LG::SpawnNextRoom: SpawnActor failed for '%s'."), *GetNameSafe(NewRoomClass));
+		ScheduleNextRoomSpawn();
+		return;
+	}
+
+	RegisterSpawnedRoom(SelectedExitPoint, NewRoom);
+}
+
+/*
+* 현재 RoomAmount에 맞는 RoomClass return
+*/
+TSubclassOf<APGMasterRoom> APGLevelGenerator::GetNextRoomClass() const
+{
 	FName TargetRoomName = TEXT("");
 
-	APGMasterRoom* NewRoom = nullptr;
 	// Corridor 2
 	if (RoomAmount > 21)
-{
+	{
 		TargetRoomName = TEXT("Room1");
 	}
 	// Corridor_Dark 2
@@ -596,37 +681,23 @@ void APGLevelGenerator::SpawnNextRoom()
 	{
 		TargetRoomName = TEXT("ElevatorRoom");
 	}
-	TSubclassOf<APGMasterRoom> NewRoomClass = RoomClassMap[TargetRoomName];
-	NewRoom = World->SpawnActor<APGMasterRoom>(NewRoomClass, SpawnTransform, spawnParams);
 
-	check(NewRoom);
-
-	TWeakObjectPtr<APGLevelGenerator> WeakThis(this);
-	TWeakObjectPtr<APGMasterRoom> WeakNewRoom(NewRoom);
-	TWeakObjectPtr<USceneComponent> WeakSelectedExitPoint(SelectedExitPoint);
-
-	World->GetTimerManager().SetTimerForNextTick(
-		FTimerDelegate::CreateLambda([WeakThis, WeakSelectedExitPoint, WeakNewRoom]()
-		{
-			if (WeakThis.IsValid() && WeakSelectedExitPoint.IsValid() && WeakNewRoom.IsValid())
-			{
-				WeakThis->CheckOverlap(WeakSelectedExitPoint.Get(), WeakNewRoom.Get());
-			}
-		}));
+	const TSubclassOf<APGMasterRoom>* Found = RoomClassMap.Find(TargetRoomName);
+	return Found ? *Found : nullptr;
 }
 
-int32 APGLevelGenerator::SelectExitPointWithBalancing()
+/*
+* 가중치 기반으로 평평하게 ExitPoint 선택
+* Depth가 깊을수록 가중치 작음 -> Depth가 얕은 포인트 선택
+*/
+void APGLevelGenerator::BuildExitPointWeights(TArray<float>& OutWeights) const
 {
-	if (ExitPointsList.IsEmpty())
-	{
-		return INDEX_NONE;
-	}
+	OutWeights.Reset();
+	OutWeights.Reserve(ExitPointsList.Num());
 
-	EnsureRoomDepthMap();
-
+	int32 MaxDepth = 0;
 	TArray<int32> Depths;
 	Depths.Reserve(ExitPointsList.Num());
-	int32 MaxDepth = 0;
 
 	for (const TObjectPtr<USceneComponent>& ExitPoint : ExitPointsList)
 	{
@@ -636,34 +707,222 @@ int32 APGLevelGenerator::SelectExitPointWithBalancing()
 		MaxDepth = FMath::Max(MaxDepth, Depth);
 	}
 
-	TArray<float> Weights;
-	Weights.Reserve(ExitPointsList.Num());
-	float TotalWeight = 0.0f;
-
 	for (int32 Depth : Depths)
 	{
-		const float W = FMath::Pow((float)(MaxDepth - Depth + 1), 2.0f);
-		Weights.Add(W);
-		TotalWeight += W;
+		OutWeights.Add(FMath::Pow((float)(MaxDepth - Depth + 1), 3.0f));
 	}
+}
 
+int32 APGLevelGenerator::PickWeightedIndex(const TArray<float>& Weights, float TotalWeight) const
+{
 	if (TotalWeight <= 0.0f)
 	{
-		return UKismetMathLibrary::RandomIntegerFromStream(Seed, ExitPointsList.Num());
+		return INDEX_NONE;
 	}
 
 	const float Roll = UKismetMathLibrary::RandomFloatInRangeFromStream(Seed, 0.0f, TotalWeight);
 	float Accumulated = 0.0f;
-	for (int32 i = 0; i < ExitPointsList.Num(); ++i)
+
+	for (int32 i = 0; i < Weights.Num(); ++i)
 	{
 		Accumulated += Weights[i];
-		if (Roll <= Accumulated)
+		if (Roll <= Accumulated && Weights[i] > 0.0f)
 		{
 			return i;
 		}
 	}
 
-	return ExitPointsList.Num() - 1;
+	// 부동소수 오차로 못 찾은 경우 -> 남아 있는 마지막 후보
+	for (int32 i = Weights.Num() - 1; i >= 0; --i)
+	{
+		if (Weights[i] > 0.0f)
+		{
+			return i;
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+/*
+* Room cpp에 정의해둔 Overlap Box 정보를 가져와 Overlap 체크
+*/
+bool APGLevelGenerator::WouldRoomOverlap(TSubclassOf<APGMasterRoom> RoomClass, const FTransform& InSpawnTransform) const
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return true;
+	}
+
+	TArray<FPGRoomOverlapBox> Boxes;
+	APGMasterRoom::GetOverlapBoxesForClass(RoomClass, InSpawnTransform, Boxes);
+
+	if (Boxes.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LG::WouldRoomOverlap: No overlap box found on CDO of '%s'."), *GetNameSafe(RoomClass));
+		return false;
+	}
+
+	for (const FPGRoomOverlapBox& Box : Boxes)
+	{
+		const bool bIsOverlapping = World->OverlapAnyTestByObjectType(
+			Box.Location,
+			Box.Rotation,
+			FCollisionObjectQueryParams(ECollisionChannel::ECC_GameTraceChannel1),
+			FCollisionShape::MakeBox(Box.HalfExtent));
+
+		if (bIsOverlapping)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
+* 검증완료된 SelectedPoint에 Room spawn
+*/
+void APGLevelGenerator::RegisterSpawnedRoom(TObjectPtr<USceneComponent> InSelectedExitPoint, TObjectPtr<APGMasterRoom> NewRoom)
+{
+	if (!InSelectedExitPoint || !NewRoom)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+#if !UE_BUILD_SHIPPING
+	// CDO 기반 사전 판정이 실제 인스턴스와 일치하는지 검증 (BP에서 추가한 박스 누락 감지)
+	{
+		TArray<FPGRoomOverlapBox> CDOBoxes;
+		APGMasterRoom::GetOverlapBoxesForClass(NewRoom->GetClass(), NewRoom->GetActorTransform(), CDOBoxes);
+
+		int32 InstanceBoxCount = 0;
+		if (const USceneComponent* Folder = NewRoom->GetOverlapBoxFolder())
+		{
+			TArray<USceneComponent*> Child;
+			Folder->GetChildrenComponents(true, Child);
+			for (USceneComponent* C : Child)
+			{
+				if (Cast<UBoxComponent>(C))
+				{
+					InstanceBoxCount++;
+				}
+			}
+		}
+
+		if (CDOBoxes.Num() != InstanceBoxCount)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[LGPerf] Box count mismatch on %s: CDO=%d Instance=%d"),
+				*GetNameSafe(NewRoom->GetClass()), CDOBoxes.Num(), InstanceBoxCount);
+		}
+	}
+#endif
+
+	// add to room graph
+	APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(InSelectedExitPoint->GetOwner());
+	if (ParentRoom)
+	{
+		RoomGraph.FindOrAdd(ParentRoom).Add(NewRoom);
+		RoomGraph.FindOrAdd(NewRoom).Add(ParentRoom);
+		bRoomDepthsDirty = true;
+	}
+
+	DoorPointsList.Add(InSelectedExitPoint);
+	ExitPointsList.Remove(InSelectedExitPoint);
+
+	RoomAmount--;
+
+	NewRoom->SpawnPhotoSpots();
+	NewRoom->SpawnSwingProps(Seed);
+
+	// ExitPoints
+	if (const USceneComponent* LatestRoomExitPointsFolder = NewRoom->GetExitPointsFolder())
+	{
+		const TArray<USceneComponent*>& LatestRoomExitPoints = LatestRoomExitPointsFolder->GetAttachChildren();
+		ExitPointsList.Reserve(ExitPointsList.Num() + LatestRoomExitPoints.Num());
+		ExitPointsList.Append(LatestRoomExitPoints);
+	}
+
+	// Searchable Points
+	if (const USceneComponent* SearchableSpawnPointsFolder = NewRoom->GetSearchableSpawnPointsFolder())
+	{
+		const TArray<USceneComponent*>& SearchableSpawnPoints = SearchableSpawnPointsFolder->GetAttachChildren();
+		SearchableSpawnPointsList.Reserve(SearchableSpawnPointsList.Num() + SearchableSpawnPoints.Num());
+		SearchableSpawnPointsList.Append(SearchableSpawnPoints);
+	}
+
+	// FuseBox points
+	if (const USceneComponent* FuseBoxSpawnPointFolder = NewRoom->GetFuseBoxSpawnPointsFolder())
+	{
+		const TArray<USceneComponent*>& FuseBoxSpawnPoints = FuseBoxSpawnPointFolder->GetAttachChildren();
+		FuseBoxSpawnPointsList.Reserve(FuseBoxSpawnPointsList.Num() + FuseBoxSpawnPoints.Num());
+		FuseBoxSpawnPointsList.Append(FuseBoxSpawnPoints);
+	}
+
+	// Props(Hide prop, waiter stand) points
+	// 방 별로 포인트를 하나씩 가져오고, 그 포인트를 제거 후 나머지 포인트들 HideProp 생성용으로 가져옴.
+	AddPropsSpawnPoint(NewRoom);
+	AddGimmickSpawnPoints(NewRoom);
+
+	// Glass bottle spawn points
+	if (const USceneComponent* GlassBottleSpawnPointFolder = NewRoom->GetGlassBottleSpawnPointsFolder())
+	{
+		const TArray<USceneComponent*>& GlassBottleSpawnPoints = GlassBottleSpawnPointFolder->GetAttachChildren();
+		GlassBottleSpawnPointsList.Reserve(GlassBottleSpawnPointsList.Num() + GlassBottleSpawnPoints.Num());
+		GlassBottleSpawnPointsList.Append(GlassBottleSpawnPoints);
+	}
+
+	// Deco spawn
+	if (const USceneComponent* BloodstainSpawnPointFolder = NewRoom->GetBloodstainSpawnPointsFolder())
+	{
+		const TArray<USceneComponent*>& BloodSpawnPoints = BloodstainSpawnPointFolder->GetAttachChildren();
+		BloodstainSpawnPointsList.Reserve(BloodstainSpawnPointsList.Num() + BloodSpawnPoints.Num());
+		for (USceneComponent* SpawnPoint : BloodSpawnPoints)
+		{
+			if (UPGBloodstainSpawnPoint* Point = Cast<UPGBloodstainSpawnPoint>(SpawnPoint))
+			{
+				BloodstainSpawnPointsList.Add(Point);
+			}
+		}
+	}
+
+	if (RoomAmount > 0)
+	{
+		ScheduleNextRoomSpawn();
+	}
+	else
+	{
+		SetupLevelEnvironment();
+	}
+}
+
+/*
+* 다음 Room 스폰 포인트 선택
+*/
+void APGLevelGenerator::ScheduleNextRoomSpawn()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// 한 프레임에 여러 방을 몰아 스폰하면 큰 히치 발생 -> 프레임당 하나씩 처리
+	TWeakObjectPtr<APGLevelGenerator> WeakThis(this);
+	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([WeakThis]()
+		{
+			if (WeakThis.IsValid())
+			{
+				WeakThis->SpawnNextRoom();
+			}
+		}));
 }
 
 int32 APGLevelGenerator::GetRoomDepthFromStart(const APGMasterRoom* Room) const
@@ -675,169 +934,6 @@ int32 APGLevelGenerator::GetRoomDepthFromStart(const APGMasterRoom* Room) const
 
 	const int32* DepthPtr = RoomDepths.Find(const_cast<APGMasterRoom*>(Room));
 	return DepthPtr ? *DepthPtr : 0;
-}
-
-/*
-* 새로운 Room에 대한 Overlap 검사 및 이후 동작
-* Overlap 새로 생성된 Room을 지우고 다시 생성
-* Overlap x -> RoomGraph에 추가 -> 부모 Room의 인접 Room으로 추가, 본인의 인접 Room으로 부모 Room 추가
-* 사용된 ExitPoint를 ExitPointsList에서 제거, DoorPointsList에 추가
-* 생성 확정된 Room의 ExitPoints를 ExitPointsList에 추가,
-* 생성 확정된 Room의 Searchable를 SearchableSpawnPointsList에 추가
-* RoomAmount가 남은 경우 다음 Room 생성
-* RoomAmount를 모두 소모한 경우 Room 생성 종료, 구조물 생성
-*/
-void APGLevelGenerator::CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck)
-{	
-	if (bIsGenerationStopped)
-	{
-		UE_LOG(LogTemp, Log, TEXT("LG::CheckOverlap: Generation stopped"));
-		if (RoomToCheck)
-		{
-			RoomToCheck->Destroy();
-		}
-		return;
-	}
-
-	if (IsLatestRoomOverlapping(RoomToCheck))
-	{
-		RoomToCheck->Destroy();
-		SpawnNextRoom();
-	}
-	else
-	{
-		// add to room graph
-		APGMasterRoom* ParentRoom = Cast<APGMasterRoom>(InSelectedExitPoint->GetOwner());
-		if (ParentRoom)
-		{
-			RoomGraph.FindOrAdd(ParentRoom).Add(RoomToCheck);
-			RoomGraph.FindOrAdd(RoomToCheck).Add(ParentRoom);
-			bRoomDepthsDirty = true;
-		}
-		DoorPointsList.Add(InSelectedExitPoint);
-		ExitPointsList.Remove(InSelectedExitPoint);
-
-		RoomAmount--;
-
-		RoomToCheck->SpawnPhotoSpots();
-		RoomToCheck->SpawnSwingProps(Seed);
-
-		// ExitPoints
-		if (const USceneComponent* LatestRoomExitPointsFolder = RoomToCheck->GetExitPointsFolder())
-		{
-			const TArray<USceneComponent*>& LatestRoomExitPoints = LatestRoomExitPointsFolder->GetAttachChildren();
-			ExitPointsList.Reserve(ExitPointsList.Num() + LatestRoomExitPoints.Num());
-			ExitPointsList.Append(LatestRoomExitPoints);
-		}
-
-		//Searchable Points
-		if (const USceneComponent* SearchableSpawnPointsFolder = RoomToCheck->GetSearchableSpawnPointsFolder())
-		{
-			const TArray<USceneComponent*>& SearchableSpawnPoints = SearchableSpawnPointsFolder->GetAttachChildren();
-			SearchableSpawnPointsList.Reserve(SearchableSpawnPointsList.Num() + SearchableSpawnPoints.Num());
-			SearchableSpawnPointsList.Append(SearchableSpawnPoints);
-		}
-
-		// MannequinPoints
-		if (const USceneComponent* MannequinSpawnPointFolder = RoomToCheck->GetMannequinSpawnPointsFolder())
-		{
-			const TArray<USceneComponent*>& MannequinSpawnPoints = MannequinSpawnPointFolder->GetAttachChildren();
-			MannequinSpawnPointsList.Reserve(MannequinSpawnPointsList.Num() + MannequinSpawnPoints.Num());
-			MannequinSpawnPointsList.Append(MannequinSpawnPoints);
-		}
-
-		// ArmorStandPoints
-		if (const USceneComponent* ArmorStandSpawnPointFolder = RoomToCheck->GetArmorStandSpawnPointsFolder())
-		{
-			const TArray<USceneComponent*>& ArmorStandSpawnPoints = ArmorStandSpawnPointFolder->GetAttachChildren();
-			ArmorStandSpawnPointsList.Reserve(ArmorStandSpawnPointsList.Num() + ArmorStandSpawnPoints.Num());
-			ArmorStandSpawnPointsList.Append(ArmorStandSpawnPoints);
-		}
-
-		// FuseBox points
-		if (const USceneComponent* FuseBoxSpawnPointFolder = RoomToCheck->GetFuseBoxSpawnPointsFolder())
-		{
-			const TArray<USceneComponent*>& FuseBoxSpawnPoints = FuseBoxSpawnPointFolder->GetAttachChildren();
-			FuseBoxSpawnPointsList.Reserve(FuseBoxSpawnPointsList.Num() + FuseBoxSpawnPoints.Num());
-			FuseBoxSpawnPointsList.Append(FuseBoxSpawnPoints);
-		}
-
-		// Props(Hide prop, waiter stand) points 
-		// 방 별로 포인트를 하나씩 가져오고, 그 포인트를 제거 후 나머지 포인터들 HideProp생성용으로 가져옴.
-		AddPropsSpawnPoint(RoomToCheck);
-		AddGimmickSpawnPoints(RoomToCheck);
-
-		// Glass bottle spawn points
-		if (const USceneComponent* GlassBottleSpawnPointFolder = RoomToCheck->GetGlassBottleSpawnPointsFolder())
-		{
-			const TArray<USceneComponent*>& GlassBottleSpawnPoints = GlassBottleSpawnPointFolder->GetAttachChildren();
-			GlassBottleSpawnPointsList.Reserve(GlassBottleSpawnPointsList.Num() + GlassBottleSpawnPoints.Num());
-			GlassBottleSpawnPointsList.Append(GlassBottleSpawnPoints);
-		}
-
-		// Deco spawn
-		if (const USceneComponent* BloodstainSpawnPointFolder = RoomToCheck->GetBloodstainSpawnPointsFolder())
-		{
-			const TArray<USceneComponent*>& BloodSpawnPoints = BloodstainSpawnPointFolder->GetAttachChildren();
-			BloodstainSpawnPointsList.Reserve(BloodstainSpawnPointsList.Num() + BloodSpawnPoints.Num());
-			for (USceneComponent* SpawnPoint : BloodSpawnPoints)
-			{
-				if (UPGBloodstainSpawnPoint* Point = Cast<UPGBloodstainSpawnPoint>(SpawnPoint))
-				{
-					BloodstainSpawnPointsList.Add(Point);
-				}
-			}
-		}
-
-		if (RoomAmount > 0)
-		{
-			SpawnNextRoom();
-		}
-		else
-		{
-			SetupLevelEnvironment();
-		}
-	}
-}
-
-/*
-* Overlap 검사 구현부
-* 생성된 Room의 OverlapBox와 충돌하는 오브젝트 확인
-*/
-bool APGLevelGenerator::IsLatestRoomOverlapping(const APGMasterRoom* RoomToCheck) const
-{
-	UWorld* World = GetWorld();
-	if (!World || !RoomToCheck)
-	{
-		return false;
-	}
-
-	if (const USceneComponent* OverlapFolder = RoomToCheck->GetOverlapBoxFolder())
-	{
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(RoomToCheck);
-
-		for (const USceneComponent* SceneComp : OverlapFolder->GetAttachChildren())
-		{
-			if (const UBoxComponent* BoxComp = Cast<UBoxComponent>(SceneComp))
-			{
-				const bool bIsOverlapping = World->OverlapAnyTestByObjectType(
-					BoxComp->GetComponentLocation(),
-					BoxComp->GetComponentQuat(),
-					FCollisionObjectQueryParams(ECollisionChannel::ECC_GameTraceChannel1),
-					BoxComp->GetCollisionShape(),
-					QueryParams
-				);
-
-				if (bIsOverlapping)
-				{
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
 }
 
 /*
@@ -857,22 +953,64 @@ void APGLevelGenerator::SetupLevelEnvironment()
 	bIsGenerationStopped = true;
 	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 
+	UE_LOG(LogTemp, Log, TEXT("[LGPerf] Rooms - Attempts:%d OverlapFails:%d SpawnNextRoom:%.1fms CheckOverlap:%.1fms Elapsed:%.2fs"),
+		RoomSpawnAttempts, RoomOverlapFails,
+		AccumSpawnNextRoom * 1000.0, AccumCheckOverlap * 1000.0,
+		GetWorld()->GetTimeSeconds() - GenerationStartTime);
+
+	PG_SCOPED_TIMER(SetupLevelEnvironment_Total);
+
 	EnsureRoomDepthMap();
 
-	CloseHoles();
-	SpawnDoors();
-	SpawnSearchables();
-	SpawnItems();
-	//SpawnMannequins();
-	//SpawnArmorStands();
-	SpawnGimmicks();
-	SpawnFuseBoxes();
-	SpawnWaiterStands();
-	SpawnHideProps();
-	SpawnBloodStains();
-	if (!SpawnEnemy())
+	{
+		int32 MinDepth = MAX_int32;
+		int32 MaxDepth = 0;
+		for (const TPair<TObjectPtr<APGMasterRoom>, int32>& Pair : RoomDepths)
+		{
+			MinDepth = FMath::Min(MinDepth, Pair.Value);
+			MaxDepth = FMath::Max(MaxDepth, Pair.Value);
+		}
+
+		TArray<int32> CountByDepth;
+		CountByDepth.SetNumZeroed(MaxDepth + 1);
+		for (const TPair<TObjectPtr<APGMasterRoom>, int32>& Pair : RoomDepths)
+		{
+			CountByDepth[Pair.Value]++;
+		}
+
+		FString Dist;
+		for (int32 d = 0; d <= MaxDepth; ++d)
+		{
+			Dist += FString::Printf(TEXT("%d:%d "), d, CountByDepth[d]);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("[LGPerf] Depth - Rooms:%d Min:%d Max:%d"),
+			RoomDepths.Num(), RoomDepths.IsEmpty() ? -1 : MinDepth, MaxDepth);
+		UE_LOG(LogTemp, Log, TEXT("[LGPerf] Depth distribution - %s"), *Dist);
+	}
+
+	{
+		{ PG_SCOPED_TIMER(CloseHoles);       CloseHoles(); }
+		{ PG_SCOPED_TIMER(SpawnDoors);       SpawnDoors(); }
+		{ PG_SCOPED_TIMER(SpawnSearchables); SpawnSearchables(); }
+		{ PG_SCOPED_TIMER(SpawnItems);       SpawnItems(); }
+		{ PG_SCOPED_TIMER(SpawnGimmicks);    SpawnGimmicks(); }
+		{ PG_SCOPED_TIMER(SpawnFuseBoxes);   SpawnFuseBoxes(); }
+		{ PG_SCOPED_TIMER(SpawnWaiterStands); SpawnWaiterStands(); }
+		{ PG_SCOPED_TIMER(SpawnHideProps);   SpawnHideProps(); }
+		{ PG_SCOPED_TIMER(SpawnBloodStains); SpawnBloodStains(); }
+	}
+
+	bool bEnemySpawned = false;
+	{
+		PG_SCOPED_TIMER(SpawnEnemy);
+		bEnemySpawned = SpawnEnemy();
+	}
+
+	if (!bEnemySpawned)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Enemy spawn failed. Restarting Level..."));
+
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 
 		FTimerHandle TravelStartTimerHandle;
@@ -886,7 +1024,39 @@ void APGLevelGenerator::SetupLevelEnvironment()
 
 		return;
 	}
-	ComputeExplorationWaypoints();
+
+	{
+		PG_SCOPED_TIMER(ComputeWaypoints);
+		ComputeExplorationWaypoints();
+	}
+
+	//CloseHoles();
+	//SpawnDoors();
+	//SpawnSearchables();
+	//SpawnItems();
+	//SpawnGimmicks();
+	//SpawnFuseBoxes();
+	//SpawnWaiterStands();
+	//SpawnHideProps();
+	//SpawnBloodStains();
+	//ComputeExplorationWaypoints();
+	
+	//if (!SpawnEnemy())
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("LG::SetupLevelEnvironment: Enemy spawn failed. Restarting Level..."));
+	//	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+
+	//	FTimerHandle TravelStartTimerHandle;
+	//	GetWorld()->GetTimerManager().SetTimer(
+	//		TravelStartTimerHandle,
+	//		this,
+	//		&APGLevelGenerator::ReGenerateLevel,
+	//		1.0f,
+	//		false
+	//	);
+
+	//	return;
+	//}
 
 	if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
 	{
@@ -895,9 +1065,13 @@ void APGLevelGenerator::SetupLevelEnvironment()
 
 	ExitPointsList.Empty();
 	DoorPointsList.Empty();
-	MannequinSpawnPointsList.Empty();
+	SearchableSpawnPointsList.Empty();
 	FuseBoxSpawnPointsList.Empty();
+	WaiterStandSpawnPointsList.Empty();
+	GlassBottleSpawnPointsList.Empty();
+	HidePropSpawnPointsList.Empty();
 	BloodstainSpawnPointsList.Empty();
+	GimmickSpawnPointsList.Empty();
 	RoomGraph.Empty();
 	RoomDepths.Empty();
 	RoomParents.Empty();
@@ -1046,6 +1220,13 @@ void APGLevelGenerator::SpawnSearchables()
 	UE_LOG(LogTemp, Log, TEXT("SpawnSearchables Num : %d"), SpawnedSearchables.Num());
 }
 
+/*
+* 복도마다 스폰포인트가 5개씩
+* 5개 중 하나는 웨이터 스탠드 포인트로, 나머지 4개 중 2개는 하이드 프롭 포인트로
+* 복도마다 1개의 웨이터와 2개의 프롭이 젠되도록한다
+* 조건1. 복도가 5개인가 그렇고 웨이터스탠드 포인트가 5개가 되는데 이 중에 2군데만 스폰
+* 조건2. 방당 2개씩 같은거 생성안되도록 3종류중2개 생성되도록
+*/
 void APGLevelGenerator::AddPropsSpawnPoint(TObjectPtr<APGMasterRoom> RoomToCheck)
 {
 	if (const USceneComponent* PropsSpawnPointsFolder = RoomToCheck->GetPropsSpawnPointsFolder())
@@ -1095,8 +1276,7 @@ void APGLevelGenerator::AddGimmickSpawnPoints(TObjectPtr<APGMasterRoom> Room)
 			continue;
 		}
 
-		GimmickSpawnPointsMap.FindOrAdd(Point->GetGimmickType()).Points.Add(Point);
-		GimmickPointOwnerRooms.Add(Point, Room);
+		GimmickSpawnPointsList.Add(Point);
 	}
 }
 
@@ -1521,171 +1701,226 @@ TObjectPtr<USceneComponent> APGLevelGenerator::GetRandomPointFromSpecificListAnd
 	return Point;
 }
 
-void APGLevelGenerator::SpawnMannequins()
-{
-	UWorld* World = GetWorld();
-	if (!World || MannequinSpawnPointsList.IsEmpty())
-	{
-		return;
-	}
-
-	int32 MannequinAmount = MannequinSpawnPointsList.Num() * 0.4f;
-
-	while (MannequinAmount > 0 && !MannequinSpawnPointsList.IsEmpty())
-	{
-		const int32 RandomIndex = UKismetMathLibrary::RandomIntegerFromStream(Seed, MannequinSpawnPointsList.Num());
-		const TObjectPtr<USceneComponent> SelectedSpawnPoint = MannequinSpawnPointsList[RandomIndex];
-		MannequinSpawnPointsList.RemoveAt(RandomIndex);
-
-		if (SelectedSpawnPoint)
-		{
-			const FTransform SpawnTransform(SelectedSpawnPoint->GetComponentTransform());
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = this;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			World->SpawnActor<APGTriggerGimmickMannequin>(MannequinClass, SpawnTransform, SpawnParams);
-			MannequinAmount--;
-		}
-	}
-}
-
-void APGLevelGenerator::SpawnArmorStands()
-{
-	UE_LOG(LogTemp, Log, TEXT("Spawn Armor Stand function"));
-	UWorld* World = GetWorld();
-	if (!World || ArmorStandSpawnPointsList.IsEmpty())
-	{
-		UE_LOG(LogTemp, Log, TEXT("Cannot Spawn Armor Stand"));
-		return;
-	}
-
-	for (TObjectPtr<USceneComponent> SelectedPoint : ArmorStandSpawnPointsList)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Spawn Armor Stand"));
-		const FTransform SpawnTransform(SelectedPoint->GetComponentTransform());
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		World->SpawnActor<APGInteractableGimmickArmorStand>(ArmorStandClass, SpawnTransform, SpawnParams);
-	}
-}
-
 void APGLevelGenerator::SpawnGimmicks()
 {
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
 	EnsureRoomDepthMap();
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	// 지정된 GimmickConfig에 따라 Gimmick 스폰
+	// 타입별로 수집 -> 스폰
 	for (const TPair<EGimmickType, FGimmickSpawnConfig>& ConfigPair : GimmickConfigMap)
 	{
 		const FGimmickSpawnConfig& Config = ConfigPair.Value;
-		if (!Config.GimmickClass || Config.SpawnCount <= 0)
+		if (!Config.GimmickClass)
 		{
 			continue;
 		}
 
-		FGimmickSpawnPointList* Found = GimmickSpawnPointsMap.Find(ConfigPair.Key);
-		if (!Found || Found->Points.IsEmpty())
-		{
-			continue;
-		}
-
-		// 후보 구성 (depth 필터)
 		TArray<TObjectPtr<UPGGimmickSpawnPoint>> Candidates;
-		for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Found->Points)
-		{
-			const TObjectPtr<APGMasterRoom>* OwnerRoom = GimmickPointOwnerRooms.Find(Point);
-			if (!OwnerRoom || !IsValid(*OwnerRoom))
-			{
-				continue;
-			}
+		CollectGimmickCandidates(ConfigPair.Key, Config, Candidates);
 
-			const int32* Depth = RoomDepths.Find(*OwnerRoom);
-			if (Config.MinRoomDepth > 0 && (!Depth || *Depth < Config.MinRoomDepth))
-			{
-				continue;
-			}
-
-			Candidates.Add(Point);
-		}
-
-		// 필터가 너무 빡세서 개수가 모자라면 필터 무시하고 원본 사용
-		if (Candidates.Num() < Config.SpawnCount)
-		{
-			Candidates = Found->Points;
-		}
-
-		const int32 SpawnCount = FMath::Min(Config.SpawnCount, Candidates.Num());
-		if (SpawnCount <= 0)
+		if (Candidates.IsEmpty())
 		{
 			continue;
 		}
+
+		const int32 SelectCount = ResolveGimmickSpawnCount(Config, Candidates.Num());
+
+		UE_LOG(LogTemp, Log, TEXT("[Gimmick] Type:%s Candidates:%d Spawn:%d Unselected:%d Fallback:%s"),
+			*StaticEnum<EGimmickType>()->GetNameStringByValue((int64)ConfigPair.Key),
+			Candidates.Num(),
+			SelectCount,
+			Candidates.Num() - SelectCount,
+			Config.FallbackClass ? TEXT("Yes") : TEXT("No"));
 
 		TArray<TObjectPtr<UPGGimmickSpawnPoint>> Selected;
-		Selected.Reserve(SpawnCount);
-
-		// 1) 첫 번째는 랜덤
-		const int32 Index = Seed.RandRange(0, Candidates.Num() - 1);
-		Selected.Add(Candidates[Index]);
-		Candidates.RemoveAtSwap(Index);
-
-		// 2) 이후는 선택된 것들과의 최소 거리가 최대인 포인트
-		while (Selected.Num() < SpawnCount && Candidates.Num() > 0)
+		if (Config.SpawnMode == EGimmickSpawnMode::RandomByRatio)
 		{
-			// 선택된 지점들 기준 홉 거리 테이블
-			TArray<TMap<TObjectPtr<APGMasterRoom>, int32>> DistTables;
-			DistTables.SetNum(Selected.Num());
-			for (int32 s = 0; s < Selected.Num(); ++s)
-			{
-				BuildHopDistanceFrom(GimmickPointOwnerRooms[Selected[s]], DistTables[s]);
-			}
-
-			int32 BestIndex = 0;
-			float BestScore = -1.0f;
-
-			for (int32 i = 0; i < Candidates.Num(); ++i)
-			{
-				const TObjectPtr<APGMasterRoom> Room = GimmickPointOwnerRooms[Candidates[i]];
-				const FVector Location = Candidates[i]->GetComponentLocation();
-
-				float MinEffective = TNumericLimits<float>::Max();
-
-				for (int32 s = 0; s < Selected.Num(); ++s)
-				{
-					const int32* Hop = DistTables[s].Find(Room);
-
-					// 홉 수를 방 간격으로 환산 (미도달이면 사실상 무한대)
-					const float HopDist = Hop
-						? (*Hop) * ApproxRoomSpacing
-						: TNumericLimits<float>::Max();
-
-					const float WorldDist = FVector::Dist(Location, Selected[s]->GetComponentLocation());
-
-					// 둘 중 더 가깝다고 판정하는 쪽을 채택
-					MinEffective = FMath::Min(MinEffective, FMath::Min(HopDist, WorldDist));
-				}
-
-				if (MinEffective > BestScore)
-				{
-					BestIndex = i;
-					BestScore = MinEffective;
-				}
-			}
-
-			Selected.Add(Candidates[BestIndex]);
-			Candidates.RemoveAtSwap(BestIndex);
+			SelectPointsRandom(Candidates, SelectCount, Selected);
+		}
+		else
+		{
+			SelectPointsMaxSpread(Candidates, SelectCount, Selected);
 		}
 
-		// 3) 스폰
 		for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Selected)
 		{
-			GetWorld()->SpawnActor<AActor>(
-				Config.GimmickClass, Point->GetComponentTransform(), SpawnParams);
+			World->SpawnActor<AActor>(Config.GimmickClass, Point->GetComponentTransform(), SpawnParams);
+		}
+
+		// 미선택 포인트에 대체 액터 스폰 (FallbackClass 없으면 생략)
+		if (Config.FallbackClass)
+		{
+			for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Candidates)
+			{
+				World->SpawnActor<AActor>(Config.FallbackClass, Point->GetComponentTransform(), SpawnParams);
+			}
 		}
 	}
+}
+
+/*	
+* 특정 타입(GimmickType) 기믹 포인트 수집
+* 최소 Depth 제한 필터링
+*/
+void APGLevelGenerator::CollectGimmickCandidates(EGimmickType GimmickType, const FGimmickSpawnConfig& Config, TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutCandidates) const
+{
+	OutCandidates.Reset();
+
+	// 받은 타입 + 소유 Room이 유효한 포인트만
+	TArray<TObjectPtr<UPGGimmickSpawnPoint>> TypePoints;
+	for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : GimmickSpawnPointsList)
+	{
+		if (!IsValid(Point) || Point->GetGimmickType() != GimmickType)
+		{
+			continue;
+		}
+
+		if (!GetGimmickPointOwnerRoom(Point))
+		{
+			continue;
+		}
+
+		TypePoints.Add(Point);
+	}
+
+	// MinRoomDepth > 0인 경우 지정 Depth 아래의 Point들은 제거
+	for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : TypePoints)
+	{
+		const int32* Depth = RoomDepths.Find(GetGimmickPointOwnerRoom(Point));
+		if (Config.MinRoomDepth > 0 && (!Depth || *Depth < Config.MinRoomDepth))
+		{
+			continue;
+		}
+
+		OutCandidates.Add(Point);
+	}
+
+	// Spread 모드일때 필터 때문에 개수가 모자라면 필터를 포기하고 원본 전체 사용
+	// Random은 SpawnCount가 아닌 비율 방식이라 사용 x
+	if (Config.SpawnMode == EGimmickSpawnMode::SpreadByCount && OutCandidates.Num() < Config.SpawnCount)
+	{
+		OutCandidates = MoveTemp(TypePoints);
+	}
+}
+
+/*
+* 스폰 방식에 따른 Spawn 수 계산
+*/
+int32 APGLevelGenerator::ResolveGimmickSpawnCount(const FGimmickSpawnConfig& Config, int32 CandidateCount) const
+{
+	const int32 DesiredCount = (Config.SpawnMode == EGimmickSpawnMode::RandomByRatio)
+		? FMath::RoundToInt(CandidateCount * Config.SpawnRatio)
+		: Config.SpawnCount;
+
+	return FMath::Clamp(DesiredCount, 0, CandidateCount);
+}
+
+/*
+* Random spawn
+*/
+void APGLevelGenerator::SelectPointsRandom(TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates, int32 SelectCount, TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const
+{
+	OutSelected.Reset();
+	OutSelected.Reserve(SelectCount);
+
+	while (OutSelected.Num() < SelectCount && Candidates.Num() > 0)
+	{
+		const int32 Index = Seed.RandRange(0, Candidates.Num() - 1);
+		OutSelected.Add(Candidates[Index]);
+		Candidates.RemoveAtSwap(Index);
+	}
+}
+
+/*
+* Spread spawn
+* 첫 번째는 랜덤, 이후는 이미 선택된 Point들과의 최소 거리(홉 차이, 실제 거리 차이 중 최소)가 최대인 Point 선택(Greedy)
+* => 가장 가까운 거리가 최대인 Point 선택
+*/
+void APGLevelGenerator::SelectPointsMaxSpread(TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates, int32 SelectCount, TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const
+{
+	OutSelected.Reset();
+
+	if (SelectCount <= 0 || Candidates.IsEmpty())
+	{
+		return;
+	}
+
+	OutSelected.Reserve(SelectCount);
+
+	// 선택된 Point들 기준 홉 거리 테이블
+	// 선택될 때마다 하나씩 누적
+	TArray<TMap<TObjectPtr<APGMasterRoom>, int32>> DistTables;
+	DistTables.Reserve(SelectCount);
+
+	// 선택 Point 추가, 후보에서 제거, DistTables에 추가
+	auto AcceptPoint = [&](int32 Index)
+		{
+			OutSelected.Add(Candidates[Index]);
+			Candidates.RemoveAtSwap(Index);
+
+			DistTables.AddDefaulted();
+			BuildHopDistanceFrom(GetGimmickPointOwnerRoom(OutSelected.Last()), DistTables.Last());
+		};
+
+	// 첫 번째는 랜덤
+	AcceptPoint(Seed.RandRange(0, Candidates.Num() - 1));
+
+	// 이후 스폰 수만큼 Greedy
+	while (OutSelected.Num() < SelectCount && Candidates.Num() > 0)
+	{
+		int32 BestIndex = 0;
+		float BestScore = -1.0f;
+
+		// 스폰 가능한 모든 Candidates들에 대해 체크
+		for (int32 i = 0; i < Candidates.Num(); ++i)
+		{
+			APGMasterRoom* Room = GetGimmickPointOwnerRoom(Candidates[i]);
+			const FVector Location = Candidates[i]->GetComponentLocation();
+
+			float MinEffective = TNumericLimits<float>::Max();
+
+			// 현재 Candidate Point와 이미 선택된 Point들과 거리 비교
+			// 가까울수록 낮은 점수
+			for (int32 s = 0; s < OutSelected.Num(); ++s)
+			{
+				const int32* Hop = DistTables[s].Find(Room);
+
+				// 홉 거리
+				const float HopDist = Hop
+					? (*Hop) * ApproxRoomSpacing
+					: TNumericLimits<float>::Max();
+
+				// 월드 거리
+				const float WorldDist = FVector::Dist(Location, OutSelected[s]->GetComponentLocation());
+
+				// 최소거리(작을수록 안좋은 후보) 갱신
+				MinEffective = FMath::Min(MinEffective, FMath::Min(HopDist, WorldDist));
+			}
+
+			// 최소거리가 최대인 Candidate Point 선택 -> 적어도 최악은 아님
+			if (MinEffective > BestScore)
+			{
+				BestIndex = i;
+				BestScore = MinEffective;
+			}
+		}
+
+		AcceptPoint(BestIndex);
+	}
+}
+
+APGMasterRoom* APGLevelGenerator::GetGimmickPointOwnerRoom(const TObjectPtr<UPGGimmickSpawnPoint>& Point) const
+{
+	return IsValid(Point) ? Cast<APGMasterRoom>(Point->GetOwner()) : nullptr;
 }
 
 void APGLevelGenerator::SpawnFuseBoxes()
@@ -1756,7 +1991,7 @@ void APGLevelGenerator::SpawnFuseBoxes()
 		}
 
 		const TObjectPtr<USceneComponent> SelectedPoint = FuseBoxSpawnPointsList[SelectedIndex];
-		FuseBoxSpawnPointsList.RemoveAt(SelectedIndex);
+		FuseBoxSpawnPointsList.RemoveAtSwap(SelectedIndex);
 		if (!SelectedPoint)
 		{
 			continue;
@@ -1768,20 +2003,23 @@ void APGLevelGenerator::SpawnFuseBoxes()
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 		APGFuseBox* NewFuseBox = World->SpawnActor<APGFuseBox>(FuseBoxClass, SpawnTransform, SpawnParams);
-		if (NewFuseBox)
+		if (!NewFuseBox)
 		{
-			AActor* OwnerRoom = SelectedPoint->GetOwner();
-			NewFuseBox->SetOwnerRoom(OwnerRoom);
-
-			if (bIsFirstFuseBox)
-			{
-				FirstFuseBoxLocation = SpawnTransform.GetLocation();
-				bIsFirstFuseBox = false;
-			}
-
-			UE_LOG(LogTemp, Log, TEXT("LG::SpawnFuseBoxes: Spawned FuseBox in room '%s' (Depth: %d)"),
-				*GetNameSafe(OwnerRoom), GetRoomDepthFromStart(Cast<APGMasterRoom>(OwnerRoom)));
+			UE_LOG(LogTemp, Warning, TEXT("LG::SpawnFuseBoxes: Spawn failed, retrying with remaining points."));
+			continue;
 		}
+
+		AActor* OwnerRoom = SelectedPoint->GetOwner();
+		NewFuseBox->SetOwnerRoom(OwnerRoom);
+
+		if (bIsFirstFuseBox)
+		{
+			FirstFuseBoxLocation = SpawnTransform.GetLocation();
+			bIsFirstFuseBox = false;
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("LG::SpawnFuseBoxes: Spawned FuseBox in room '%s' (Depth: %d)"),
+			*GetNameSafe(OwnerRoom), GetRoomDepthFromStart(Cast<APGMasterRoom>(OwnerRoom)));
 
 		FuseBoxCount--;
 	}
@@ -2142,6 +2380,9 @@ void APGLevelGenerator::BuildRoomDepthMap()
 	}
 }
 
+/*
+* Origin의 HopMap 생성
+*/
 void APGLevelGenerator::BuildHopDistanceFrom(APGMasterRoom* Origin, TMap<TObjectPtr<APGMasterRoom>, int32>& OutDist) const
 {
 	OutDist.Reset();

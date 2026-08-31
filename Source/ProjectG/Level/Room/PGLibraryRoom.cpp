@@ -29,27 +29,6 @@ APGLibraryRoom::APGLibraryRoom()
 	ExitDir1->SetArrowLength(80.1f);
 	ExitDir1->bHiddenInGame = true;
 
-	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
-	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint0->SetRelativeLocation(FVector(670.0f, 60.0f, 6.0f));
-	MannequinSpawnPoint0->SetRelativeRotation(FRotator(0.0f, 50.0f, 0.0f));
-	MannequinSpawnPoint0->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint0->bHiddenInGame = true;
-
-	MannequinSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint1"));
-	MannequinSpawnPoint1->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint1->SetRelativeLocation(FVector(1640.0f, -510.0f, 6.0f));
-	MannequinSpawnPoint1->SetRelativeRotation(FRotator(0.0f, -30.0f, 0.0f));
-	MannequinSpawnPoint1->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint1->bHiddenInGame = true;
-
-	MannequinSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint2"));
-	MannequinSpawnPoint2->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint2->SetRelativeLocation(FVector(300.0f, -690.0f, 6.0f));
-	MannequinSpawnPoint2->SetRelativeRotation(FRotator(0.0f, -160.0f, 0.0f));
-	MannequinSpawnPoint2->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint2->bHiddenInGame = true;
-
 	FuseBoxSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("FuseBoxSpawnPoint0"));
 	FuseBoxSpawnPoint0->SetupAttachment(FuseBoxSpawnPointsFolder);
 	FuseBoxSpawnPoint0->SetRelativeLocation(FVector(753.0f, -880.0f, 200.0f));

@@ -86,34 +86,6 @@ APGCorridor_Dark::APGCorridor_Dark()
 	PropSpawnPoint4->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	PropSpawnPoint4->bHiddenInGame = true;
 
-	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
-	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint0->SetRelativeLocation(FVector(740.0f, 280.0f, 6.0f));
-	MannequinSpawnPoint0->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	MannequinSpawnPoint0->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint0->bHiddenInGame = true;
-
-	MannequinSpawnPoint1 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint1"));
-	MannequinSpawnPoint1->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint1->SetRelativeLocation(FVector(1340.0f, -300.0f, 6.0f));
-	MannequinSpawnPoint1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
-	MannequinSpawnPoint1->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint1->bHiddenInGame = true;
-
-	MannequinSpawnPoint2 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint2"));
-	MannequinSpawnPoint2->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint2->SetRelativeLocation(FVector(1940.0f, 300.0f, 6.0f));
-	MannequinSpawnPoint2->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	MannequinSpawnPoint2->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint2->bHiddenInGame = true;
-
-	MannequinSpawnPoint3 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint3"));
-	MannequinSpawnPoint3->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint3->SetRelativeLocation(FVector(2540.0f, -300.0f, 6.0f));
-	MannequinSpawnPoint3->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
-	MannequinSpawnPoint3->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint3->bHiddenInGame = true;
-
 	EnemySpawnPoint->SetRelativeLocation(FVector(1840.0f, 0.0f, 250.0f));
 
 	RoomDir->SetRelativeLocation(FVector(900.0f, 0.0f, 130.0f));

@@ -10,7 +10,6 @@
 APGGhostRoom::APGGhostRoom()
 {
 	static ConstructorHelpers::FClassFinder<AActor> RoomMeshRef(TEXT("/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionGhostRoom.LI_MansionGhostRoom_C"));
-	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
 
 	WallClass = APGWall_Brown::StaticClass();
 
@@ -36,15 +35,6 @@ APGGhostRoom::APGGhostRoom()
 	if (RoomMeshRef.Succeeded())
 	{
 		RoomMesh->SetChildActorClass(RoomMeshRef.Class);
-	}
-
-	WindowGimmick0 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick0"));
-	WindowGimmick0->SetupAttachment(Root);
-	WindowGimmick0->SetRelativeLocation(FVector(713.3f, -595.6f, 66.0f));
-	WindowGimmick0->SetRelativeRotation(FRotator(0.0f, 202.5f, 0.0f));
-	if (WindowGimmickRef.Succeeded())
-	{
-		WindowGimmick0->SetChildActorClass(WindowGimmickRef.Class);
 	}
 
 	PhotoSpotConfig = { PhotoID::Room_Ghost, 10, FVector(485.0f, -562.0f, 117.0f), FRotator::ZeroRotator, FVector(60.0f, 60.0f, 80.0f) };

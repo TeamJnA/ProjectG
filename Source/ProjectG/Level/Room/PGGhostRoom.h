@@ -27,9 +27,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> RoomMesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
-	TObjectPtr<UChildActorComponent> WindowGimmick0;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FuseBoxSpawnPoint")
 	TObjectPtr<UArrowComponent> FuseBoxSpawnPoint0;
 };

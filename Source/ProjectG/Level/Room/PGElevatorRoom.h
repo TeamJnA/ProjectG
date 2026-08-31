@@ -32,12 +32,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> Mesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
-	TObjectPtr<UChildActorComponent> WindowGimmick0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
-	TObjectPtr<UChildActorComponent> WindowGimmick1;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitElevator")
 	TObjectPtr<UChildActorComponent> ExitElevator;
 };

@@ -280,7 +280,8 @@ public:
 
 protected:
 	void LoadProfile();
-	void SaveProfile();
+	bool TryLoadProfileFromSlot(const FString& SlotName, UPGSaveGame*& OutProfile);
+	void SaveProfileToSlot(const FString& SlotName);
 	int32 ComputeRankIndex(int64 InTotalXP);
 	UDataTable* GetRankTable();
 

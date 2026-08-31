@@ -27,13 +27,6 @@ APGStairRoom_Simple::APGStairRoom_Simple()
 	ExitDir1->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir1->bHiddenInGame = true;
 
-	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
-	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint0->SetRelativeLocation(FVector(400.0f, 390.0f, 420.0f));
-	MannequinSpawnPoint0->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	MannequinSpawnPoint0->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint0->bHiddenInGame = true;
-
 	FuseBoxSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("FuseBoxSpawnPoint0"));
 	FuseBoxSpawnPoint0->SetupAttachment(FuseBoxSpawnPointsFolder);
 	FuseBoxSpawnPoint0->SetRelativeLocation(FVector(39.0f, 602.0f, 620.0f));

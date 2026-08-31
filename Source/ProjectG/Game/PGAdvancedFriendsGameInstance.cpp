@@ -36,6 +36,7 @@
 namespace
 {
 	const FString ProfileSlotName = TEXT("PGPlayerProfile");
+	const FString ProfileBackupSlotName = TEXT("PGPlayerProfile_Backup");
 }
 
 void UPGAdvancedFriendsGameInstance::Init()
@@ -947,23 +948,61 @@ void UPGAdvancedFriendsGameInstance::InviteFriend(const FUniqueNetId& FriendToIn
 
 void UPGAdvancedFriendsGameInstance::LoadProfile()
 {
-	if (UGameplayStatics::DoesSaveGameExist(ProfileSlotName, 0))
+	const bool bMainExisted = UGameplayStatics::DoesSaveGameExist(ProfileSlotName, 0);
+	const bool bBackupExisted = UGameplayStatics::DoesSaveGameExist(ProfileBackupSlotName, 0);
+
+	UPGSaveGame* Loaded = nullptr;
+
+	if (TryLoadProfileFromSlot(ProfileSlotName, Loaded))
 	{
-		Profile = Cast<UPGSaveGame>(UGameplayStatics::LoadGameFromSlot(ProfileSlotName, 0));
-		if (Profile && !Profile->VerifySignature())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GI::LoadProfile: signature invalid, resetting."));
-			Profile = nullptr;
-		}
+		Profile = Loaded;
+		return;
 	}
 
-	if (!Profile)
+	// 메인 슬롯 소실 -> 백업 슬롯 확인
+	if (TryLoadProfileFromSlot(ProfileBackupSlotName, Loaded))
 	{
-		Profile = Cast<UPGSaveGame>(UGameplayStatics::CreateSaveGameObject(UPGSaveGame::StaticClass()));
+		UE_LOG(LogTemp, Warning, TEXT("GI::LoadProfile: recovered from backup slot."));
+		Profile = Loaded;
+		SaveProfileToSlot(ProfileSlotName);  // 주 슬롯 복구
+		return;
 	}
+
+	// 애초에 저장된게 없거나(첫 실행), 메인/백업 다 소실
+	const bool bLoadFailed = (bMainExisted || bBackupExisted);
+	if (bLoadFailed)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GI::LoadProfile: all slots unreadable. Starting fresh."));
+	}
+
+	Profile = Cast<UPGSaveGame>(UGameplayStatics::CreateSaveGameObject(UPGSaveGame::StaticClass()));
 }
 
-void UPGAdvancedFriendsGameInstance::SaveProfile()
+bool UPGAdvancedFriendsGameInstance::TryLoadProfileFromSlot(const FString& SlotName, UPGSaveGame*& OutProfile)
+{
+	if (!UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	{
+		return false;
+	}
+
+	UPGSaveGame* Loaded = Cast<UPGSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
+	if (!Loaded)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::TryLoadProfileFromSlot: slot '%s' exists but failed to deserialize."), *SlotName);
+		return false;
+	}
+
+	if (!Loaded->VerifySignature())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::TryLoadProfileFromSlot: slot '%s' signature mismatch."), *SlotName);
+		return false;
+	}
+
+	OutProfile = Loaded;
+	return true;
+}
+
+void UPGAdvancedFriendsGameInstance::SaveProfileToSlot(const FString& SlotName)
 {
 	if (!Profile)
 	{
@@ -971,7 +1010,7 @@ void UPGAdvancedFriendsGameInstance::SaveProfile()
 	}
 
 	Profile->Signature = Profile->ComputeSignature();
-	UGameplayStatics::SaveGameToSlot(Profile, ProfileSlotName, 0);
+	UGameplayStatics::SaveGameToSlot(Profile, SlotName, 0);
 }
 
 void UPGAdvancedFriendsGameInstance::AddMatchResult(int32 GainedXP)
@@ -981,13 +1020,17 @@ void UPGAdvancedFriendsGameInstance::AddMatchResult(int32 GainedXP)
 		return;
 	}
 
+	// 변경 전 상태 백업
+	SaveProfileToSlot(ProfileBackupSlotName);
+
 	PreMatchTotalXP = Profile->TotalXP;
 	LastGainedXP = GainedXP;
 
 	Profile->TotalXP += GainedXP;
 	Profile->GamesCompleted++;
 	Profile->RankIndex = ComputeRankIndex(Profile->TotalXP);
-	SaveProfile();
+	// 변경 후 상태 메인 슬롯에 저장
+	SaveProfileToSlot(ProfileSlotName);
 
 	UE_LOG(LogTemp, Log, TEXT("[Progression] +%d XP, Total:%lld Rank:%d Games:%d"),
 		GainedXP, Profile->TotalXP, Profile->RankIndex, Profile->GamesCompleted);

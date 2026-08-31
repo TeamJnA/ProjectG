@@ -20,15 +20,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
 	TObjectPtr<UArrowComponent> ExitDir0;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
-	TObjectPtr<UArrowComponent> MannequinSpawnPoint0;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
 	TObjectPtr<UChildActorComponent> RoomMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
-	TObjectPtr<UChildActorComponent> WindowGimmick0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WindowGimmick")
-	TObjectPtr<UChildActorComponent> WindowGimmick1;
 };

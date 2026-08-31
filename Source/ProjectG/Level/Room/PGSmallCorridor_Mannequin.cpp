@@ -8,7 +8,6 @@
 APGSmallCorridor_Mannequin::APGSmallCorridor_Mannequin()
 {
 	static ConstructorHelpers::FClassFinder<AActor> RoomMeshRef(TEXT("/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionSmallCorridor_Mannequin.LI_MansionSmallCorridor_Mannequin_C"));
-	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
 
 	WallClass = APGWall::StaticClass();
 
@@ -20,13 +19,6 @@ APGSmallCorridor_Mannequin::APGSmallCorridor_Mannequin()
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->SetArrowLength(80.1f);
 	ExitDir0->bHiddenInGame = true;
-
-	MannequinSpawnPoint0 = CreateDefaultSubobject<UArrowComponent>(TEXT("MannequinSpawnPoint0"));
-	MannequinSpawnPoint0->SetupAttachment(MannequinSpawnPointsFolder);
-	MannequinSpawnPoint0->SetRelativeLocation(FVector(904.0f, -604.0f, 6.0f));
-	MannequinSpawnPoint0->SetRelativeRotation(FRotator(0.0f, -130.0f, 0.0f));
-	MannequinSpawnPoint0->SetArrowColor(FLinearColor(0.0f, 1.0f, 1.0f, 0.0f));
-	MannequinSpawnPoint0->bHiddenInGame = true;
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(920.0f, 0.0f, 250.0f));
 
@@ -43,18 +35,4 @@ APGSmallCorridor_Mannequin::APGSmallCorridor_Mannequin()
 	}
 	RoomMesh->SetRelativeLocation(FVector(923.0f, -286.94f, -18.2f));
 	RoomMesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-
-	WindowGimmick0 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick0"));
-	WindowGimmick0->SetupAttachment(Root);
-	WindowGimmick0->SetRelativeLocation(FVector(743.3f, 264.0f, 66.0f));
-
-	WindowGimmick1 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick1"));
-	WindowGimmick1->SetupAttachment(Root);
-	WindowGimmick1->SetRelativeLocation(FVector(1057.0f, 264.0f, 66.0f));
-
-	if (WindowGimmickRef.Succeeded())
-	{
-		WindowGimmick0->SetChildActorClass(WindowGimmickRef.Class);
-		WindowGimmick1->SetChildActorClass(WindowGimmickRef.Class);
-	}
 }

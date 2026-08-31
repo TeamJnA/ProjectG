@@ -11,8 +11,6 @@
 class APGMasterRoom;
 class APGBlindCharacter;
 class APGChargerCharacter;
-class APGTriggerGimmickMannequin;
-class APGInteractableGimmickArmorStand;
 class APGDoor1;
 class APGFuseBox;
 class APGWaiterStand;
@@ -20,6 +18,15 @@ class APGHideProp;
 class APGSearchableBase;
 class APGSearchableSlotBase;
 class UPGBloodstainSpawnPoint;
+
+UENUM()
+enum class EGimmickSpawnMode : uint8
+{
+	// 고정 개수(SpawnCount)만큼, 서로 최대한 멀게 배치
+	SpreadByCount	UMETA(DisplayName = "Spread By Count"),
+	// 후보 대비 비율(SpawnRatio)만큼, 단순 랜덤 배치
+	RandomByRatio	UMETA(DisplayName = "Random By Ratio")
+};
 
 USTRUCT()
 struct FGimmickSpawnConfig
@@ -29,21 +36,23 @@ struct FGimmickSpawnConfig
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AActor> GimmickClass;
 
+	// 선택되지 않은 포인트에 스폰할 클래스 (없으면 스폰 x)
 	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AActor> FallbackClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	EGimmickSpawnMode SpawnMode = EGimmickSpawnMode::SpreadByCount;
+
+	// 0보다 크면 SpawnCount 대신 비율로 개수 결정
+	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "SpawnMode == EGimmickSpawnMode::RandomByRatio", ClampMin = "0.0", ClampMax = "1.0"))
+	float SpawnRatio = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "SpawnMode == EGimmickSpawnMode::SpreadByCount", ClampMin = "0"))
 	int32 SpawnCount = 2;
 
 	// 이 depth 미만의 방은 후보에서 제외 (0이면 제한 x)
 	UPROPERTY(EditDefaultsOnly)
 	int32 MinRoomDepth = 0;
-};
-
-USTRUCT()
-struct FGimmickSpawnPointList
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	TArray<TObjectPtr<UPGGimmickSpawnPoint>> Points;
 };
 
 UCLASS()
@@ -56,20 +65,28 @@ public:
 	APGLevelGenerator();
 
 protected:
+	// room
 	void SetSeed();
 	void SpawnStartRoom();
 	void SpawnLoopCorridor();
 	void SpawnSingleLoopCorridor(TSubclassOf<APGMasterRoom> LoopClass);
+
 	void SpawnNextRoom();
+	TSubclassOf<APGMasterRoom> GetNextRoomClass() const;
+	void BuildExitPointWeights(TArray<float>& OutWeights) const;
+	int32 PickWeightedIndex(const TArray<float>& Weights, float TotalWeight) const;
+	bool WouldRoomOverlap(TSubclassOf<APGMasterRoom> RoomClass, const FTransform& InSpawnTransform) const;
+	void RegisterSpawnedRoom(TObjectPtr<USceneComponent> InSelectedExitPoint, TObjectPtr<APGMasterRoom> NewRoom);
+	void ScheduleNextRoomSpawn();
 	int32 GetRoomDepthFromStart(const APGMasterRoom* Room) const;
-	int32 SelectExitPointWithBalancing();
-	void CheckOverlap(TObjectPtr<USceneComponent> InSelectedExitPoint, TObjectPtr<APGMasterRoom> RoomToCheck);
-	bool IsLatestRoomOverlapping(const APGMasterRoom* RoomToCheck) const;
+
+	// environment
 	void SetupLevelEnvironment();
 
 	void CloseHoles();
 	void SpawnDoors();
 	void SpawnSearchables();
+
 	void SpawnItems();
 	void SpawnExitItems();
 	void SpawnItemAtSlot(const FName& ItemKey, APGSearchableSlotBase* Slot);
@@ -79,9 +96,23 @@ protected:
 		TSet<TObjectPtr<APGMasterRoom>>& UsedBranches,
 		TSet<TObjectPtr<APGSearchableBase>>& UsedSearchables);
 	APGMasterRoom* GetBranchRoot(APGMasterRoom* Room) const;
-	void SpawnMannequins();
-	void SpawnArmorStands();
+
 	void SpawnGimmicks();
+	void CollectGimmickCandidates(
+		EGimmickType GimmickType,
+		const FGimmickSpawnConfig& Config,
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutCandidates) const;
+	int32 ResolveGimmickSpawnCount(const FGimmickSpawnConfig& Config, int32 CandidateCount) const;
+	void SelectPointsRandom(
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates,
+		int32 SelectCount,
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const;
+	void SelectPointsMaxSpread(
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates,
+		int32 SelectCount,
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const;
+	APGMasterRoom* GetGimmickPointOwnerRoom(const TObjectPtr<UPGGimmickSpawnPoint>& Point) const;
+
 	void SpawnFuseBoxes();
 	void SpawnWaiterStands();
 	void SpawnHideProps();
@@ -114,12 +145,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gimmick", meta = (AllowPrivateAccess = "true"))
 	TMap<EGimmickType, FGimmickSpawnConfig> GimmickConfigMap;
-
-	UPROPERTY()
-	TMap<EGimmickType, FGimmickSpawnPointList> GimmickSpawnPointsMap;
-
-	UPROPERTY()
-	TMap<TObjectPtr<UPGGimmickSpawnPoint>, TObjectPtr<APGMasterRoom>> GimmickPointOwnerRooms;
 
 	TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<APGMasterRoom>>> RoomGraph;
 
@@ -155,10 +180,7 @@ private:
 	TArray<TObjectPtr<USceneComponent>> SearchableSpawnPointsList;
 
 	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> MannequinSpawnPointsList;
-
-	UPROPERTY()
-	TArray<TObjectPtr<USceneComponent>> ArmorStandSpawnPointsList;
+	TArray<TObjectPtr<UPGGimmickSpawnPoint>> GimmickSpawnPointsList;
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> FuseBoxSpawnPointsList;
@@ -184,9 +206,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Props", meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<APGHideProp>> HidePropClasses;
 
-	UPROPERTY(EditDefaultsOnly, Category = "ArmorStand", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<APGInteractableGimmickArmorStand> ArmorStandClass;
-
 	UPROPERTY()
 	TArray<TObjectPtr<APGSearchableBase>> SpawnedSearchables;
 
@@ -195,9 +214,6 @@ private:
 
 	UPROPERTY()
 	TSubclassOf<APGChargerCharacter> ChargerCharacter;
-
-	UPROPERTY()
-	TSubclassOf<APGTriggerGimmickMannequin> MannequinClass;
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
 	TSubclassOf<APGDoor1> PGDoor;
@@ -221,4 +237,10 @@ private:
 
 	bool bRoomDepthsDirty = true;
 	bool bIsGenerationStopped = false;
+
+	//debug
+	double AccumSpawnNextRoom = 0.0;
+	double AccumCheckOverlap = 0.0;
+	int32 RoomSpawnAttempts = 0;
+	int32 RoomOverlapFails = 0;
 };

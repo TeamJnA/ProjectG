@@ -12,6 +12,16 @@
 
 class UBoxComponent;
 
+USTRUCT()
+struct FPGRoomOverlapBox
+{
+	GENERATED_BODY()
+
+	FVector Location = FVector::ZeroVector;
+	FQuat Rotation = FQuat::Identity;
+	FVector HalfExtent = FVector::ZeroVector;
+};
+
 UCLASS()
 class PROJECTG_API APGMasterRoom : public AActor
 {
@@ -24,8 +34,6 @@ public:
 	FORCEINLINE const USceneComponent* GetExitPointsFolder() const { return ExitPointsFolder; }
 	FORCEINLINE const USceneComponent* GetOverlapBoxFolder() const { return OverlapBoxFolder; }
 	FORCEINLINE const USceneComponent* GetSearchableSpawnPointsFolder() const { return SearchableSpawnPointsFolder; }
-	FORCEINLINE const USceneComponent* GetMannequinSpawnPointsFolder() const { return MannequinSpawnPointsFolder; }
-	FORCEINLINE const USceneComponent* GetArmorStandSpawnPointsFolder() const { return ArmorStandSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetGimmickSpawnPointsFolder() const { return GimmickSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetFuseBoxSpawnPointsFolder() const { return FuseBoxSpawnPointsFolder; }
 	FORCEINLINE const USceneComponent* GetPropsSpawnPointsFolder() const { return PropsSpawnPointsFolder; }
@@ -41,6 +49,16 @@ public:
 
 	virtual void SpawnPhotoSpots() {}
 	virtual void SpawnSwingProps(const FRandomStream& InStream) {}
+
+	/*
+	* OutBoxes를 Room의 OverlapBox들로 채우기
+	* 배치 가능 여부를 사전 판정할 때 사용
+	* *블루프린트 에디터에서 추가한 박스는 CDO에 존재하지 않아 잡히지 않음
+	*/
+	static void GetOverlapBoxesForClass(
+		TSubclassOf<APGMasterRoom> RoomClass,
+		const FTransform& InRoomTransform,
+		TArray<FPGRoomOverlapBox>& OutBoxes);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Root")
@@ -63,12 +81,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> SearchableSpawnPointsFolder;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
-	TObjectPtr<USceneComponent> MannequinSpawnPointsFolder;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
-	TObjectPtr<USceneComponent> ArmorStandSpawnPointsFolder;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Folder")
 	TObjectPtr<USceneComponent> GimmickSpawnPointsFolder;

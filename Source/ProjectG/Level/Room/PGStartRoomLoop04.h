@@ -34,6 +34,5 @@ protected:
 	TObjectPtr<UBoxComponent> OverlapBox2;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RoomMesh")
-	TObjectPtr<UChildActorComponent> Mesh;
-	
+	TObjectPtr<UChildActorComponent> Mesh;	
 };

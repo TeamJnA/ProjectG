@@ -8,7 +8,6 @@
 APGSmallCorridor_Dark::APGSmallCorridor_Dark()
 {
 	static ConstructorHelpers::FClassFinder<AActor> RoomMeshRef(TEXT("/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionSmallCorridor_Dark.LI_MansionSmallCorridor_Dark_C"));
-	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
 
 	WallClass = APGWall::StaticClass();
 
@@ -36,20 +35,4 @@ APGSmallCorridor_Dark::APGSmallCorridor_Dark()
 	}
 	RoomMesh->SetRelativeLocation(FVector(923.0f, -286.94f, 0.0f));
 	RoomMesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-
-	WindowGimmick0 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick0"));
-	WindowGimmick0->SetupAttachment(Root);
-	WindowGimmick0->SetRelativeLocation(FVector(644.0f, 429.0f, 66.0f));
-	WindowGimmick0->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
-
-	WindowGimmick1 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick1"));
-	WindowGimmick1->SetupAttachment(Root);
-	WindowGimmick1->SetRelativeLocation(FVector(644.0f, 743.0f, 66.0f));
-	WindowGimmick1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
-
-	if (WindowGimmickRef.Succeeded())
-	{
-		WindowGimmick0->SetChildActorClass(WindowGimmickRef.Class);
-		WindowGimmick1->SetChildActorClass(WindowGimmickRef.Class);
-	}
 }

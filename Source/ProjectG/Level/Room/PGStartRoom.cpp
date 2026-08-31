@@ -8,7 +8,6 @@
 APGStartRoom::APGStartRoom()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Script/Engine.Blueprint'/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionMainRoom.LI_MansionMainRoom_C'"));
-	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
 	static ConstructorHelpers::FClassFinder<AActor> ExitDoorRef(TEXT("/Game/ProjectG/Levels/Room/Exit/ExitIronDoor/BP_PGExitIronDoor.BP_PGExitIronDoor_C"));
 	static ConstructorHelpers::FClassFinder<AActor> BonfireRef(TEXT("/Game/ProjectG/Gimmick/Interact/Bonfire/BP_PGInteractableGimmickBonfire.BP_PGInteractableGimmickBonfire_C"));
 	
@@ -92,28 +91,6 @@ APGStartRoom::APGStartRoom()
 	}
 	ExitDoor->SetRelativeLocation(FVector(3217.0f, 392.0f, -397.0f));
 	ExitDoor->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
-
-	WindowGimmick0 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick0"));
-	WindowGimmick0->SetupAttachment(Root);
-	WindowGimmick0->SetRelativeLocation(FVector(1811.0f, -741.0f, 60.0f));
-	WindowGimmick0->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-
-	WindowGimmick1 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick1"));
-	WindowGimmick1->SetupAttachment(Root);
-	WindowGimmick1->SetRelativeLocation(FVector(1692.0f, 1155.0f, 480.0f));
-	WindowGimmick1->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-
-	WindowGimmick2 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick2"));
-	WindowGimmick2->SetupAttachment(Root);
-	WindowGimmick2->SetRelativeLocation(FVector(1388.3f, -1144.0f, 480.0f));
-	WindowGimmick2->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
-
-	if (WindowGimmickRef.Succeeded())
-	{
-		WindowGimmick0->SetChildActorClass(WindowGimmickRef.Class);
-		WindowGimmick1->SetChildActorClass(WindowGimmickRef.Class);
-		WindowGimmick2->SetChildActorClass(WindowGimmickRef.Class);
-	}
 
 	Bonfire = CreateDefaultSubobject<UChildActorComponent>(TEXT("Bonfire"));
 	Bonfire->SetupAttachment(Root);

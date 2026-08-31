@@ -9,7 +9,6 @@
 APGElevatorRoom::APGElevatorRoom()
 {
 	static ConstructorHelpers::FClassFinder<AActor> MeshRef(TEXT("/Game/ProjectG/Levels/Room/LevelInstance/LI_MansionElevatorRoom.LI_MansionElevatorRoom_C"));
-	static ConstructorHelpers::FClassFinder<AActor> WindowGimmickRef(TEXT("/Game/ProjectG/Gimmick/Trigger/WindowBlood/BP_PGTriggerGimmickWindowBlood.BP_PGTriggerGimmickWindowBlood_C"));
 	static ConstructorHelpers::FClassFinder<AActor> ExitElevatorRef(TEXT("/Game/ProjectG/Levels/Room/Exit/ExitElevator/BP_ExitElevator.BP_ExitElevator_C"));
 
 	WallClass = APGWall::StaticClass();
@@ -47,20 +46,6 @@ APGElevatorRoom::APGElevatorRoom()
 	Mesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(920.0f, 0.0f, 250.0f));
-
-	WindowGimmick0 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick0"));
-	WindowGimmick0->SetupAttachment(Root);
-	WindowGimmick0->SetRelativeLocation(FVector(743.3f, 264.0f, 66.0f));
-
-	WindowGimmick1 = CreateDefaultSubobject<UChildActorComponent>(TEXT("WindowGimmick1"));
-	WindowGimmick1->SetupAttachment(Root);
-	WindowGimmick1->SetRelativeLocation(FVector(1057.0f, 264.0f, 66.0f));
-
-	if (WindowGimmickRef.Succeeded())
-	{
-		WindowGimmick0->SetChildActorClass(WindowGimmickRef.Class);
-		WindowGimmick1->SetChildActorClass(WindowGimmickRef.Class);
-	}
 
 	ExitElevator = CreateDefaultSubobject<UChildActorComponent>(TEXT("ExitElevator"));
 	ExitElevator->SetupAttachment(Root);

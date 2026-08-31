@@ -24,9 +24,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ExitDirection")
 	TObjectPtr<UArrowComponent> ExitDir1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MannequinSpawnPoint")
-	TObjectPtr<UArrowComponent> MannequinSpawnPoint0;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FuseBoxSpawnPoint")
 	TObjectPtr<UArrowComponent> FuseBoxSpawnPoint0;
 
