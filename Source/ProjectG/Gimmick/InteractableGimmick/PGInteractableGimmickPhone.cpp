@@ -11,6 +11,8 @@
 #include "Utils/PGPhotoSubjectRegistry.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "Components/AudioComponent.h"
+#include "Perception/AISense_Hearing.h"
 
 
 APGInteractableGimmickPhone::APGInteractableGimmickPhone()
@@ -47,6 +49,10 @@ APGInteractableGimmickPhone::APGInteractableGimmickPhone()
 	ExitSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	ExitSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	ExitSphere->SetGenerateOverlapEvents(true);
+
+	RingAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("RingAudioComponent"));
+	RingAudioComponent->SetupAttachment(RootComponent);
+	RingAudioComponent->bAutoActivate = false;
 }
 
 FPhotoSubjectInfo APGInteractableGimmickPhone::GetPhotoSubjectInfo() const
@@ -169,6 +175,8 @@ void APGInteractableGimmickPhone::GimmickInteract(AActor* Investigator)
 	{
 		SM->PlaySoundForAllPlayers(HangUpSoundName, GetActorLocation());
 	}
+
+	StopRinging();
 }
 
 void APGInteractableGimmickPhone::HighlightOn() const
@@ -333,10 +341,24 @@ void APGInteractableGimmickPhone::PlayRingSound()
 		return;
 	}
 
+	/*
 	if (APGSoundManager* SM = GetSoundManager())
 	{
 		SM->PlaySoundWithNoise(RingSoundName, GetActorLocation(), false, nullptr);
 	}
+	*/
+	// Report Noise in server. 사운드 재생의 경우 Onrep을 통해 각자 재생
+	const float NoiseLoudness = RingSoundNoiseLevel;
+	const float NoiseMaxRange = RingSoundNoiseLevel * 200.0f; // 200.0f * NoiseLoudness
+
+	UAISense_Hearing::ReportNoiseEvent(
+		GetWorld(),
+		GetActorLocation(),
+		NoiseLoudness,
+		this,
+		NoiseMaxRange,
+		FName("PhoneRing") // 필요시 기존 사운드 FName으로 대체 가능
+	);
 
 	++RingCount;
 	OnRep_RingCount();
@@ -374,7 +396,19 @@ void APGInteractableGimmickPhone::OnRep_PhoneState()
 	if (PhoneState == EPGPhoneState::Disabled)
 	{
 		StartHangUpMotion();
+		
+		if (RingAudioComponent && RingAudioComponent->IsPlaying())
+		{
+			RingAudioComponent->Stop();
+		}
 	}
+	else if (PhoneState == EPGPhoneState::Idle)
+	{
+		if (RingAudioComponent && RingAudioComponent->IsPlaying())
+		{
+			RingAudioComponent->Stop();
+		}
+	}	
 }
 
 void APGInteractableGimmickPhone::ApplyPhoneVisualState()
@@ -416,6 +450,11 @@ void APGInteractableGimmickPhone::OnRep_RingCount()
 	if (!MIDReceiver)
 	{
 		return;
+	}
+
+	if (RingAudioComponent)
+	{
+		RingAudioComponent->Play();
 	}
 
 	MIDReceiver->SetScalarParameterValue(ShakeParameterName, ShakePower);
