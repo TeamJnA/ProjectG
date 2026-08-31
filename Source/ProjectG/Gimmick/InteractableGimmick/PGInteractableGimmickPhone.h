@@ -13,6 +13,7 @@ class USphereComponent;
 class UBoxComponent;
 class APGPlayerCharacter;
 class APGPlayerState;
+class UAudioComponent;
 
 UENUM(BlueprintType)
 enum class EPGPhoneState : uint8
@@ -114,6 +115,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
 	FText OffText = LOCTEXT("Phone_Off", "Off");
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<UAudioComponent> RingAudioComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	int32 RingSoundNoiseLevel = 5;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
 	FName RingSoundName;
 
@@ -154,7 +161,7 @@ protected:
 	float RingStartDelay = 1.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Phone")
-	float RingInterval = 3.0f;
+	float RingInterval = 5.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Phone")
 	float InteractHoldDuration = 3.0f;
@@ -163,7 +170,7 @@ protected:
 	float ShakePower = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Phone|Shake")
-	float ShakeDuration = 0.5f;
+	float ShakeDuration = 2.1f;
 
 	UPROPERTY(ReplicatedUsing = OnRep_RingCount)
 	uint8 RingCount = 0;

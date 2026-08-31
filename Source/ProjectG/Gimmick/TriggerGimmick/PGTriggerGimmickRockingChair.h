@@ -41,7 +41,7 @@ protected:
 	UFUNCTION()
 	void OnRep_IsRocking();
 
-	void PlayCreakSound();
+	void PlayCreakSound(bool FlipFlop);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Chair")
 	TObjectPtr<USphereComponent> TriggerSphere;
@@ -59,6 +59,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
 	FName CreakSoundName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	FName Creak2SoundName;
+
+	bool CreakSoundFlipFlopState = true;
 
 	float RockElapsed = 0.0f;
 	FRotator BaseRotation;
