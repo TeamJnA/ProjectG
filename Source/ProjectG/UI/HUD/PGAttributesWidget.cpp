@@ -22,6 +22,16 @@ void UPGAttributesWidget::NativeDestruct()
 		}
 	}
 
+	// 적용중인 이펙트들도 초기화.( 다이나믹 마테리얼 값을 원상복구 후 저장 )
+	// MID 를 Original 상태로 변경
+	if (BorderMID)
+	{
+		BorderMID->SetVectorParameterValue(GlowColorParamName, FLinearColor(0.03f, 0.05f, 0.07f));
+		BorderMID->SetVectorParameterValue(MetalLightColorParamName, FLinearColor(0.055f, 0.06f, 0.065f));
+		BorderMID->SetScalarParameterValue(PulseMinBrightnessParamName, 0.8f);
+		BorderMID->SetScalarParameterValue(PulseSpeedParamName, 1.0f);
+	}
+
 	Super::NativeDestruct();
 }
 
@@ -47,6 +57,7 @@ void UPGAttributesWidget::BindToAttributes()
 		return;
 	}
 
+	// 이전에 Bound한 내역이 있으면 제거 후 다시 바운드 ( ex.사망 후 부활 시 )
 	if (LastBoundASC.IsValid())
 	{
 		LastBoundASC->GetGameplayAttributeValueChangeDelegate(AS->GetSanityAttribute()).Remove(SanityChangedHandle);
