@@ -43,6 +43,7 @@ protected:
 
 	APGSoundManager* GetSoundManager();
 	void PlayLocalSound(FName SoundName, FVector SoundLocation);
+	void PlaySoundAll(FName SoundName, FVector SoundLocation);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> Root;

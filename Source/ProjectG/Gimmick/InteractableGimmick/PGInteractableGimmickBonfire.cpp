@@ -126,7 +126,7 @@ bool APGInteractableGimmickBonfire::CanStartInteraction(UAbilitySystemComponent*
 
 void APGInteractableGimmickBonfire::InteractionFailed()
 {
-	PlayLocalSound(BoneFireFailedSound, GetActorLocation());
+	PlaySoundAll(BoneFireFailedSound, GetActorLocation());
 }
 
 void APGInteractableGimmickBonfire::StartBonfire()

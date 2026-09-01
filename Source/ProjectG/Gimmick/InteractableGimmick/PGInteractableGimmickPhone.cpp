@@ -7,7 +7,6 @@
 #include "Enemy/Blind/Character/PGBlindCharacter.h"
 #include "Character/PGPlayerCharacter.h"
 #include "Player/PGPlayerState.h"
-#include "Sound/PGSoundManager.h"
 #include "Utils/PGPhotoSubjectRegistry.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
@@ -171,10 +170,7 @@ void APGInteractableGimmickPhone::GimmickInteract(AActor* Investigator)
 	GetWorldTimerManager().ClearTimer(RingTimerHandle);
 	SetPhoneState(EPGPhoneState::Disabled);
 
-	if (APGSoundManager* SM = GetSoundManager())
-	{
-		SM->PlaySoundForAllPlayers(HangUpSoundName, GetActorLocation());
-	}
+	PlaySoundAll(HangUpSoundName, GetActorLocation());
 
 	StopRinging();
 }
