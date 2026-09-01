@@ -19,7 +19,9 @@ APGFuseBox::APGFuseBox()
 {
     PrimaryActorTick.bCanEverTick = false;
     bReplicates = true;
+    SetReplicateMovement(false);
     bAlwaysRelevant = true;
+    SetNetUpdateFrequency(30.0f);
 
     Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
     RootComponent = Root;
@@ -44,6 +46,23 @@ void APGFuseBox::BeginPlay()
 	Super::BeginPlay();
 
     MIDCover = CoverMesh->CreateDynamicMaterialInstance(0);
+
+    // 상호작용 시점에 동기 로드가 걸리지 않도록 미리 로드
+    if (!FuseItemDataPath.IsNull())
+    {
+        FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+        TWeakObjectPtr<APGFuseBox> WeakThis(this);
+
+        FuseDataLoadHandle = Streamable.RequestAsyncLoad(
+            FuseItemDataPath.ToSoftObjectPath(),
+            FStreamableDelegate::CreateLambda([WeakThis]()
+                {
+                    if (WeakThis.IsValid())
+                    {
+                        WeakThis->CachedFuseData = WeakThis->FuseItemDataPath.Get();
+                    }
+                }));
+    }
 }
 
 void APGFuseBox::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -113,7 +132,13 @@ void APGFuseBox::OpenBox(AActor* Investigator)
 
 void APGFuseBox::SpawnFuseItem()
 {
-    UPGItemData* FuseData = FuseItemDataPath.LoadSynchronous();
+    UPGItemData* FuseData = CachedFuseData;
+    if (!FuseData)
+    {
+        // 프리로드가 아직 안 끝났으면 동기 로드
+        FuseData = FuseItemDataPath.LoadSynchronous();
+    }
+
     if (!FuseData)
     {
         return;

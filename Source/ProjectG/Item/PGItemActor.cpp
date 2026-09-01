@@ -4,6 +4,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Abilities/GameplayAbility.h"
 #include "Interact/Ability/GA_Interact_Item.h"
+#include "Engine/AssetManager.h"
 
 #include "GameFramework/GameModeBase.h"
 #include "Sound/PGSoundManager.h"
@@ -106,13 +107,46 @@ void APGItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 */
 void APGItemActor::OnRep_ItemData()
 {
-	UPGItemData* ItemData = ItemDataPath.LoadSynchronous();
-	if (ItemData)
+	if (ItemDataPath.IsNull())
 	{
-		LoadedItemData = ItemData;
-		StaticMesh->SetStaticMesh(ItemData->ItemMesh);
-		HighlightOn();
+		return;
 	}
+
+	// 이미 로드돼 있으면 즉시 적용
+	if (UPGItemData* Loaded = ItemDataPath.Get())
+	{
+		ApplyItemData(Loaded);
+		return;
+	}
+
+	const double RequestTime = FPlatformTime::Seconds();
+
+	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+	TWeakObjectPtr<APGItemActor> WeakThis(this);
+	const FSoftObjectPath Path = ItemDataPath.ToSoftObjectPath();
+
+	Streamable.RequestAsyncLoad(Path,
+		FStreamableDelegate::CreateLambda([WeakThis, RequestTime, Path]()
+			{
+				const double Elapsed = (FPlatformTime::Seconds() - RequestTime) * 1000.0;
+
+				if (WeakThis.IsValid())
+				{
+					WeakThis->ApplyItemData(WeakThis->ItemDataPath.Get());
+				}
+			}));
+}
+
+void APGItemActor::ApplyItemData(UPGItemData* ItemData)
+{
+	if (!ItemData)
+	{
+		return;
+	}
+
+	LoadedItemData = ItemData;
+	StaticMesh->SetStaticMesh(ItemData->ItemMesh);
+	HighlightOn();
 }
 
 UPGItemData* APGItemActor::GetItemData()

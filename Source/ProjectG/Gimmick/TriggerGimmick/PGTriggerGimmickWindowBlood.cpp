@@ -9,6 +9,8 @@
 
 APGTriggerGimmickWindowBlood::APGTriggerGimmickWindowBlood()
 {
+    SetNetUpdateFrequency(30.0f);
+
     ActivationChance = 0.2f;
     bIsOneShotEvent = true;
 

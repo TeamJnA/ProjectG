@@ -14,6 +14,7 @@ APGTriggerGimmickRockingChair::APGTriggerGimmickRockingChair()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
+	SetNetUpdateFrequency(10.0f);
 
 	// 베이스의 박스 트리거 사용 x
 	TriggerVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -71,15 +72,22 @@ void APGTriggerGimmickRockingChair::Tick(float DeltaTime)
 
 	RockElapsed += DeltaTime;
 
+	// 화면에 안 보이면 회전 갱신 x
+	const bool bRecentlyRendered = StaticMesh->WasRecentlyRendered(0.5f);
+	if (bRecentlyRendered)
+	{
+		const float Period = FMath::Max(RockPeriod, 0.1f);
+		const float Phase = (RockElapsed / Period) * 2.0f * PI;
+		const float Angle = FMath::Sin(Phase) * RockAngle;
+
+		FRotator NewRotation = BaseRotation;
+		NewRotation.Roll += Angle;
+		StaticMesh->SetRelativeRotation(NewRotation);
+	}
+
+	// 소리는 벽 너머에서도 들려야 함 -> 계속 처리
+	// PlayCreakSound에서 거리 기반 소리 재생 여부 판정
 	const float Period = FMath::Max(RockPeriod, 0.1f);
-	const float Phase = (RockElapsed / Period) * 2.0f * PI;
-	const float Angle = FMath::Sin(Phase) * RockAngle;
-
-	FRotator NewRotation = BaseRotation;
-	NewRotation.Roll += Angle;
-	StaticMesh->SetRelativeRotation(NewRotation);
-
-	// 양 끝점(사인 극값)에서 소리 발생
 	const int32 HalfCycle = FMath::FloorToInt(RockElapsed / (Period * 0.5f));
 	if (HalfCycle != LastCreakHalfCycle)
 	{
@@ -108,6 +116,9 @@ void APGTriggerGimmickRockingChair::OnTriggerOverlap(UPrimitiveComponent* Overla
 
 	bIsRocking = true;
 	OnRep_IsRocking();
+
+	// bIsRocking은 다시 false로 돌아가지 않으므로 이후 복제 불필요
+	SetNetDormancy(DORM_DormantAll);
 }
 
 void APGTriggerGimmickRockingChair::OnRep_IsRocking()
@@ -124,15 +135,27 @@ void APGTriggerGimmickRockingChair::OnRep_IsRocking()
 
 void APGTriggerGimmickRockingChair::PlayCreakSound(bool FlipFlop)
 {
-	if (APGSoundManager* SM = SoundManager)
+	APGSoundManager* SM = SoundManager;
+	if (!SM)
 	{
-		if (FlipFlop)
+		return;
+	}
+
+	// 로컬 거리 기반 재생 여부 판정
+	if (const APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		if (const APawn* LocalPawn = PC->GetPawn())
 		{
-			SM->PlaySoundLocally(CreakSoundName, GetActorLocation());
-		}
-		else
-		{
-			SM->PlaySoundLocally(Creak2SoundName, GetActorLocation());
+			const uint8 Level = SM->GetSoundLevel(FlipFlop ? CreakSoundName : Creak2SoundName);
+			const float AudibleRange = 200.0f * Level * Level;
+
+			if (FVector::DistSquared(GetActorLocation(), LocalPawn->GetActorLocation())
+				> FMath::Square(AudibleRange))
+			{
+				return;
+			}
 		}
 	}
+
+	SM->PlaySoundLocally(FlipFlop ? CreakSoundName : Creak2SoundName, GetActorLocation());
 }

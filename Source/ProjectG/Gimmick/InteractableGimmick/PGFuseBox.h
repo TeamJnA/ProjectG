@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Engine/AssetManager.h"
 #include "Interface/InteractableActorInterface.h"
 #include "Interface/HoldInteractProgressHandler.h"
 #include "PGFuseBox.generated.h"
@@ -72,6 +73,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Fuse")
 	TSoftObjectPtr<UPGItemData> FuseItemDataPath;
+
+	UPROPERTY()
+	TObjectPtr<UPGItemData> CachedFuseData;
+
+	TSharedPtr<FStreamableHandle> FuseDataLoadHandle;
 
 	// Sound
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta = (AllowPrivateAccess = "true"))

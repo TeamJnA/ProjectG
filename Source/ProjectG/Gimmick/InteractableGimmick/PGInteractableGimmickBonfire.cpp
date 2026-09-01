@@ -14,9 +14,7 @@ APGInteractableGimmickBonfire::APGInteractableGimmickBonfire()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
-	bReplicates = true;
-	SetReplicateMovement(true);
-	bAlwaysRelevant = true;
+	SetNetUpdateFrequency(10.0f);
 
 	SanityHealAreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("SanityHealAreaSphere"));
 	SanityHealAreaSphere->SetupAttachment(RootComponent);
@@ -108,7 +106,8 @@ bool APGInteractableGimmickBonfire::CanStartInteraction(UAbilitySystemComponent*
 {
 	if (!bIsLit)
 	{
-		if (InteractingASC && InteractingASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Item.Consumable.Match"))))
+		static const FGameplayTag MatchTag = FGameplayTag::RequestGameplayTag(FName("Item.Consumable.Match"));
+		if (InteractingASC && InteractingASC->HasMatchingGameplayTag(MatchTag))
 		{
 			return true;
 		}

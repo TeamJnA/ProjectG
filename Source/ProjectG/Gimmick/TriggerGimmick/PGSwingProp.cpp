@@ -13,6 +13,11 @@ APGSwingProp::APGSwingProp()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
+	bReplicates = true;
+	SetReplicateMovement(false);
+	bAlwaysRelevant = true;
+	SetNetUpdateFrequency(30.0f);
+
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
@@ -21,10 +26,6 @@ APGSwingProp::APGSwingProp()
 	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Mesh->SetNotifyRigidBodyCollision(true);
 	Mesh->SetGenerateOverlapEvents(false);
-
-	bReplicates = true;
-	SetReplicateMovement(false);
-	bAlwaysRelevant = true;
 }
 
 void APGSwingProp::BeginPlay()

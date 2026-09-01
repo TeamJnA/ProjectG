@@ -12,6 +12,8 @@
 
 APGInteractableGimmickArmorStand::APGInteractableGimmickArmorStand()
 {
+    SetReplicateMovement(true);
+
     ArmorBoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ArmorBoxCollision"));
     ArmorBoxCollision->SetupAttachment(RootComponent);
 

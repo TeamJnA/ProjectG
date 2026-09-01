@@ -10,8 +10,8 @@
 
 APGItemBox::APGItemBox()
 {
-	bReplicates = true;
-	SetReplicateMovement(false);
+	SetNetUpdateFrequency(2.0f);
+	NetDormancy = DORM_Initial;
 }
 
 FInteractionInfo APGItemBox::GetInteractionInfo() const

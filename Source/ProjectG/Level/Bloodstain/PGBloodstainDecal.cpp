@@ -11,8 +11,9 @@ APGBloodstainDecal::APGBloodstainDecal()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
-	SetReplicateMovement(true);
+	SetReplicateMovement(false);
 	bAlwaysRelevant = true;
+	SetNetUpdateFrequency(2.0f);
 
 	DecalComponent = CreateDefaultSubobject<UDecalComponent>(TEXT("DecalComponent"));
 	RootComponent = DecalComponent;
@@ -31,6 +32,9 @@ void APGBloodstainDecal::InitializeDecal(const FVector& NewDecalSize, UMaterialI
 			TargetDecalMaterial = NewDecalMaterial;
 			OnRep_TargetDecalMaterial();
 		}
+
+		// 이후 상태가 변하지 않으므로 최초 1회 복제 후 휴면
+		SetNetDormancy(DORM_DormantAll);
 	}
 }
 

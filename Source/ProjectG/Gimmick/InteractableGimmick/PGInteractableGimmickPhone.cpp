@@ -19,6 +19,7 @@ APGInteractableGimmickPhone::APGInteractableGimmickPhone()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
+	SetNetUpdateFrequency(10.0f);
 
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -168,6 +169,7 @@ void APGInteractableGimmickPhone::GimmickInteract(AActor* Investigator)
 		return;
 	}
 
+	GetWorldTimerManager().ClearTimer(RingStartDelayHandle);
 	GetWorldTimerManager().ClearTimer(RingTimerHandle);
 	SetPhoneState(EPGPhoneState::Disabled);
 
@@ -176,7 +178,7 @@ void APGInteractableGimmickPhone::GimmickInteract(AActor* Investigator)
 		SM->PlaySoundForAllPlayers(HangUpSoundName, GetActorLocation());
 	}
 
-	StopRinging();
+	SetNetDormancy(DORM_DormantAll);
 }
 
 void APGInteractableGimmickPhone::HighlightOn() const
@@ -447,14 +449,14 @@ void APGInteractableGimmickPhone::ApplyPhoneVisualState()
 
 void APGInteractableGimmickPhone::OnRep_RingCount()
 {
-	if (!MIDReceiver)
-	{
-		return;
-	}
-
 	if (RingAudioComponent)
 	{
 		RingAudioComponent->Play();
+	}
+
+	if (!MIDReceiver)
+	{
+		return;
 	}
 
 	MIDReceiver->SetScalarParameterValue(ShakeParameterName, ShakePower);

@@ -16,7 +16,7 @@ APGInteractableGimmickBase::APGInteractableGimmickBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
-	SetReplicateMovement(true);
+	SetReplicateMovement(false);
 	bAlwaysRelevant = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));

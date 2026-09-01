@@ -67,6 +67,8 @@ protected:
 	UFUNCTION()
 	void OnRep_ItemData();
 
+	void ApplyItemData(UPGItemData* ItemData);
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
 
