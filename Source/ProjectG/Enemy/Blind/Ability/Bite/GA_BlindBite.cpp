@@ -8,7 +8,6 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "Enemy/Blind/AI/Controllers/PGBlindAIController.h"
-#include "Character/Component/PGSoundManagerComponent.h"
 
 
 UGA_BlindBite::UGA_BlindBite()
@@ -53,16 +52,6 @@ void UGA_BlindBite::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	}
 
 	OwnerPawn->SetSoundState(EBlindSoundState::Attacking);
-
-	UPGSoundManagerComponent* SoundManager = GetAvatarActorFromActorInfo()->FindComponentByClass<UPGSoundManagerComponent>();
-	if (SoundManager)
-	{
-		SoundManager->TriggerSoundForAllPlayers(TEXT("ENEMY_Blind_Attack"), OwnerPawn->GetActorLocation());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot find SoundManager from AvatarActor in UGA_BlindChase"));
-	}
 
 	Blackboard->SetValueAsBool(FName("DetectedPlayer"), true); //Behavior tree의 Detected Player 값 변경.
 

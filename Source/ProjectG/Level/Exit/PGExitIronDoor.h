@@ -197,6 +197,7 @@ private:
 
 	/*
 	Sound Managing
+	문이 얼마나 열려 있는지에 따라 사운드 재생이 다름.
 	*/
 	TBitArray<FDefaultBitArrayAllocator> SoundPlayChecker;
 

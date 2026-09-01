@@ -315,6 +315,7 @@ void APGExitIronDoor::SelfHighlightOff()
 
 void APGExitIronDoor::UpdateHoldProgress(float Progress, AActor* Investigator)
 {
+    // Hold progress 동안 철문을 여는 작업
     if (CurrentLockPhase == E_LockPhase::E_Unlocked)
     {
         // Rotate wheel
@@ -508,13 +509,15 @@ void APGExitIronDoor::Tick(float DeltaSeconds)
         {
             UE_LOG(LogPGExitPoint, Log, TEXT("The iron door closed automatically"));
 
-            if (DoorAutoCloseSpeed > 10)
+            if (DoorAutoCloseSpeed > 10) // Countdown 후 강하고 빠르게 셧다운일 시, 닫히는 소리 재생
             {
-                PlaySound(DoorClosedSound, IronDoorSoundPlayOffset->GetComponentLocation());
+                // PlaySound(DoorClosedSound, IronDoorSoundPlayOffset->GetComponentLocation());
+                PlaySoundPlayers(DoorClosedSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
-            else
+            else // 기본속도로 천천히 닫힐 경우, 일반적인 사운드 재생
             {
-                PlaySound(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
+                // PlaySound(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
+                PlaySoundPlayers(IronDoorMeshBaseSound, IronDoorSoundPlayOffset->GetComponentLocation());
             }
 
             CurrentDoorHeight = 0;

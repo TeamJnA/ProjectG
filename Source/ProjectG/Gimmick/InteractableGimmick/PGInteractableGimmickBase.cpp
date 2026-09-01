@@ -86,6 +86,14 @@ void APGInteractableGimmickBase::PlayLocalSound(FName _SoundName, FVector _Sound
 	}
 }
 
+void APGInteractableGimmickBase::PlaySoundAll(FName _SoundName, FVector _SoundLocation)
+{
+	if (APGSoundManager* SM = GetSoundManager())
+	{
+		SM->PlaySoundForAllPlayers(_SoundName, _SoundLocation);
+	}
+}
+
 TSubclassOf<UGameplayAbility> APGInteractableGimmickBase::GetAbilityToInteract() const
 {
 	return InteractAbility;

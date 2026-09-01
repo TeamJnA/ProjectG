@@ -49,13 +49,10 @@ APGEnemyCharacterBase::APGEnemyCharacterBase()
 
 void APGEnemyCharacterBase::NotifyAttackStart()
 {
-	if (HasAuthority())
+	if (SoundManagerComponent)
 	{
-		if (SoundManagerComponent)
-		{
-			//SoundManagerComponent->TriggerSoundForAllPlayers(AttackFinishSound, GetActorLocation());
-			SoundManagerComponent->TriggerSoundForSelf(AttackFinishSound);
-		}
+		// SoundManagerComponent->TriggerSoundForAllPlayers(AttackFinishSound, GetActorLocation());
+		SoundManagerComponent->TriggerSoundForSelf(AttackFinishSound);
 	}
 }
 
