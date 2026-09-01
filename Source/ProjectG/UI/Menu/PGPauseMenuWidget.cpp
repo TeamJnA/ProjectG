@@ -175,7 +175,7 @@ void UPGPauseMenuWidget::OnMainMenuButtonClicked()
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToMainMenu);
 		if (!ConfirmWidgetInstance->IsInViewport())
 		{
-			ConfirmWidgetInstance->AddToViewport();
+			ConfirmWidgetInstance->AddToViewport(20);
 		}
 	}
 }
@@ -240,7 +240,7 @@ void UPGPauseMenuWidget::OnDesktopButtonClicked()
 		ConfirmWidgetInstance->OnConfirmClicked.AddDynamic(this, &UPGPauseMenuWidget::ReturnToDesktop);
 		if (!ConfirmWidgetInstance->IsInViewport())
 		{
-			ConfirmWidgetInstance->AddToViewport();
+			ConfirmWidgetInstance->AddToViewport(20);
 		}
 	}
 }

@@ -484,7 +484,7 @@ void APGHUD::InitPauseMenuWidget()
 
 		CloseHelperWidgetIfOpen();
 
-		PauseMenuWidget->AddToViewport();
+		PauseMenuWidget->AddToViewport(15);
 	}
 }
 
