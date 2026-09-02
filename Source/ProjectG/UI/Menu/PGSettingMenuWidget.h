@@ -132,6 +132,9 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UButton> VideoOptionButton;
 
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UButton> KeyGuideButton;
+
 private:
     // -------- Slider Callbacks --------
     // -------- GamePlay Callbacks --------
@@ -178,6 +181,9 @@ private:
 
     UFUNCTION()
     void OnVideoOptionButtonClicked();
+
+    UFUNCTION()
+    void OnKeyGuideButtonClicked();
 
     // -------- Device Callbacks --------
     UFUNCTION()

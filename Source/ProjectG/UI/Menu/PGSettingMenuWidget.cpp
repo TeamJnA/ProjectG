@@ -114,6 +114,11 @@ void UPGSettingMenuWidget::NativeOnInitialized()
         VideoOptionButton->OnClicked.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnVideoOptionButtonClicked);
     }
 
+    if (KeyGuideButton)
+    {
+        KeyGuideButton->OnClicked.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnKeyGuideButtonClicked);
+    }
+
     /* Bind mic mode and toggle setting changed with mic icon*/
     if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
     {
@@ -876,6 +881,14 @@ void UPGSettingMenuWidget::OnVideoOptionButtonClicked()
     if (WidgetSwitcher)
     {
         WidgetSwitcher->SetActiveWidgetIndex(2);
+    }
+}
+
+void UPGSettingMenuWidget::OnKeyGuideButtonClicked()
+{
+    if (WidgetSwitcher)
+    {
+        WidgetSwitcher->SetActiveWidgetIndex(3);
     }
 }
 
