@@ -65,14 +65,23 @@ void UPGCameraWidget::StartGlitchPlayback()
         return;
     }
 
-    GlitchMID = UMaterialInstanceDynamic::Create(GlitchMaterialClass, this);
-    if (GlitchMID)
+    if (!GlitchMID)
     {
-        GlitchOverlayImage->SetBrushFromMaterial(GlitchMID);
+        GlitchMID = UMaterialInstanceDynamic::Create(GlitchMaterialClass, this);
+        if (GlitchMID)
+        {
+            GlitchOverlayImage->SetBrushFromMaterial(GlitchMID);
+        }
     }
 
-    GlitchMediaPlayer->SetLooping(true);
-    GlitchMediaPlayer->OpenSource(GlitchMediaSource);
+    // 최초 1회만 소스 오픈
+    // 이후에는 재생/일시정지만 토글
+    if (!GlitchMediaPlayer->IsPreparing() && !GlitchMediaPlayer->IsReady())
+    {
+        GlitchMediaPlayer->SetLooping(true);
+        GlitchMediaPlayer->OpenSource(GlitchMediaSource);
+    }
+
     GlitchMediaPlayer->Play();
 }
 
@@ -80,7 +89,7 @@ void UPGCameraWidget::StopGlitchPlayback()
 {
     if (GlitchMediaPlayer)
     {
-        GlitchMediaPlayer->Close();
+        GlitchMediaPlayer->Pause();
     }
 }
 
