@@ -76,11 +76,11 @@ void UPGCameraWidget::StartGlitchPlayback()
 
     // 최초 1회만 소스 오픈
     // 이후에는 재생/일시정지만 토글
-    if (!GlitchMediaPlayer->IsPreparing() && !GlitchMediaPlayer->IsReady())
-    {
-        GlitchMediaPlayer->SetLooping(true);
-        GlitchMediaPlayer->OpenSource(GlitchMediaSource);
-    }
+	if (!GlitchMediaPlayer->IsReady() && !GlitchMediaPlayer->IsPreparing())
+	{
+		GlitchMediaPlayer->SetLooping(true);
+		GlitchMediaPlayer->OpenSource(GlitchMediaSource);
+	}
 
     GlitchMediaPlayer->Play();
 }
@@ -89,6 +89,7 @@ void UPGCameraWidget::StopGlitchPlayback()
 {
     if (GlitchMediaPlayer)
     {
+        // Close()는 디코더를 해제해 재진입 시 큰 비용이 발생 -> 일시정지 처리
         GlitchMediaPlayer->Pause();
     }
 }

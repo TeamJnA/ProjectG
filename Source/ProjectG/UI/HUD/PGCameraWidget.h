@@ -51,7 +51,11 @@ protected:
     void OnFadeTransitionFinished();
 
     void StartGlitchPlayback();
+
+public:
     void StopGlitchPlayback();
+
+protected:
     float SnapToDisplayStep(float Percent) const;
 
     void ResetCaptureSequence();

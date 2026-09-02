@@ -541,6 +541,12 @@ void APGHUD::ClearViewport()
 		}
 	}
 
+	// RemoveAllViewportWidgets은 NativeDestruct 보장x -> 직접 정지
+	if (CameraWidget)
+	{
+		CameraWidget->StopGlitchPlayback();
+	}
+
 	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
 	{
 		Viewport->RemoveAllViewportWidgets();
