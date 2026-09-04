@@ -68,7 +68,14 @@ void UGA_Item_Throw::MouseLeft()
 	}
 
 	UE_LOG(LogPGAbility, Log, TEXT("MouseLeft Input. Start to throw item! %s | %s"), *GetClass()->GetName(), *GetName());
-		
+	
+	if (PredictThrowableTrajectory.IsValid())
+	{
+		PredictThrowableTrajectory->EndTask();
+	}
+	PredictThrowableTrajectory.Reset();
+	bThrowReady = false;
+
 	// Spawn item actor on the server.
 	if (HasAuthority(&CurrentActivationInfo))
 	{
@@ -164,11 +171,11 @@ void UGA_Item_Throw::RightInputCanceled()
 		return;
 	}
 
-	if (PredictThrowableTrajectory)
+	if (PredictThrowableTrajectory.IsValid())
 	{
 		PredictThrowableTrajectory->EndTask();
-		PredictThrowableTrajectory = nullptr;
 	}
+	PredictThrowableTrajectory.Reset();
 
 	// Play anim montage to return hand to default position.
 	UAbilityTask_PlayMontageAndWait* MontageTask =
@@ -184,11 +191,12 @@ void UGA_Item_Throw::RightInputCanceled()
 
 void UGA_Item_Throw::ThrowReadyCanceled()
 {
-	if (PredictThrowableTrajectory)
+	if (PredictThrowableTrajectory.IsValid())
 	{
 		PredictThrowableTrajectory->EndTask();
-		PredictThrowableTrajectory = nullptr;
 	}
+	PredictThrowableTrajectory.Reset();
+
 	bThrowReady = false;
 }
 

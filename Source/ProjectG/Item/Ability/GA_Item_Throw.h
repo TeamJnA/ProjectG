@@ -59,5 +59,5 @@ protected:
 	UFUNCTION()
 	void ThrowReadyCanceled();
 
-	TObjectPtr<UAT_PGPredictThrowableTrajectory> PredictThrowableTrajectory;
+	TWeakObjectPtr<UAT_PGPredictThrowableTrajectory> PredictThrowableTrajectory;
 };

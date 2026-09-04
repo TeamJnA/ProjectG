@@ -35,7 +35,7 @@ public:
 	// ~IInteractableActorInterface
 
 	void SelfHighlightOn();
-	void SelfHighlightOff();
+	virtual void SelfHighlightOff();
 
 protected:
 	virtual void BeginPlay() override;

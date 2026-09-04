@@ -38,8 +38,10 @@ private:
 
 	float InitialSpeed;
 
+	UPROPERTY()
 	TObjectPtr<UStaticMesh> CachedSplineMesh;
 
+	UPROPERTY()
 	TObjectPtr<UMaterialInterface> CachedSplineMaterial;
 
 	int32 SplineMeshesCount;

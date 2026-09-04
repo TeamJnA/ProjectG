@@ -82,19 +82,6 @@ void UPGAdvancedFriendsGameInstance::Init()
 	}
 
 	LoadProfile();
-
-	// Consumable
-	ItemDataMap.Add("Brick", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick")));
-	ItemDataMap.Add("Key", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/Key/DA_Consumable_Key.DA_Consumable_Key")));
-	ItemDataMap.Add("ReviveKit", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/ReviveKit/DA_Consumable_ReviveKit.DA_Consumable_ReviveKit")));
-	ItemDataMap.Add("Match", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/Match/DA_Consumable_Match.DA_Consumable_Match")));
-	ItemDataMap.Add("GlassBottle", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/GlassBottle/DA_Consumable_GlassBottle.DA_Consumable_GlassBottle")));
-
-	// Escape
-	ItemDataMap.Add("ChainKey", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/ChainKey/DA_Exit_ChainKey.DA_Exit_ChainKey")));
-	ItemDataMap.Add("HandWheel", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/HandWheel/DA_Exit_HandWheel.DA_Exit_HandWheel")));
-	ItemDataMap.Add("RustOil", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/WheelOil/DA_Exit_RustOil.DA_Exit_RustOil")));
-	ItemDataMap.Add("Fuse", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Exit/Fuse/DA_Exit_Fuse.DA_Exit_Fuse")));
 }
 
 // ---------- Session ---------

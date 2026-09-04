@@ -11,6 +11,18 @@
 class UBoxComponent;
 class UCameraShakeSourceComponent;
 
+USTRUCT()
+struct FPGArmorPieceState
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FVector_NetQuantize100 Location = FVector::ZeroVector;
+
+	UPROPERTY()
+	FRotator Rotation = FRotator::ZeroRotator;
+};
+
 /**
  * 
  */
@@ -21,8 +33,6 @@ class PROJECTG_API APGInteractableGimmickArmorStand : public APGInteractableGimm
 	
 public:
 	APGInteractableGimmickArmorStand();
-
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
 	void CollapseArmor(AActor* Investigator = nullptr);
 
@@ -36,10 +46,11 @@ public:
 	// ~IInteractableActorInterface
 
 	virtual void GimmickInteract(AActor* Investigator);
+	virtual void SelfHighlightOff() override;
 
 protected:
 	virtual void BeginPlay() override;
-
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
 
 	UFUNCTION()
@@ -53,6 +64,16 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ArmorMesh", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UStaticMeshComponent>> ArmorMeshs;
 
+	UPROPERTY(ReplicatedUsing = OnRep_CollapsedState)
+	TArray<FPGArmorPieceState> CollapsedState;
+
+	UFUNCTION()
+	void OnRep_CollapsedState();
+
+	void CaptureSettledTransforms();
+
+	void ApplyCollapseState();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Collision", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UBoxComponent> ArmorBoxCollision;
 
@@ -65,13 +86,16 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI Text")
 	FText BreakText = LOCTEXT("ArmorStand_Break", "Break");
 
-	UPROPERTY(ReplicatedUsing = OnRep_CollisionDisabled)
-	bool bIsCollisionDisabled;
+	FTimerHandle SettleTimerHandle;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Collapsed)
+	bool bCollapsed = false;
 
 	UFUNCTION()
-	void OnRep_CollisionDisabled();
+	void OnRep_Collapsed();
 
-	bool bAlreadyCollapsed;
+	bool bLocalPhysicsStarted = false;
+	bool bLocalSettleApplied = false;
 };
 
 #undef LOCTEXT_NAMESPACE

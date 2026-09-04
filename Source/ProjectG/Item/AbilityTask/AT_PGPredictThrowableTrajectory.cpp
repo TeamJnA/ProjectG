@@ -11,6 +11,18 @@ UAT_PGPredictThrowableTrajectory::UAT_PGPredictThrowableTrajectory(const FObject
 {
 	bTickingTask = true;
     SplineMeshesCount = 12;
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshRef(TEXT("/Game/ProjectG/Items/Common/ThrowPredict/Shape_Cylinder.Shape_Cylinder"));
+    if (MeshRef.Succeeded())
+    {
+        CachedSplineMesh = MeshRef.Object;
+    }
+
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> MatRef(TEXT("/Game/ProjectG/Items/Common/ThrowPredict/M_ThrowPredictMaterial.M_ThrowPredictMaterial"));
+    if (MatRef.Succeeded())
+    {
+        CachedSplineMaterial = MatRef.Object;
+    }
 }
 
 UAT_PGPredictThrowableTrajectory* UAT_PGPredictThrowableTrajectory::DrawTrajectory(UGameplayAbility* OwningAbility, float InInitialSpeed)
@@ -36,7 +48,7 @@ void UAT_PGPredictThrowableTrajectory::Activate()
     }
 
     // 1. Spline Component 동적 생성 (OwningActor를 Outer로 지정)
-    SplineComponent = NewObject<USplineComponent>(OwningActor, TEXT("SplineComponent"));
+    SplineComponent = NewObject<USplineComponent>(OwningActor);
 
     if (!SplineComponent)
     {
@@ -50,9 +62,6 @@ void UAT_PGPredictThrowableTrajectory::Activate()
     // 3. 컴포넌트 등록
     SplineComponent->RegisterComponent();
 
-    // Load mesh and material
-    FString MeshPath = TEXT("/Game/ProjectG/Items/Common/ThrowPredict/Shape_Cylinder.Shape_Cylinder");
-    CachedSplineMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, *MeshPath));
     if (!CachedSplineMesh)
     {
         UE_LOG(LogPGAbilityTask, Warning, TEXT("Cannot find CachedSplineMesh in UAT_PGPredictThrowableTrajectory::Activate"));
@@ -60,8 +69,6 @@ void UAT_PGPredictThrowableTrajectory::Activate()
         return;
     }
 
-    FString MaterialPath = TEXT("/Game/ProjectG/Items/Common/ThrowPredict/M_ThrowPredictMaterial.M_ThrowPredictMaterial");
-    CachedSplineMaterial = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, *MaterialPath));
     if (!CachedSplineMaterial)
     {
         UE_LOG(LogPGAbilityTask, Warning, TEXT("Cannot find CachedSplineMaterial in UAT_PGPredictThrowableTrajectory::Activate"));
