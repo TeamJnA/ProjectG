@@ -495,6 +495,18 @@ void APGGameState::OnEnterSequenceFinished()
 	{
 		PC->SetupPlayerForGameplay();
 	}
+
+	if (EnterSequencePlayer)
+	{
+		EnterSequencePlayer->OnFinished.RemoveDynamic(
+			this,
+			&APGGameState::OnEnterSequenceFinished
+		);
+
+		EnterSequencePlayer = nullptr;
+	}
+
+	LoadedLevelSequence = nullptr;
 }
 
 FVector APGGameState::GetExplorationTarget(const FVector& CurrentLocation, bool* bOutUsedPlayerBias) const
