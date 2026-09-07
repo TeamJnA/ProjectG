@@ -239,6 +239,8 @@ void APGPlayerController::Client_PostSeamlessTravel_Implementation()
 		return;
 	}
 
+	Server_ReportTravelSuccess();
+
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (!GI)
 	{
@@ -246,8 +248,6 @@ void APGPlayerController::Client_PostSeamlessTravel_Implementation()
 		return;
 	}
 	GI->ShowLoadingScreen();
-
-	Server_ReportTravelSuccess();
 }
 
 void APGPlayerController::Server_ReportTravelSuccess_Implementation()

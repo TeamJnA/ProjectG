@@ -24,6 +24,8 @@
 #include "Player/PGLobbyPlayerController.h"
 #include "Player/PGPlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "Level/Misc/PGVFXPrewarmer.h"
+
 
 #define LOCTEXT_NAMESPACE "PGMenu"
 
@@ -98,11 +100,18 @@ void UPGMainMenuWidget::NativeConstruct()
 		GI->OnJoinSessionAttemptFinished.AddUniqueDynamic(this, &UPGMainMenuWidget::HandleJoinSessionFinished);
 
 		FTimerHandle HideLoadingScreenTimer;
-		GetWorld()->GetTimerManager().SetTimer(HideLoadingScreenTimer, [GI]()
-		{
-			GI->HideLoadingScreen();
-			UE_LOG(LogTemp, Log, TEXT("MainMenu: Loading Screen Hidden"));
-		}, 0.5f, false);
+		TWeakObjectPtr<UPGMainMenuWidget> WeakThis(this);
+		GetWorld()->GetTimerManager().SetTimer(HideLoadingScreenTimer, [GI, WeakThis]()
+			{
+				// 프리워밍 중이면 컨트롤러 대기 로직에서 처리
+				if (WeakThis.IsValid() && GI->IsPrewarmInProgress())
+				{
+					return;
+				}
+
+				GI->HideLoadingScreen();
+				UE_LOG(LogTemp, Log, TEXT("MainMenu: Loading Screen Hidden"));
+			}, 0.5f, false);
 	}
 
 	FTimerHandle CheckErrorMsgTimerHandle;

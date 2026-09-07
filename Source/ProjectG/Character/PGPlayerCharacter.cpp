@@ -209,6 +209,12 @@ void APGPlayerCharacter::BeginPlay()
 		}
 	}
 
+	if (IsLocallyControlled() && PhotoCaptureComp && !PhotoRenderTarget)
+	{
+		PhotoRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, PhotoCaptureResolution, PhotoCaptureResolution, RTF_RGBA8);
+		PhotoCaptureComp->TextureTarget = PhotoRenderTarget;
+	}
+
 	TryInitBloodMaterial();
 }
 

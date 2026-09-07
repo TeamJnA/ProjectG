@@ -301,4 +301,15 @@ public:
 
 private:
 	EPGDifficulty SelectedDifficulty = EPGDifficulty::Normal;
+
+// Prewarmer
+public:
+	FORCEINLINE bool HasPrewarmed() const { return bHasPrewarmed; }
+	FORCEINLINE void MarkPrewarmed() { bHasPrewarmed = true; }
+	FORCEINLINE bool IsPrewarmInProgress() const { return bPrewarmInProgress; }
+	FORCEINLINE void SetPrewarmInProgress(bool bInProgress) { bPrewarmInProgress = bInProgress; }
+
+private:
+	bool bHasPrewarmed = false;
+	bool bPrewarmInProgress = false;
 };

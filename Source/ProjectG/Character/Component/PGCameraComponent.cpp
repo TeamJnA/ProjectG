@@ -113,6 +113,8 @@ void UPGCameraComponent::EnterCameraMode()
     
     bIsTransitioning = true;
 
+    Owner->CapturePhoto();
+
     // LensDistortion MID วาด็
     LenseDistortionMID = Owner->GetLensDistortionMID();
 

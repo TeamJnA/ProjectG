@@ -101,4 +101,7 @@ private:
 
 	bool bPushToTalkActive = false;
 	bool bPushToTalkPrimed = false;
+
+private:
+	int32 PrewarmWaitTicks = 0;
 };

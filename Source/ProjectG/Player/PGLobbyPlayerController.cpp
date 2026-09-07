@@ -172,14 +172,27 @@ void APGLobbyPlayerController::ApplySavedInputDeviceDeferred()
 
 void APGLobbyPlayerController::HideLoadingScreenDelayed()
 {
-	GetWorld()->GetTimerManager().ClearTimer(LoadingScreenFailsafeHandle);
-
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 	if (!GI)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("LobbyPC::HideLoadingScreenDelayed: No valid GI"));
 		return;
 	}
+
+	// 프리워밍이 끝날 때까지 로딩 화면 유지
+	// 5초를 넘기면 그냥 진행
+	if (PrewarmWaitTicks < 50 && GI->IsPrewarmInProgress())
+	{
+		++PrewarmWaitTicks;
+		GetWorld()->GetTimerManager().SetTimer(HideLoadingScreenTimerHandle, this,
+			&APGLobbyPlayerController::HideLoadingScreenDelayed, 0.1f, false);
+		return;
+	}
+
+	PrewarmWaitTicks = 0;
+
+	GetWorld()->GetTimerManager().ClearTimer(LoadingScreenFailsafeHandle);
+
 	GI->HideLoadingScreen();
 }
 
