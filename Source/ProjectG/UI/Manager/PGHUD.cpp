@@ -154,6 +154,11 @@ void APGHUD::Init()
 		BackgroundBlurWidget->AddToViewport(-1);
 	}
 
+	if (!CameraWidget)
+	{
+		CameraWidget = CreateWidget<UPGCameraWidget>(PC, CameraWidgetClass);
+	}
+
 	TryBindExits();
 	TrySubscribeCapturedSubjects();
 }

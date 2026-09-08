@@ -36,11 +36,11 @@ protected:
 
 	/** 프리워밍을 유지할 프레임 수 */
 	UPROPERTY(EditDefaultsOnly, Category = "Prewarm")
-	int32 FramesToHold = 30;
+	int32 FramesToHold = 50;
 
 	/** 완료 후 대기 프레임 수 */
 	UPROPERTY(EditDefaultsOnly, Category = "Prewarm")
-	int32 FramesToFade = 50;
+	int32 FramesToFade = 10;
 
 	int32 FrameCounter = 0;
 	int32 FadeCounter = 0;

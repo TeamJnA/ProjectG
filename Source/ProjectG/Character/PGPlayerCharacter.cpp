@@ -209,12 +209,6 @@ void APGPlayerCharacter::BeginPlay()
 		}
 	}
 
-	if (IsLocallyControlled() && PhotoCaptureComp && !PhotoRenderTarget)
-	{
-		PhotoRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, PhotoCaptureResolution, PhotoCaptureResolution, RTF_RGBA8);
-		PhotoCaptureComp->TextureTarget = PhotoRenderTarget;
-	}
-
 	TryInitBloodMaterial();
 }
 
@@ -723,6 +717,7 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 			InitHUD();
 		}
 
+		// MID
 		UE_LOG(LogPGPlayerCharacter, Log, TEXT("APGPlayerCharacter::PossessedBy: Init PostProcess [%s]"), *GetNameSafe(this)); //
 		InitPostProcessMaterial();
 		InitLensDistortionMaterial();
@@ -741,6 +736,8 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 		}
 
 		GetWorldTimerManager().SetTimer(VoiceCheckTimerHandle, this, &APGPlayerCharacter::CheckVoiceAndReportNoise, 0.2f, true);
+
+		// Camera
 		InitPhotoDetection();
 
 		if (CameraComp)
@@ -750,6 +747,13 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 		else
 		{
 			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] PossessedBy: Camera Comp is not valid"));
+		}
+
+		if (PhotoCaptureComp && !PhotoRenderTarget)
+		{
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] PossessedBy: Create RenderTarget"));
+			PhotoRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, PhotoCaptureResolution, PhotoCaptureResolution, RTF_RGBA8);
+			PhotoCaptureComp->TextureTarget = PhotoRenderTarget;
 		}
 
 		TryReportRank();
@@ -831,6 +835,8 @@ void APGPlayerCharacter::OnRep_PlayerState()
 		}
 
 		GetWorldTimerManager().SetTimer(VoiceCheckTimerHandle, this, &APGPlayerCharacter::CheckVoiceAndReportNoise, 0.2f, true);
+
+		// Camera
 		InitPhotoDetection();
 
 		if (CameraComp)
@@ -840,6 +846,13 @@ void APGPlayerCharacter::OnRep_PlayerState()
 		else
 		{
 			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] OnRep_PlayerState: Camera Comp is not valid"));
+		}
+
+		if (PhotoCaptureComp && !PhotoRenderTarget)
+		{
+			UE_LOG(LogPGPlayerCharacter, Warning, TEXT("[Character] OnRep_PlayerState: Create RenderTarget"));
+			PhotoRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, PhotoCaptureResolution, PhotoCaptureResolution, RTF_RGBA8);
+			PhotoCaptureComp->TextureTarget = PhotoRenderTarget;
 		}
 
 		TryReportRank();
