@@ -31,6 +31,8 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void Tick(float DeltaTime) override;
 
+	void EnableTrigger();
+
 	virtual void OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
@@ -43,11 +45,20 @@ protected:
 
 	void PlayCreakSound(bool FlipFlop);
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	FName CreakSoundName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	FName Creak2SoundName;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Chair")
 	TObjectPtr<USphereComponent> TriggerSphere;
 
-	UPROPERTY(ReplicatedUsing = OnRep_IsRocking, VisibleAnywhere, BlueprintReadOnly, Category = "Chair")
-	bool bIsRocking = false;
+	FTimerHandle TriggerActivationHandle;
+	FRotator BaseRotation;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Chair")
+	float TriggerActivationDelay = 5.0f;
 
 	/** 최대 기울기 각도 */
 	UPROPERTY(EditAnywhere, Category = "Chair")
@@ -57,17 +68,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Chair")
 	float RockPeriod = 2.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
-	FName CreakSoundName;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
-	FName Creak2SoundName;
-
-	bool CreakSoundFlipFlopState = true;
-
 	float RockElapsed = 0.0f;
-	FRotator BaseRotation;
 
 	/** 소리 재생 시점 추적용 */
-	int32 LastCreakHalfCycle = -1;	
+	int32 LastCreakHalfCycle = -1;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsRocking, VisibleAnywhere, BlueprintReadOnly, Category = "Chair")
+	bool bIsRocking = false;
+
+	bool CreakSoundFlipFlopState = true;
 };

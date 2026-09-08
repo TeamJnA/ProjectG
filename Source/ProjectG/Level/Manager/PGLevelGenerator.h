@@ -22,9 +22,9 @@ class UPGBloodstainSpawnPoint;
 UENUM()
 enum class EGimmickSpawnMode : uint8
 {
-	// 고정 개수(SpawnCount)만큼, 서로 최대한 멀게 배치
+	// 고정 개수(SpawnCount)만큼, 분산
 	SpreadByCount	UMETA(DisplayName = "Spread By Count"),
-	// 후보 대비 비율(SpawnRatio)만큼, 단순 랜덤 배치
+	// 후보 대비 비율(SpawnRatio)만큼, RoundRobin
 	RandomByRatio	UMETA(DisplayName = "Random By Ratio")
 };
 
@@ -46,6 +46,11 @@ struct FGimmickSpawnConfig
 	// 0보다 크면 SpawnCount 대신 비율로 개수 결정
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "SpawnMode == EGimmickSpawnMode::RandomByRatio", ClampMin = "0.0", ClampMax = "1.0"))
 	float SpawnRatio = 0.5f;
+
+	// 0 -> 단독 배치
+	// 1 이상 -> 같은 그룹끼리 스폰로직 진행
+	UPROPERTY(EditDefaultsOnly, meta = (ClampMin = "0", EditCondition = "SpawnMode == EGimmickSpawnMode::SpreadByCount"))
+	int32 SpreadGroup = 0;
 
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "SpawnMode == EGimmickSpawnMode::SpreadByCount", ClampMin = "0"))
 	int32 SpawnCount = 2;
@@ -98,18 +103,19 @@ protected:
 	APGMasterRoom* GetBranchRoot(APGMasterRoom* Room) const;
 
 	void SpawnGimmicks();
+	void SpawnGimmickGroup(const TArray<EGimmickType>& GroupTypes);
 	void CollectGimmickCandidates(
 		EGimmickType GimmickType,
 		const FGimmickSpawnConfig& Config,
 		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutCandidates) const;
 	int32 ResolveGimmickSpawnCount(const FGimmickSpawnConfig& Config, int32 CandidateCount) const;
-	void SelectPointsRandom(
+	void SelectPointsRoundRobinByRoom(
 		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates,
 		int32 SelectCount,
 		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const;
 	void SelectPointsMaxSpread(
 		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates,
-		int32 SelectCount,
+		TMap<EGimmickType, int32>& RemainingByType,
 		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const;
 	APGMasterRoom* GetGimmickPointOwnerRoom(const TObjectPtr<UPGGimmickSpawnPoint>& Point) const;
 

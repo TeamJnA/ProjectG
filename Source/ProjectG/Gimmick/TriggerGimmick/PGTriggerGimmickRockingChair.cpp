@@ -46,7 +46,8 @@ void APGTriggerGimmickRockingChair::BeginPlay()
 
 	if (HasAuthority())
 	{
-		TriggerSphere->OnComponentBeginOverlap.AddDynamic(this, &APGTriggerGimmickRockingChair::OnTriggerOverlap);
+		GetWorld()->GetTimerManager().SetTimer(TriggerActivationHandle, this,
+			&APGTriggerGimmickRockingChair::EnableTrigger, 5.0f, false);
 	}
 
 	if (bIsRocking)
@@ -95,6 +96,16 @@ void APGTriggerGimmickRockingChair::Tick(float DeltaTime)
 		PlayCreakSound(CreakSoundFlipFlopState);
 		CreakSoundFlipFlopState = !CreakSoundFlipFlopState;
 	}
+}
+
+void APGTriggerGimmickRockingChair::EnableTrigger()
+{
+	if (!HasAuthority() || !TriggerSphere)
+	{
+		return;
+	}
+
+	TriggerSphere->OnComponentBeginOverlap.AddDynamic(this, &APGTriggerGimmickRockingChair::OnTriggerOverlap);
 }
 
 void APGTriggerGimmickRockingChair::OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

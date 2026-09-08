@@ -1703,66 +1703,121 @@ TObjectPtr<USceneComponent> APGLevelGenerator::GetRandomPointFromSpecificListAnd
 
 void APGLevelGenerator::SpawnGimmicks()
 {
-	UWorld* World = GetWorld();
-	if (!World)
+	if (!GetWorld())
 	{
 		return;
 	}
 
 	EnsureRoomDepthMap();
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	// SpreadGroup이 지정된 SpreadByCount 기믹끼리 묶기
+	TMap<int32, TArray<EGimmickType>> SpreadGroups;
+	TArray<EGimmickType> SoloTypes;
 
-	// 지정된 GimmickConfig에 따라 Gimmick 스폰
-	// 타입별로 수집 -> 스폰
 	for (const TPair<EGimmickType, FGimmickSpawnConfig>& ConfigPair : GimmickConfigMap)
 	{
-		const FGimmickSpawnConfig& Config = ConfigPair.Value;
-		if (!Config.GimmickClass)
+		if (!ConfigPair.Value.GimmickClass)
 		{
 			continue;
 		}
 
-		TArray<TObjectPtr<UPGGimmickSpawnPoint>> Candidates;
-		CollectGimmickCandidates(ConfigPair.Key, Config, Candidates);
+		const bool bGrouped =
+			ConfigPair.Value.SpawnMode == EGimmickSpawnMode::SpreadByCount &&
+			ConfigPair.Value.SpreadGroup > 0;
 
-		if (Candidates.IsEmpty())
+		if (bGrouped)
 		{
-			continue;
-		}
-
-		const int32 SelectCount = ResolveGimmickSpawnCount(Config, Candidates.Num());
-
-		UE_LOG(LogTemp, Log, TEXT("[Gimmick] Type:%s Candidates:%d Spawn:%d Unselected:%d Fallback:%s"),
-			*StaticEnum<EGimmickType>()->GetNameStringByValue((int64)ConfigPair.Key),
-			Candidates.Num(),
-			SelectCount,
-			Candidates.Num() - SelectCount,
-			Config.FallbackClass ? TEXT("Yes") : TEXT("No"));
-
-		TArray<TObjectPtr<UPGGimmickSpawnPoint>> Selected;
-		if (Config.SpawnMode == EGimmickSpawnMode::RandomByRatio)
-		{
-			SelectPointsRandom(Candidates, SelectCount, Selected);
+			SpreadGroups.FindOrAdd(ConfigPair.Value.SpreadGroup).Add(ConfigPair.Key);
 		}
 		else
 		{
-			SelectPointsMaxSpread(Candidates, SelectCount, Selected);
+			SoloTypes.Add(ConfigPair.Key);
+		}
+	}
+
+	for (EGimmickType Type : SoloTypes)
+	{
+		SpawnGimmickGroup({ Type });
+	}
+
+	for (const TPair<int32, TArray<EGimmickType>>& Group : SpreadGroups)
+	{
+		SpawnGimmickGroup(Group.Value);
+	}
+}
+
+void APGLevelGenerator::SpawnGimmickGroup(const TArray<EGimmickType>& GroupTypes)
+{
+	UWorld* World = GetWorld();
+	if (!World || GroupTypes.IsEmpty())
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// 스폰 그룹이 같으면 한 Candidates에 수집
+	// 스폰 수는 기믹 종류별로 수집
+	TArray<TObjectPtr<UPGGimmickSpawnPoint>> Candidates;
+	TMap<EGimmickType, int32> RemainingByType;
+
+	for (EGimmickType Type : GroupTypes)
+	{
+		const FGimmickSpawnConfig* Config = GimmickConfigMap.Find(Type);
+		if (!Config || !Config->GimmickClass)
+		{
+			continue;
 		}
 
-		for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Selected)
+		// Type과 Config에 맞게 Candidate 수집
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>> TypeCandidates;
+		CollectGimmickCandidates(Type, *Config, TypeCandidates);
+		if (TypeCandidates.IsEmpty())
 		{
-			World->SpawnActor<AActor>(Config.GimmickClass, Point->GetComponentTransform(), SpawnParams);
+			continue;
 		}
 
-		// 미선택 포인트에 대체 액터 스폰 (FallbackClass 없으면 생략)
-		if (Config.FallbackClass)
+		// Type과 Config에 맞게 스폰 수 수집
+		RemainingByType.Add(Type, ResolveGimmickSpawnCount(*Config, TypeCandidates.Num()));
+		// Type별 Candidate 스폰 그룹 Candidates에 통합
+		Candidates.Append(MoveTemp(TypeCandidates));
+	}
+
+	if (Candidates.IsEmpty())
+	{
+		return;
+	}
+
+	TArray<TObjectPtr<UPGGimmickSpawnPoint>> Selected;
+
+	// Config에 맞게 스폰(랜덤/분산)
+	const FGimmickSpawnConfig* FirstConfig = GimmickConfigMap.Find(GroupTypes[0]);
+	if (GroupTypes.Num() == 1 && FirstConfig && FirstConfig->SpawnMode == EGimmickSpawnMode::RandomByRatio)
+	{
+		SelectPointsRoundRobinByRoom(Candidates, RemainingByType[GroupTypes[0]], Selected);
+	}
+	else
+	{
+		SelectPointsMaxSpread(Candidates, RemainingByType, Selected);
+	}
+
+	// 선택 포인트에 기믹 스폰
+	for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Selected)
+	{
+		if (const FGimmickSpawnConfig* Config = GimmickConfigMap.Find(Point->GetGimmickType()))
 		{
-			for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Candidates)
-			{
-				World->SpawnActor<AActor>(Config.FallbackClass, Point->GetComponentTransform(), SpawnParams);
-			}
+			World->SpawnActor<AActor>(Config->GimmickClass, Point->GetComponentTransform(), SpawnParams);
+		}
+	}
+
+	// 미선택 포인트에 대체 액터 스폰 (FallbackClass 없으면 생략)
+	for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Candidates)
+	{
+		const FGimmickSpawnConfig* Config = GimmickConfigMap.Find(Point->GetGimmickType());
+		if (Config && Config->FallbackClass)
+		{
+			World->SpawnActor<AActor>(Config->FallbackClass, Point->GetComponentTransform(), SpawnParams);
 		}
 	}
 }
@@ -1775,7 +1830,7 @@ void APGLevelGenerator::CollectGimmickCandidates(EGimmickType GimmickType, const
 {
 	OutCandidates.Reset();
 
-	// 받은 타입 + 소유 Room이 유효한 포인트만
+	// 받은 타입 && 소유 Room이 유효한 포인트만
 	TArray<TObjectPtr<UPGGimmickSpawnPoint>> TypePoints;
 	for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : GimmickSpawnPointsList)
 	{
@@ -1792,7 +1847,7 @@ void APGLevelGenerator::CollectGimmickCandidates(EGimmickType GimmickType, const
 		TypePoints.Add(Point);
 	}
 
-	// MinRoomDepth > 0인 경우 지정 Depth 아래의 Point들은 제거
+	// MinRoomDepth > 0인 경우(Depth 필터링을 하는경우) 지정 Depth 아래의 Point들은 제거
 	for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : TypePoints)
 	{
 		const int32* Depth = RoomDepths.Find(GetGimmickPointOwnerRoom(Point));
@@ -1825,27 +1880,9 @@ int32 APGLevelGenerator::ResolveGimmickSpawnCount(const FGimmickSpawnConfig& Con
 }
 
 /*
-* Random spawn
+* Random(RoundRobin) spawn
 */
-void APGLevelGenerator::SelectPointsRandom(TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates, int32 SelectCount, TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const
-{
-	OutSelected.Reset();
-	OutSelected.Reserve(SelectCount);
-
-	while (OutSelected.Num() < SelectCount && Candidates.Num() > 0)
-	{
-		const int32 Index = Seed.RandRange(0, Candidates.Num() - 1);
-		OutSelected.Add(Candidates[Index]);
-		Candidates.RemoveAtSwap(Index);
-	}
-}
-
-/*
-* Spread spawn
-* 첫 번째는 랜덤, 이후는 이미 선택된 Point들과의 최소 거리(홉 차이, 실제 거리 차이 중 최소)가 최대인 Point 선택(Greedy)
-* => 가장 가까운 거리가 최대인 Point 선택
-*/
-void APGLevelGenerator::SelectPointsMaxSpread(TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates, int32 SelectCount, TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const
+void APGLevelGenerator::SelectPointsRoundRobinByRoom(TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates, int32 SelectCount, TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const
 {
 	OutSelected.Reset();
 
@@ -1856,62 +1893,185 @@ void APGLevelGenerator::SelectPointsMaxSpread(TArray<TObjectPtr<UPGGimmickSpawnP
 
 	OutSelected.Reserve(SelectCount);
 
-	// 선택된 Point들 기준 홉 거리 테이블
-	// 선택될 때마다 하나씩 누적
-	TArray<TMap<TObjectPtr<APGMasterRoom>, int32>> DistTables;
-	DistTables.Reserve(SelectCount);
+	// 포인트가 속한 Room별로 분리
+	TMap<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<UPGGimmickSpawnPoint>>> ByRoom;
+	for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : Candidates)
+	{
+		ByRoom.FindOrAdd(GetGimmickPointOwnerRoom(Point)).Add(Point);
+	}
 
-	// 선택 Point 추가, 후보에서 제거, DistTables에 추가
-	auto AcceptPoint = [&](int32 Index)
+	// 방 내부 포인트 순서 / 방순서 셔플
+	TArray<TArray<TObjectPtr<UPGGimmickSpawnPoint>>> Buckets;
+	Buckets.Reserve(ByRoom.Num());
+
+	for (TPair<TObjectPtr<APGMasterRoom>, TArray<TObjectPtr<UPGGimmickSpawnPoint>>>& Pair : ByRoom)
+	{
+		TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Points = Pair.Value;
+		for (int32 i = Points.Num() - 1; i > 0; --i)
 		{
-			OutSelected.Add(Candidates[Index]);
-			Candidates.RemoveAtSwap(Index);
+			Points.Swap(i, Seed.RandRange(0, i));
+		}
+		Buckets.Add(MoveTemp(Points));
+	}
 
-			DistTables.AddDefaulted();
-			BuildHopDistanceFrom(GetGimmickPointOwnerRoom(OutSelected.Last()), DistTables.Last());
+	for (int32 i = Buckets.Num() - 1; i > 0; --i)
+	{
+		Buckets.Swap(i, Seed.RandRange(0, i));
+	}
+
+	// 라운드 로빈 -> 방마다 하나씩 돌아가며 선택
+	int32 Round = 0;
+	while (OutSelected.Num() < SelectCount)
+	{
+		bool bPickedAny = false;
+
+		// Bucket[Round] 선택
+		// 더 선택해야하면 Round++, 재순회
+		for (const TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Bucket : Buckets)
+		{
+			if (Round >= Bucket.Num())
+			{
+				continue;
+			}
+
+			OutSelected.Add(Bucket[Round]);
+			bPickedAny = true;
+
+			if (OutSelected.Num() >= SelectCount)
+			{
+				break;
+			}
+		}
+
+		// 모든 방 소진
+		if (!bPickedAny)
+		{
+			break;
+		}
+
+		++Round;
+	}
+
+	// 선택된 포인트를 후보에서 제거 (남은 포인트는 Fallback 스폰)
+	for (const TObjectPtr<UPGGimmickSpawnPoint>& Point : OutSelected)
+	{
+		Candidates.RemoveSingleSwap(Point);
+	}
+}
+
+/*
+* Spread spawn
+* 첫 번째는 랜덤, 이후는 이미 선택된 Point들과의 최소 거리(홉 차이, 실제 거리 차이 중 최소)가 최대인 Point 선택(Greedy)
+* => 가장 가까운 거리가 최대인 Point 선택
+*/
+void APGLevelGenerator::SelectPointsMaxSpread(TArray<TObjectPtr<UPGGimmickSpawnPoint>>& Candidates, TMap<EGimmickType, int32>& RemainingByType, TArray<TObjectPtr<UPGGimmickSpawnPoint>>& OutSelected) const
+{
+	OutSelected.Reset();
+
+	// 그룹 총 스폰 수 체크
+	int32 TotalRemaining = 0;
+	for (const TPair<EGimmickType, int32>& Pair : RemainingByType)
+	{
+		TotalRemaining += Pair.Value;
+	}
+
+	if (TotalRemaining <= 0 || Candidates.IsEmpty())
+	{
+		return;
+	}
+
+	OutSelected.Reserve(TotalRemaining);
+
+	// 선택된 Point들 기준 홉 거리 테이블
+	TArray<TMap<TObjectPtr<APGMasterRoom>, int32>> HopTables;
+	HopTables.Reserve(TotalRemaining);
+
+	// 선택된 기믹의 잔여 스폰수 확인
+	auto HasQuota = [&](const TObjectPtr<UPGGimmickSpawnPoint>& Point)
+		{
+			const int32* Left = RemainingByType.Find(Point->GetGimmickType());
+			return Left && *Left > 0;
 		};
 
-	// 첫 번째는 랜덤
-	AcceptPoint(Seed.RandRange(0, Candidates.Num() - 1));
+	// 포인트 확정 후 후보에서 제거, 잔여 스폰수--
+	// 선택된 포인트 룸 기준 Hop 테이블 생성
+	auto AcceptPoint = [&](int32 Index)
+		{
+			TObjectPtr<UPGGimmickSpawnPoint> Point = Candidates[Index];
 
-	// 이후 스폰 수만큼 Greedy
-	while (OutSelected.Num() < SelectCount && Candidates.Num() > 0)
+			OutSelected.Add(Point);
+			Candidates.RemoveAtSwap(Index);
+
+			if (int32* Left = RemainingByType.Find(Point->GetGimmickType()))
+			{
+				--(*Left);
+			}
+
+			HopTables.AddDefaulted();
+			BuildHopDistanceFrom(GetGimmickPointOwnerRoom(Point), HopTables.Last());
+		};
+
+	// 첫 번째는 후보 중 랜덤
 	{
-		int32 BestIndex = 0;
-		float BestScore = -1.0f;
-
-		// 스폰 가능한 모든 Candidates들에 대해 체크
+		TArray<int32> Pool;
 		for (int32 i = 0; i < Candidates.Num(); ++i)
 		{
+			if (HasQuota(Candidates[i]))
+			{
+				Pool.Add(i);
+			}
+		}
+
+		if (Pool.IsEmpty())
+		{
+			return;
+		}
+
+		AcceptPoint(Pool[Seed.RandRange(0, Pool.Num() - 1)]);
+	}
+
+	// Greedy
+	// 타입에 상관없이 그룹별로 계산
+	while (true)
+	{
+		int32 BestIndex = INDEX_NONE;
+		float BestScore = -1.0f;
+
+		for (int32 i = 0; i < Candidates.Num(); ++i)
+		{
+			if (!HasQuota(Candidates[i]))
+			{
+				continue;
+			}
+
 			APGMasterRoom* Room = GetGimmickPointOwnerRoom(Candidates[i]);
 			const FVector Location = Candidates[i]->GetComponentLocation();
 
 			float MinEffective = TNumericLimits<float>::Max();
 
-			// 현재 Candidate Point와 이미 선택된 Point들과 거리 비교
-			// 가까울수록 낮은 점수
 			for (int32 s = 0; s < OutSelected.Num(); ++s)
 			{
-				const int32* Hop = DistTables[s].Find(Room);
+				const int32* Hop = HopTables[s].Find(Room);
 
-				// 홉 거리
 				const float HopDist = Hop
 					? (*Hop) * ApproxRoomSpacing
 					: TNumericLimits<float>::Max();
 
-				// 월드 거리
 				const float WorldDist = FVector::Dist(Location, OutSelected[s]->GetComponentLocation());
 
-				// 최소거리(작을수록 안좋은 후보) 갱신
 				MinEffective = FMath::Min(MinEffective, FMath::Min(HopDist, WorldDist));
 			}
 
-			// 최소거리가 최대인 Candidate Point 선택 -> 적어도 최악은 아님
 			if (MinEffective > BestScore)
 			{
-				BestIndex = i;
 				BestScore = MinEffective;
+				BestIndex = i;
 			}
+		}
+
+		if (BestIndex == INDEX_NONE)
+		{
+			break;
 		}
 
 		AcceptPoint(BestIndex);
