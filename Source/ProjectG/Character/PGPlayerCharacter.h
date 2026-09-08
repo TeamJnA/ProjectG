@@ -37,6 +37,7 @@ class UAudioCaptureComponent;
 
 class UPGCameraComponent;
 class USceneCaptureComponent2D;
+class UCameraShakeBase;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
@@ -172,6 +173,10 @@ public:
 
 	void OnDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
 
+	// 캐릭터 사망 애니메이션 재생
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayAttackedMontage();
+
 	/// <summary>
 	/// Server-only death handling function
 	/// When the player dies, they drop their items and switch to a ragdoll state.
@@ -219,6 +224,12 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	FName AttackedJumpScareSound = FName("");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	TSubclassOf<UCameraShakeBase> AttackedCameraShakeClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> AttackedMontage;
 
 	UFUNCTION()
 	void OnRep_IsRagdoll();
