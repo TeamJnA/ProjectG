@@ -383,8 +383,8 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 
 	SetActorLocation(NewCharacterLocation);
 
-	// TODO : Play attacked anim
-
+	// Play attacked anim
+	Multicast_PlayAttackedMontage();
 	
 	// Notify client to replicate server-side attack handling
 	Client_OnAttacked(GetActorLocation(), GetActorRotation());
@@ -413,12 +413,6 @@ void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, F
 		DisableInput(PlayerController);
 	}
 
-	// Stop anim.
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		AnimInstance->StopAllMontages(0.1f);
-	}
-
 	// Set character location and rotation.
 	SetActorLocation(NewLocation);
 	SetActorRotation(NewRotation);
@@ -426,6 +420,18 @@ void APGPlayerCharacter::Client_OnAttacked_Implementation(FVector NewLocation, F
 
 	// Make the character hidden to itself when attacked
 	GetMesh()->SetOwnerNoSee(true);
+
+	// Play JumpScare Camera shake
+	if (AttackedCameraShakeClass)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			if (PC->PlayerCameraManager)
+			{
+				PC->PlayerCameraManager->StartCameraShake(AttackedCameraShakeClass, 1.0f);
+			}
+		}
+	}
 
 	// Play JumpScare Sound
 	if (SoundManagerComponent)
@@ -560,6 +566,12 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 		return;
 	}
 
+	// Stop All montages
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(0.1f);
+	}
+
 	HighlightOn();
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -571,6 +583,17 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 	SetItemMesh(false);
 
 	TryApplyRagdollState();
+}
+
+void APGPlayerCharacter::Multicast_PlayAttackedMontage_Implementation()
+{
+	if (AttackedMontage)
+	{
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			AnimInstance->Montage_Play(AttackedMontage);
+		}
+	}
 }
 
 void APGPlayerCharacter::OnRep_RagdollSnapshot()

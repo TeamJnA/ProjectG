@@ -507,6 +507,17 @@ void APGGameState::OnEnterSequenceFinished()
 	}
 
 	LoadedLevelSequence = nullptr;
+
+	// Delete LSMap played level sequence
+	TArray<AActor*> FoundLSMapActorActors;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("LSMapActor"), FoundLSMapActorActors);
+	for (AActor* LSMapActor : FoundLSMapActorActors)
+	{
+		if (LSMapActor)
+		{
+			LSMapActor->Destroy();
+		}
+	}
 }
 
 FVector APGGameState::GetExplorationTarget(const FVector& CurrentLocation, bool* bOutUsedPlayerBias) const
