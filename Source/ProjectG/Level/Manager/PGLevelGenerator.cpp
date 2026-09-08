@@ -1297,7 +1297,20 @@ void APGLevelGenerator::SpawnItems()
 		const int32 j = Seed.RandRange(0, i);
 		SpawnedSearchables.Swap(i, j);
 	}
-	const int32 ItemAmount = 16;
+
+	// 싱글플레이 -> ReviveKit 0
+	// 멀티플레이 -> Match +5
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	const bool bIsSinglePlay = GI && GI->IsSinglePlaySession();
+
+	const int32 ReviveKitCount = bIsSinglePlay ? 0 : 4;
+	const int32 MatchCount = bIsSinglePlay ? 7 : 12;
+	const int32 GlassBottleCount = 5;
+
+	const int32 ItemAmount = ReviveKitCount + MatchCount + GlassBottleCount;
+	ReviveKitThreshold = ItemAmount - ReviveKitCount;
+	MatchThreshold = GlassBottleCount;
+
 	SpawnSingleItem_Async(ItemAmount, 0);
 
 	// Spawn glass bottles
@@ -1312,7 +1325,6 @@ void APGLevelGenerator::SpawnItems()
 		if (SpawnPoint)
 		{
 			UWorld* World = GetWorld();
-			UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
 			if (!GI || !World)
 			{
 				return;
@@ -1354,19 +1366,31 @@ void APGLevelGenerator::SpawnSingleItem_Async(int32 ItemAmount, int32 SeqIndex)
 	if (!World || ItemAmount <= 0 || SpawnedSearchables.IsEmpty())
 	{
 		SpawnedSearchables.Empty();
-		UE_LOG(LogTemp, Log, TEXT("PGLevelGenerator : Spawning Finished."));
+		UE_LOG(LogTemp, Log, TEXT("PGLevelGenerator : Spawning Finished. ItemAmount [%d]"), ItemAmount);
 		return;
 	}
 
 	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
-	if (!GI) return;
+	if (!GI)
+	{
+		return;
+	}
 
 	FName ItemKeyToLoad;
 
 	// ItemAmount에 맞춰서 아이템 스폰
-	if (ItemAmount > 12) ItemKeyToLoad = FName("ReviveKit");
-	else if (ItemAmount > 5) ItemKeyToLoad = FName("Match");
-	else ItemKeyToLoad = FName("GlassBottle");
+	if (ItemAmount > ReviveKitThreshold)
+	{
+		ItemKeyToLoad = FName("ReviveKit");
+	}
+	else if (ItemAmount > MatchThreshold)
+	{
+		ItemKeyToLoad = FName("Match");
+	}
+	else
+	{
+		ItemKeyToLoad = FName("GlassBottle");
+	}
 
 	// 순차 탐색 (1단계) vs 랜덤 탐색 (2단계) 인덱스 결정
 	// 처음에는 하나씩 아이템을 넣고, 이제 남은 아이템은 랜덤하게 결정

@@ -241,6 +241,9 @@ private:
 	int32 SeedValue = -1;
 	int32 RoomAmount;
 
+	int32 ReviveKitThreshold = 0;
+	int32 MatchThreshold = 0;
+
 	bool bRoomDepthsDirty = true;
 	bool bIsGenerationStopped = false;
 
