@@ -119,6 +119,9 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UPGOptionSwitcherWidget> OverallGraphicsOption;
 
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UPGOptionSwitcherWidget> FrameRateLimitOption;
+
     // -------- Widget Switcher --------
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UWidgetSwitcher> WidgetSwitcher;
@@ -171,6 +174,10 @@ private:
     */
     UFUNCTION()
     void OnOverallGraphicsChanged(int32 OptionIndex);
+
+    // 60, 120, 144, No Limit
+    UFUNCTION()
+    void OnFrameRateLimitChanged(int32 OptionIndex);
 
     // -------- WidgetSwitch Callbacks --------
     UFUNCTION()

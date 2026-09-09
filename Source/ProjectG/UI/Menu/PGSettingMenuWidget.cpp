@@ -99,6 +99,11 @@ void UPGSettingMenuWidget::NativeOnInitialized()
         OverallGraphicsOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnOverallGraphicsChanged);
     }
 
+    if (FrameRateLimitOption)
+    {
+        FrameRateLimitOption->OnOptionChanged.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnFrameRateLimitChanged);
+    }
+
     if (GamePlayOptionButton)
     {
         GamePlayOptionButton->OnClicked.AddUniqueDynamic(this, &UPGSettingMenuWidget::OnGamePlayOptionButtonClicked);
@@ -427,6 +432,13 @@ void UPGSettingMenuWidget::LoadAndApplySettings()
         OverallGraphicsOption->SetSelectedIndex(OverallLevel);
     }
 
+    if (FrameRateLimitOption)
+    {
+        const int32 FrameRateIndex = UPGGameUserSettings::FrameRateLimitToIndex(Settings->GetFrameRateLimit());
+        Settings->SetAndApplyFrameRateLimit(FrameRateIndex);
+        FrameRateLimitOption->SetSelectedIndex(FrameRateIndex, false);
+    }
+
     // Find/Set available devices and Load saved device settings
     EnumerateAudioDevices();
     PopulateLanguages();
@@ -628,6 +640,15 @@ void UPGSettingMenuWidget::OnOverallGraphicsChanged(int32 OptionIndex)
     if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
     {
         Settings->SetAndApplyOverallVideoQuality(OptionIndex);
+        ApplyAndSaveSettings();
+    }
+}
+
+void UPGSettingMenuWidget::OnFrameRateLimitChanged(int32 OptionIndex)
+{
+    if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+    {
+        Settings->SetAndApplyFrameRateLimit(OptionIndex);
         ApplyAndSaveSettings();
     }
 }

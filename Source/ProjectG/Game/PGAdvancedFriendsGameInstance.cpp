@@ -71,7 +71,7 @@ void UPGAdvancedFriendsGameInstance::Init()
 	// gamestate initiate
 	CurrentSavedGameState = EGameState::MainMenu;
 
-	// 저장된 오디오/마이크 설정 적용
+	// 저장된 세팅값 적용
 	if (UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
 	{
 		if (!Settings->LanguageCulture.IsEmpty())
@@ -79,6 +79,7 @@ void UPGAdvancedFriendsGameInstance::Init()
 			FInternationalization::Get().SetCurrentLanguageAndLocale(Settings->LanguageCulture);
 		}
 		Settings->ApplyMicSettings();
+		Settings->ApplyFrameRateLimit();
 	}
 
 	LoadProfile();
