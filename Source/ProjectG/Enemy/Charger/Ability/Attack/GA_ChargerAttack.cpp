@@ -224,6 +224,8 @@ void UGA_ChargerAttack::OnChargeFinish()
 		return;
 	}
 
+	//UE_LOG(LogTemp, Log, TEXT("[GA_ChargerAttack] Charge Finish"));
+
 	// 정지 && Charge End Anim
 	Charger->GetCharacterMovement()->StopMovementImmediately();
 	Charger->SetMovementSpeed(Charger->GetPatrolSpeed());
@@ -274,13 +276,15 @@ void UGA_ChargerAttack::OnMontageEnd()
 		return;
 	}
 
+	//UE_LOG(LogTemp, Log, TEXT("[GA_ChargerAttack] Montage End"));
+
 	// 회전 목표 (Stare 때 보던 곳)
 	UBlackboardComponent* BB = AIC->GetBlackboardComponent();
 	BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTracking, true);
 	FVector LookAtTarget = BB->GetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation);
 
 	// 회전 태스크 실행
-	UAT_PGTurnBody* TurnTask = UAT_PGTurnBody::TurnToFace(this, LookAtTarget, 2.0f);
+	UAT_PGTurnBody* TurnTask = UAT_PGTurnBody::TurnToFace(this, LookAtTarget, 270.0f);
 	TurnTask->OnTurnFinish.AddDynamic(this, &UGA_ChargerAttack::OnTurnFinish);
 	TurnTask->ReadyForActivation();
 }
@@ -309,11 +313,15 @@ void UGA_ChargerAttack::OnTurnFinish()
 		return;
 	}
 
+	//UE_LOG(LogTemp, Log, TEXT("[GA_ChargerAttack] TurnFinish"));
+
 	const bool bIsSightSensed = BB->GetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible);
 	AActor* TargetActor = Cast<AActor>(BB->GetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor));
 	E_PGChargerState NextState = E_PGChargerState::Exploring;
 	if (bIsSightSensed && TargetActor)
 	{
+		//UE_LOG(LogTemp, Log, TEXT("[GA_ChargerAttack] Stare"));
+
 		NextState = E_PGChargerState::Staring;
 
 		BB->SetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime, 0.0f);
@@ -321,6 +329,8 @@ void UGA_ChargerAttack::OnTurnFinish()
 	}
 	else
 	{
+		//UE_LOG(LogTemp, Log, TEXT("[GA_ChargerAttack] Explore"));
+
 		NextState = E_PGChargerState::Exploring;
 
 		BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, nullptr);
@@ -347,10 +357,21 @@ void UGA_ChargerAttack::OnAttackTimeout()
 
 void UGA_ChargerAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	GetWorld()->GetTimerManager().ClearTimer(AttackTimeoutTimerHandle);
+	AttackTimeoutTimerHandle.Invalidate();
+
 	APGChargerCharacter* Charger = Cast<APGChargerCharacter>(ActorInfo->AvatarActor.Get());
 	if (Charger)
 	{
 		Charger->SetMovementSpeed(Charger->GetPatrolSpeed());
+
+		if (APGChargerAIController* AIC = Cast<APGChargerAIController>(Charger->GetController()))
+		{
+			if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
+			{
+				BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTracking, false);
+			}
+		}
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

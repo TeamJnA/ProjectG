@@ -10,10 +10,45 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
+
 UPGBTService_ChargerCheckState::UPGBTService_ChargerCheckState()
 {
 	NodeName = TEXT("ChargerCheckState");
 	Interval = 0.1f;
+}
+
+uint16 UPGBTService_ChargerCheckState::GetInstanceMemorySize() const
+{
+	return sizeof(FPGChargerCheckStateMemory);
+}
+
+AActor* UPGBTService_ChargerCheckState::UpdateTargeting(APGChargerAIController* AIC, UBlackboardComponent* BB, APGChargerCharacter* Charger) const
+{
+	AActor* CurrentTarget = Cast<AActor>(BB->GetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor));
+
+	// 항상 시야 재탐색
+	AActor* BestTarget = AIC->FindBestTargetInSight(CurrentTarget);
+	if (BestTarget)
+	{
+		if (BestTarget != CurrentTarget)
+		{
+			BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, BestTarget);
+		}
+
+		const FVector TargetLoc = BestTarget->GetActorLocation();
+		BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, TargetLoc);
+		BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, true);
+		Charger->SetHeadLookAtTarget(TargetLoc);
+
+		return BestTarget;
+	}
+
+	// 시야 내 타겟 x -> 타겟 해제, 마지막 목격 위치를 계속 응시
+	BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, nullptr);
+	BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, false);
+	Charger->SetHeadLookAtTarget(BB->GetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation));
+
+	return nullptr;
 }
 
 void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
@@ -36,8 +71,6 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 	FPGChargerCheckStateMemory* Mem = CastInstanceNodeMemory<FPGChargerCheckStateMemory>(NodeMemory);
 
 	E_PGChargerState CurrentState = (E_PGChargerState)BB->GetValueAsEnum(APGChargerAIController::BlackboardKey_AIState);
-	AActor* TargetActor = Cast<AActor>(BB->GetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor));
-
 	if (CurrentState != E_PGChargerState::Adjusting)
 	{
 		Mem->StuckTime = 0.0f;
@@ -48,85 +81,43 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 	{
 		case E_PGChargerState::Exploring:
 		{
-			bool bIsVisible = BB->GetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible);
-
-			if (TargetActor && bIsVisible)
+			// 현재 감지 목록으로 판정
+			// Exploring 중 타겟 발견
+			if (AActor* FoundTarget = AIC->FindBestTargetInSight())
 			{
+				const FVector TargetLoc = FoundTarget->GetActorLocation();
+
+				BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, FoundTarget);
+				BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, TargetLoc);
+				BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, true);
+				BB->SetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime, 0.0f);
+				Charger->SetHeadLookAtTarget(TargetLoc);
+
 				BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Staring);
 				Charger->SetCurrentState(E_PGChargerState::Staring);
-
-				FVector PlayerLoc = TargetActor->GetActorLocation();
-				BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, PlayerLoc);
-				Charger->SetHeadLookAtTarget(PlayerLoc);
-				BB->SetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime, 0.0f);
+			}
+			else if (BB->GetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor))
+			{
+				// 이전 상태에서 남은 스테일 타겟 정리
+				BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, nullptr);
+				BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, false);
 			}
 		}
 		break;
 
 		case E_PGChargerState::Staring:
 		{
-			const bool bIsVisible = BB->GetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible);
-			bool bTargetIsValid = false;
-			// 타겟 유효성 검사 (살아있는지)
-			if (TargetActor)
-			{
-				if (IAttackableTarget* Attackable = Cast<IAttackableTarget>(TargetActor))
-				{
-					bTargetIsValid = Attackable->IsValidAttackableTarget();
-				}
-			}
+			UpdateTargeting(AIC, BB, Charger);
 
-			// 타겟 유지/교체 판단
-			if (TargetActor && bIsVisible && bTargetIsValid)
-			{
-				// 타겟 생존 && 트래킹 중 -> 타겟 유지
-				BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, TargetActor->GetActorLocation());
-				Charger->SetHeadLookAtTarget(TargetActor->GetActorLocation());
-			}
-			else
-			{
-				// 타겟 x || 트래킹 x || 타겟 사망 -> 대체 타겟 검색
-				AActor* BestTarget = AIC->FindBestTargetInSight();
-				if (BestTarget)
-				{
-					// 시야 내에 대체 타겟 존재 -> 교체
-					if (BestTarget != TargetActor)
-					{
-						BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, BestTarget);
-						BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, BestTarget->GetActorLocation());
-						BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, true);
-
-						TargetActor = BestTarget;
-					}
-					// 대체 타겟이 기존 타겟인 경우(시야에서 사라졌다가 다시 돌아옴) -> Location, visible 만 갱신
-					else
-					{
-						BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, BestTarget->GetActorLocation());
-						BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, true);
-					}
-					Charger->SetHeadLookAtTarget(BestTarget->GetActorLocation());
-				}
-				// 대체 타겟 x -> TargetActor reset, TargetLocation만 유지(Staring at last known location)
-				else
-				{
-					BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, nullptr);
-					BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, false);
-					const FVector LastKnownLoc = BB->GetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation);
-					Charger->SetHeadLookAtTarget(LastKnownLoc);
-				}
-			}
-
-			// NavMesh 상에서 돌진 가능한지 판단
+			// NavMesh 상에서 직선 돌진이 가능한지 판정
 			const FVector FinalTargetLoc = BB->GetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation);
-			const bool bCanCharge = AIC->CanChargeToLocation(FinalTargetLoc);
-			if (bCanCharge)
+			if (AIC->CanChargeToLocation(FinalTargetLoc))
 			{
-				// 돌진 가능 -> Staring 유지
 				float AccTime = BB->GetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime);
 				AccTime += DeltaSeconds;
 				BB->SetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime, AccTime);
 
-				float StareThreshold = 5.0f;
+				float StareThreshold = BaseStareThreshold;
 				if (APGGameState* GS = AIC->GetWorld()->GetGameState<APGGameState>())
 				{
 					StareThreshold *= GS->GetDifficulty().ChargerStareTimeMultiplier;
@@ -140,9 +131,8 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 			}
 			else
 			{
-				// 돌진 불가능 ex) 계단, 복잡한 구조 등 직선 불가 상황
-				// 위치조정(Adjusting) 상태 전환
-				// StareTime은 초기화하지 않고 유지 -> 위치 잡히면 바로 돌진
+				// 돌진 불가(벽/모서리) -> 위치 조정
+				// StareTime은 초기화 x (조정 완료 시 즉시 돌진)
 				BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Adjusting);
 				Charger->SetCurrentState(E_PGChargerState::Adjusting);
 			}
@@ -151,73 +141,15 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 
 		case E_PGChargerState::Adjusting:
 		{
-			// StareTime 누적 (Adjusting에서 돌진은 x)
 			float AccTime = BB->GetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime);
 			AccTime += DeltaSeconds;
 			BB->SetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime, AccTime);
 
-			// 타겟 및 위치 갱신 (Staring 동일)
-			// Adjusting 중에도 타겟을 계속 주시하고 위치를 업데이트해야 함
-			const bool bIsVisible = BB->GetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible);
-			bool bTargetIsValid = false;
-			if (TargetActor)
-			{
-				if (IAttackableTarget* Attackable = Cast<IAttackableTarget>(TargetActor))
-				{
-					bTargetIsValid = Attackable->IsValidAttackableTarget();
-				}
-			}
+			UpdateTargeting(AIC, BB, Charger);
 
-			if (TargetActor && bIsVisible && bTargetIsValid)
-			{
-				BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, TargetActor->GetActorLocation());
-				Charger->SetHeadLookAtTarget(TargetActor->GetActorLocation());
-			}
-			else
-			{
-				AActor* BestTarget = AIC->FindBestTargetInSight();
-				if (BestTarget)
-				{
-					if (BestTarget != TargetActor)
-					{
-						BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, BestTarget);
-						BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, BestTarget->GetActorLocation());
-						BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, true);
-						TargetActor = BestTarget;
-					}
-					else
-					{
-						BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, BestTarget->GetActorLocation());
-						BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, true);
-					}
-					Charger->SetHeadLookAtTarget(BestTarget->GetActorLocation());
-				}
-				else
-				{
-					BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, nullptr);
-					BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, false);
-					const FVector LastKnownLoc = BB->GetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation);
-					Charger->SetHeadLookAtTarget(LastKnownLoc);
-				}
-			}
-
-			// 만약 Adjusting 중 위치를 못잡고 TargetLocation까지 너무 가까워진 경우 블랙보드 초기화/Exploring으로 전환
 			const FVector FinalTargetLoc = BB->GetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation);
-			const float DistSq = FVector::DistSquared(Charger->GetActorLocation(), FinalTargetLoc);
-			const float ArrivalThreshold = 100.0f;
-			if (DistSq <= (ArrivalThreshold * ArrivalThreshold))
-			{
-				BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, nullptr);
-				BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, FVector::ZeroVector);
-				BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, false);
-				BB->SetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime, 0.0f);
 
-				BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Exploring);
-				Charger->SetCurrentState(E_PGChargerState::Exploring);
-				break;
-			}
-
-			// Adjust 중 정지상태 감지
+			// 이동 진행도 체크
 			const FVector CurrentLoc = Charger->GetActorLocation();
 			if (Mem->bHasLastLocation && FVector::Dist2D(CurrentLoc, Mem->LastLocation) < AdjustProgressThreshold * DeltaSeconds)
 			{
@@ -230,21 +162,27 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 			Mem->LastLocation = CurrentLoc;
 			Mem->bHasLastLocation = true;
 
-			if (Mem->StuckTime >= AdjustStuckTimeLimit)
+			const float DistSq = FVector::DistSquared(CurrentLoc, FinalTargetLoc);
+			const bool bArrived = DistSq <= (ArrivalThreshold * ArrivalThreshold);
+			const bool bStuck = Mem->StuckTime >= AdjustStuckTimeLimit;
+
+			// 도착했거나 끼였는데도 각이 안 나옴 -> Adjust 포기, Explore 복귀
+			if (bArrived || bStuck)
 			{
 				Mem->StuckTime = 0.0f;
 				Mem->bHasLastLocation = false;
 
-				BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Attacking);
-				Charger->SetCurrentState(E_PGChargerState::Attacking);
+				BB->SetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor, nullptr);
+				BB->SetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible, false);
+				BB->SetValueAsFloat(APGChargerAIController::BlackboardKey_AccumulatedStareTime, 0.0f);
+
+				BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Exploring);
+				Charger->SetCurrentState(E_PGChargerState::Exploring);
 				break;
 			}
 
-			// NavMesh 상에서 돌진 가능한지 판단
-			// 돌진 가능 -> Staring 복귀
-			// 이미 StaringTime이 충분히 누적되었다면, Staring으로 복귀하자마자 바로 Attacking으로 전환될 것
-			const bool bCanCharge = AIC->CanChargeToLocation(FinalTargetLoc);
-			if (bCanCharge)
+			// 돌진 각이 나오면 Staring 복귀 (StareTime이 차 있으면 즉시 Attack)
+			if (AIC->CanChargeToLocation(FinalTargetLoc))
 			{
 				BB->SetValueAsEnum(APGChargerAIController::BlackboardKey_AIState, (uint8)E_PGChargerState::Staring);
 				Charger->SetCurrentState(E_PGChargerState::Staring);
@@ -254,25 +192,24 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 
 		case E_PGChargerState::Attacking:
 		{
-			// Attacking 상태에서도 Tracking이 켜져있으면(Charge 준비 동작 && Charge 종료 후 복귀동 작) 위치 업데이트
-			bool bIsTracking = BB->GetValueAsBool(APGChargerAIController::BlackboardKey_IsTracking);
-			if (bIsTracking && TargetActor)
+			// Attacking은 Staring에서 정해진 타겟/위치를 그대로 사용
+			// 돌진 준비 구간(IsTracking)에서만 위치 갱신 (타겟 재선정 x)
+			if (BB->GetValueAsBool(APGChargerAIController::BlackboardKey_IsTracking))
 			{
+				AActor* TargetActor = Cast<AActor>(BB->GetValueAsObject(APGChargerAIController::BlackboardKey_TargetActor));
 				const bool bIsVisible = BB->GetValueAsBool(APGChargerAIController::BlackboardKey_IsTargetVisible);
-				if (bIsVisible)
+
+				if (IsValid(TargetActor) && bIsVisible)
 				{
-					FVector CurrentLoc = TargetActor->GetActorLocation();
-					BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, CurrentLoc);
+					BB->SetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation, TargetActor->GetActorLocation());
 				}
 			}
-			FVector ChargeTarget = BB->GetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation);
-			Charger->SetHeadLookAtTarget(ChargeTarget);
+
+			Charger->SetHeadLookAtTarget(BB->GetValueAsVector(APGChargerAIController::BlackboardKey_TargetLocation));
 		}
 		break;
-	}
-}
 
-uint16 UPGBTService_ChargerCheckState::GetInstanceMemorySize() const
-{
-	return sizeof(FPGChargerCheckStateMemory);
+		default:
+			break;
+	}
 }

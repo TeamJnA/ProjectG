@@ -76,11 +76,12 @@ void APGChargerAIController::SetupPerceptionSystem()
 	}
 
 	GetPerceptionComponent()->OnTargetPerceptionUpdated.AddDynamic(this, &APGChargerAIController::OnTargetDetected);
+	GetPerceptionComponent()->OnTargetPerceptionForgotten.AddDynamic(this, &APGChargerAIController::OnTargetForgotten);
 }
 
 void APGChargerAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
-	if (!Actor || !Actor->IsValidLowLevel())
+	if (!IsValid(Actor))
 	{
 		return;
 	}
@@ -96,37 +97,35 @@ void APGChargerAIController::OnTargetDetected(AActor* Actor, FAIStimulus const S
 		return;
 	}
 
-	// AIC에서는 Visible 여부 판단, 최초 대상 설정만 수행
-	// 세부 로직은 Service_ChargerCheckState에서 수행
+	// AIC에서는 Visible 갱신, 최초 대상 설정만 수행
+	// 타겟 선정/교체는 Service_ChargerCheckState가 수행
 	AActor* CurrentTarget = Cast<AActor>(BB->GetValueAsObject(BlackboardKey_TargetActor));
-	bool bIsSensed = Stimulus.WasSuccessfullySensed();
-	if (bIsSensed)
+	if (Stimulus.WasSuccessfullySensed())
 	{
 		// [감지 성공]
-		// 1. 현재 타겟 x -> 들어온 대상 타겟
-		// 2. 현재 타겟 o && 다른 타겟 감지 -> 무시 (CurrentTarget 유지)
-		//	  현재 타겟 o && 동일 타겟 다시 감지 -> visible 갱신
-		if (CurrentTarget == nullptr)
-		{
-			if (IAttackableTarget* Attackable = Cast<IAttackableTarget>(Actor))
-			{
-				if (Attackable->IsValidAttackableTarget())
-				{
-					BB->SetValueAsObject(BlackboardKey_TargetActor, Actor);
-					BB->SetValueAsVector(BlackboardKey_TargetLocation, Actor->GetActorLocation());
-					BB->SetValueAsBool(BlackboardKey_IsTargetVisible, true);
-				}
-			}
-		}
-		else if (CurrentTarget == Actor)
+		// 현재 타겟 x -> 들어온 대상 타겟
+		// 현재 타겟 o && 동일 타겟 다시 감지 -> visible 갱신
+		if (CurrentTarget == Actor)
 		{
 			BB->SetValueAsBool(BlackboardKey_IsTargetVisible, true);
+			return;
 		}
+
+		if (CurrentTarget == nullptr)
+		{
+			IAttackableTarget* Attackable = Cast<IAttackableTarget>(Actor);
+			if (Attackable && Attackable->IsValidAttackableTarget())
+			{
+				BB->SetValueAsObject(BlackboardKey_TargetActor, Actor);
+				BB->SetValueAsVector(BlackboardKey_TargetLocation, Actor->GetActorLocation());
+				BB->SetValueAsBool(BlackboardKey_IsTargetVisible, true);
+			}
+		}
+		// CurrentTarget이 있고 다른 액터가 감지 -> 서비스에서 판정
 	}
 	else
 	{
-		// [감지 실패 (시야에서 사라짐)]
-		// 3. 사라진 게 현재 타겟 -> Visible off
+		// 시야에서 사라짐 -> Visible off
 		if (CurrentTarget == Actor)
 		{
 			BB->SetValueAsBool(BlackboardKey_IsTargetVisible, false);
@@ -134,55 +133,88 @@ void APGChargerAIController::OnTargetDetected(AActor* Actor, FAIStimulus const S
 	}
 }
 
-AActor* APGChargerAIController::FindBestTargetInSight()
+void APGChargerAIController::OnTargetForgotten(AActor* Actor)
 {
-	if (UAIPerceptionComponent* PerceptionComp = GetPerceptionComponent())
+	// 폰 파괴/소스 해제 등으로 sensed=false 업데이트 없이 사라지는 경우
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	if (!BB)
 	{
-		TArray<AActor*> PerceivedActors;
-		// 시야에 감지된 모든 액터 가져오기
-		PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
-		// 가장 가까운 유효 타겟 찾기
-		return DetermineBestTarget(PerceivedActors);
+		return;
 	}
-	return nullptr;
+
+	if (Cast<AActor>(BB->GetValueAsObject(BlackboardKey_TargetActor)) == Actor)
+	{
+		BB->SetValueAsBool(BlackboardKey_IsTargetVisible, false);
+	}
 }
 
-AActor* APGChargerAIController::DetermineBestTarget(const TArray<AActor*>& PerceivedActors)
+AActor* APGChargerAIController::FindBestTargetInSight(AActor* CurrentTarget)
 {
 	APawn* MyPawn = GetPawn();
-	if (!MyPawn) 
+	UAIPerceptionComponent* PerceptionComp = GetPerceptionComponent();
+	if (!MyPawn || !PerceptionComp)
 	{
 		return nullptr;
 	}
 
-	AActor* ClosestTarget = nullptr;
-	float MinDistanceSq = FLT_MAX;
-	FVector MyLoc = MyPawn->GetActorLocation();
+	TArray<AActor*> PerceivedActors;
+	PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
 
-	for (AActor* PerceivedActor : PerceivedActors)
+	const FVector MyLoc = MyPawn->GetActorLocation();
+
+	AActor* Closest = nullptr;
+	float ClosestDistSq = FLT_MAX;
+	bool bCurrentStillPerceived = false;
+	float CurrentDistSq = FLT_MAX;
+
+	for (AActor* Perceived : PerceivedActors)
 	{
-		if (!PerceivedActor || !PerceivedActor->IsValidLowLevel())
+		if (!IsValid(Perceived))
 		{
 			continue;
 		}
 
-		// 죽은 플레이어 제외
-		IAttackableTarget* Attackable = Cast<IAttackableTarget>(PerceivedActor);
+		IAttackableTarget* Attackable = Cast<IAttackableTarget>(Perceived);
 		if (!Attackable || !Attackable->IsValidAttackableTarget())
 		{
 			continue;
 		}
 
-		// 거리 비교
-		float DistSq = FVector::DistSquared(MyLoc, PerceivedActor->GetActorLocation());
-		if (DistSq < MinDistanceSq)
+		const float DistSq = FVector::DistSquared(MyLoc, Perceived->GetActorLocation());
+
+		if (Perceived == CurrentTarget)
 		{
-			MinDistanceSq = DistSq;
-			ClosestTarget = PerceivedActor;
+			bCurrentStillPerceived = true;
+			CurrentDistSq = DistSq;
+		}
+
+		if (DistSq < ClosestDistSq)
+		{
+			ClosestDistSq = DistSq;
+			Closest = Perceived;
 		}
 	}
 
-	return ClosestTarget;
+	// 기존 타겟이 더 이상 유효하지 않으면(시야에 없거나 범위에서 벗어남) 최근접으로 즉시 교체
+	if (!bCurrentStillPerceived)
+	{
+		return Closest;
+	}
+
+	if (Closest == CurrentTarget)
+	{
+		return CurrentTarget;
+	}
+
+	// 다른 타겟이 기존 타겟보다 Threshold 이상 더 가까우면 교체
+	const float CurrentDist = FMath::Sqrt(CurrentDistSq);
+	const float ClosestDist = FMath::Sqrt(ClosestDistSq);
+	if ((CurrentDist - ClosestDist) >= TargetSwitchDistanceThreshold)
+	{
+		return Closest;
+	}
+
+	return CurrentTarget;
 }
 
 bool APGChargerAIController::CanChargeToLocation(FVector TargetLoc, float Tolerance)
@@ -205,13 +237,9 @@ bool APGChargerAIController::CanChargeToLocation(FVector TargetLoc, float Tolera
 	const bool bHitWall = NavSystem->NavigationRaycast(Charger, StartLoc, TargetLoc, HitLocation, NULL, this);
 	if (bHitWall)
 	{
-		// 막힌 지점이 목표 지점과 거의 비슷하다면(오차범위) 통과
-		if (FVector::Dist2D(HitLocation, TargetLoc) < Tolerance)
-		{
-			return true;
-		}
-		// 중간에 끊김 (계단 허공 등)
-		return false;
+		// 막힌 지점이 목표 지점과 거의 비슷하다면(오차범위) 통과 -> true
+		// 중간에 끊김 (계단 허공 등) -> false
+		return FVector::Dist2D(HitLocation, TargetLoc) < Tolerance;
 	}
 
 	return true;

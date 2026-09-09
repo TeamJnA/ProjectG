@@ -12,11 +12,11 @@ UAT_PGTurnBody::UAT_PGTurnBody(const FObjectInitializer& ObjectInitializer)
 	bIsFinished = false;
 }
 
-UAT_PGTurnBody* UAT_PGTurnBody::TurnToFace(UGameplayAbility* OwningAbility, FVector TargetLocation, float RotationSpeed)
+UAT_PGTurnBody* UAT_PGTurnBody::TurnToFace(UGameplayAbility* OwningAbility, FVector TargetLocation, float TurnSpeedDegPerSec)
 {
 	UAT_PGTurnBody* MyObj = NewAbilityTask<UAT_PGTurnBody>(OwningAbility);
 	MyObj->FaceLocation = TargetLocation;
-	MyObj->RotationInterpSpeed = RotationSpeed;
+	MyObj->TurnSpeed = FMath::Max(TurnSpeedDegPerSec, 1.0f);
 	return MyObj;
 }
 
@@ -25,21 +25,46 @@ void UAT_PGTurnBody::Activate()
 	Super::Activate();
 
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActor());
-	if (Character)
+	if (!Character)
 	{
-		FVector Direction = (FaceLocation - Character->GetActorLocation()).GetSafeNormal2D();
-		float Dot = FVector::DotProduct(Character->GetActorForwardVector(), Direction);
-
-		if (Dot >= 0.99f)
-		{
-			bIsFinished = true;
-			if (ShouldBroadcastAbilityTaskDelegates())
-			{
-				OnTurnFinish.Broadcast();
-			}
-			EndTask();
-		}
+		bIsFinished = true;
+		EndTask();
+		return;
 	}
+
+	StartRotation = Character->GetActorRotation();
+
+	const FVector ToTarget = (FaceLocation - Character->GetActorLocation()).GetSafeNormal2D();
+	if (ToTarget.IsNearlyZero())
+	{
+		bIsFinished = true;
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			OnTurnFinish.Broadcast();
+		}
+		EndTask();
+		return;
+	}
+
+	GoalRotation = ToTarget.Rotation();
+	GoalRotation.Pitch = 0.0f;
+	GoalRotation.Roll = 0.0f;
+
+	const float AngleDiff = FMath::Abs(FRotator::NormalizeAxis(GoalRotation.Yaw - StartRotation.Yaw));
+	if (AngleDiff <= FinishAngleTolerance)
+	{
+		bIsFinished = true;
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			OnTurnFinish.Broadcast();
+		}
+		EndTask();
+		return;
+	}
+
+	// 각도에 비례하되 상하한을 둬서 편차를 제한
+	TurnDuration = FMath::Clamp(AngleDiff / TurnSpeed, MinTurnDuration, MaxTurnDuration);
+	ElapsedTime = 0.0f;
 }
 
 void UAT_PGTurnBody::TickTask(float DeltaTime)
@@ -54,20 +79,19 @@ void UAT_PGTurnBody::TickTask(float DeltaTime)
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActor());
 	if (!Character)
 	{
+		bIsFinished = true;
 		EndTask();
 		return;
 	}
 
-	FVector StartLoc = Character->GetActorLocation();
-	FRotator CurrentRot = Character->GetActorRotation();
-	FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(StartLoc, FaceLocation);
+	ElapsedTime += DeltaTime;
+	const float Alpha = FMath::Clamp(ElapsedTime / TurnDuration, 0.0f, 1.0f);
+	const float EasedAlpha = FMath::InterpEaseInOut(0.0f, 1.0f, Alpha, 5.0f);
 
-	TargetRot.Pitch = 0.0f;
-	TargetRot.Roll = 0.0f;
+	// Lerp는 최단 경로로 보간
+	Character->SetActorRotation(FMath::Lerp(StartRotation, GoalRotation, EasedAlpha));
 
-	FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, RotationInterpSpeed);
-	Character->SetActorRotation(NewRot);
-	if (Character->GetActorRotation().Equals(TargetRot, 5.0f))
+	if (Alpha >= 1.0f)
 	{
 		bIsFinished = true;
 		if (ShouldBroadcastAbilityTaskDelegates())

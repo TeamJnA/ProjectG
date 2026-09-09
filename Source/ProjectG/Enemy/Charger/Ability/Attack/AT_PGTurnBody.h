@@ -19,7 +19,8 @@ class PROJECTG_API UAT_PGTurnBody : public UAbilityTask
 public:
 	UAT_PGTurnBody(const FObjectInitializer& ObjectInitializer);
 
-	static UAT_PGTurnBody* TurnToFace(UGameplayAbility* OwningAbility, FVector TargetLocation, float RotationSpeed = 5.0f);
+	// static UAT_PGTurnBody* TurnToFace(UGameplayAbility* OwningAbility, FVector TargetLocation, float RotationSpeed = 5.0f);
+	static UAT_PGTurnBody* TurnToFace(UGameplayAbility* OwningAbility, FVector TargetLocation, float TurnSpeedDegPerSec = 360.0f);
 
 	virtual void Activate() override;
 	virtual void TickTask(float DeltaTime) override;
@@ -28,6 +29,14 @@ public:
 
 protected:
 	FVector FaceLocation;
-	float RotationInterpSpeed;
+	FRotator StartRotation;
+	FRotator GoalRotation;
+	float TurnDuration;
+	float ElapsedTime;
+	float TurnSpeed;
 	bool bIsFinished;
+
+	static constexpr float MinTurnDuration = 0.15f;
+	static constexpr float MaxTurnDuration = 0.8f;
+	static constexpr float FinishAngleTolerance = 1.0f;
 };
