@@ -74,6 +74,11 @@ public:
 	void AddDeathCount();
 	FORCEINLINE int32 GetDeathCount() const { return DeathCount; }
 
+	// 사망 시점 Sanity 캐시 (서버 전용, 부활 복원용. -1 = 캐시 없음)
+	FORCEINLINE float GetCachedSanity() const { return CachedSanityOnDeath; }
+	FORCEINLINE void SetCachedSanity(float InSanity) { CachedSanityOnDeath = InSanity; }
+	FORCEINLINE void ClearCachedSanity() { CachedSanityOnDeath = -1.0f; }
+
 	FOnPlayerStateUpdatedDelegate OnPlayerStateUpdated;
 	FOnCapturedSubjectsChangedDelegate OnCapturedSubjectsChanged;
 
@@ -101,6 +106,10 @@ protected:
 
 	UPROPERTY()
 	TWeakObjectPtr<AActor> PlayerCharacter;
+
+	// 복원은 서버에서 SetNumericAttributeBase로 처리하므로 복제 불필요
+	UPROPERTY()
+	float CachedSanityOnDeath = -1.0f;
 
 	UPROPERTY(Replicated)
 	float CameraBattery = 1.0f;

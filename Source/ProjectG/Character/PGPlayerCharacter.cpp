@@ -346,6 +346,7 @@ void APGPlayerCharacter::OnAttacked(FVector InstigatorHeadLocation, const float 
 	// Remove all abilities.
 	AbilitySystemComponent->ClearAllAbilities();
 	ClearPassiveEffects();
+	ClearSanityDecreaseEffect();
 
 	// Stop character movement.
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -497,6 +498,13 @@ void APGPlayerCharacter::OnPlayerDeathAuthority()
 		return;
 	}
 	PS->AddDeathCount();
+
+	// 사망 시점 Sanity 저장
+	if (AttributeSet)
+	{
+		PS->SetCachedSanity(AttributeSet->GetSanity());
+		UE_LOG(LogPGPlayerCharacter, Log, TEXT("Death: Cache sanity %.1f"), AttributeSet->GetSanity());
+	}
 
 	if (IsValid(GS))
 	{
@@ -1170,10 +1178,8 @@ void APGPlayerCharacter::HighlightOff() const
 
 void APGPlayerCharacter::OnRevive()
 {
-	APGPlayerState* PS = GetPlayerState<APGPlayerState>();
-	if (!PS)
+	if (!HasAuthority())
 	{
-		UE_LOG(LogPGPlayerCharacter, Error, TEXT("Character::OnRevive: No valid PS"));
 		return;
 	}
 
@@ -1193,14 +1199,11 @@ void APGPlayerCharacter::OnRevive()
 	AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(DeadTag);
 	AbilitySystemComponent->RemoveLooseGameplayTag(DeadTag);
 
-	if (HasAuthority())
-	{
-		GetWorldTimerManager().ClearTimer(RagdollSettleHandle);
-		SyncMaxSanityFromGameState();
-	}
+	GetWorldTimerManager().ClearTimer(RagdollSettleHandle);
+	RestoreSanityOnRevive();
 }
 
-void APGPlayerCharacter::SyncMaxSanityFromGameState()
+void APGPlayerCharacter::RestoreSanityOnRevive()
 {
 	APGGameState* GS = GetWorld()->GetGameState<APGGameState>();
 	if (!GS || !AbilitySystemComponent)
@@ -1210,9 +1213,21 @@ void APGPlayerCharacter::SyncMaxSanityFromGameState()
 
 	const int32 DecreaseCount = GS->GetCurrentMaxSanityDecreaseCount();
 	const float NewMaxSanity = FMath::Max(100.0f - DecreaseCount * 10.0f, 0.0f);
-
 	AbilitySystemComponent->SetNumericAttributeBase(UPGAttributeSet::GetMaxSanityAttribute(), NewMaxSanity);
-	AbilitySystemComponent->SetNumericAttributeBase(UPGAttributeSet::GetSanityAttribute(), NewMaxSanity);
+	
+	float RestoreSanity = NewMaxSanity;
+	if (APGPlayerState* PS = GetPlayerState<APGPlayerState>())
+	{
+		const float Cached = PS->GetCachedSanity();
+		if (Cached >= 0.0f)
+		{
+			RestoreSanity = FMath::Clamp(Cached, MinReviveSanity, NewMaxSanity);
+		}
+		PS->ClearCachedSanity();
+	}
+	AbilitySystemComponent->SetNumericAttributeBase(UPGAttributeSet::GetSanityAttribute(), RestoreSanity);
+
+	UE_LOG(LogPGPlayerCharacter, Log, TEXT("Revive: MaxSanity %.1f / Sanity %.1f"), NewMaxSanity, RestoreSanity);
 }
 
 /*
@@ -2892,6 +2907,8 @@ void APGPlayerCharacter::ApplySanityDecreaseByDifficulty()
 		return;
 	}
 
+	ClearSanityDecreaseEffect();
+
 	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
 	Context.AddSourceObject(this);
 
@@ -2899,6 +2916,23 @@ void APGPlayerCharacter::ApplySanityDecreaseByDifficulty()
 	if (SpecHandle.IsValid())
 	{
 		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
+}
+
+void APGPlayerCharacter::ClearSanityDecreaseEffect()
+{
+	if (!HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	// 이전 폰이 적용한 것까지 포함 난이도 맵 전체 정리
+	for (const TPair<EPGDifficulty, TSubclassOf<UGameplayEffect>>& Pair : SanityDecreaseEffectsByDifficulty)
+	{
+		if (Pair.Value)
+		{
+			AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(Pair.Value, AbilitySystemComponent.Get(), -1);
+		}
 	}
 }
 

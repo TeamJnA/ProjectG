@@ -610,9 +610,13 @@ protected:
 
 protected:
 	void ApplySanityDecreaseByDifficulty();
+	void ClearSanityDecreaseEffect();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
 	TMap<EPGDifficulty, TSubclassOf<UGameplayEffect>> SanityDecreaseEffectsByDifficulty;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sanity")
+	float MinReviveSanity = 45.0f;
 
 	// Gimmick
 public:
@@ -635,7 +639,7 @@ public:
 	void Client_TriggerMaxSanityDecreaseGlitch(int32 CurrentDecreaseCount);
 
 protected:
-	void SyncMaxSanityFromGameState();
+	void RestoreSanityOnRevive();
 
 	void InitPostProcessMaterial();
 
