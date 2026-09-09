@@ -49,8 +49,8 @@ APGStartRoomLoop03::APGStartRoomLoop03()
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(-980.0f, 610.0f, -800.0f));
 
-	OverlapBox->SetRelativeLocation(FVector(800.0f, 326.0f, -259.0f));
-	OverlapBox->SetRelativeScale3D(FVector(17.75f, 19.45f, 24.5f));
+	OverlapBox->SetRelativeLocation(FVector(800.0f, 326.0f, -255.0f));
+	OverlapBox->SetRelativeScale3D(FVector(17.75f, 19.45f, 25.0f));
 
 	OverlapBox1 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox1"));
 	OverlapBox1->SetupAttachment(OverlapBoxFolder);
@@ -59,7 +59,7 @@ APGStartRoomLoop03::APGStartRoomLoop03()
 	OverlapBox1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox1->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
 	OverlapBox1->SetRelativeLocation(FVector(-996.0f, 599.0f, -786.0f));
-	OverlapBox1->SetRelativeScale3D(FVector(33.55f, 7.9f, 8.1f));
+	OverlapBox1->SetRelativeScale3D(FVector(33.55f, 7.9f, 8.5f));
 
 	OverlapBox2 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox2"));
 	OverlapBox2->SetupAttachment(OverlapBoxFolder);
@@ -68,7 +68,7 @@ APGStartRoomLoop03::APGStartRoomLoop03()
 	OverlapBox2->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox2->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
 	OverlapBox2->SetRelativeLocation(FVector(-1210.0f, -305.0f, -786.0f));
-	OverlapBox2->SetRelativeScale3D(FVector(26.85f, 19.2f, 8.1f));
+	OverlapBox2->SetRelativeScale3D(FVector(26.85f, 19.2f, 8.5f));
 
 	OverlapBox3 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox3"));
 	OverlapBox3->SetupAttachment(OverlapBoxFolder);
@@ -77,7 +77,7 @@ APGStartRoomLoop03::APGStartRoomLoop03()
 	OverlapBox3->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox3->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
 	OverlapBox3->SetRelativeLocation(FVector(-1424.0f, -1200.0f, -786.0f));
-	OverlapBox3->SetRelativeScale3D(FVector(34.275f, 8.035f, 8.1f));
+	OverlapBox3->SetRelativeScale3D(FVector(34.275f, 8.035f, 8.5f));
 
 	OverlapBox4 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox4"));
 	OverlapBox4->SetupAttachment(OverlapBoxFolder);
@@ -85,8 +85,8 @@ APGStartRoomLoop03::APGStartRoomLoop03()
 	OverlapBox4->SetCollisionObjectType(ECC_GameTraceChannel1);
 	OverlapBox4->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox4->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
-	OverlapBox4->SetRelativeLocation(FVector(-3185.0f, -341.0f, -259.0f));
-	OverlapBox4->SetRelativeScale3D(FVector(19.25f, 19.1825f, 24.5f));
+	OverlapBox4->SetRelativeLocation(FVector(-3185.0f, -341.0f, -255.0f));
+	OverlapBox4->SetRelativeScale3D(FVector(19.25f, 19.1825f, 25.0f));
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);

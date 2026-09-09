@@ -114,6 +114,15 @@ public:
 	UPROPERTY(Config)
 	int32 OverallVideoQualityLevel;
 
+	// -------- Frame Rate --------
+	static float IndexToFrameRateLimit(int32 Index);
+	static int32 FrameRateLimitToIndex(float Limit);
+
+	/** 인덱스로 제한값 설정 + 즉시 적용 */
+	void SetAndApplyFrameRateLimit(int32 Index);
+
+	/** 현재 저장된 FrameRateLimit을 CVar에 적용 */
+	void ApplyFrameRateLimit();
 
 	// -------- Helper --------
 	/** Apply mic CVar settings only */

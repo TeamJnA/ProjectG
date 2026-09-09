@@ -172,6 +172,11 @@ void APGChargerCharacter::SetCurrentState(E_PGChargerState NewState)
 			return;
 		}
 
+		if (CurrentState == E_PGChargerState::Killing && NewState != E_PGChargerState::Killing)
+		{
+			CachedAttackedTarget = nullptr;
+		}
+
 		const bool bWasDoorBreak = bDoorBreakOpen;
 
 		CurrentState = NewState;

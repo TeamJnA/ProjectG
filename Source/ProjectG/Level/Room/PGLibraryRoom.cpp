@@ -40,8 +40,8 @@ APGLibraryRoom::APGLibraryRoom()
 
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
 
-	OverlapBox->SetRelativeLocation(FVector(940.0f, -300.0f, 340.0f));
-	OverlapBox->SetRelativeScale3D(FVector(28.5f, 19.0f, 10.2f));
+	OverlapBox->SetRelativeLocation(FVector(940.0f, -300.0f, 345.0f));
+	OverlapBox->SetRelativeScale3D(FVector(28.5f, 19.0f, 10.75f));
 
 	RoomMesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	RoomMesh->SetupAttachment(GeometryFolder);

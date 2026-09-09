@@ -50,7 +50,7 @@ APGStartRoomLoop12::APGStartRoomLoop12()
 	EnemySpawnPoint->SetRelativeLocation(FVector(1990.0f, 900.0f, 250.0f));
 
 	OverlapBox->SetRelativeLocation(FVector(1787.0f, 882.0f, 271.0f));
-	OverlapBox->SetRelativeScale3D(FVector(36.5f, 52.0f, 8.2f));
+	OverlapBox->SetRelativeScale3D(FVector(36.5f, 52.0f, 8.5f));
 
 	Mesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	Mesh->SetupAttachment(GeometryFolder);

@@ -23,8 +23,13 @@ class PROJECTG_API APGChargerAIController : public APGEnemyAIControllerBase
 public:
 	APGChargerAIController(const FObjectInitializer& ObjectInitializer);
 
-	AActor* FindBestTargetInSight();
-	AActor* DetermineBestTarget(const TArray<AActor*>& PerceivedActors);
+	/**
+	* 현재 시야에 감지된 액터 중 최적 타겟 반환
+	* CurrentTarget이 여전히 감지 중이면, 다른 후보가 TargetSwitchDistanceThreshold 이상 더 가까울 때만 교체
+	* CurrentTarget에 nullptr을 넘기면 단순 최근접 선정
+	*/
+	AActor* FindBestTargetInSight(AActor* CurrentTarget = nullptr);
+
 	bool CanChargeToLocation(FVector TargetLoc, float Tolerance = 100.0f);
 
 	static const FName BlackboardKey_AIState;
@@ -44,6 +49,12 @@ protected:
 
 	UFUNCTION()
 	virtual void OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus) override;
+
+	UFUNCTION()
+	void OnTargetForgotten(AActor* Actor);
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Targeting")
+	float TargetSwitchDistanceThreshold = 500.0f;
 
 private:
 	UPROPERTY(VisibleAnywhere)

@@ -118,7 +118,7 @@ void APGInteractableGimmickArmorStand::CollapseArmor(AActor* Investigator)
     }
 
     GetWorldTimerManager().SetTimer(SettleTimerHandle, this,
-        &APGInteractableGimmickArmorStand::CaptureSettledTransforms, 3.0f, false);
+        &APGInteractableGimmickArmorStand::CaptureSettledTransforms, 1.5f, false);
 }
 
 void APGInteractableGimmickArmorStand::CaptureSettledTransforms()

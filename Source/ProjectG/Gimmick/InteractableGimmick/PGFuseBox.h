@@ -136,6 +136,8 @@ protected:
 	// VFX
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
 	TObjectPtr<UNiagaraComponent> FuseSparkFX;
+
+	bool bCoverOpened = false;
 };
 
 #undef LOCTEXT_NAMESPACE

@@ -4,6 +4,13 @@
 #include "Player/PGGameUserSettings.h"
 
 
+namespace
+{
+	constexpr int32 FrameRateOptionCount = 4;
+	constexpr int32 FrameRateDefaultIndex = 3; // 무제한
+	constexpr float FrameRateOptions[FrameRateOptionCount] = { 60.0f, 120.0f, 144.0f, 0.0f };
+}
+
 UPGGameUserSettings::UPGGameUserSettings()
 	: CameraSensitivity(0.5f)
 	, LanguageCulture(TEXT("en"))
@@ -18,6 +25,7 @@ UPGGameUserSettings::UPGGameUserSettings()
 	, bMicToggleActive(false)
 	, OverallVideoQualityLevel(2)
 {
+	SetFrameRateLimit(0.0f);
 }
 
 bool UPGGameUserSettings::IsMicReady() const
@@ -142,6 +150,41 @@ void UPGGameUserSettings::SetAndApplyOverallVideoQuality(int32 Value)
 
 	// Global Illumination (글로벌 일루미네이션) 퀄리티 설정
 	SetGlobalIlluminationQuality(GIQualities[Value]);
+}
+
+float UPGGameUserSettings::IndexToFrameRateLimit(int32 Index)
+{
+	return (Index >= 0 && Index < FrameRateOptionCount)
+		? FrameRateOptions[Index]
+		: FrameRateOptions[FrameRateDefaultIndex];
+}
+
+int32 UPGGameUserSettings::FrameRateLimitToIndex(float Limit)
+{
+	for (int32 i = 0; i < FrameRateOptionCount; ++i)
+	{
+		if (FMath::IsNearlyEqual(FrameRateOptions[i], Limit))
+		{
+			return i;
+		}
+	}
+
+	// fallback
+	return FrameRateDefaultIndex;
+}
+
+void UPGGameUserSettings::SetAndApplyFrameRateLimit(int32 Index)
+{
+	SetFrameRateLimit(IndexToFrameRateLimit(Index));
+	ApplyFrameRateLimit();
+}
+
+void UPGGameUserSettings::ApplyFrameRateLimit()
+{
+	if (IConsoleVariable* CVar = IConsoleManager::Get().FindConsoleVariable(TEXT("t.MaxFPS")))
+	{
+		CVar->Set(GetFrameRateLimit(), ECVF_SetByGameSetting);
+	}
 }
 
 void UPGGameUserSettings::ApplyMicSettings()

@@ -15,7 +15,7 @@ APGBarrelRoom::APGBarrelRoom()
 	RoomDir->SetRelativeLocation(FVector(300.0f, 0.0f, 130.0f));
 	EnemySpawnPoint->SetRelativeLocation(FVector(550.0f, 280.0f, 230.0f));
 	OverlapBox->SetRelativeLocation(FVector(620.0f, 255.0f, 345.0f));
-	OverlapBox->SetRelativeScale3D(FVector(18.5f, 21.0f, 10.5f));
+	OverlapBox->SetRelativeScale3D(FVector(18.5f, 21.0f, 10.75f));
 
 	RoomMesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	RoomMesh->SetupAttachment(GeometryFolder);
