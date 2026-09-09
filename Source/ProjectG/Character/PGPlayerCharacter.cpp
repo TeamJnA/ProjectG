@@ -569,6 +569,13 @@ void APGPlayerCharacter::OnRep_IsRagdoll()
 	HighlightOn();
 
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
+	
+	// 래그돌 전 회전해서 뒤로 넘어지게 수정
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	FRotator NewRotation = GetMesh()->GetComponentRotation();
+	NewRotation.Roll -= 14.0f;  
+	GetMesh()->SetWorldRotation(NewRotation);
 
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);
