@@ -25,7 +25,7 @@ APGElevatorRoom::APGElevatorRoom()
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
 
 	OverlapBox->SetRelativeLocation(FVector(901.0f, -295.0f, 275.0f));
-	OverlapBox->SetRelativeScale3D(FVector(27.75f, 19.25f, 8.25f));
+	OverlapBox->SetRelativeScale3D(FVector(27.75f, 19.25f, 8.5f));
 
 	OverlapBox1 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox1"));
 	OverlapBox1->SetupAttachment(OverlapBoxFolder);

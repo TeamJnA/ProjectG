@@ -34,8 +34,8 @@ APGStairRoom_Simple::APGStairRoom_Simple()
 	FuseBoxSpawnPoint0->SetArrowColor(FLinearColor(1.0f, 1.0f, 0.0f, 0.0f));
 	FuseBoxSpawnPoint0->bHiddenInGame = true;
 
-	OverlapBox->SetRelativeLocation(FVector(634.0f, 292.0f, 480.0f));
-	OverlapBox->SetRelativeScale3D(FVector(19.3f, 19.3f, 14.75f));
+	OverlapBox->SetRelativeLocation(FVector(634.0f, 292.0f, 485.0f));
+	OverlapBox->SetRelativeScale3D(FVector(19.3f, 19.3f, 15.25f));
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(1026.0f, 57.0f, 345.0f));
 

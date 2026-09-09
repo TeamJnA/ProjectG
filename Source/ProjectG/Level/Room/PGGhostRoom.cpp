@@ -14,7 +14,7 @@ APGGhostRoom::APGGhostRoom()
 	WallClass = APGWall_Brown::StaticClass();
 
 	OverlapBox->SetRelativeLocation(FVector(610.0f, -310.0f, 345.0f));
-	OverlapBox->SetRelativeScale3D(FVector(18.4f, 18.5f, 10.4f));
+	OverlapBox->SetRelativeScale3D(FVector(18.4f, 18.5f, 10.75f));
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(495.0f, -105.0f, 200.0f));
 

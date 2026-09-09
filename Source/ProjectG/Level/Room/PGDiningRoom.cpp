@@ -14,8 +14,8 @@ APGDiningRoom::APGDiningRoom()
 
 	RoomDir->SetRelativeLocation(FVector(290.0f, 0.0f, 130.0f));
 	EnemySpawnPoint->SetRelativeLocation(FVector(400.0f, 800.0f, 220.0f));
-	OverlapBox->SetRelativeLocation(FVector(630.0f, 540.0f, 340.0f));
-	OverlapBox->SetRelativeScale3D(FVector(18.75f, 30.25f, 10.4f));
+	OverlapBox->SetRelativeLocation(FVector(630.0f, 540.0f, 345.0f));
+	OverlapBox->SetRelativeScale3D(FVector(18.75f, 30.25f, 10.75f));
 
 	RoomMesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	RoomMesh->SetupAttachment(GeometryFolder);

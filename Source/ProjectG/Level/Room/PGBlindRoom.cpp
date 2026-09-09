@@ -18,7 +18,7 @@ APGBlindRoom::APGBlindRoom()
 	SwingPropPointsFolder->SetupAttachment(RootComponent);
 
 	OverlapBox->SetRelativeLocation(FVector(610.0f, -605.0f, 345.0f));
-	OverlapBox->SetRelativeScale3D(FVector(18.3f, 28.7f, 10.4f));
+	OverlapBox->SetRelativeScale3D(FVector(18.3f, 28.7f, 10.75f));
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(375.0f, -167.0f, 200.0f));
 

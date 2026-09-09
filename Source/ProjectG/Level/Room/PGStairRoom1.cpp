@@ -19,8 +19,8 @@ APGStairRoom1::APGStairRoom1()
 	ExitDir0->SetRelativeScale3D(FVector(2.5f, 2.5f, 2.5f));
 	ExitDir0->bHiddenInGame = true;
 
-	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 480.0f));
-	OverlapBox->SetRelativeScale3D(FVector(19.5f, 19.5f, 14.75f));
+	OverlapBox->SetRelativeLocation(FVector(634.0f, 295.0f, 485.0f));
+	OverlapBox->SetRelativeScale3D(FVector(19.5f, 19.5f, 15.25f));
 
 	OverlapBox1 = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox1"));
 	OverlapBox1->SetupAttachment(OverlapBoxFolder);
@@ -29,7 +29,7 @@ APGStairRoom1::APGStairRoom1()
 	OverlapBox1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapBox1->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECollisionResponse::ECR_Overlap);
 	OverlapBox1->SetRelativeLocation(FVector(1255.0f, -940.0f, 695.0f));
-	OverlapBox1->SetRelativeScale3D(FVector(19.25f, 18.5f, 8.25f));
+	OverlapBox1->SetRelativeScale3D(FVector(19.25f, 18.5f, 8.75f));
 
 	EnemySpawnPoint->SetRelativeLocation(FVector(1090.0f, -920.0f, 630.0f));
 

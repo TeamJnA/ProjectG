@@ -25,7 +25,7 @@ APGSmallCorridor_Dark::APGSmallCorridor_Dark()
 	RoomDir->SetRelativeLocation(FVector(720.0f, 0.0f, 130.0f));
 
 	OverlapBox->SetRelativeLocation(FVector(900.0f, 285.0f, 275.0f));
-	OverlapBox->SetRelativeScale3D(FVector(27.25f, 19.0f, 8.25f));
+	OverlapBox->SetRelativeScale3D(FVector(27.25f, 19.0f, 8.5f));
 
 	RoomMesh = CreateDefaultSubobject<UChildActorComponent>(TEXT("RoomMesh"));
 	RoomMesh->SetupAttachment(GeometryFolder);
