@@ -181,50 +181,46 @@ void APGFuseBox::OnFuseItemDestroyed(AActor* DestroyedActor)
 
 void APGFuseBox::OnRep_FuseBoxState()
 {
-    switch (FuseBoxState)
+    if (FuseBoxState == EFuseBoxState::Closed)
     {
-        case EFuseBoxState::Opened:
+        return;
+    }
+
+    if (!bCoverOpened)
+    {
+        bCoverOpened = true;
+
+        if (MIDCover)
         {
-            if (MIDCover)
-            {
-                MIDCover->SetScalarParameterValue(ShakeParameterName, 0.0f);
-            }
-
-            BodyMesh->SetRenderCustomDepth(false);
-            BodyMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-            BodyMesh->SetGenerateOverlapEvents(false);
-
-            CoverMesh->SetRenderCustomDepth(false);
-            CoverMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-            CoverMesh->SetGenerateOverlapEvents(false);
-
-            // Simulate physics
-            CoverMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-            CoverMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-            CoverMesh->SetCollisionObjectType(ECC_PhysicsBody);
-            CoverMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-            CoverMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
-            CoverMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
-            CoverMesh->SetSimulatePhysics(true);
-            FVector Direction = (GetActorForwardVector() - GetActorRightVector() - FVector(0, 0, 0.3f)).GetSafeNormal();
-            CoverMesh->AddImpulse(Direction * 200.0f, NAME_None, true);
-
-            break;
+            MIDCover->SetScalarParameterValue(ShakeParameterName, 0.0f);
         }
 
-        case EFuseBoxState::Empty:
-        {
-            TurnOffRoomLights();
-            if (FuseSparkFX)
-            {
-                FuseSparkFX->Activate(true);
-            }
-            break;
-        }
+        BodyMesh->SetRenderCustomDepth(false);
+        BodyMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+        BodyMesh->SetGenerateOverlapEvents(false);
 
-        default:
+        CoverMesh->SetRenderCustomDepth(false);
+        CoverMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+        CoverMesh->SetGenerateOverlapEvents(false);
+
+        // Simulate physics
+        CoverMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+        CoverMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+        CoverMesh->SetCollisionObjectType(ECC_PhysicsBody);
+        CoverMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+        CoverMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
+        CoverMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
+        CoverMesh->SetSimulatePhysics(true);
+        const FVector Direction = (GetActorForwardVector() - GetActorRightVector() - FVector(0, 0, 0.3f)).GetSafeNormal();
+        CoverMesh->AddImpulse(Direction * 200.0f, NAME_None, true);
+    }
+
+    if (FuseBoxState == EFuseBoxState::Empty)
+    {
+        TurnOffRoomLights();
+        if (FuseSparkFX)
         {
-            break;
+            FuseSparkFX->Activate(true);
         }
     }
 }
