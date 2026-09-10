@@ -106,7 +106,7 @@ float UPGSoundManagerComponent::GetCurrentActionNoiseLevel() const
 	{
 		return 0.0f;
 	}
-	return CurrentActionNoiseLevel * (1.0f - Elapsed / ActionNoiseDecayDuration);
+	return CurrentActionNoiseLevel * (1.0f - DecayElapsed / ActionNoiseDecayDuration);
 }
 
 void UPGSoundManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

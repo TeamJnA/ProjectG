@@ -8,6 +8,8 @@
 #include "Components/OverlaySlot.h"
 #include "Blueprint/WidgetTree.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Character/PGPlayerCharacter.h"
+#include "Character/Component/PGSoundManagerComponent.h"
 
 
 void UPGCaptureLogEntryWidget::NativeDestruct()
@@ -189,6 +191,33 @@ void UPGCaptureLogEntryWidget::AdvanceTypewriter()
 	if (bChanged)
 	{
 		ActiveText->SetText(FText::FromString(CurrentFull.Left(CharIndex)));
+
+		const TCHAR NewChar = CurrentFull[CharIndex - 1];
+		if (!FChar::IsWhitespace(NewChar))
+		{
+			PlayTypeSound();
+		}
+	}
+}
+
+void UPGCaptureLogEntryWidget::PlayTypeSound()
+{
+	const UWorld* World = GetWorld();
+	if (!World || TypeSoundName.IsNone())
+	{
+		return;
+	}
+
+	const double Now = World->GetRealTimeSeconds();
+	if (Now - LastTypeSoundTime < TypeSoundMinInterval)
+	{
+		return;
+	}
+	LastTypeSoundTime = Now;
+
+	if (UPGSoundManagerComponent* SoundComp = GetSoundComp())
+	{
+		SoundComp->TriggerSoundForSelf(TypeSoundName);
 	}
 }
 
@@ -289,4 +318,16 @@ void UPGCaptureLogEntryWidget::ClearAllTimers()
 		World->GetTimerManager().ClearTimer(FadeInHandle);
 		World->GetTimerManager().ClearTimer(DriverHandle);
 	}
+}
+
+UPGSoundManagerComponent* UPGCaptureLogEntryWidget::GetSoundComp()
+{
+	if (!CachedSoundComp.IsValid())
+	{
+		if (APGPlayerCharacter* Char = Cast<APGPlayerCharacter>(GetOwningPlayerPawn()))
+		{
+			CachedSoundComp = Char->GetSoundManagerComponent();
+		}
+	}
+	return CachedSoundComp.Get();
 }

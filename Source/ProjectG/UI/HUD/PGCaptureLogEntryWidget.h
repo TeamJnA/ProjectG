@@ -11,6 +11,7 @@ class UTextBlock;
 class UImage;
 class UOverlay;
 class UTextureRenderTarget2D;
+class UPGSoundManagerComponent;
 
 /**
  * 
@@ -38,11 +39,13 @@ protected:
 	UTextBlock* MakeLineText(const FCaptureLogLine& Line);
 	void ApplyLineState(UTextBlock* Text, FVector2D Translation, float Opacity);
 	void AdvanceTypewriter();
+	void PlayTypeSound();
 	void StartEntryFadeOut();
 	void Driver();
 	FORCEINLINE bool IsTypingDone() const { return CharIndex >= CurrentFull.Len(); }
 
 	void ClearAllTimers();
+	UPGSoundManagerComponent* GetSoundComp();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Log")
 	FSlateFontInfo LineFont;
@@ -54,6 +57,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Log")
 	FLinearColor InvalidColor = FLinearColor(1.0f, 0.3f, 0.3f, 1.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Log|Sound")
+	FName TypeSoundName = TEXT("UI_CaptureLog_Type");
 
 	UPROPERTY()
 	TArray<FCaptureLogLine> PendingLines;
@@ -69,6 +75,8 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UTextBlock> OutgoingText;
+
+	TWeakObjectPtr<UPGSoundManagerComponent> CachedSoundComp;
 
 	FTimerHandle FadeInHandle;
 	FTimerHandle DriverHandle;
@@ -94,6 +102,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Log|Line")
 	float FadeOutDuration = 0.3f;
 
+	// 이 간격보다 촘촘하면 사운드 스킵 (TypeInterval보다 크게)
+	UPROPERTY(EditDefaultsOnly, Category = "Log|Sound")
+	float TypeSoundMinInterval = 0.05f;
+
+	double LastTypeSoundTime = -1.0f;
 	float PhaseElapsed = 0.0f;
 	float ThumbnailAlpha = 0.0f;
 	float TypeAccum = 0.0f;
