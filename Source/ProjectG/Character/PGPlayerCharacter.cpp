@@ -26,6 +26,7 @@
 #include "Components/BoxComponent.h"
 #include "Component/PGInventoryComponent.h"
 #include "Item/PGItemData.h"
+#include "Character/Component/PGAmbientSoundComponent.h"
 #include "Component/PGSoundManagerComponent.h"
 #include "UI/Manager/PGHUD.h"
 #include "UI/HUD/PGMessageManagerWidget.h"
@@ -137,6 +138,8 @@ APGPlayerCharacter::APGPlayerCharacter()
 
 	// Create Components
 	InventoryComponent = CreateDefaultSubobject<UPGInventoryComponent>(TEXT("InventoryComponent"));
+
+	PGAmbientSoundComponent = CreateDefaultSubobject<UPGAmbientSoundComponent>(TEXT("PGAmbientSoundComponent"));
 
 	SoundManagerComponent = CreateDefaultSubobject<UPGSoundManagerComponent>(TEXT("SoundManagerComponent"));
 
@@ -787,6 +790,12 @@ void APGPlayerCharacter::PossessedBy(AController* NewController)
 		}
 
 		TryReportRank();
+
+		// Try init PGAmbientSoundComponent
+		if (PGAmbientSoundComponent)
+		{
+			PGAmbientSoundComponent->TryBindEnterSequenceFinishDelegate();
+		}
 	}
 
 	// Turn on headlight
@@ -889,6 +898,16 @@ void APGPlayerCharacter::OnRep_PlayerState()
 	}
 
 	TryInitVoiceSettings();
+}
+
+void APGPlayerCharacter::OnRep_Controller()
+{
+	Super::OnRep_Controller();
+
+	if (PGAmbientSoundComponent)
+	{
+		PGAmbientSoundComponent->TryBindEnterSequenceFinishDelegate();
+	}
 }
 
 void APGPlayerCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)

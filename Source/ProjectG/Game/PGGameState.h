@@ -22,6 +22,7 @@ class UGameplayEffect;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapGenerationComplete);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerArrayChangedDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReadyToReturnLobbyChanged);
+DECLARE_MULTICAST_DELEGATE(FOnLocalEnterSeqeunceFinished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnExitRegistered, APGExitPointBase*, Exit);
 
 UENUM(BlueprintType)
@@ -138,6 +139,8 @@ public:
 	void Multicast_PlayerEnterLevelSequence(int32 NumPlayers);
 
 	FORCEINLINE bool IsEnterSequencePlaying() const { return bEnterSequencePlaying; }
+
+	FOnLocalEnterSeqeunceFinished OnLocalEnterSequenceFinished;
 
 protected:
 	void PlayEnterLevelSeqeunce(int32 NumPlayers);

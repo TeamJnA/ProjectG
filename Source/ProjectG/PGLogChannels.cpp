@@ -1,6 +1,7 @@
 #include "PGLogChannels.h"
 
 DEFINE_LOG_CATEGORY(LogPGPlayerCharacter);
+DEFINE_LOG_CATEGORY(LogPGAmbientSoundComponent);
 DEFINE_LOG_CATEGORY(LogPGAbility);
 DEFINE_LOG_CATEGORY(LogPGAbilityTask);
 DEFINE_LOG_CATEGORY(LogItem);
