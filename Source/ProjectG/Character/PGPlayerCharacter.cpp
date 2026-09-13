@@ -2832,6 +2832,14 @@ void APGPlayerCharacter::ValidateNearbyPhotographables()
 	HUD->SetPhotoAlertVisible(bHasPhotographable);
 }
 
+void APGPlayerCharacter::Client_TriggerSoundTension_Implementation()
+{
+	if (PGAmbientSoundComponent)
+	{
+		PGAmbientSoundComponent->GimmickTriggerTension();
+	}
+}
+
 void APGPlayerCharacter::InitBonfireVignetteMaterial()
 {
 	if (BonfireVignetteMID)

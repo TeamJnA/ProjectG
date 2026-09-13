@@ -310,6 +310,8 @@ void APGInteractableGimmickPhone::StartRinging()
 		return;
 	}
 
+	TriggerSoundTensionToPlayers(1500.0f);
+
 	// 딜레이 후 플레이어가 없으면 취소 + Blind가 있으면 취소
 	if (bBlindInEnterSphere || PlayersInRange.IsEmpty())
 	{

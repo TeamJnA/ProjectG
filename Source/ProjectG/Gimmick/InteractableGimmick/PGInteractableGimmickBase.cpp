@@ -7,6 +7,9 @@
 #include "Sound/PGSoundManager.h"
 #include "Interface/SoundManagerInterface.h"
 
+#include "Kismet/KismetSystemLibrary.h"
+#include "Character/PGPlayerCharacter.h"
+
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -41,6 +44,47 @@ void APGInteractableGimmickBase::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APGInteractableGimmickBase, SoundManager);
+}
+
+void APGInteractableGimmickBase::TriggerSoundTensionToPlayers(float Range)
+{
+	check(HasAuthority());
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(
+		UEngineTypes::ConvertToObjectType(ECC_Pawn)
+	);
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+
+	TArray<AActor*> OverlappedActors;
+
+	const bool bFound = UKismetSystemLibrary::SphereOverlapActors(
+		this,
+		GetActorLocation(),
+		Range,
+		ObjectTypes,
+		APGPlayerCharacter::StaticClass(),
+		ActorsToIgnore,
+		OverlappedActors
+	);
+
+	if (!bFound)
+	{
+		return;
+	}
+
+	for (AActor* Actor : OverlappedActors)
+	{
+		APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(Actor);
+		if (!IsValid(PlayerCharacter))
+		{
+			continue;
+		}
+
+		PlayerCharacter->Client_TriggerSoundTension();
+	}
 }
 
 void APGInteractableGimmickBase::GimmickInteract(AActor* Investigator)

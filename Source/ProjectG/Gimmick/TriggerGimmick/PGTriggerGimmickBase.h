@@ -35,6 +35,9 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	// 주변 플레이어들의 Ambient sound Tension 증가
+	void TriggerSoundTensionToPlayers(float Range = 1500.0f);
+
 	void RefreshPhotoRegistration();
 
 	UFUNCTION()

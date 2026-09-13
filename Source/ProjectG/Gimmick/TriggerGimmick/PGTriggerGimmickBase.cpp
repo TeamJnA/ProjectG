@@ -9,6 +9,9 @@
 #include "Sound/PGSoundManager.h"
 #include "Interface/SoundManagerInterface.h"
 
+#include "Character/PGPlayerCharacter.h"
+#include "Kismet/KismetSystemLibrary.h"
+
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
@@ -88,6 +91,47 @@ void APGTriggerGimmickBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(APGTriggerGimmickBase, SoundManager);
 }
 
+void APGTriggerGimmickBase::TriggerSoundTensionToPlayers(float Range)
+{
+	check(HasAuthority());
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(
+		UEngineTypes::ConvertToObjectType(ECC_Pawn)
+	);
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+
+	TArray<AActor*> OverlappedActors;
+
+	const bool bFound = UKismetSystemLibrary::SphereOverlapActors(
+		this,
+		GetActorLocation(),
+		Range,
+		ObjectTypes,
+		APGPlayerCharacter::StaticClass(),
+		ActorsToIgnore,
+		OverlappedActors
+	);
+
+	if (!bFound)
+	{
+		return;
+	}
+
+	for (AActor* Actor : OverlappedActors)
+	{
+		APGPlayerCharacter* PlayerCharacter = Cast<APGPlayerCharacter>(Actor);
+		if (!IsValid(PlayerCharacter))
+		{
+			continue;
+		}
+
+		PlayerCharacter->Client_TriggerSoundTension();
+	}
+}
+
 void APGTriggerGimmickBase::RefreshPhotoRegistration()
 {
 	UWorld* World = GetWorld();
@@ -147,11 +191,13 @@ void APGTriggerGimmickBase::OnTriggerOverlap(UPrimitiveComponent* OverlappedComp
 
 void APGTriggerGimmickBase::Multicast_PlayLocalEffect_Implementation(AActor* OtherActor, UPrimitiveComponent* OtherComp)
 {
-	if (ACharacter* Player = Cast<ACharacter>(OtherActor))
+	if (APGPlayerCharacter* Player = Cast<APGPlayerCharacter>(OtherActor))
 	{
 		if (Player->IsLocallyControlled())
 		{
 			LocalEffect(OtherActor, OtherComp);
+
+			Player->Client_TriggerSoundTension();
 		}
 	}
 }

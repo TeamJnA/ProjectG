@@ -30,7 +30,6 @@ class UPGInventoryComponent;
 class UPGAmbientSoundComponent;
 class USpotLightComponent;
 
-class APGTriggerGimmickMannequin;
 class UBoxComponent;
 
 class UPGVOIPTalker;
@@ -536,6 +535,11 @@ protected:
 	bool bPhotoDetectionInitialized = false;
 
 	// --------------AmbientSoundComponent-----------------
+public:
+	UFUNCTION(Client, Unreliable)
+	void Client_TriggerSoundTension();
+
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Sound, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPGAmbientSoundComponent> PGAmbientSoundComponent;
 		
