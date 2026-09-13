@@ -39,6 +39,69 @@ namespace
 	const FString ProfileBackupSlotName = TEXT("PGPlayerProfile_Backup");
 }
 
+namespace
+{
+	FString SteamLangToCulture(const FString& InLang)
+	{
+		static const TMap<FString, FString> Map = {
+			// 번역 -> 17
+			{ TEXT("schinese"),   TEXT("zh-Hans") },
+			{ TEXT("tchinese"),   TEXT("zh-Hant") },
+			{ TEXT("english"),    TEXT("en")      },
+			{ TEXT("french"),     TEXT("fr")      },
+			{ TEXT("german"),     TEXT("de")      },
+			{ TEXT("indonesian"), TEXT("id")      },
+			{ TEXT("italian"),    TEXT("it")      },
+			{ TEXT("japanese"),   TEXT("ja")      },
+			{ TEXT("koreana"),    TEXT("ko")      },
+			{ TEXT("polish"),     TEXT("pl")      },
+			{ TEXT("brazilian"),  TEXT("pt-BR")   },
+			{ TEXT("russian"),    TEXT("ru")      },
+			{ TEXT("latam"),      TEXT("es-419")  },
+			{ TEXT("spanish"),    TEXT("es-ES")   },
+			{ TEXT("thai"),       TEXT("th")      },
+			{ TEXT("turkish"),    TEXT("tr")      },
+			{ TEXT("vietnamese"), TEXT("vi")      },
+		};
+		const FString* Found = Map.Find(InLang.ToLower());
+		return Found ? *Found : FString();
+	}
+
+	/** 실제 패키징된 컬처 중 가장 가까운 것으로 해석. 없으면 빈 문자열 */
+	FString ResolveShippedCulture(const FString& Desired)
+	{
+		if (Desired.IsEmpty())
+		{
+			return FString();
+		}
+
+		const TArray<FString> Shipped = FTextLocalizationManager::Get().GetLocalizedCultureNames(ELocalizationLoadFlags::Game);
+		for (const FString& Candidate : FInternationalization::Get().GetPrioritizedCultureNames(Desired))
+		{
+			if (Shipped.Contains(Candidate))
+			{
+				return Candidate;
+			}
+		}
+		return FString();
+	}
+
+	FString GetSteamGameCulture()
+	{
+#if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
+		if (SteamAPI_IsSteamRunning() && SteamApps())
+		{
+			const FString SteamLang = UTF8_TO_TCHAR(SteamApps()->GetCurrentGameLanguage());
+			const FString Culture = SteamLangToCulture(SteamLang);
+			UE_LOG(LogTemp, Log, TEXT("[Locale] Steam lang=%s -> culture=%s"), *SteamLang, *Culture);
+			return Culture;
+		}
+		UE_LOG(LogTemp, Warning, TEXT("[Locale] Steam not running or SteamApps() null"));
+#endif
+		return FString();
+	}
+}
+
 void UPGAdvancedFriendsGameInstance::Init()
 {
 	Super::Init();
@@ -77,6 +140,18 @@ void UPGAdvancedFriendsGameInstance::Init()
 		if (!Settings->LanguageCulture.IsEmpty())
 		{
 			FInternationalization::Get().SetCurrentLanguageAndLocale(Settings->LanguageCulture);
+		}
+		else
+		{
+			// 최초 실행 -> 스팀 언어 우선
+			FString AutoCulture = ResolveShippedCulture(GetSteamGameCulture());
+			if (!AutoCulture.IsEmpty())
+			{
+				FInternationalization::Get().SetCurrentLanguageAndLocale(AutoCulture);
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("[Locale] Auto-detected culture: %s"), 
+				AutoCulture.IsEmpty() ? TEXT("(none, engine default)") : *AutoCulture);
 		}
 		Settings->ApplyMicSettings();
 		Settings->ApplyFrameRateLimit();

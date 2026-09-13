@@ -13,7 +13,7 @@ namespace
 
 UPGGameUserSettings::UPGGameUserSettings()
 	: CameraSensitivity(0.5f)
-	, LanguageCulture(TEXT("en"))
+	, LanguageCulture(FString())
 	, OutputDeviceId(FString())
 	, InputDeviceId(FString())
 	, MusicVolume(0.5f)
