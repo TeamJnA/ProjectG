@@ -53,7 +53,8 @@ void APGEnemyCharacterBase::NotifyAttackStart()
 	if (SoundManagerComponent)
 	{
 		// SoundManagerComponent->TriggerSoundForAllPlayers(AttackFinishSound, GetActorLocation());
-		SoundManagerComponent->TriggerSoundForSelf(AttackFinishSound);
+		// SoundManagerComponent->TriggerSoundForSelf(AttackFinishSound);
+		SoundManagerComponent->TriggerSoundLocally(AttackFinishSound, GetActorLocation());
 	}
 }
 
