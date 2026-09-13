@@ -103,6 +103,7 @@ void APGInteractableGimmickArmorStand::CollapseArmor(AActor* Investigator)
     {
         return;
     }
+    TriggerSoundTensionToPlayers(1500.0f);
 
     bCollapsed = true;
     ApplyCollapseState();

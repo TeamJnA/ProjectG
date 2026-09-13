@@ -518,6 +518,8 @@ void APGGameState::OnEnterSequenceFinished()
 			LSMapActor->Destroy();
 		}
 	}
+
+	OnLocalEnterSequenceFinished.Broadcast();
 }
 
 FVector APGGameState::GetExplorationTarget(const FVector& CurrentLocation, bool* bOutUsedPlayerBias) const

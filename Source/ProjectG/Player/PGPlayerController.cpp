@@ -723,6 +723,7 @@ void APGPlayerController::OnShowPauseMenu(const FInputActionValue& Value)
 	}
 }
 
+// TODO 새로운 Ambient sound system 확인하고, 지울것 나중에
 void APGPlayerController::InitializeGameplayBGM()
 {
 	if (!GameplayBGMSound)

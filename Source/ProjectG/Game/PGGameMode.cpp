@@ -286,7 +286,7 @@ void APGGameMode::SpawnAllPlayers()
 		if (NewPawn)
 		{
 			PC->Possess(NewPawn);
-			PC->Client_PlayGameplayBGM();
+			// PC->Client_PlayGameplayBGM();
 		}
 		PlayerIndex++;
 		PC->Client_HideLoadingScreen();

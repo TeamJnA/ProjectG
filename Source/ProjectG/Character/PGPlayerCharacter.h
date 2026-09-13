@@ -27,9 +27,9 @@ struct FInputActionValue;
 struct FOnAttributeChangeData;
 
 class UPGInventoryComponent;
+class UPGAmbientSoundComponent;
 class USpotLightComponent;
 
-class APGTriggerGimmickMannequin;
 class UBoxComponent;
 
 class UPGVOIPTalker;
@@ -280,6 +280,7 @@ private:
 public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	virtual void OnRep_Controller() override;
 
 	FORCEINLINE FGameplayTagContainer GetInteractTag() const { return InteractTag; }
 
@@ -533,7 +534,14 @@ protected:
 
 	bool bPhotoDetectionInitialized = false;
 
+	// --------------AmbientSoundComponent-----------------
+public:
+	UFUNCTION(Client, Unreliable)
+	void Client_TriggerSoundTension();
 
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Sound, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPGAmbientSoundComponent> PGAmbientSoundComponent;
 		
 ///
 ///********* Voice Chat ******************

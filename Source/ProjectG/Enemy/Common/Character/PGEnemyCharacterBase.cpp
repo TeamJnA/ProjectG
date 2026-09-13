@@ -18,6 +18,7 @@
 #include "Level/Misc/PGDoor1.h"
 #include "Type/CharacterTypes.h"
 #include "Utils/PGPhotoSubjectRegistry.h"
+#include "Utils/PGEnemyRegistry.h"
 
 
 DEFINE_LOG_CATEGORY(LogEnemyCharacter);
@@ -124,6 +125,11 @@ void APGEnemyCharacterBase::BeginPlay()
 		{
 			Registry->RegisterSubject(this);
 		}
+
+		if (UPGEnemyRegistry* Registry = World->GetSubsystem<UPGEnemyRegistry>())
+		{
+			Registry->RegisterEnemy(this);
+		}
 	}
 }
 
@@ -134,6 +140,11 @@ void APGEnemyCharacterBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		if (UPGPhotoSubjectRegistry* Registry = World->GetSubsystem<UPGPhotoSubjectRegistry>())
 		{
 			Registry->UnregisterSubject(this);
+		}
+
+		if (UPGEnemyRegistry* Registry = World->GetSubsystem<UPGEnemyRegistry>())
+		{
+			Registry->UnregisterEnemy(this);
 		}
 	}
 

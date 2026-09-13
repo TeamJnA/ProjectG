@@ -125,6 +125,8 @@ void APGTriggerGimmickRockingChair::OnTriggerOverlap(UPrimitiveComponent* Overla
 		return;
 	}
 
+	TriggerSoundTensionToPlayers(1000.0f);
+
 	bIsRocking = true;
 	OnRep_IsRocking();
 
