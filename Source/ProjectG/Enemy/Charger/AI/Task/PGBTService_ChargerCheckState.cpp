@@ -68,6 +68,12 @@ void UPGBTService_ChargerCheckState::TickNode(UBehaviorTreeComponent& OwnerComp,
 		return;
 	}
 
+	// 스폰 대기 중에는 상태 판정 x
+	if (!Charger->IsEnemyActivated())
+	{
+		return;
+	}
+
 	FPGChargerCheckStateMemory* Mem = CastInstanceNodeMemory<FPGChargerCheckStateMemory>(NodeMemory);
 
 	E_PGChargerState CurrentState = (E_PGChargerState)BB->GetValueAsEnum(APGChargerAIController::BlackboardKey_AIState);

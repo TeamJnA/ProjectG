@@ -54,6 +54,12 @@ public:
 
 	void RecheckOverlappingPlayers();
 
+	// 스폰 직후 대기 상태
+	// BT 게이트 브랜치 완료 -> true로 전환
+	// 대기 없는 enemy의 경우 플래그 true로 설정
+	void ActivateEnemy();
+	FORCEINLINE bool IsEnemyActivated() const { return bEnemyActivated; }
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="AI", meta=(AllowPrivateAccess="true"))
 	UBehaviorTree* Tree;
@@ -87,6 +93,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	FName AttackFinishSound = FName("");
+
+	// 활성화 시점에 추가 처리 필요시 오버라이드
+	virtual void OnEnemyActivated() {}
+	
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Spawn")
+	bool bEnemyActivated = false;
 
 public:
 	void ForceOpenDoorsAroundCharacter();

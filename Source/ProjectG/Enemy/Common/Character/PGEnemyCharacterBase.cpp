@@ -288,3 +288,17 @@ void APGEnemyCharacterBase::ForceOpenDoorsAroundCharacter()
 		}
 	}
 }
+
+void APGEnemyCharacterBase::ActivateEnemy()
+{
+	if (!HasAuthority() || bEnemyActivated)
+	{
+		return;
+	}
+
+	bEnemyActivated = true;
+
+	UE_LOG(LogEnemyCharacter, Log, TEXT("[ActivateEnemy] [%s] activated."), *GetNameSafe(this));
+
+	OnEnemyActivated();
+}

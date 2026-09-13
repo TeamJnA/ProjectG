@@ -69,6 +69,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnEnemyActivated() override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	FVector2D BreathInterval = FVector2D(1.5f, 3.0f);

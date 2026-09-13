@@ -126,7 +126,17 @@ void APGBlindCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
+    if (HasAuthority() && !bEnemyActivated)
+    {
+        SoundState = EBlindSoundState::Silent;
+    }
+
     OnRep_SoundState();
+}
+
+void APGBlindCharacter::OnEnemyActivated()
+{
+    SetSoundState(EBlindSoundState::Breathing);
 }
 
 void APGBlindCharacter::OnPlayerOverlapped(AActor* OverlapPlayer)

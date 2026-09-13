@@ -95,8 +95,20 @@ void APGBlindAIController::SetupPerceptionSystem()
 
 void APGBlindAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
+	// 만료된 자극은 무시 (감지 해제 시에도 이 델리게이트가 호출됨)
+	if (!Stimulus.WasSuccessfullySensed())
+	{
+		return;
+	}
+
+	// 스폰 대기 중에는 모든 자극 무시
+	if (!OwnerPawn || !OwnerPawn->IsEnemyActivated())
+	{
+		return;
+	}
+
 	// Bite 중에는 새 Stimulus 무시
-	if (OwnerPawn && OwnerPawn->GetAbilitySystemComponent())
+	if (OwnerPawn->GetAbilitySystemComponent())
 	{
 		if (OwnerPawn->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("AI.State.IsAttacking.IsBiting"))))
 		{

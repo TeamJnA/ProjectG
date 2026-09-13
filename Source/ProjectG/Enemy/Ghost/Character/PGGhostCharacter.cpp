@@ -22,6 +22,8 @@
 
 APGGhostCharacter::APGGhostCharacter()
 {
+    bEnemyActivated = true;
+
     bReplicates = true;
     bAlwaysRelevant = true;
     SetReplicateMovement(true);
