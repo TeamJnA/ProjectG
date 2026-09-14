@@ -10,6 +10,8 @@
 #include "Sound/PGSoundManager.h"
 #include "Interface/SoundManagerInterface.h"
 
+#include "Components/PointLightComponent.h"
+
 // Sets default values
 APGItemActor::APGItemActor()
 {
@@ -24,6 +26,10 @@ APGItemActor::APGItemActor()
 	StaticMesh->SetCollisionProfileName(TEXT("Item"));
 	StaticMesh->SetReceivesDecals(false);
 	RootComponent = StaticMesh;
+
+	PointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
+	PointLight->SetupAttachment(StaticMesh);
+	PointLight->SetVisibility(false);
 
 	InteractAbility = UGA_Interact_Item::StaticClass();
 
@@ -89,6 +95,22 @@ void APGItemActor::InitWithData(UPGItemData* InItemData)
 	if (InItemData)
 	{
 		StaticMesh->SetStaticMesh(InItemData->ItemMesh);
+
+		PointLight->SetVisibility(InItemData->bHasLight);
+
+		static const FName LightSocketName(TEXT("FireSocket"));
+		if (InItemData->bHasLight)
+		{
+			if (StaticMesh->DoesSocketExist(LightSocketName))
+			{
+				PointLight->AttachToComponent(
+					StaticMesh,
+					FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+					LightSocketName
+				);
+			}
+		}
+
 		HighlightOn();
 	}
 
@@ -146,6 +168,22 @@ void APGItemActor::ApplyItemData(UPGItemData* ItemData)
 
 	LoadedItemData = ItemData;
 	StaticMesh->SetStaticMesh(ItemData->ItemMesh);
+
+	PointLight->SetVisibility(ItemData->bHasLight);
+
+	static const FName LightSocketName(TEXT("FireSocket"));
+	if (ItemData->bHasLight)
+	{
+		if (StaticMesh->DoesSocketExist(LightSocketName))
+		{
+			PointLight->AttachToComponent(
+				StaticMesh,
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+				LightSocketName
+			);
+		}
+	}
+
 	HighlightOn();
 }
 

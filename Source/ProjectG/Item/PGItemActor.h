@@ -13,6 +13,8 @@
 
 #define LOCTEXT_NAMESPACE "PGInteraction"
 
+class UPointLightComponent;
+
 UCLASS()
 class PROJECTG_API APGItemActor : public AActor, public IInteractableActorInterface, public IItemInteractInterface
 {
@@ -68,6 +70,9 @@ protected:
 	void OnRep_ItemData();
 
 	void ApplyItemData(UPGItemData* ItemData);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Light", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPointLightComponent> PointLight;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractAbility", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayAbility> InteractAbility;
