@@ -148,7 +148,7 @@ private:
 	EBlindHuntLevel HuntLevel = EBlindHuntLevel::Exploration;
 
 	UPROPERTY(ReplicatedUsing = OnRep_SoundState)
-	EBlindSoundState SoundState = EBlindSoundState::Breathing;
+	EBlindSoundState SoundState = EBlindSoundState::Silent;
 
 	UFUNCTION()
 	void OnRep_SoundState();

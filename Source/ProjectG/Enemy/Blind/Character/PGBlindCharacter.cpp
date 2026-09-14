@@ -126,9 +126,9 @@ void APGBlindCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (HasAuthority() && !bEnemyActivated)
+    if (HasAuthority() && bEnemyActivated)
     {
-        SoundState = EBlindSoundState::Silent;
+        SoundState = EBlindSoundState::Breathing;
     }
 
     OnRep_SoundState();
