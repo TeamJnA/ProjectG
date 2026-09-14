@@ -1511,16 +1511,16 @@ void APGLevelGenerator::SpawnExitItems()
 		MaxDepth = FMath::Max(MaxDepth, Elem.Value);
 	}
 
-	const int32 MinDepth = FMath::Max(1, MaxDepth / 2);
+	const int32 MinDepth = FMath::Max(2, MaxDepth / 2);
 	TSet<TObjectPtr<APGMasterRoom>> UsedRooms;
 	TSet<TObjectPtr<APGMasterRoom>> UsedBranches;
 	TSet<TObjectPtr<APGSearchableBase>> UsedSearchables;
 	for (const FName& ItemKey : ExitItemKeys)
 	{
-		APGSearchableSlotBase* Slot = AcquireExitItemSlot(MinDepth, UsedRooms, UsedBranches, UsedSearchables);
+		APGSearchableSlotBase* Slot = AcquireExitItemSlot(MaxDepth, MinDepth, UsedRooms, UsedBranches, UsedSearchables);
 		if (!Slot)
 		{
-			UE_LOG(LogTemp, Error, TEXT("LG::SpawnExitItems: Failed to find slot for %s"), *ItemKey.ToString());
+			UE_LOG(LogTemp, Error, TEXT("[SpawnExitItems] Failed to find slot for %s"), *ItemKey.ToString());
 			continue;
 		}
 
@@ -1530,7 +1530,7 @@ void APGLevelGenerator::SpawnExitItems()
 	// Branch 수 = StartRoom 인접 방 수
 	const int32 BranchCount = RoomGraph.Contains(StartRoom) ? RoomGraph[StartRoom].Num() : 0;
 
-	UE_LOG(LogTemp, Log, TEXT("LG::SpawnExitItems: MaxDepth=%d MinDepth=%d Branches=%d / UsedBranches=%d UsedRooms=%d"),
+	UE_LOG(LogTemp, Log, TEXT("[SpawnExitItems] MaxDepth=%d MinDepth=%d Branches=%d / UsedBranches=%d UsedRooms=%d"),
 		MaxDepth, MinDepth, BranchCount, UsedBranches.Num(), UsedRooms.Num());
 }
 
@@ -1583,101 +1583,130 @@ void APGLevelGenerator::SpawnItemAtSlot(const FName& ItemKey, APGSearchableSlotB
 }
 
 /*
-* Pass 0: Depth + 서로 다른 Branch	(Branch, Room 중복 x)
-* Pass 1: Depth + 서로 다른 Room		(Branch 중복 허용)
-* Pass 2: Depth						(Room 중복 허용)
-* Pass 3: 제한 없음					(Branch, Room 중복 허용 + Room 최소 Depth x)
+* Pass 0: Depth를 MaxDepth부터 MinDepth까지 내리며 Branch/Room 중복 금지
+* Pass 1: Branch 중복 허용, 다시 MaxDepth부터
+* Pass 2: Room 중복까지 허용, 다시 MaxDepth부터
+* Pass 3: Depth 조건 해제 (StartRoom만 제외)
 * Searchable 중복 금지는 항상 적용
 */
 APGSearchableSlotBase* APGLevelGenerator::AcquireExitItemSlot(
+	int32 MaxDepth,
 	int32 MinDepth,
 	TSet<TObjectPtr<APGMasterRoom>>& UsedRooms,
 	TSet<TObjectPtr<APGMasterRoom>>& UsedBranches,
 	TSet<TObjectPtr<APGSearchableBase>>& UsedSearchables)
 {
-	// 0->1->2->3 순서대로 제한 완화하며 스폰할 SearchableSlot return
 	for (int32 Pass = 0; Pass < 4; ++Pass)
 	{
 		const bool bRequireDepth = (Pass <= 2);
 		const bool bRequireUnusedBranch = (Pass == 0);
 		const bool bRequireUnusedRoom = (Pass <= 1);
 
-		TArray<TObjectPtr<APGSearchableBase>> Candidates;
-		for (const TObjectPtr<APGSearchableBase>& Searchable : SpawnedSearchables)
+		if (!bRequireDepth)
 		{
-			if (!IsValid(Searchable) || UsedSearchables.Contains(Searchable))
+			if (APGSearchableSlotBase* OutSlot = TryAcquireSlotAtDepth(
+				INDEX_NONE, bRequireUnusedBranch, bRequireUnusedRoom,
+				UsedRooms, UsedBranches, UsedSearchables))
 			{
-				// 이미 쓴 Searchable이면 continue. Searchable은 무조건 중복 금지
-				continue;
-			}
-
-			const TObjectPtr<APGMasterRoom>* RoomPtr = SearchableOwnerRooms.Find(Searchable); // 판정중인 Searchable이 있는 Room
-			APGMasterRoom* Room = RoomPtr ? RoomPtr->Get() : nullptr;
-			const int32* DepthPtr = Room ? RoomDepths.Find(Room) : nullptr; // 그 Room의 Depth(StartRoom부터의 거리)
-			if (!DepthPtr || *DepthPtr <= 0)
-			{
-				continue;
-			}
-
-			if (bRequireDepth && *DepthPtr < MinDepth)
-			{
-				// Depth 체크 하는 단계(0~2)인 경우 Depth 제한 못넘으면 continue
-				continue;
-			}
-
-			if (bRequireUnusedRoom && UsedRooms.Contains(Room))
-			{
-				// Room 중복 체크 하는 단계(0~1)인 경우 Room 중복이면 continue
-				continue;
-			}
-
-			if (bRequireUnusedBranch)
-			{
-				// Branch 중복 체크 하는 단계(0)인 경우 Branch 중복이면 continue
-				APGMasterRoom* BranchRoot = GetBranchRoot(Room);
-				if (!BranchRoot || UsedBranches.Contains(BranchRoot))
-				{
-					continue;
-				}
-			}
-
-			Candidates.Add(Searchable);
-		}
-
-		// 해당 단계에서 모인 Searchable Candidates에서 뽑기
-		while (!Candidates.IsEmpty())
-		{
-			const int32 Pick = UKismetMathLibrary::RandomIntegerFromStream(Seed, Candidates.Num());
-			TObjectPtr<APGSearchableBase> Searchable = Candidates[Pick];
-			Candidates.RemoveAtSwap(Pick);
-
-			APGSearchableSlotBase* OutSlot = nullptr;
-			const bool bHasMoreSlots = Searchable->GetRandomSlot(OutSlot, Seed);
-
-			if (!bHasMoreSlots)
-			{
-				SpawnedSearchables.Remove(Searchable);
-			}
-
-			// 선택된 Searchable, Searchable이 있는 Room, Branch 사용 목록에 등록
-			if (OutSlot)
-			{
-				UsedSearchables.Add(Searchable);
-
-				if (const TObjectPtr<APGMasterRoom>* RoomPtr = SearchableOwnerRooms.Find(Searchable))
-				{
-					UsedRooms.Add(*RoomPtr);
-
-					if (APGMasterRoom* BranchRoot = GetBranchRoot(RoomPtr->Get()))
-					{
-						UsedBranches.Add(BranchRoot);
-					}
-				}
-
-				UE_LOG(LogTemp, Log, TEXT("LG::AcquireExitItemSlot: Pass=%d Depth=%d"), Pass, RoomDepths.FindRef(SearchableOwnerRooms.FindRef(Searchable)));
-
+				UE_LOG(LogTemp, Warning, TEXT("[SpawnExitItems] Pass=%d (depth ignored)"), Pass);
 				return OutSlot;
 			}
+			continue;
+		}
+
+		for (int32 TargetDepth = MaxDepth; TargetDepth >= MinDepth; --TargetDepth)
+		{
+			if (APGSearchableSlotBase* OutSlot = TryAcquireSlotAtDepth(
+				TargetDepth, bRequireUnusedBranch, bRequireUnusedRoom,
+				UsedRooms, UsedBranches, UsedSearchables))
+			{
+				UE_LOG(LogTemp, Log, TEXT("[SpawnExitItems] Pass=%d Depth=%d UsedBranches=%d"), Pass, TargetDepth, UsedBranches.Num());
+				return OutSlot;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+APGSearchableSlotBase* APGLevelGenerator::TryAcquireSlotAtDepth(
+	int32 ExactDepth,
+	bool bRequireUnusedBranch,
+	bool bRequireUnusedRoom,
+	TSet<TObjectPtr<APGMasterRoom>>& UsedRooms,
+	TSet<TObjectPtr<APGMasterRoom>>& UsedBranches,
+	TSet<TObjectPtr<APGSearchableBase>>& UsedSearchables)
+{
+	TArray<TObjectPtr<APGSearchableBase>> Candidates;
+	for (const TObjectPtr<APGSearchableBase>& Searchable : SpawnedSearchables)
+	{
+		// Searchable 중복 x 항상 적용
+		if (!IsValid(Searchable) || UsedSearchables.Contains(Searchable))
+		{
+			continue;
+		}
+
+		const TObjectPtr<APGMasterRoom>* RoomPtr = SearchableOwnerRooms.Find(Searchable);
+		APGMasterRoom* Room = RoomPtr ? RoomPtr->Get() : nullptr;
+		const int32* DepthPtr = Room ? RoomDepths.Find(Room) : nullptr;
+		if (!DepthPtr || *DepthPtr <= 0)
+		{
+			continue;
+		}
+
+		// Depth 제한 체크(pass <= 2)
+		if (ExactDepth != INDEX_NONE && *DepthPtr != ExactDepth)
+		{
+			continue;
+		}
+
+		// Room 중복 체크(pass <= 1)
+		if (bRequireUnusedRoom && UsedRooms.Contains(Room))
+		{
+			continue;
+		}
+
+		// Branch 중복 체크(pass = 0)
+		if (bRequireUnusedBranch)
+		{
+			APGMasterRoom* BranchRoot = GetBranchRoot(Room);
+			if (!BranchRoot || UsedBranches.Contains(BranchRoot))
+			{
+				continue;
+			}
+		}
+
+		Candidates.Add(Searchable);
+	}
+
+	while (!Candidates.IsEmpty())
+	{
+		const int32 Pick = UKismetMathLibrary::RandomIntegerFromStream(Seed, Candidates.Num());
+		TObjectPtr<APGSearchableBase> Searchable = Candidates[Pick];
+		Candidates.RemoveAtSwap(Pick);
+
+		APGSearchableSlotBase* OutSlot = nullptr;
+		const bool bHasMoreSlots = Searchable->GetRandomSlot(OutSlot, Seed);
+		if (!bHasMoreSlots)
+		{
+			SpawnedSearchables.RemoveSwap(Searchable);
+		}
+
+		if (OutSlot)
+		{
+			UsedSearchables.Add(Searchable);
+
+			if (const TObjectPtr<APGMasterRoom>* RoomPtr = SearchableOwnerRooms.Find(Searchable))
+			{
+				UsedRooms.Add(*RoomPtr);
+
+				if (APGMasterRoom* BranchRoot = GetBranchRoot(RoomPtr->Get()))
+				{
+					UsedBranches.Add(BranchRoot);
+				}
+			}
+
+			return OutSlot;
 		}
 	}
 

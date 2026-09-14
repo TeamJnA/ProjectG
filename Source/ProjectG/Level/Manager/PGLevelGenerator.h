@@ -96,7 +96,15 @@ protected:
 	void SpawnExitItems();
 	void SpawnItemAtSlot(const FName& ItemKey, APGSearchableSlotBase* Slot);
 	APGSearchableSlotBase* AcquireExitItemSlot(
-		int32 MinDepth,
+		int32 MaxDepth,
+        int32 MinDepth,
+        TSet<TObjectPtr<APGMasterRoom>>& UsedRooms,
+        TSet<TObjectPtr<APGMasterRoom>>& UsedBranches,
+        TSet<TObjectPtr<APGSearchableBase>>& UsedSearchables);		
+	APGSearchableSlotBase* TryAcquireSlotAtDepth(
+		int32 ExactDepth,
+		bool bRequireUnusedBranch,
+		bool bRequireUnusedRoom,
 		TSet<TObjectPtr<APGMasterRoom>>& UsedRooms,
 		TSet<TObjectPtr<APGMasterRoom>>& UsedBranches,
 		TSet<TObjectPtr<APGSearchableBase>>& UsedSearchables);
