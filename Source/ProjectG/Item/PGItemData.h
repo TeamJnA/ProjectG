@@ -73,6 +73,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	EHandPoseType HandPoseType = EHandPoseType::Default;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Light")
+	bool bHasLight = false;
 
 	FRotator GetRandomDropRotation() const;
 };

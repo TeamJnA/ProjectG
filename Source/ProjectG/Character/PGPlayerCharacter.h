@@ -39,6 +39,8 @@ class UPGCameraComponent;
 class USceneCaptureComponent2D;
 class UCameraShakeBase;
 
+class UPointLightComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStareTargetUpdate, AActor*, InteractableActor);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAutomatedMovementCompleted);
 
@@ -412,8 +414,11 @@ public:
 
 	FTimerHandle EquipCameraTimerHandle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	TObjectPtr<UStaticMeshComponent> EquippedItemMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPointLightComponent> EquippedItemtLight;
 
 ///
 ///********* UI and Components ******************

@@ -39,6 +39,7 @@
 #include "Character/Component/PGVOIPTalker.h"
 #include "Character/Component/PGCameraComponent.h"
 #include "AudioCaptureComponent.h"
+#include "Components/PointLightComponent.h"
 
 // Interface
 #include "Interface/InteractableActorInterface.h"
@@ -116,6 +117,11 @@ APGPlayerCharacter::APGPlayerCharacter()
 	EquippedItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EquippedItemMesh"));
 	EquippedItemMesh->SetupAttachment(GetMesh(), TEXT("hand_r"));
 	EquippedItemMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+
+	EquippedItemtLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
+	EquippedItemtLight->SetupAttachment(EquippedItemMesh);
+	EquippedItemtLight->SetVisibility(false);
+	EquippedItemtLight->SetCastShadows(false);
 
 	HeadlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadlightMesh"));
 	HeadlightMesh->SetupAttachment(GetMesh(), TEXT("headSocket"));
@@ -1494,6 +1500,7 @@ void APGPlayerCharacter::RemoveItemFromInventory()
 	InventoryComponent->RemoveCurrentItem();
 }
 
+// Anim notify 기반으로 호출됨.
 void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 {
 	TObjectPtr<UPGItemData> ItemDataToAttach = InventoryComponent->GetCurrentItemMesh();
@@ -1501,6 +1508,9 @@ void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 	{
 		EquippedItemMesh->SetStaticMesh(nullptr);
 		EquippedItemMesh->SetRelativeTransform(FTransform::Identity);
+
+		EquippedItemtLight->SetVisibility(false);
+
 		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
 		{
 			AnimInterface->SetHandPose(EHandPoseType::Default);
@@ -1510,6 +1520,23 @@ void APGPlayerCharacter::SetItemMesh(const bool bIsVisible)
 	{
 		EquippedItemMesh->SetRelativeTransform(ItemDataToAttach->ItemSocketOffset);
 		EquippedItemMesh->SetStaticMesh(ItemDataToAttach->ItemMesh);
+
+		EquippedItemtLight->SetVisibility(ItemDataToAttach->bHasLight);
+
+		// PointLight가 있을 경우 물체의 빛나는 Socket에 붙이기
+		static const FName LightSocketName(TEXT("FireSocket"));
+		if (ItemDataToAttach->bHasLight)
+		{
+			if (EquippedItemMesh->DoesSocketExist(LightSocketName))
+			{
+				EquippedItemtLight->AttachToComponent(
+					EquippedItemMesh,
+					FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+					LightSocketName
+				);
+			}
+		}
+
 		if (ICharacterAnimationInterface* AnimInterface = Cast<ICharacterAnimationInterface>(GetMesh()->GetAnimInstance()))
 		{
 			AnimInterface->SetHandPose(ItemDataToAttach->HandPoseType);

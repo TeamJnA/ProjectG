@@ -10,6 +10,8 @@
 #include "Sound/PGSoundManager.h"
 #include "Interface/SoundManagerInterface.h"
 
+#include "Components/PointLightComponent.h"
+
 // Sets default values
 APGItemActor::APGItemActor()
 {
@@ -24,6 +26,23 @@ APGItemActor::APGItemActor()
 	StaticMesh->SetCollisionProfileName(TEXT("Item"));
 	StaticMesh->SetReceivesDecals(false);
 	RootComponent = StaticMesh;
+
+	PointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
+	PointLight->SetupAttachment(StaticMesh);
+	PointLight->SetVisibility(false);
+	PointLight->SetIntensity(4.0f);
+	PointLight->SetIntensityUnits(ELightUnits::Unitless);
+	PointLight->SetLightColor(FLinearColor(FColor(130, 90, 57)));
+	PointLight->SetAttenuationRadius(1500.0f);
+	PointLight->SetSourceRadius(3.0f);
+	PointLight->SetSoftSourceRadius(0.0f);
+	PointLight->SetSourceLength(0.0f);
+	PointLight->bAffectsWorld = true;
+	PointLight->SetCastShadows(false);
+	PointLight->SetIndirectLightingIntensity(1.0f);
+	PointLight->SetVolumetricScatteringIntensity(2.0f);
+	PointLight->bUseInverseSquaredFalloff = false;
+	PointLight->LightFalloffExponent = 2.0f;
 
 	InteractAbility = UGA_Interact_Item::StaticClass();
 
@@ -89,6 +108,22 @@ void APGItemActor::InitWithData(UPGItemData* InItemData)
 	if (InItemData)
 	{
 		StaticMesh->SetStaticMesh(InItemData->ItemMesh);
+
+		PointLight->SetVisibility(InItemData->bHasLight);
+
+		static const FName LightSocketName(TEXT("FireSocket"));
+		if (InItemData->bHasLight)
+		{
+			if (StaticMesh->DoesSocketExist(LightSocketName))
+			{
+				PointLight->AttachToComponent(
+					StaticMesh,
+					FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+					LightSocketName
+				);
+			}
+		}
+
 		HighlightOn();
 	}
 
@@ -146,6 +181,22 @@ void APGItemActor::ApplyItemData(UPGItemData* ItemData)
 
 	LoadedItemData = ItemData;
 	StaticMesh->SetStaticMesh(ItemData->ItemMesh);
+
+	PointLight->SetVisibility(ItemData->bHasLight);
+
+	static const FName LightSocketName(TEXT("FireSocket"));
+	if (ItemData->bHasLight)
+	{
+		if (StaticMesh->DoesSocketExist(LightSocketName))
+		{
+			PointLight->AttachToComponent(
+				StaticMesh,
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+				LightSocketName
+			);
+		}
+	}
+
 	HighlightOn();
 }
 
