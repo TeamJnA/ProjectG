@@ -1512,12 +1512,23 @@ void APGLevelGenerator::SpawnExitItems()
 	}
 
 	const int32 MinDepth = FMath::Max(2, MaxDepth / 2);
+
+	EPGDifficulty Diff = EPGDifficulty::Normal;
+	if (APGGameState* GS = GetWorld() ? GetWorld()->GetGameState<APGGameState>() : nullptr)
+	{
+		Diff = GS->GetDifficultyLevel();
+	}
+
+	const int32 SearchTopDepth = (Diff == EPGDifficulty::Hard)
+		? MaxDepth
+		: FMath::Max(MinDepth, MaxDepth - 1);
+
 	TSet<TObjectPtr<APGMasterRoom>> UsedRooms;
 	TSet<TObjectPtr<APGMasterRoom>> UsedBranches;
 	TSet<TObjectPtr<APGSearchableBase>> UsedSearchables;
 	for (const FName& ItemKey : ExitItemKeys)
 	{
-		APGSearchableSlotBase* Slot = AcquireExitItemSlot(MaxDepth, MinDepth, UsedRooms, UsedBranches, UsedSearchables);
+		APGSearchableSlotBase* Slot = AcquireExitItemSlot(SearchTopDepth, MinDepth, UsedRooms, UsedBranches, UsedSearchables);
 		if (!Slot)
 		{
 			UE_LOG(LogTemp, Error, TEXT("[SpawnExitItems] Failed to find slot for %s"), *ItemKey.ToString());
