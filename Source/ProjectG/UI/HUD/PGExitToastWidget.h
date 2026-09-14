@@ -35,6 +35,9 @@ protected:
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	TObjectPtr<UWidgetAnimation> FadeAnim;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Toast|Typewriter")
+	FString KeyHintSuffix = TEXT("  [TAB]");
+
 	UPROPERTY(EditDefaultsOnly, Category = "Toast")
 	FText ExitToastText;
 

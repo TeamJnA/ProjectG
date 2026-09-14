@@ -243,6 +243,7 @@ void APGExitPointBase::AwardDiscoveryToAll()
 			continue;
 		}
 
+		// 촬영 안 한 사람들 촬영 처리
 		PS->AddPhotoResult({ SubjectInfo });
 
 		// 로컬 중복 캐시(LocalCapturedIDs) 동기화 + Exit 토스트

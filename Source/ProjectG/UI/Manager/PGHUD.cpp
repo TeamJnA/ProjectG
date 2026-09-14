@@ -243,7 +243,8 @@ void APGHUD::HandleExitLockStateChanged(APGExitPointBase* ExitActor)
 		return;
 	}
 
-	// 발견 판정: bDefaultVisible 이거나, 로컬 PlayerState가 이 SpeciesKey를 캡처한 적 있음
+	
+	// 발견 판정: bDefaultVisible 이거나, 누군가 이 Exit을 발견함(전역 공유)
 	const bool bDiscovered = Row->bDefaultVisible || ExitActor->IsDiscovered();
 	if (bDiscovered)
 	{

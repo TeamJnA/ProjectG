@@ -58,7 +58,7 @@ void UPGExitToastWidget::StartTypewriter()
 
 void UPGExitToastWidget::OnTypewriterDelay()
 {
-	FullString = ExitToastText.ToString();
+	FullString = ExitToastText.ToString() + KeyHintSuffix;
 	CharIndex = 0;
 	
 	if (UWorld* World = GetWorld())
