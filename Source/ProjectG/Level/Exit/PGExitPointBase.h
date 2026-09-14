@@ -23,6 +23,7 @@ public:
 	APGExitPointBase();
 
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// IInteractableActorInterface~
 	virtual TSubclassOf<UGameplayAbility> GetAbilityToInteract() const override;
@@ -38,6 +39,9 @@ public:
 	virtual bool Unlock(AActor* Investigator);
 	virtual TMap<EPGExitItemType, int32> GetUnlockedItemCounts() const { return TMap<EPGExitItemType, int32>(); }
 	virtual bool IsExitDepleted() const { return false; }
+
+	void MarkDiscovered();
+	FORCEINLINE bool IsDiscovered() const { return bDiscovered; }
 
 	FORCEINLINE FVector GetCameraLocation() const { return ExitCamera->GetComponentLocation(); }
 	FORCEINLINE FRotator GetCameraRoation() const { return ExitCamera->GetComponentRotation(); }
@@ -61,6 +65,11 @@ protected:
 	void RegisterToGameState();
 
 	void BroadcastLockStateChanged();
+
+	void AwardDiscoveryToAll();
+
+	UFUNCTION()
+	void OnRep_Discovered();
 
 	/** 거리 측정 기준 컴포넌트. nullptr return -> 거리 제한 x */
 	virtual const USceneComponent* GetInteractionRangeOrigin() const { return nullptr; }
@@ -89,4 +98,7 @@ protected:
 	int32 InteractionDiscoveryScore = 10;
 
 	EExitPointType ExitPointType;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Discovered)
+	bool bDiscovered = false;
 };

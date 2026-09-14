@@ -20,13 +20,16 @@ class PROJECTG_API UPGHelperExitEntryWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	void SetEntry(int32 InSpeciesKey, const FPGHelperEntryRow& Row, const TMap<EPGExitItemType, int32>& UnlockedItemIds, bool bDepleted);
+	void SetEntry(int32 InSpeciesKey, const FPGHelperEntryRow& Row,
+		const TMap<EPGExitItemType, int32>& UnlockedItemIds, bool bDepleted, bool bInRevealed);
 	void PlayIntroAnim();
 
-	void UpdateInPlace(const TMap<EPGExitItemType, int32>& UnlockedCounts, bool bDepleted);
+	void UpdateInPlace(const TMap<EPGExitItemType, int32>& UnlockedCounts, bool bDepleted, bool bInRevealed);
 
 	bool IsIntroComplete() const { return bIntroComplete; }
 	int32 GetSpeciesKey() const { return SpeciesKey; }
+
+	FORCEINLINE bool IsRevealed() const { return bRevealed; }
 
 protected:
 	virtual void NativeDestruct() override;
@@ -59,8 +62,15 @@ protected:
 	UPROPERTY()
 	TArray<FPGHelperRequiredItem> CachedItems;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Helper")
+	FText MaskedName = FText::FromString(TEXT("???"));
+
+	UPROPERTY(EditDefaultsOnly, Category = "Helper")
+	FText MaskedRequirement = FText::FromString(TEXT("??? ?/?"));
+
 	FString FullDisplayName;
 	FString FullRequirementText;
+	FString RealDisplayName;
 
 	FTimerHandle TypewriterTimerHandle;
 	FTimerHandle RequirementTimerHandle;
@@ -77,4 +87,5 @@ protected:
 	int32 SpeciesKey = 0;
 	bool bIsDepleted = false;
 	bool bIntroComplete = false;
+	bool bRevealed = false;
 };

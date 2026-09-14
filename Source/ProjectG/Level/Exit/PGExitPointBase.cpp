@@ -11,6 +11,8 @@
 #include "Sound/PGSoundManager.h"
 #include "Game/PGGameState.h"
 #include "Type/PGPhotoTypes.h"
+#include "Net/UnrealNetwork.h" 
+
 
 // Sets default values
 APGExitPointBase::APGExitPointBase()
@@ -33,6 +35,13 @@ void APGExitPointBase::BeginPlay()
 
 	// Register Exit Camera both server and client
 	RegisterToGameState();
+}
+
+void APGExitPointBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APGExitPointBase, bDiscovered);
 }
 
 TSubclassOf<UGameplayAbility> APGExitPointBase::GetAbilityToInteract() const
@@ -74,31 +83,12 @@ bool APGExitPointBase::IsWithinInteractionRange(const AActor* Investigator) cons
 
 void APGExitPointBase::NotifyInteractionAttempted(ACharacter* InteractingPlayer)
 {
-	if (!HasAuthority() || !InteractingPlayer || LinkedSpeciesKey == 0)
+	if (!HasAuthority() || !InteractingPlayer)
 	{
 		return;
 	}
 
-	APGPlayerState* PS = InteractingPlayer->GetPlayerState<APGPlayerState>();
-	if (!PS)
-	{
-		return;
-	}
-
-	if (PS->GetCapturedIDs().Contains(LinkedSpeciesKey))
-	{
-		return;
-	}
-
-	FPhotoSubjectInfo SubjectInfo;
-	SubjectInfo.SubjectID = LinkedSpeciesKey;
-	SubjectInfo.ScoreValue = InteractionDiscoveryScore;
-	PS->AddPhotoResult({ SubjectInfo });
-
-	if (APGPlayerController* PC = Cast<APGPlayerController>(InteractingPlayer->GetController()))
-	{
-		PC->Client_NotifyExitInteractionDiscovery(LinkedSpeciesKey);
-	}
+	MarkDiscovered();
 }
 
 bool APGExitPointBase::Unlock(AActor* Investigator)
@@ -207,4 +197,64 @@ void APGExitPointBase::RegisterToGameState()
 void APGExitPointBase::BroadcastLockStateChanged()
 {
 	OnExitLockStateChanged.Broadcast(this);
+}
+
+void APGExitPointBase::MarkDiscovered()
+{
+	if (!HasAuthority() || bDiscovered || LinkedSpeciesKey == 0)
+	{
+		return;
+	}
+
+	bDiscovered = true;
+
+	AwardDiscoveryToAll();
+	OnRep_Discovered();
+}
+
+void APGExitPointBase::AwardDiscoveryToAll()
+{
+	if (InteractionDiscoveryScore <= 0)
+	{
+		return;
+	}
+
+	APGGameState* GS = GetWorld() ? GetWorld()->GetGameState<APGGameState>() : nullptr;
+	if (!GS)
+	{
+		return;
+	}
+
+	FPhotoSubjectInfo SubjectInfo;
+	SubjectInfo.SubjectID = LinkedSpeciesKey;
+	SubjectInfo.ScoreValue = InteractionDiscoveryScore;
+
+	for (APlayerState* BasePS : GS->PlayerArray)
+	{
+		APGPlayerState* PS = Cast<APGPlayerState>(BasePS);
+		if (!PS)
+		{
+			continue;
+		}
+
+		// 이미 직접 찍은 사람(촬영자)은 건너뜀
+		if (PS->GetCapturedIDs().Contains(LinkedSpeciesKey))
+		{
+			continue;
+		}
+
+		PS->AddPhotoResult({ SubjectInfo });
+
+		// 로컬 중복 캐시(LocalCapturedIDs) 동기화 + Exit 토스트
+		if (APGPlayerController* PC = Cast<APGPlayerController>(PS->GetPlayerController()))
+		{
+			PC->Client_NotifyExitInteractionDiscovery(LinkedSpeciesKey);
+		}
+	}
+}
+
+void APGExitPointBase::OnRep_Discovered()
+{
+	// ExitToast + Helper 갱신
+	BroadcastLockStateChanged();
 }

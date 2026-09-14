@@ -18,6 +18,8 @@
 #include "Enemy/Ghost/Character/PGGhostCharacter.h"
 #include "Utils/PGCameraVisibleRegistry.h"
 #include "Utils/PGPhotoSubjectRegistry.h"
+#include "Game/PGGameState.h"
+#include "Level/Exit/PGExitPointBase.h"
 
 
 UPGCameraComponent::UPGCameraComponent()
@@ -438,6 +440,18 @@ void UPGCameraComponent::Server_TakePhoto_Implementation(const TArray<AActor*>& 
     {
         const TArray<FPhotoCaptureResult> Entries = PS->AddPhotoResult(Captured);
         Client_PhotoResult(Entries);
+    }
+
+    // Exit 계열은 전원 공개 + 전원 점수
+    if (APGGameState* GS = GetWorld()->GetGameState<APGGameState>())
+    {
+        for (const FPhotoSubjectInfo& Info : Captured)
+        {
+            if (APGExitPointBase* Exit = GS->GetExitBySpeciesKey(PhotoID::GetSpeciesKey(Info.SubjectID)))
+            {
+                Exit->MarkDiscovered();
+            }
+        }
     }
 }
 

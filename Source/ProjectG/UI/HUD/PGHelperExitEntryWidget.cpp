@@ -20,7 +20,7 @@ void UPGHelperExitEntryWidget::NativeDestruct()
 }
 
 void UPGHelperExitEntryWidget::SetEntry(int32 InSpeciesKey, const FPGHelperEntryRow& Row,
-	const TMap<EPGExitItemType, int32>& UnlockedItemIds, bool bDepleted)
+	const TMap<EPGExitItemType, int32>& UnlockedItemIds, bool bDepleted, bool bInRevealed)
 {
 	if (UWorld* World = GetWorld())
 	{
@@ -31,8 +31,10 @@ void UPGHelperExitEntryWidget::SetEntry(int32 InSpeciesKey, const FPGHelperEntry
 	SpeciesKey = InSpeciesKey;
 	bIsDepleted = bDepleted;
 	bIntroComplete = false;
+	bRevealed = bInRevealed;
 
-	FullDisplayName = Row.DisplayName.ToString();
+	RealDisplayName = Row.DisplayName.ToString();
+	FullDisplayName = bRevealed ? RealDisplayName : MaskedName.ToString();
 	TypewriterIndex = 0;
 
 	if (NameText)
@@ -140,11 +142,22 @@ void UPGHelperExitEntryWidget::RequirementTypewriterStep()
 	}
 }
 
-void UPGHelperExitEntryWidget::UpdateInPlace(const TMap<EPGExitItemType, int32>& UnlockedItemIds, bool bDepleted)
+void UPGHelperExitEntryWidget::UpdateInPlace(const TMap<EPGExitItemType, int32>& UnlockedCounts, bool bDepleted, bool bInRevealed)
 {
+	const bool bJustRevealed = bInRevealed && !bRevealed;
+	bRevealed = bInRevealed;
 	bIsDepleted = bDepleted;
 
-	RebuildRequirementString(UnlockedItemIds);
+	if (bJustRevealed)
+	{
+		FullDisplayName = RealDisplayName;
+		if (bIntroComplete && NameText)
+		{
+			NameText->SetText(FText::FromString(FullDisplayName));
+		}
+	}
+
+	RebuildRequirementString(UnlockedCounts);
 
 	if (bIntroComplete && RequirementText)
 	{
@@ -153,13 +166,20 @@ void UPGHelperExitEntryWidget::UpdateInPlace(const TMap<EPGExitItemType, int32>&
 
 	if (DepletedLine)
 	{
-		DepletedLine->SetVisibility(bIsDepleted ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		const bool bShowDepleted = bRevealed && bIsDepleted;
+		DepletedLine->SetVisibility(bShowDepleted ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }
 
 void UPGHelperExitEntryWidget::RebuildRequirementString(const TMap<EPGExitItemType, int32>& UnlockedCounts)
 {
 	FullRequirementText.Reset();
+
+	if (!bRevealed)
+	{
+		FullRequirementText = MaskedRequirement.ToString();
+		return;
+	}
 
 	for (const FPGHelperRequiredItem& Item : CachedItems)
 	{
@@ -176,7 +196,7 @@ void UPGHelperExitEntryWidget::RebuildRequirementString(const TMap<EPGExitItemTy
 
 void UPGHelperExitEntryWidget::CompleteIntro()
 {
-	if (bIsDepleted && DepletedLine)
+	if (bRevealed && bIsDepleted && DepletedLine)
 	{
 		DepletedLine->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}

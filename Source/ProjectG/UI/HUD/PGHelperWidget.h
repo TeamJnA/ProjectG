@@ -30,6 +30,9 @@ struct FPGHelperPendingRow
 
     UPROPERTY()
     bool bDepleted = false;
+
+    UPROPERTY()
+    bool bRevealed = false;
 };
 
 /**

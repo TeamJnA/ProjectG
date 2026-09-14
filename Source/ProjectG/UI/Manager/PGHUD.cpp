@@ -244,25 +244,7 @@ void APGHUD::HandleExitLockStateChanged(APGExitPointBase* ExitActor)
 	}
 
 	// 발견 판정: bDefaultVisible 이거나, 로컬 PlayerState가 이 SpeciesKey를 캡처한 적 있음
-	bool bDiscovered = Row->bDefaultVisible;
-	if (!bDiscovered)
-	{
-		if (APlayerController* PC = GetOwningPlayerController())
-		{
-			if (APGPlayerState* PS = PC->GetPlayerState<APGPlayerState>())
-			{
-				for (int32 ID : PS->GetCapturedIDs())
-				{
-					if (PhotoID::GetSpeciesKey(ID) == SpeciesKey)
-					{
-						bDiscovered = true;
-						break;
-					}
-				}
-			}
-		}
-	}
-
+	const bool bDiscovered = Row->bDefaultVisible || ExitActor->IsDiscovered();
 	if (bDiscovered)
 	{
 		DisplayExitToast();
@@ -936,14 +918,11 @@ void APGHUD::NotifyNewlyCapturedSpeciesKeys(const TArray<int32>& Keys)
 		return;
 	}
 
-	bool bHasHelperUpdate = false;
-
 	for (int32 Key : Keys)
 	{
 		const FString KeyStr = FString::FromInt(Key);
 		if (HelperCatalogTable->FindRow<FPGHelperEntryRow>(*KeyStr, TEXT(""), false))
 		{
-			bHasHelperUpdate = true;
 			continue;
 		}
 
@@ -951,11 +930,6 @@ void APGHUD::NotifyNewlyCapturedSpeciesKeys(const TArray<int32>& Keys)
 		{
 			DisplayEnemyToast(EnemyRow->TooltipText);
 		}
-	}
-
-	if (bHasHelperUpdate)
-	{
-		DisplayExitToast();
 	}
 }
 

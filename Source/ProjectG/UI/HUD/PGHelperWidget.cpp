@@ -5,7 +5,6 @@
 #include "UI/HUD/PGHelperExitEntryWidget.h"
 #include "Type/PGHelperTypes.h"
 #include "Game/PGGameState.h"
-#include "Player/PGPlayerState.h"
 #include "Level/Exit/PGExitPointBase.h"
 #include "Components/HorizontalBox.h"
 #include "Engine/DataTable.h"
@@ -250,19 +249,6 @@ void UPGHelperWidget::ResolvePendingRows()
 {
 	PendingRows.Reset();
 
-	APlayerController* PC = GetOwningPlayer();
-	APGPlayerState* PS = PC ? PC->GetPlayerState<APGPlayerState>() : nullptr;
-	if (!PS)
-	{
-		return;
-	}
-
-	TSet<int32> CapturedKeys;
-	for (int32 ID : PS->GetCapturedIDs())
-	{
-		CapturedKeys.Add(PhotoID::GetSpeciesKey(ID));
-	}
-
 	TMap<int32, APGExitPointBase*> ExitByKey;
 	BuildExitByKeyMap(ExitByKey);
 
@@ -280,19 +266,18 @@ void UPGHelperWidget::ResolvePendingRows()
 			continue;
 		}
 
-		if (!Row->bDefaultVisible && !CapturedKeys.Contains(SpeciesKey))
-		{
-			continue;
-		}
-
+		// 미발견이어도 엔트리는 생성
+		// 내용만 마스킹
 		FPGHelperPendingRow PendingRow;
 		PendingRow.SpeciesKey = SpeciesKey;
 		PendingRow.Row = *Row;
+		PendingRow.bRevealed = Row->bDefaultVisible;
 
 		if (APGExitPointBase* Exit = ExitByKey.FindRef(SpeciesKey))
 		{
 			PendingRow.UnlockedCounts = Exit->GetUnlockedItemCounts();
 			PendingRow.bDepleted = Exit->IsExitDepleted();
+			PendingRow.bRevealed |= Exit->IsDiscovered();
 		}
 
 		PendingRows.Add(MoveTemp(PendingRow));
@@ -328,7 +313,7 @@ void UPGHelperWidget::AppearNextRow()
 		return;
 	}
 
-	Entry->SetEntry(PendingRow.SpeciesKey, PendingRow.Row, PendingRow.UnlockedCounts, PendingRow.bDepleted);
+	Entry->SetEntry(PendingRow.SpeciesKey, PendingRow.Row, PendingRow.UnlockedCounts, PendingRow.bDepleted, PendingRow.bRevealed);
 	ExitListBox->AddChildToHorizontalBox(Entry);
 	Entry->PlayIntroAnim();
 
@@ -350,13 +335,16 @@ void UPGHelperWidget::UpdateInPlace()
 
 		TMap<EPGExitItemType, int32> UnlockedCounts;
 		bool bDepleted = false;
+		bool bRevealed = Entry->IsRevealed();
+
 		if (APGExitPointBase* Exit = ExitByKey.FindRef(Entry->GetSpeciesKey()))
 		{
 			UnlockedCounts = Exit->GetUnlockedItemCounts();
 			bDepleted = Exit->IsExitDepleted();
+			bRevealed |= Exit->IsDiscovered();
 		}
 
-		Entry->UpdateInPlace(UnlockedCounts, bDepleted);
+		Entry->UpdateInPlace(UnlockedCounts, bDepleted, bRevealed);
 	}
 }
 
