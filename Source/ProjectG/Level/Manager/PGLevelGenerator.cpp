@@ -866,6 +866,23 @@ void APGLevelGenerator::RegisterSpawnedRoom(TObjectPtr<USceneComponent> InSelect
 		FuseBoxSpawnPointsList.Append(FuseBoxSpawnPoints);
 	}
 
+	// Looseite Points
+	if (const USceneComponent* LooseItemSpawnPointFolder = NewRoom->GetLooseItemSpawnPointsFolder())
+	{
+		const TArray<USceneComponent*>& LooseItemSpawnPoints = LooseItemSpawnPointFolder->GetAttachChildren();
+
+		for (USceneComponent* LooseItemSpawnPoint : LooseItemSpawnPoints)
+		{
+			UPGLooseItemSpawnPoint* Point = Cast<UPGLooseItemSpawnPoint>(LooseItemSpawnPoint);
+			if (!Point)
+			{
+				continue;
+			}
+
+			LooseItemSpawnPointsList.Add(Point);
+		}
+	}
+
 	// Props(Hide prop, waiter stand) points
 	// 방 별로 포인트를 하나씩 가져오고, 그 포인트를 제거 후 나머지 포인트들 HideProp 생성용으로 가져옴.
 	AddPropsSpawnPoint(NewRoom);
@@ -994,6 +1011,7 @@ void APGLevelGenerator::SetupLevelEnvironment()
 		{ PG_SCOPED_TIMER(SpawnDoors);       SpawnDoors(); }
 		{ PG_SCOPED_TIMER(SpawnSearchables); SpawnSearchables(); }
 		{ PG_SCOPED_TIMER(SpawnItems);       SpawnItems(); }
+		{ PG_SCOPED_TIMER(SpawnLooseItems);       SpawnLooseItems(); }
 		{ PG_SCOPED_TIMER(SpawnGimmicks);    SpawnGimmicks(); }
 		{ PG_SCOPED_TIMER(SpawnFuseBoxes);   SpawnFuseBoxes(); }
 		{ PG_SCOPED_TIMER(SpawnWaiterStands); SpawnWaiterStands(); }
@@ -1580,6 +1598,71 @@ void APGLevelGenerator::SpawnItemAtSlot(const FName& ItemKey, APGSearchableSlotB
 			WeakSlot->AttachSpawnedItem(NewItem, bSpawnItemWithRotate);
 		}
 	}));
+}
+
+// 현재는 랜턴만 확정 생성
+void APGLevelGenerator::SpawnLooseItems()
+{
+	if (LooseItemSpawnPointsList.IsEmpty())
+	{
+		return;
+	}
+
+	// 랜덤 스폰 포인트 선택
+	const int32 RandomIndex = FMath::RandRange(0, LooseItemSpawnPointsList.Num() - 1);
+	UPGLooseItemSpawnPoint* SelectedItemSpawnPoint = LooseItemSpawnPointsList[RandomIndex];
+
+	if (!IsValid(SelectedItemSpawnPoint))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>();
+	if (!GI)
+	{
+		return;
+	}
+
+	const FName ItemKey = TEXT("Lantern");
+
+	const FTransform SpawnTransform(
+		FRotator::ZeroRotator,
+		SelectedItemSpawnPoint->GetComponentLocation()
+	);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	GI->RequestLoadItemData(
+		ItemKey,
+		FOnItemDataLoaded::CreateLambda(
+			[World, SpawnTransform, SpawnParams](UPGItemData* LoadedItemData)
+			{
+				if (!LoadedItemData || !IsValid(World))
+				{
+					return;
+				}
+
+				APGItemActor* NewItem = World->SpawnActor<APGItemActor>(
+					APGItemActor::StaticClass(),
+					SpawnTransform,
+					SpawnParams
+				);
+
+				if (NewItem)
+				{
+					NewItem->InitWithData(LoadedItemData);
+				}
+			}
+		)
+	);
 }
 
 /*

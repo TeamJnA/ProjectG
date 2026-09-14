@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Level/Searchable/PGSearchableSpawnPoint.h"
 #include "Level/Misc/Component/PGGimmickSpawnPoint.h"
+#include "Level/Misc/Component/PGLooseItemSpawnPoint.h"
 #include "PGLevelGenerator.generated.h"
 
 class APGMasterRoom;
@@ -102,6 +103,8 @@ protected:
 		TSet<TObjectPtr<APGSearchableBase>>& UsedSearchables);
 	APGMasterRoom* GetBranchRoot(APGMasterRoom* Room) const;
 
+	void SpawnLooseItems();
+
 	void SpawnGimmicks();
 	void SpawnGimmickGroup(const TArray<EGimmickType>& GroupTypes);
 	void CollectGimmickCandidates(
@@ -187,6 +190,9 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UPGGimmickSpawnPoint>> GimmickSpawnPointsList;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UPGLooseItemSpawnPoint>> LooseItemSpawnPointsList;
 
 	UPROPERTY()
 	TArray<TObjectPtr<USceneComponent>> FuseBoxSpawnPointsList;

@@ -121,6 +121,7 @@ APGPlayerCharacter::APGPlayerCharacter()
 	EquippedItemtLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
 	EquippedItemtLight->SetupAttachment(EquippedItemMesh);
 	EquippedItemtLight->SetVisibility(false);
+	EquippedItemtLight->SetCastShadows(false);
 
 	HeadlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadlightMesh"));
 	HeadlightMesh->SetupAttachment(GetMesh(), TEXT("headSocket"));

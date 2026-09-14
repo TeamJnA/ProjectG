@@ -42,6 +42,9 @@ APGMasterRoom::APGMasterRoom()
 	GimmickSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GimmickSpawnPointsFolder"));
 	GimmickSpawnPointsFolder->SetupAttachment(RootComponent);
 
+	LooseItemSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("LooseItemSpawnPointsFolder"));
+	LooseItemSpawnPointsFolder->SetupAttachment(RootComponent);
+
 	FuseBoxSpawnPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("FuseBoxSpawnPointsFolder"));
 	FuseBoxSpawnPointsFolder->SetupAttachment(RootComponent);
 
