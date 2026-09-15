@@ -106,6 +106,13 @@ namespace
 	}
 }
 
+bool UPGAdvancedFriendsGameInstance::IsSessionVersionCompatible(const FOnlineSessionSearchResult& SearchResult)
+{
+	int32 HostVersion = 0;
+	SearchResult.Session.SessionSettings.Get(SESSION_KEY_BUILD_VERSION, HostVersion);
+	return HostVersion == PG_BUILD_VERSION;
+}
+
 /*
 * 세션 생성 시 세션 슬롯에 표시될 언어 return
 */
@@ -262,6 +269,7 @@ void UPGAdvancedFriendsGameInstance::CreateNewSession(const FPGHostSessionOption
 	SessionSettings.Set(SESSION_KEY_DIFFICULTY, (int32)Options.Difficulty, EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_INVITE_ONLY, Options.bIsInviteOnly ? 1 : 0, EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_LANGUAGE, GetLocalLanguageCode(), EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_BUILD_VERSION, PG_BUILD_VERSION, EOnlineDataAdvertisementType::ViaOnlineService);
 
 	SessionInterface->CreateSession(0, NAME_GameSession, SessionSettings);
 }
@@ -314,6 +322,7 @@ void UPGAdvancedFriendsGameInstance::FindSessions()
 	LatestSessionSearch->QuerySettings.Set(FName(TEXT("PRESENCESEARCH")), true, EOnlineComparisonOp::Equals);
 	LatestSessionSearch->QuerySettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineComparisonOp::Equals);
 	LatestSessionSearch->QuerySettings.Set(SESSION_KEY_INVITE_ONLY, 0, EOnlineComparisonOp::Equals);
+	LatestSessionSearch->QuerySettings.Set(SESSION_KEY_BUILD_VERSION, PG_BUILD_VERSION, EOnlineComparisonOp::Equals);
 
 	SessionInterface->FindSessions(0, LatestSessionSearch.ToSharedRef());
 }
@@ -337,6 +346,13 @@ void UPGAdvancedFriendsGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 			{
 				// FriendsOnly 세션은 목록에 노출x
 				UE_LOG(LogTemp, Log, TEXT("GI::OnFindSessionsComplete: Filtered out invite-only session"));
+				continue;
+			}
+
+			if (!IsSessionVersionCompatible(Result))
+			{
+				// 버전 안맞는 세션 목록 노출 x
+				UE_LOG(LogTemp, Log, TEXT("GI::OnFindSessionsComplete: Filtered out version-mismatched session"));
 				continue;
 			}
 
@@ -445,6 +461,13 @@ void UPGAdvancedFriendsGameInstance::OnSessionUserInviteAccepted(bool bWasSucces
 	if (!InviteResult.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("GI::OnSessionUserInviteAccepted: Invalid invite result"));
+		return;
+	}
+
+	if (!IsSessionVersionCompatible(InviteResult))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GI::OnSessionUserInviteAccepted: Version mismatch"));
+		OnJoinSessionAttemptFinished.Broadcast(false, LOCTEXT("Error_VersionMismatch", "Version Mismatch"));
 		return;
 	}
 
