@@ -40,7 +40,7 @@ protected:
 	TObjectPtr<UTextBlock> PlayerCountText;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> PingText;
+	TObjectPtr<UTextBlock> LanguageText;
 
 	UFUNCTION()
 	void OnJoinClicked();

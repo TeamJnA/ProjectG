@@ -13,6 +13,15 @@ static constexpr int32 PG_MAX_SESSION_PLAYERS = 4;
 /** 세션 표시 이름 최대 길이 */
 static constexpr int32 PG_MAX_SESSION_NAME_LENGTH = 32;
 
+namespace PGSessionName
+{
+    /** UTF-8 -> Base64, "b64:" 접두사 부착 */
+    FString Encode(const FString& InName);
+
+    /** 접두사가 있으면 디코드, 없으면 원문 그대로 */
+    FString Decode(const FString& InRaw);
+}
+
 /**
  * 세션 생성 시 선택한 옵션
  * DisplayName -> 세션 목록에 표시되는 이름 (NAME_GameSession과 무관)

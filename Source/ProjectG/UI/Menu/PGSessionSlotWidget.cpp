@@ -7,6 +7,7 @@
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "OnlineSessionSettings.h"
 #include "Type/PGDifficultyTypes.h"
+#include "Type/PGLanguageTypes.h"
 
 #define LOCTEXT_NAMESPACE "PGMenu"
 
@@ -30,8 +31,14 @@ void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult,
 
 	if (SessionNameText)
 	{
+		FString RawName;
 		FString SessionName;
-		if (!SessionSettings.Get(SESSION_KEY_SESSION_NAME, SessionName) || SessionName.IsEmpty())
+		if (SessionSettings.Get(SESSION_KEY_SESSION_NAME, RawName))
+		{
+			SessionName = PGSessionName::Decode(RawName);
+		}
+
+		if (SessionName.IsEmpty())
 		{
 			SessionName = FString::Printf(TEXT("%s's Session"), *SearchResult.Session.OwningUserName);
 		}
@@ -64,9 +71,18 @@ void UPGSessionSlotWidget::Setup(const FOnlineSessionSearchResult& SearchResult,
 		DifficultyText->SetText(DiffText);
 	}
 
-	if (PingText)
+	if (LanguageText)
 	{
-		PingText->SetText(FText::FromString(FString::Printf(TEXT("%d ms"), SearchResult.PingInMs)));
+		FString LangCode;
+		if (SessionSettings.Get(SESSION_KEY_LANGUAGE, LangCode) && !LangCode.IsEmpty())
+		{
+			LanguageText->SetText(PGLanguage::CodeToShortText(LangCode));
+		}
+		else
+		{
+			// 키가 없는 구버전 세션
+			LanguageText->SetText(LOCTEXT("Language_Unknown", "-"));
+		}
 	}
 }
 

@@ -27,6 +27,7 @@
 #include "Internationalization/Internationalization.h"
 #include "Internationalization/TextLocalizationManager.h"
 #include "Internationalization/Culture.h"
+#include "Type/PGLanguageTypes.h"
 
 
 void UPGSettingMenuWidget::NativeOnInitialized()
@@ -518,9 +519,7 @@ void UPGSettingMenuWidget::PopulateLanguages()
             continue;
         }
 
-        const FString DisplayName = CultureName.Contains(TEXT("-"))
-            ? Culture->GetNativeName()
-            : Culture->GetNativeLanguage();
+        const FString DisplayName = PGLanguage::CodeToDisplayText(CultureName).ToString();
         if (DisplayName.IsEmpty() || LanguageNameToCulture.Contains(DisplayName))
         {
             continue;

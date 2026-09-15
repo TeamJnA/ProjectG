@@ -32,6 +32,7 @@ static const FName SESSION_KEY_CURRENT_PLAYERS = FName(TEXT("CURRENT_PLAYERS"));
 static const FName SESSION_KEY_DIFFICULTY = FName(TEXT("DIFFICULTY"));
 static const FName SESSION_KEY_SESSION_NAME = FName(TEXT("SESSION_NAME"));
 static const FName SESSION_KEY_INVITE_ONLY = FName(TEXT("INVITE_ONLY"));
+static const FName SESSION_KEY_LANGUAGE = FName(TEXT("LANGUAGE"));
 
 USTRUCT(BlueprintType)
 struct FSteamFriendInfo
@@ -108,6 +109,10 @@ public:
 	FORCEINLINE const FText& GetPendingNetworkFailureMessage() const { return PendingNetworkFailureMessage; }
 	FORCEINLINE void ClearPendingNetworkFailureMessage() { PendingNetworkFailureMessage = FText::GetEmpty(); }
 	FORCEINLINE bool IsSinglePlaySession() const { return CurrentHostOptions.bIsSinglePlay; }
+
+	// 호스트의 사용 언어 코드
+	// 세팅값 우선, 없으면 스팀 언어
+	static FString GetLocalLanguageCode();
 
 	FOnSessionsFoundDelegate OnSessionsFound;
 	FOnHostSessionAttemptStartedDelegate OnHostSessionAttemptStarted;

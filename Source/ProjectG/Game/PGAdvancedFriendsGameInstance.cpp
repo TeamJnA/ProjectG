@@ -27,6 +27,9 @@
 #include "Game/PGProgressionSetting.h"
 #include "Engine/DataTable.h"
 
+#include "Type/PGLanguageTypes.h"
+#include "Internationalization/Culture.h"
+
 #if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX
 #include "steam/steam_api.h" 
 #endif
@@ -67,7 +70,8 @@ namespace
 		return Found ? *Found : FString();
 	}
 
-	/** 실제 패키징된 컬처 중 가장 가까운 것으로 해석. 없으면 빈 문자열 */
+	// 실제 패키징된 컬처 중 가장 가까운 것으로 해석
+	// 없으면 빈 문자열
 	FString ResolveShippedCulture(const FString& Desired)
 	{
 		if (Desired.IsEmpty())
@@ -100,6 +104,36 @@ namespace
 #endif
 		return FString();
 	}
+}
+
+/*
+* 세션 생성 시 세션 슬롯에 표시될 언어 return
+*/
+FString UPGAdvancedFriendsGameInstance::GetLocalLanguageCode()
+{
+	// 1) 유저가 옵션에서 명시적으로 고른 값
+	if (const UPGGameUserSettings* Settings = UPGGameUserSettings::GetPGGameUserSettings())
+	{
+		if (!Settings->LanguageCulture.IsEmpty())
+		{
+			return PGLanguage::NormalizeCode(Settings->LanguageCulture);
+		}
+	}
+
+	// 2) 자동 - 스팀 게임 언어
+	const FString SteamCulture = GetSteamGameCulture();
+	if (!SteamCulture.IsEmpty())
+	{
+		return PGLanguage::NormalizeCode(SteamCulture);
+	}
+
+	// 3) 폴백 (스팀 미실행/PIE)
+	if (FCulturePtr CurrentLanguage = FInternationalization::Get().GetCurrentLanguage())
+	{
+		return PGLanguage::NormalizeCode(CurrentLanguage->GetName());
+	}
+
+	return TEXT("en");
 }
 
 void UPGAdvancedFriendsGameInstance::Init()
@@ -223,10 +257,11 @@ void UPGAdvancedFriendsGameInstance::CreateNewSession(const FPGHostSessionOption
 	}
 
 	SessionSettings.Set(FName(TEXT("GAMENAME")), FString(TEXT("ProjectG")), EOnlineDataAdvertisementType::ViaOnlineService);
-	SessionSettings.Set(SESSION_KEY_SESSION_NAME, Options.DisplayName, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_SESSION_NAME, PGSessionName::Encode(Options.DisplayName), EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_CURRENT_PLAYERS, 1, EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_DIFFICULTY, (int32)Options.Difficulty, EOnlineDataAdvertisementType::ViaOnlineService);
 	SessionSettings.Set(SESSION_KEY_INVITE_ONLY, Options.bIsInviteOnly ? 1 : 0, EOnlineDataAdvertisementType::ViaOnlineService);
+	SessionSettings.Set(SESSION_KEY_LANGUAGE, GetLocalLanguageCode(), EOnlineDataAdvertisementType::ViaOnlineService);
 
 	SessionInterface->CreateSession(0, NAME_GameSession, SessionSettings);
 }
