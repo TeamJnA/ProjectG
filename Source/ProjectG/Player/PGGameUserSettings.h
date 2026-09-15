@@ -35,6 +35,8 @@ class PROJECTG_API UPGGameUserSettings : public UGameUserSettings
 public:
 	UPGGameUserSettings();
 
+	virtual void SetToDefaults() override;
+
 	bool IsMicReady() const;
 
 	/** Static accessor */

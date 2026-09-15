@@ -33,6 +33,13 @@ static const FName SESSION_KEY_DIFFICULTY = FName(TEXT("DIFFICULTY"));
 static const FName SESSION_KEY_SESSION_NAME = FName(TEXT("SESSION_NAME"));
 static const FName SESSION_KEY_INVITE_ONLY = FName(TEXT("INVITE_ONLY"));
 static const FName SESSION_KEY_LANGUAGE = FName(TEXT("LANGUAGE"));
+static const FName SESSION_KEY_BUILD_VERSION = FName(TEXT("BUILD_VERSION"));
+
+/**
+ * 네트워크 호환 버전. 빌드할 때마다 올리는 값이 아님
+ * 리플리케이션/RPC/세션 키 등 호환성이 깨지는 변경에서만 증가
+ */
+constexpr int32 PG_BUILD_VERSION = 1;
 
 USTRUCT(BlueprintType)
 struct FSteamFriendInfo
@@ -76,6 +83,12 @@ public:
 
 	bool IsHost() const { return bIsHost; }
 
+	/** 해당 세션이 현재 빌드와 호환되는지 */
+	static bool IsSessionVersionCompatible(const FOnlineSessionSearchResult& SearchResult);
+
+	// 호스트의 사용 언어 코드
+	// 세팅값 우선, 없으면 스팀 언어
+	static FString GetLocalLanguageCode();
 
 	// --------- Session ---------
 	UFUNCTION(BlueprintCallable, Category = "Networking|Session")
@@ -109,10 +122,6 @@ public:
 	FORCEINLINE const FText& GetPendingNetworkFailureMessage() const { return PendingNetworkFailureMessage; }
 	FORCEINLINE void ClearPendingNetworkFailureMessage() { PendingNetworkFailureMessage = FText::GetEmpty(); }
 	FORCEINLINE bool IsSinglePlaySession() const { return CurrentHostOptions.bIsSinglePlay; }
-
-	// 호스트의 사용 언어 코드
-	// 세팅값 우선, 없으면 스팀 언어
-	static FString GetLocalLanguageCode();
 
 	FOnSessionsFoundDelegate OnSessionsFound;
 	FOnHostSessionAttemptStartedDelegate OnHostSessionAttemptStarted;

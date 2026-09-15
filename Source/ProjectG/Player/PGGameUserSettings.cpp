@@ -7,7 +7,7 @@
 namespace
 {
 	constexpr int32 FrameRateOptionCount = 4;
-	constexpr int32 FrameRateDefaultIndex = 3; // ¹«Á¦ÇÑ
+	constexpr int32 FrameRateDefaultIndex = 1; // 120
 	constexpr float FrameRateOptions[FrameRateOptionCount] = { 60.0f, 120.0f, 144.0f, 0.0f };
 }
 
@@ -25,7 +25,14 @@ UPGGameUserSettings::UPGGameUserSettings()
 	, bMicToggleActive(false)
 	, OverallVideoQualityLevel(2)
 {
-	SetFrameRateLimit(0.0f);
+	SetFrameRateLimit(IndexToFrameRateLimit(FrameRateDefaultIndex));
+}
+
+void UPGGameUserSettings::SetToDefaults()
+{
+	Super::SetToDefaults();
+
+	SetFrameRateLimit(IndexToFrameRateLimit(FrameRateDefaultIndex));
 }
 
 bool UPGGameUserSettings::IsMicReady() const
