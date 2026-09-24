@@ -24,15 +24,6 @@ void UPGGameInstance::Init()
 			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UPGGameInstance::OnJoinSessionComplete);
 		}
 	}
-
-	// Consumable
-	ItemDataMap.Add("Brick", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Consumable/DA_Consumable_Brick.DA_Consumable_Brick")));
-
-	// Escape
-	ItemDataMap.Add("AdminDevice", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Escape/DA_Escape_AdminDevice.DA_Escape_AdminDevice")));
-	ItemDataMap.Add("EnergyCore", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Escape/DA_Escape_EnergyCore.DA_Escape_EnergyCore")));
-	ItemDataMap.Add("RootCalculator", TSoftObjectPtr<UPGItemData>(FSoftObjectPath("/Game/ProjectG/Items/Escape/DA_Escape_RootCalculator.DA_Escape_RootCalculator")));
-
 }
 
 void UPGGameInstance::HostSession(FName SessionName, int32 MaxPlayers)

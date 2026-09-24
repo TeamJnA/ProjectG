@@ -12,7 +12,6 @@
 
 class APGPlayerController;
 class APGSoundManager;
-class APGGhostCharacter;
 class APGLevelGenerator;
 
 /**
@@ -28,13 +27,11 @@ public:
 
 	void PlayerTravelSuccess(APlayerController* Player);
 
-	void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
+	virtual void SetPlayerReadyToReturnLobby(APlayerState* PlayerState);
 
-	void HandlePlayerEscaping(ACharacter* EscapingPlayer, EExitPointType ExitPointType = EExitPointType::IronDoor);
+	virtual void HandlePlayerEscaping(ACharacter* EscapingPlayer, EExitPointType ExitPointType = EExitPointType::IronDoor);
 	
 	void RespawnPlayer(AController* DeadPlayerController, const FTransform& SpawnTransform);
-
-	void SpawnGhost(const FTransform& SpawnTransform);
 
 	// ISoundManagerInterface~
 	virtual APGSoundManager* GetSoundManager() override;
@@ -65,14 +62,18 @@ public:
 	void ProcessSoloLeaveRequest(APGPlayerController* RequestingPC, ECleanupActionType ActionType);
 	void RequestSessionDestruction(bool bServerQuit);
 
-private:
+protected:
 	void PerformSoloLeave(APGPlayerController* TargetPC);
 	void RequestServerTravel();
 	void CancelAllPendingSoloLeaves();
 	void BroadcastCleanupCommand();
 	void ExecutePendingAction();
-	void CleanupGeometryCollections();
 
+	// Travel 할 Level을 저장할 변수. GameMode의 자식 클래스에서 재지정해서 사용.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level")
+	FString ReturnTravelURL = TEXT("/Game/ProjectG/Levels/LV_PGLobbyRoom?listen");
+
+private:
 	UPROPERTY()
 	TMap<APGPlayerController*, ECleanupActionType> PendingSoloLeavers;
 
@@ -90,9 +91,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<APawn> PlayerPawnClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "AI")
-	TSubclassOf<APGGhostCharacter> GhostCharacterClass;
 
 	UPROPERTY(EditDefaultsOnly, meta = (AllowPrivateAccess = true))
 	TSubclassOf<APGLevelGenerator> PGLevelGenerator;

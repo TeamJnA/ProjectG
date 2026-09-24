@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Game/PGGameMode.h"
-#include "EngineUtils.h"
 
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/PlayerStart.h"
@@ -18,13 +17,12 @@
 
 #include "Game/PGGameState.h"
 #include "Game/PGAdvancedFriendsGameInstance.h"
+#include "AbilitySystemComponent.h"
 
 #include "Level/Manager/PGLevelGenerator.h"
 #include "Level/Manager/PGGlobalLightManager.h"
 #include "UI/Manager/PGHUD.h"
 #include "Sound/PGSoundManager.h"
-#include "Enemy/Ghost/Character/PGGhostCharacter.h"
-#include "Physics/PGChaosCacheManager.h"
 #include "PGLobbyGameMode.h"
 
 
@@ -51,12 +49,6 @@ APGGameMode::APGGameMode()
 	if (HUDBPClass.Class != nullptr)
 	{
 		HUDClass = HUDBPClass.Class;
-	}
-
-	static ConstructorHelpers::FClassFinder<APGGhostCharacter> GhostPawnBPClass(TEXT("/Game/ProjectG/Enemy/Ghost/Character/BP_GhostCharacter.BP_GhostCharacter_C"));
-	if (GhostPawnBPClass.Class != nullptr)
-	{
-		GhostCharacterClass = GhostPawnBPClass.Class;
 	}
 
 	PlayerSpawnTransforms.Add(FTransform(FRotator(0.0f, 20.0f, 0.0f), FVector(2640.0f, 180.0f, 1701.4f)));
@@ -234,9 +226,6 @@ void APGGameMode::SetPlayerReadyToReturnLobby(APlayerState* PlayerState)
 		{
 			UE_LOG(LogTemp, Log, TEXT("GM::SetPlayerReadyToReturnLobby: All players are ready to return lobby"));
 
-			// Stop and delete GC
-			CleanupGeometryCollections();
-
 			GS->SetCurrentGameState(EGameState::Lobby);
 			if (UPGAdvancedFriendsGameInstance* GI = GetGameInstance<UPGAdvancedFriendsGameInstance>())
 			{
@@ -357,55 +346,6 @@ void APGGameMode::SpawnGlobalLightManager()
 	UE_LOG(LogTemp, Warning, TEXT("GameMode: Spawn GlobalLightManager"));
 
 	APGGlobalLightManager* LightManager = GetWorld()->SpawnActor<APGGlobalLightManager>(APGGlobalLightManager::StaticClass());
-}
-
-void APGGameMode::SpawnGhost(const FTransform& SpawnTransform)
-{
-	UE_LOG(LogTemp, Log, TEXT("GM::SpawnGhostsForPlayers: Spawning ghosts for all players."));
-
-	APGGameState* GS = GetGameState<APGGameState>();
-	if (!GS)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GM::SpawnGhostsForPlayers: No GameState found."));
-		return;
-	}
-
-	if (!GhostCharacterClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("APGGameMode::SpawnGhostsForPlayers: GhostCharacterClass is not set in GameMode! Check BP Path."));
-		return;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	const float SpawnOffsetRadius = 100.0f;
-
-	for (APlayerState* PS : GS->PlayerArray)
-	{
-		if (PS)
-		{
-			FVector RandomOffset = FVector(FMath::RandRange(-SpawnOffsetRadius, SpawnOffsetRadius), FMath::RandRange(-SpawnOffsetRadius, SpawnOffsetRadius), 0.0f);
-			FTransform FinalSpawnTransform = SpawnTransform;
-			FinalSpawnTransform.AddToTranslation(RandomOffset);
-
-			APGGhostCharacter* NewGhost = GetWorld()->SpawnActor<APGGhostCharacter>(GhostCharacterClass, FinalSpawnTransform, SpawnParams);
-			if (NewGhost)
-			{
-				/*if (SoundManager)
-				{
-					NewGhost->InitSoundManager(SoundManager);
-				}*/
-
-				NewGhost->SetTargetPlayerState(PS);
-
-				NewGhost->InitSoundManager(GetSoundManager());
-
-				UE_LOG(LogTemp, Log, TEXT("APGGameMode: Spawned Ghost (%s) and assigned to Player (%s)"), *NewGhost->GetName(), *PS->GetPlayerName());
-			}
-		}
-	}
 }
 
 void APGGameMode::ProcessSoloLeaveRequest(APGPlayerController* RequestingPC, ECleanupActionType ActionType)
@@ -561,7 +501,7 @@ void APGGameMode::ExecutePendingAction()
 
 	if (PendingActionType == ECleanupActionType::Mass_ServerTravel)
 	{
-		GetWorld()->ServerTravel("/Game/ProjectG/Levels/LV_PGLobbyRoom?listen", true);
+		GetWorld()->ServerTravel(ReturnTravelURL, true);
 	}
 	else if (PendingActionType == ECleanupActionType::Mass_KickForDestroy)
 	{
@@ -594,21 +534,6 @@ void APGGameMode::ExecutePendingAction()
 	}
 }
 
-void APGGameMode::CleanupGeometryCollections()
-{
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APGChaosCacheManager::StaticClass(), FoundActors);
-
-	for (AActor* Actor : FoundActors)
-	{
-		APGChaosCacheManager* CCM = Cast<APGChaosCacheManager>(Actor);
-		if (CCM)
-		{
-			CCM->Multicast_CleanupGeometyCollection();
-		}
-	}
-}
-
 void APGGameMode::Logout(AController* Exiting)
 {
 	UE_LOG(LogTemp, Log, TEXT("[GM::Logout] Logout [%s]"), *GetNameSafe(Exiting));
@@ -625,17 +550,6 @@ void APGGameMode::Logout(AController* Exiting)
 			{
 				UE_LOG(LogTemp, Log, TEXT("[GM::Logout] Destroy logout player dead body [%s]"), *PS->GetPlayerName());
 				DeadBody->Destroy();
-			}
-		}
-
-		// 담당 Ghost 정리
-		for (TActorIterator<APGGhostCharacter> It(GetWorld()); It; ++It)
-		{
-			if (It->GetTargetPlayerState() == PS)
-			{
-				UE_LOG(LogTemp, Log, TEXT("[GM::Logout] Destroy logout player ghost [%s]"), *PS->GetPlayerName());
-				It->Destroy();
-				break;
 			}
 		}
 	}

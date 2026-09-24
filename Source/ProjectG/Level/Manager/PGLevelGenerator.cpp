@@ -31,6 +31,7 @@
 
 #include "Game/PGAdvancedFriendsGameInstance.h"
 #include "Game/PGGameMode.h"
+#include "Game/PGGameMode_Mansion.h"
 #include "Game/PGGameState.h"
 #include "Type/PGDifficultyTypes.h"
 
@@ -2575,7 +2576,15 @@ bool APGLevelGenerator::SpawnEnemy()
 	{
 		const FTransform SpawnTransform(FRotator::ZeroRotator, GhostSpawnRoom->GetEnemySpawnLocation());
 		UE_LOG(LogTemp, Log, TEXT("LG::SpawnEnemy: Spawn ghost. (Room: %s, Location: %s)"), *GhostSpawnRoom->GetName(), *SpawnTransform.GetLocation().ToString());
-		GM->SpawnGhost(SpawnTransform);
+
+
+		APGGameMode_Mansion* GM_Mansion = World->GetAuthGameMode<APGGameMode_Mansion>();
+		if (!GM_Mansion)
+		{
+			return false;
+		}
+
+		GM_Mansion->SpawnGhost(SpawnTransform);
 	}
 	else
 	{
