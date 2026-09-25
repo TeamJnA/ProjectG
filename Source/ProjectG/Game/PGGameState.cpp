@@ -216,6 +216,10 @@ void APGGameState::Multicast_InitFinalScoreBoardWidget_Implementation()
 		return;
 	}
 
+	//STEAM ACHIEVEMENT
+	// 1 : A, 2 : S
+	int32 GradeForSteamAchievement = 0;
+
 	if (!bLocalXPAwarded)
 	{
 		bLocalXPAwarded = true;
@@ -229,6 +233,19 @@ void APGGameState::Multicast_InitFinalScoreBoardWidget_Implementation()
 					: 0;
 				GainedXP = FMath::RoundToInt(GainedXP * GetDifficulty().XPMultiplier);
 				GI->AddMatchResult(GainedXP);
+
+				//STEAM ACHIEVEMENT
+				if (PS->IsEscaping())
+				{
+					if (PhotoGrade::GetGradeEnum(PS->GetPhotoScore(), MaxScore) == PhotoGrade::EGrade::A)
+					{
+						GradeForSteamAchievement = 1;
+					}
+					else if (PhotoGrade::GetGradeEnum(PS->GetPhotoScore(), MaxScore) == PhotoGrade::EGrade::S)
+					{
+						GradeForSteamAchievement = 2;
+					}
+				}
 			}
 		}
 	}
@@ -236,6 +253,17 @@ void APGGameState::Multicast_InitFinalScoreBoardWidget_Implementation()
 	if (APGPlayerController* PGPC = Cast<APGPlayerController>(PC))
 	{
 		PGPC->InitFinalScoreBoardWidget();
+
+		//STEAM ACHIEVEMENT
+		if (GradeForSteamAchievement == 1)
+		{
+			PGPC->Client_UnlockSteamAchievement(TEXT("ACH_MANSION_RANK_A"));
+		}
+		else if (GradeForSteamAchievement == 2)
+		{
+			PGPC->Client_UnlockSteamAchievement(TEXT("ACH_MANSION_RANK_A"));
+			PGPC->Client_UnlockSteamAchievement(TEXT("ACH_MANSION_RANK_S"));
+		}
 	}
 }
 

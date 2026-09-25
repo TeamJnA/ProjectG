@@ -52,13 +52,6 @@ void UAT_WaitForInteractionTarget::TraceToFindInteractable()
 	FHitResult HitResult;
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, TraceParams);
 
-#if WITH_EDITOR
-	if (ShowDebug)
-	{
-		DrawDebugLine(GetWorld(), TraceStartLocation, TraceEndLocation, FColor::Green, false, 0.5f);
-	}
-#endif
-
 	// Broadcast trace result to interact ability.
 	if (bHit && HitResult.GetActor())
 	{

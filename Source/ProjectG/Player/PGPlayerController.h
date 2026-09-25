@@ -44,6 +44,10 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_StartEscapeSequence(const EExitPointType ExitPoint, const bool bNeedAutomove = false, const FVector AutomoveLocation = FVector::ZeroVector);
 
+	//STEAM ACHIEVEMENT
+	UFUNCTION(Client, Reliable)
+	void Client_UnlockSteamAchievement(const FString& APIName);
+
 	void SetSpectateEscapeCamera(EExitPointType ExitPointType);
 	void SetSpectateNewTarget(const AActor* NewTarget, const APlayerState* NewTargetPlayerState);
 

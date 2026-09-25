@@ -31,6 +31,8 @@
 #include "Utils/PGVoiceUtils.h"
 #include "Player/PGGameUserSettings.h"
 
+#include "Utils/SteamStatAchievementSubsystem.h"
+
 
 APGPlayerController::APGPlayerController()
 {
@@ -307,6 +309,14 @@ void APGPlayerController::Server_SetReadyToReturnLobby_Implementation()
 	GM->SetPlayerReadyToReturnLobby(PlayerState);
 }
 
+void APGPlayerController::Client_UnlockSteamAchievement_Implementation(const FString& APIName)
+{
+	if (auto* Subsystem = GetGameInstance()->GetSubsystem<USteamStatAchievementSubsystem>())
+	{
+		Subsystem->UnlockAchievement(APIName);
+	}
+}
+
 /*
 * GM에서 호출
 * 탈출하려는 플레이어를 관전 중인 경우
@@ -448,6 +458,24 @@ void APGPlayerController::Client_StartEscapeSequence_Implementation(const EExitP
 	if (APGHUD* HUD = Cast<APGHUD>(GetHUD()))
 	{
 		HUD->ForceCleanupHUD();
+	}
+
+	// STEAM ACHIEVEMENT
+	if (auto* Subsystem = GetGameInstance()->GetSubsystem<USteamStatAchievementSubsystem>())
+	{
+		if (GS->IsSinglePlaySession())
+		{
+			Subsystem->UnlockAchievement(TEXT("ACH_MANSION_SINGLE"));
+		}
+
+		if (ExitPoint == EExitPointType::IronDoor)
+		{
+			Subsystem->UnlockAchievement(TEXT("ACH_MANSION_IRONDOOR"));
+		}
+		else if (ExitPoint == EExitPointType::Elevator)
+		{
+			Subsystem->UnlockAchievement(TEXT("ACH_MANSION_ELEVATOR"));
+		}
 	}
 
 	// Get Camera and Start Spectate
